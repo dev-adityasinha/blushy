@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Blushy — A few honest questions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Edu+SA+Beginner:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3E3CB;
+    --card:#FFFFFF;
+    --ink:#4A0F14;
+    --ink-soft:#8A3A34;
+    --ink-muted:#B5847A;
+    --line:#E9D3B4;
+    --accent:#DD0D22;
+    --accent-tint:#FF9B9E;
+    --accent-tint-soft:#FCE0DE;
+    --gold:#FCB207;
+    --orange:#FF4A00;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Edu SA Beginner', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:32px 24px;
+  }
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:1.5px;
+    color:var(--ink-muted);
+    margin:0 0 18px;
+    text-transform:uppercase;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:400;
+    font-size:28px;
+    line-height:1.4;
+    margin:0 0 14px;
+    letter-spacing:-0.2px;
+  }
+  p.sub{
+    font-size:15px;
+    line-height:1.65;
+    color:var(--ink-soft);
+    margin:0 0 32px;
+  }
+  button.primary{
+    width:100%;
+    padding:14px 16px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    font-family:'Edu SA Beginner', sans-serif;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    transition:opacity .15s ease;
+  }
+  button.primary:hover{opacity:0.88;}
+  button.primary:active{transform:scale(0.99);}
+  p.meta{
+    font-size:12px;
+    color:var(--ink-muted);
+    text-align:center;
+    margin-top:14px;
+  }
+  .progress{
+    display:flex;
+    gap:6px;
+    margin-bottom:28px;
+  }
+  .dot{
+    height:3px;
+    flex:1;
+    border-radius:2px;
+    background:var(--line);
+    transition:background .2s ease;
+  }
+  .dot.done{background:var(--accent);}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:28px 24px;
+    box-shadow:0 2px 14px rgba(74,15,20,0.06);
+  }
+  .qnum{
+    font-size:12px;
+    color:var(--ink-muted);
+    margin:0 0 12px;
+  }
+  .qtext{
+    font-family:'Fraunces', serif;
+    font-weight:400;
+    font-size:19px;
+    line-height:1.5;
+    margin:0 0 24px;
+  }
+  .opt{
+    display:block;
+    width:100%;
+    text-align:left;
+    padding:13px 16px;
+    margin-bottom:10px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:10px;
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .opt:hover{border-color:var(--accent-tint);}
+  .opt.selected{
+    border-color:var(--accent);
+    background:var(--accent-tint-soft);
+    color:var(--accent);
+    font-weight:700;
+  }
+  textarea{
+    width:100%;
+    margin-top:6px;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    resize:vertical;
+    min-height:64px;
+  }
+  textarea::placeholder{color:var(--ink-muted);}
+  .note-label{
+    font-size:12px;
+    color:var(--ink-muted);
+    margin:16px 0 0;
+  }
+  .nav{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:20px;
+  }
+  .back-btn{
+    background:none;
+    border:none;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    color:var(--ink-muted);
+    cursor:pointer;
+    padding:8px 4px;
+  }
+  .next-btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:11px 22px;
+    font-family:'Edu SA Beginner', sans-serif;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .center{
+    text-align:center;
+    padding:20px 0;
+  }
+  .thanks-mark{
+    width:52px;height:52px;border-radius:50%;
+    background:var(--accent-tint-soft);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 20px;
+    color:var(--accent);
+    font-size:22px;
+  }
+  .thanks-wrap h1{margin-bottom:8px;}
+  .thanks-wrap p.sub{margin-bottom:8px;}
+  .problem-row{
+    display:flex;
+    gap:14px;
+    padding:16px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .problem-num{
+    font-family:'Fraunces', serif;
+    font-size:20px;
+    font-weight:500;
+    color:var(--accent);
+    min-width:26px;
+  }
+  .problem-title{
+    font-weight:700;
+    font-size:14.5px;
+    margin:0 0 4px;
+    color:var(--ink);
+  }
+  .problem-sol{
+    font-size:13.5px;
+    line-height:1.55;
+    color:var(--ink-soft);
+    margin:0;
+  }
+  .brand-tag{
+    display:table;
+    margin:0 auto 20px;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--accent);
+    background:var(--accent-tint-soft);
+    border:1px solid rgba(221,13,34,0.15);
+    padding:6px 20px;
+    border-radius:20px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ---------- CONFIGURE THIS BEFORE GOING LIVE ----------
+   Point submissions at your own Google Form's pre-filled response
+   endpoint so answers land in a real Google Sheet, without users
+   ever seeing Google Forms' own UI.
+
+   How to get these values:
+   1. Create a plain Google Form with the same 10 questions
+      (any question types are fine, this page never shows that UI).
+   2. Open the live form, click the three dots > "Get pre-filled link".
+   3. Fill dummy answers, click "Get link", then open that link.
+   4. In the resulting URL, copy the "entry.XXXXXXXX" number for
+      each question, and the base URL (ends in /formResponse).
+------------------------------------------------------------ */
+const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSc_wuHk6u3VUGjBjYbri-eRPGsKNfWUPkZbt5wHnVZaDmustw/formResponse";
+const ENTRY_IDS = {
+  age: "entry.559467510",
+  status: "entry.1519190403",
+  city: "entry.66501307",
+  q1: "entry.834308864",
+  q2: "entry.601619002",
+  q3: "entry.1556789042",
+  q3_note: "entry.1060983018",
+  q4: "entry.362312050",
+  q5: "entry.1466804961",
+  q5_note: "entry.1841072306",
+  q6: "entry.780983112",
+  q7: "entry.1931015603",
+  q8: "entry.2061137145",
+  q8_note: "entry.2147180288",
+  q9: "entry.89446532",
+  q10: "entry.52245556",
+  q10_note: "entry.1528253214"
+};
+/* ------------------------------------------------------- */
+
+const slides = [
+  {type:"demo", label:"A little about you",
+   items:[
+     {key:"age", text:"How old are you?", opts:["18","18-20","21-23","24-26","26 and Above"]},
+     {key:"status", text:"Are you currently a:", opts:["School Student","College Student","Working professional","Other"]},
+     {key:"city", text:"Which city type best describes where you live?", opts:["Metro City","Tier 2 city","Tier 3 city","Town/Village"]}
+   ]},
+  {type:"single", key:"q1", num:"1 / 10", text:"How often do you currently track your period or mood?",
+   opts:["Daily","A few times a week","Only when I remember","I don't track it at all"]},
+  {type:"single", key:"q2", num:"2 / 10", text:"Which app do you currently use, if any?",
+   opts:["Flo","Clue","Blushy","None"]},
+  {type:"single", key:"q3", num:"3 / 10", text:"Think of the last time you felt off around your cycle. Who or what did you turn to?",
+   opts:["Nobody, I dealt with it alone","A friend or family member","A period tracking app","My partner"],
+   noteKey:"q3_note", notePrompt:"Tell us what happened, if you'd like."},
+  {type:"single", key:"q4", num:"4 / 10", text:"If you've stopped using a period or mood app before, what made you stop?",
+   opts:["It felt too generic","I forgot about it","Didn't fit my language or culture","Never really started"]},
+  {type:"single", key:"q5", num:"5 / 10", text:"Has a wellness app's response ever felt like it truly understood you, versus generic?",
+   opts:["Yes, definitely","Somewhat","Not really","Never used one that tries"],
+   noteKey:"q5_note", notePrompt:"Describe it if you'd like."},
+  {type:"single", key:"q6", num:"6 / 10", text:"Is there anything about cycle or mood tracking you'd pay for?",
+   opts:["Personalised insights","Something to talk to about it","Just accurate predictions","I wouldn't pay for this"]},
+  {type:"single", key:"q7", num:"7 / 10", text:"If a good version cost \u20b9150 a month, how likely would you pay?",
+   opts:["Very likely","Somewhat likely","Somewhat Unlikely","Very unlikely"]},
+  {type:"single", key:"q8", num:"8 / 10", text:"Do you wish your partner understood what you're going through, without explaining it?",
+   opts:["Yes, often","Sometimes","Not really, I prefer explaining","I don't have a partner"],
+   noteKey:"q8_note", notePrompt:"A time it went well or badly, if any."},
+  {type:"single", key:"q9", num:"9 / 10", text:"Would you want an app to quietly let your partner know how you're feeling, only when you choose to share?",
+   opts:["Yes, that would help","Maybe, depends what's shared","No, I'd rather tell him myself","No, not at all"]},
+  {type:"single", key:"q10", num:"10 / 10", text:"Do you switch to Hindi or a regional language when talking about feelings, even if you use English otherwise?",
+   opts:["Yes, often","Sometimes","Rarely","No, English for everything"],
+   noteKey:"q10_note", notePrompt:"Has an app ever felt culturally off?"}
+];
+
+let idx = 0;
+const answers = {};
+const app = document.getElementById('app');
+
+function renderLanding(){
+  app.innerHTML = `
+    <span class="brand-tag">Blushy</span>
+    <h1>A few honest questions, just between us.</h1>
+    <p class="sub">Two minutes. No names, no judgement — just what's actually true for you. Everything you share stays private, always.</p>
+    <button class="primary" id="startBtn">Begin</button>
+    <p class="meta">A quick profile, then 10 questions &middot; about 2 minutes</p>
+  `;
+  document.getElementById('startBtn').onclick = ()=>{ idx = 0; renderSlide(); };
+}
+
+function progressDots(){
+  let html = '<div class="progress">';
+  slides.forEach((_,i)=>{
+    html += `<div class="dot ${i<=idx?'done':''}"></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function isSlideComplete(slide){
+  if(slide.type === "demo"){
+    return slide.items.every(q => !!answers[q.key]);
+  }
+  return !!answers[slide.key];
+}
+
+function renderSlide(){
+  const slide = slides[idx];
+
+  if(slide.type === "demo"){
+    let blocks = '';
+    slide.items.forEach(q=>{
+      blocks += `<div style="margin-bottom:22px;">
+        <p class="problem-title" style="margin-bottom:10px; font-size:14.5px;">${q.text}</p>
+        <div class="opts-group" data-key="${q.key}"></div>
+      </div>`;
+    });
+    let html = `<span class="brand-tag">Blushy</span>`;
+    html += progressDots();
+    html += `<div class="card">
+      <p class="qnum">${slide.label}</p>
+      ${blocks}
+    </div>
+    <p class="note-label" id="validationMsg" style="color:var(--accent); display:none; margin:10px 0 0;">Please answer all three to continue.</p>
+    <div class="nav">
+      <button class="back-btn" id="backBtn" style="visibility:${idx===0?'hidden':'visible'}">Back</button>
+      <button class="next-btn" id="nextBtn">Next</button>
+    </div>`;
+    app.innerHTML = html;
+
+    slide.items.forEach(q=>{
+      const wrap = document.querySelector(`.opts-group[data-key="${q.key}"]`);
+      q.opts.forEach(opt=>{
+        const btn = document.createElement('button');
+        btn.className = 'opt' + (answers[q.key]===opt ? ' selected' : '');
+        btn.textContent = opt;
+        btn.onclick = ()=>{ answers[q.key] = opt; renderSlide(); };
+        wrap.appendChild(btn);
+      });
+    });
+  } else {
+    let html = `<span class="brand-tag">Blushy</span>`;
+    html += progressDots();
+    html += `<div class="card">
+      <p class="qnum">${slide.num}</p>
+      <p class="qtext">${slide.text}</p>
+      <div id="opts"></div>
+    </div>
+    <p class="note-label" id="validationMsg" style="color:var(--accent); display:none; margin:10px 0 0;">Please select an answer to continue.</p>
+    <div class="nav">
+      <button class="back-btn" id="backBtn" style="visibility:${idx===0?'hidden':'visible'}">Back</button>
+      <button class="next-btn" id="nextBtn">${idx===slides.length-1?'Finish':'Next'}</button>
+    </div>`;
+    app.innerHTML = html;
+
+    const optsWrap = document.getElementById('opts');
+    slide.opts.forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'opt' + (answers[slide.key]===opt ? ' selected' : '');
+      btn.textContent = opt;
+      btn.onclick = ()=>{ answers[slide.key] = opt; renderSlide(); };
+      optsWrap.appendChild(btn);
+    });
+
+    if(slide.noteKey){
+      const label = document.createElement('p');
+      label.className = 'note-label';
+      label.textContent = slide.notePrompt;
+      optsWrap.appendChild(label);
+      const ta = document.createElement('textarea');
+      ta.placeholder = 'Optional';
+      ta.value = answers[slide.noteKey] || '';
+      ta.oninput = (e)=>{ answers[slide.noteKey] = e.target.value; };
+      optsWrap.appendChild(ta);
+    }
+  }
+
+  document.getElementById('backBtn').onclick = ()=>{ if(idx>0){ idx--; renderSlide(); } };
+  document.getElementById('nextBtn').onclick = ()=>{
+    if(!isSlideComplete(slide)){
+      document.getElementById('validationMsg').style.display = 'block';
+      return;
+    }
+    if(idx < slides.length-1){ idx++; renderSlide(); }
+    else { submitAndFinish(); }
+  };
+}
+
+function submitAndFinish(){
+  try{
+    const urlParams = new URLSearchParams();
+    Object.keys(answers).forEach(key=>{
+      const entryId = ENTRY_IDS[key];
+      if(entryId) urlParams.append(entryId, answers[key]);
+    });
+    fetch(GOOGLE_FORM_ACTION_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: urlParams
+    });
+  }catch(err){
+    console.error('Submission error', err);
+  }
+  renderThanks();
+}
+
+const problems = [
+  {t:"No app or person ever really \u201cgets it\u201d without a full explanation.", s:"Keep one place \u2014 even just a private note to yourself \u2014 where the context is already there, so you're not starting from zero every time."},
+  {t:"Explaining yourself, again, to every new person.", s:"You don't owe anyone the full story on demand. It's okay to only go deep with the people or spaces that have already earned it."},
+  {t:"Mood swings that feel sudden and hard to explain, even to yourself.", s:"Writing down how you feel in the moment, without judging it, often makes the pattern clearer in hindsight than trying to reason through it live."},
+  {t:"A partner who doesn't notice unless you spell it out.", s:"A small, low-pressure signal \u2014 a word, a shared note \u2014 can say more than a long explanation you don't have the energy for."},
+  {t:"Feeling embarrassed to bring it up, even with close friends.", s:"One honest sentence to one trusted person usually breaks the ice faster than waiting for the \u201cright\u201d moment."},
+  {t:"Tracking apps that feel built for someone else's life.", s:"Your language, your references, your context matter \u2014 don't settle for tools that make you translate yourself to be understood."},
+  {t:"Pain or discomfort brushed off as \u201cjust periods.\u201d", s:"If it's disrupting your day, it's not an overreaction \u2014 trust that instinct enough to say it out loud, to someone or to a doctor."},
+  {t:"No one to vent to without feeling judged.", s:"Sometimes the relief isn't in being fixed \u2014 it's in being allowed to say the true thing out loud, privately, first."},
+  {t:"Switching languages to say how you really feel, but no one around to catch it.", s:"That switch is real, not a quirk \u2014 feelings don't need to be translated into English to be taken seriously."},
+  {t:"Guilt for needing rest, slowing down, or saying no during a hard week.", s:"Rest during a rough cycle isn't indulgence \u2014 it's maintenance, and it deserves the same respect as any other health need."}
+];
+
+function renderThanks(){
+  let rows = '';
+  problems.forEach((p,i)=>{
+    rows += `<div class="problem-row">
+      <p class="problem-num">${String(i+1).padStart(2,'0')}</p>
+      <div>
+        <p class="problem-title">${p.t}</p>
+        <p class="problem-sol">${p.s}</p>
+      </div>
+    </div>`;
+  });
+
+  app.innerHTML = `
+    <div class="thanks-wrap">
+      <span class="brand-tag">Blushy</span>
+      <div class="center">
+        <div class="thanks-mark">&#10003;</div>
+        <h1 style="font-size:23px;">Thank you for trusting us with this.</h1>
+        <p class="sub">What you just shared joins thousands of other honest answers helping build a wellness experience that actually understands Indian women \u2014 not a generic one built for someone else.</p>
+      </div>
+
+      <div style="margin:32px 0 8px;">
+        <p class="eyebrow" style="margin-bottom:10px;">What we hear, again and again</p>
+        <h1 style="font-size:20px; margin-bottom:10px;">Ten things you might recognise.</h1>
+        <p class="sub" style="margin-bottom:4px;">Not clinical facts \u2014 just the everyday moments so many women describe, and small ways through them.</p>
+      </div>
+
+      <div>${rows}</div>
+
+      <p class="meta" style="margin-top:24px;">With care, from everyone building Blushy.</p>
+    </div>
+  `;
+}
+
+renderLanding();
+</script>
+</body>
+</html>
