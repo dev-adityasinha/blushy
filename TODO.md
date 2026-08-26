@@ -31,6 +31,46 @@ The feature is complete only when all of the following are true:
 - App and website use the same API contract, authorization rules, privacy behavior, and user-visible states.
 - A missing or unclear website source is a blocker to completion, not permission to mark the website phase complete.
 
+## Architecture Change Plan From PDF
+
+These tasks come from `Blushy Architecture Change Comparison (1).pdf`. The percentages in the PDF are estimates, not acceptance criteria. Implement the items in order, validate each one, and keep app and website behavior aligned.
+
+### Security First
+
+- [x] Protect every admin route with mandatory authentication and an explicit `admin` role guard. Implemented in `BLUSHY_MAINAPP/backend/src/middleware/requireAuth.js` and `BLUSHY_MAINAPP/backend/src/routes/adminRoutes.js`.
+- [ ] Keep permanent AI provider credentials on the backend; remove any provider key from client responses and use an ephemeral token or backend proxy for voice.
+- [ ] Replace optional authentication on private routes with mandatory authentication, starting with health-data, partner, AI, journal, and account routes. Preserve optional auth only for intentionally public endpoints.
+- [ ] Remove full transcriptions, AI prompts, health values, attachment names, and personal identifiers from logs. Keep request id, operation, status, and duration only.
+- [ ] Make production startup fail when `JWT_SECRET` is missing, weak, or still using a known fallback. Keep local development setup explicit and documented.
+- [ ] Harden uploads with allowlisted MIME types and file signatures, size limits, per-user quotas, safe filenames, and malware scanning or an explicitly documented deployment control.
+
+### Data Reliability
+
+- [ ] Verify `withTransaction()` uses a real MongoDB session transaction wherever multiple writes must succeed together.
+- [ ] Make required-index creation fail startup or make readiness unhealthy; do not continue as healthy after a required index failure.
+- [ ] Centralize woman/man collection selection in one tested resolver or unified identity model.
+- [ ] Add ownership predicates and cross-user isolation tests to every medical and health-data read/write path.
+
+### Runtime And Scaling
+
+- [ ] Add one shared client interceptor for token refresh: refresh once, retry the original request once, then log out only when refresh fails.
+- [ ] Standardize base URL, auth headers, timeout, refresh, and error mapping behind one client abstraction for both app and website.
+- [ ] Replace URL JWTs for WebSocket authentication with a short-lived ticket or authenticated upgrade flow.
+- [ ] Add shared Redis Pub/Sub or an equivalent broker before claiming multi-instance WebSocket support.
+- [ ] Move scheduled jobs to a worker or protect them with a distributed lock so multiple web instances cannot duplicate work.
+- [ ] Document and enforce shared Redis requirements for production rate limits and realtime events.
+
+### Maintainability And Delivery
+
+- [ ] Refactor large Flutter screens so views render state, controllers/view models orchestrate, and repositories own data access.
+- [ ] Add an explicit startup loading state before authenticated routing reads local session state.
+- [ ] Select and document one versioned API convention, then update backend, app, website, tests, and documentation consistently.
+- [ ] Add a repeatable isolated backend test command; do not rely on an undocumented live database.
+- [ ] Add automated authorization tests for anonymous, non-admin, cross-user, expired-token, invalid-upload, WebSocket, refresh, and privacy cases.
+- [ ] Add safe structured logs, request IDs, liveness, and readiness checks.
+
+**Architecture acceptance:** no recommendation is marked complete without a focused test or executable validation, and no estimated percentage is presented as measured performance. A full rewrite is out of scope unless a later validated blocker requires it.
+
 ## Phase 0: Before Starting
 
 - [ ] Confirm the app target is `BLUSHY_MAINAPP`.

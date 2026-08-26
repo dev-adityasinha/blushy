@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { optionalAuth } from '../middleware/optionalAuth.js';
+import { requireAuth, requireRole } from '../middleware/requireAuth.js';
 import {
 	getAllUsers,
 	getUserById,
@@ -12,15 +12,16 @@ import {
 } from '../controllers/adminController.js';
 
 const router = Router();
+const requireAdmin = [requireAuth, requireRole('admin')];
 
 // Admin routes for user management
-router.get('/users', optionalAuth, getAllUsers);
-router.get('/users/:userId', optionalAuth, getUserById);
-router.get('/users/:userId/moods', optionalAuth, getUserMoods);
-router.get('/users/:userId/sleep', optionalAuth, getUserSleep);
-router.get('/users/:userId/partner', optionalAuth, getUserPartner);
-router.get('/users/:userId/ai-chat-summary', optionalAuth, getUserAIChatSummary);
-router.get('/users/:userId/feedback', optionalAuth, getUserFeedback);
-router.get('/users/:userId/journal', optionalAuth, getUserJournal);
+router.get('/users', requireAdmin, getAllUsers);
+router.get('/users/:userId', requireAdmin, getUserById);
+router.get('/users/:userId/moods', requireAdmin, getUserMoods);
+router.get('/users/:userId/sleep', requireAdmin, getUserSleep);
+router.get('/users/:userId/partner', requireAdmin, getUserPartner);
+router.get('/users/:userId/ai-chat-summary', requireAdmin, getUserAIChatSummary);
+router.get('/users/:userId/feedback', requireAdmin, getUserFeedback);
+router.get('/users/:userId/journal', requireAdmin, getUserJournal);
 
 export default router;
