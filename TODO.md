@@ -2,12 +2,12 @@
 
 ## How To Use This File
 
-This is the execution checklist for the partner data feature. An agent must follow the phases in order and must not mark a task complete until its acceptance checks pass.
+This is the execution checklist for the partner data feature. The deliverable has two mandatory products: **the app** and **the website**. An agent must follow the phases in order and must not mark a task complete until its acceptance checks pass for both products.
 
 - `[ ]` not started
 - `[-]` in progress or blocked; record the reason beside the item
 - `[x]` implemented and verified
-- Work only in `BLUSHY_MAINAPP` unless a phase explicitly names another copy.
+- Treat `BLUSHY_MAINAPP` as the app target and identify the website target during Phase 0. Do not silently implement only one product.
 - Preserve existing user changes. Read the target file before editing it.
 - Before editing, identify the current owner of the behavior and its nearest test.
 - After every code edit, run the narrowest relevant test or type check immediately.
@@ -27,12 +27,16 @@ The feature is complete only when all of the following are true:
 - Empty, loading, error, offline, and unauthorized states are handled in the UI.
 - Duplicate notification creation is prevented or intentionally deduplicated.
 - AI suggestions use only authorized, current context and fail gracefully when unavailable.
-- Both mobile/web Flutter builds compile and focused backend and Flutter tests pass.
-- The website mirror is updated only if its source directory exists and is confirmed to use this same contract.
+- The app build and the website build compile and their focused backend/frontend tests pass.
+- App and website use the same API contract, authorization rules, privacy behavior, and user-visible states.
+- A missing or unclear website source is a blocker to completion, not permission to mark the website phase complete.
 
 ## Phase 0: Before Starting
 
-- [ ] Confirm the active app is `BLUSHY_MAINAPP`; do not edit `BlushyBeta` or `blushy_flutter_ui 6` unless explicitly requested.
+- [ ] Confirm the app target is `BLUSHY_MAINAPP`.
+- [ ] Confirm the website target directory, entry point, backend, package manager, and deployment command. Current candidates include `BlushyBeta`; do not assume it is the website without verification.
+- [ ] Record the app target and website target paths in the Verification Log before implementation begins.
+- [ ] Do not edit `blushy_flutter_ui 6` unless it is explicitly confirmed as one of the two deliverables.
 - [ ] Inspect the working tree with `git status --short`; do not revert unrelated changes.
 - [ ] Read `BLUSHY_MAINAPP/README.md`, `BLUSHY_MAINAPP/pubspec.yaml`, and `BLUSHY_MAINAPP/backend/package.json`.
 - [ ] Confirm environment variables and database connection details from existing `.env` conventions. Never add secrets to source control.
@@ -176,17 +180,23 @@ The feature is complete only when all of the following are true:
 
 **Acceptance:** the dashboard stays responsive, reflects permission changes after refresh, and has no timer, navigation, or set-state-after-dispose errors.
 
-## Phase 9: Website Mirror Gate
+## Phase 9: Website Implementation (Mandatory Second Product)
 
-- [x] Mirror backend changes in the website backend where that source exists.
-- [x] Mirror frontend changes in the website Flutter source where that source exists.
-- [ ] First locate and confirm actual website directories in this checkout. Do not assume a path named `website blushy` exists.
-- [ ] If no website source exists, mark these tasks `[-] BLOCKED: mirror source not present` and report the missing path instead of fabricating files.
-- [ ] If a mirror exists, compare package versions, auth middleware, API base URL, model names, and route prefixes before copying code.
-- [ ] Run the mirror's own backend and frontend checks after updating it.
-- [ ] Confirm all clients use the same response contract and privacy rules.
+**Target:** the website directory and backend recorded in Phase 0. Do not call this a mirror-only task: the website must be independently runnable and verified.
 
-**Acceptance:** every confirmed deployable client is updated and tested, or the absent client is explicitly documented as blocked.
+- [ ] Confirm the website source directory and do not proceed with an unverified path.
+- [ ] Create or complete the website frontend entry point, routing, authentication integration, partner service, models, cards, dashboard, notifications, AI suggestions, and all loading/error/empty/offline states.
+- [ ] Create or complete the website backend entry point, database initialization, repository, controllers, routes, notification hooks, and AI endpoint.
+- [ ] Use the same documented API contract as the app, while following the website's existing framework and conventions.
+- [ ] Apply the same object-level authorization, sharing permissions, disconnect/revoke behavior, and privacy filtering as the app.
+- [ ] Add website-specific responsive behavior for desktop, tablet, and mobile browser widths.
+- [ ] Add website backend tests for schema, repository, routes, hooks, authorization, notifications, and AI context filtering.
+- [ ] Add website frontend/model tests for complete, partial, loading, empty, error, unauthorized, offline, and logged-out states.
+- [ ] Run the website's dependency install, lint/analyze, test, and production build commands.
+- [ ] Verify the website can connect to the intended backend using configured environment variables without committed secrets.
+- [ ] Compare app and website payloads and manually test the same privacy matrix against both products.
+
+**Acceptance:** the website is a separate runnable product with its own verified frontend/backend implementation, responsive UI, tests, production build, and parity with the app's contract and privacy rules. If the website source is absent, mark this phase `[-] BLOCKED` with the exact missing path; do not mark it `[x]`.
 
 ## Phase 10: Tests And Static Validation
 
@@ -195,6 +205,8 @@ The feature is complete only when all of the following are true:
 - [ ] From `BLUSHY_MAINAPP`, run `flutter test` and focused partner/widget tests.
 - [ ] From `BLUSHY_MAINAPP/backend`, run available backend tests; add a `test` script only if no runnable test command exists.
 - [ ] Run `npm run lint:security` from `BLUSHY_MAINAPP/backend`.
+- [ ] From the website target, install dependencies and run its lint/analyze, frontend tests, backend tests, and production build.
+- [ ] Start both products locally and verify that app and website reach the intended backend without hard-coded local-only URLs.
 - [ ] Exercise the API with a local authenticated setup: owner, connected partner, unrelated user, revoked permissions, logout, and expired connection.
 - [ ] Verify repeated requests do not duplicate notifications or corrupt read/viewed state.
 - [ ] Verify database initialization against empty and populated test data.
@@ -219,6 +231,8 @@ The feature is complete only when all of the following are true:
 - [ ] Security-log validation passes.
 - [ ] Manual privacy matrix passes for owner, partner, unrelated user, revoked permission, disconnected state, and logout.
 - [ ] Mobile and web UI states have been checked.
+- [ ] The app and website are both runnable from documented commands.
+- [ ] App-versus-website parity has been checked for API payloads, permissions, notifications, AI suggestions, and responsive states.
 - [ ] API contract and documentation match the shipped implementation.
 - [ ] Verification commands and known unrelated failures are recorded below.
 
@@ -228,9 +242,9 @@ Record the date, command, result, and relevant output here. Never paste secrets 
 
 | Date | Command/check | Result | Notes |
 |---|---|---|---|
-| 2026-08-26 | Initial tracker review | Pending | Existing phases 1-10 were marked complete; detailed verification was not recorded. |
+| 2026-08-26 | Initial tracker review | Pending | Existing phases 1-10 were marked complete; detailed verification was not recorded. App target is `BLUSHY_MAINAPP`; website target still requires confirmation. |
 
 ## Known Blockers
 
-- [ ] None currently recorded.
+- [ ] Confirm the website target path before implementation. Current checkout has `BlushyBeta` and `blushy_flutter_ui 6`, but no directory explicitly named `website blushy`.
 
