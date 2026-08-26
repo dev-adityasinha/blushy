@@ -1,53 +1,236 @@
-# Partner Data Visibility, Notifications & AI Suggestions - Implementation Tracker
+# Partner Data Visibility, Notifications & AI Suggestions
 
-## Backend Changes (app blushy/backend)
+## How To Use This File
 
-### Phase 1: Database Schema
-- [x] Update `initDatabase.js` — add `partner_data_views` table
-- [x] Update `initDatabase.js` — add `partner_notifications` table
+This is the execution checklist for the partner data feature. An agent must follow the phases in order and must not mark a task complete until its acceptance checks pass.
 
-### Phase 2: Partner Repository
-- [x] Update `partnerRepository.js` — add `getSharedData()` method
-- [x] Update `partnerRepository.js` — add `markDataViewed()` method
-- [x] Update `partnerRepository.js` — add notification CRUD methods
+- `[ ]` not started
+- `[-]` in progress or blocked; record the reason beside the item
+- `[x]` implemented and verified
+- Work only in `BLUSHY_MAINAPP` unless a phase explicitly names another copy.
+- Preserve existing user changes. Read the target file before editing it.
+- Before editing, identify the current owner of the behavior and its nearest test.
+- After every code edit, run the narrowest relevant test or type check immediately.
+- Do not invent endpoint names, response fields, permissions, or database columns. Keep backend, Flutter, and any mirror implementation on the same contract.
+- Do not log health data, notification content, tokens, passwords, or AI prompts containing personal data.
+- Every completed phase must include a short verification note in the commit/PR description or issue tracker.
 
-### Phase 3: Partner Controller & Routes
-- [x] Update `partnerController.js` — add `getPartnerSharedData()`
-- [x] Update `partnerController.js` — add `markPartnerDataViewed()`
-- [x] Update `partnerController.js` — add `listPartnerNotifications()`
-- [x] Update `partnerRoutes.js` — wire new endpoints
+## Scope And Success Criteria
 
-### Phase 4: Auth Controller — Notification Hooks
-- [x] Update `authController.js` — create notification after mood update
-- [x] Update `authController.js` — create notification after sleep update
+The feature lets an authenticated connected partner see only data explicitly shared by the other person, receive useful notifications about permitted updates, mark data as viewed/read, and request contextual AI suggestions.
 
-### Phase 5: AI Controller & Routes
-- [x] Update `aiController.js` — add `getPartnerSuggestions()`
-- [x] Update `aiRoutes.js` — wire `/ai/partner-suggestions`
+The feature is complete only when all of the following are true:
 
-## Frontend Changes (app blushy/lib)
+- A user cannot read another user's data by changing a `connectionId`, `userId`, or notification id.
+- Revoked, expired, pending, and disconnected relationships return no protected shared data.
+- Every shared category follows the connection's current permission settings.
+- Empty, loading, error, offline, and unauthorized states are handled in the UI.
+- Duplicate notification creation is prevented or intentionally deduplicated.
+- AI suggestions use only authorized, current context and fail gracefully when unavailable.
+- Both mobile/web Flutter builds compile and focused backend and Flutter tests pass.
+- The website mirror is updated only if its source directory exists and is confirmed to use this same contract.
 
-### Phase 6: Partner Service
-- [x] Update `partner_service.dart` — add `getPartnerData()`
-- [x] Update `partner_service.dart` — add `getNotifications()`
-- [x] Update `partner_service.dart` — add `markNotificationsRead()`
+## Phase 0: Before Starting
 
-### Phase 7: Models & Widgets
-- [x] Update `partner_models.dart` — add `PartnerSharedData`, `MoodEntry`, `SleepEntry`, `CycleInfo`, `HealthInsights`, `PartnerNotification`
-- [x] Create `partner_data_card.dart` — widget to display partner shared data
+- [ ] Confirm the active app is `BLUSHY_MAINAPP`; do not edit `BlushyBeta` or `blushy_flutter_ui 6` unless explicitly requested.
+- [ ] Inspect the working tree with `git status --short`; do not revert unrelated changes.
+- [ ] Read `BLUSHY_MAINAPP/README.md`, `BLUSHY_MAINAPP/pubspec.yaml`, and `BLUSHY_MAINAPP/backend/package.json`.
+- [ ] Confirm environment variables and database connection details from existing `.env` conventions. Never add secrets to source control.
+- [ ] Locate the current auth middleware and verify the authenticated id is `req.user.userId` or the repository's established equivalent.
+- [ ] Locate the existing partner permission model and list its allowed categories before changing schemas or APIs.
+- [ ] Locate the current backend test setup. If no test script exists, run existing test files directly and add the smallest missing test harness needed.
+- [ ] Write down the API contract before implementation: method, path, auth requirement, request fields, success response, empty response, and each error status.
 
-### Phase 8: Dashboard Screen
-- [x] Update `dashboard_screen.dart` — fetch partner shared data for man role
-- [x] Update `dashboard_screen.dart` — conditionally render mood/cycle/sleep/insights cards
-- [x] Update `dashboard_screen.dart` — add notification badge on partner section
-- [x] Update `dashboard_screen.dart` — add AI partner suggestions widget
-- [x] Update `dashboard_screen.dart` — periodic refresh for partner data updates
+## Phase 1: Database Schema
 
-## Website Mirror Changes
+**Owner:** `BLUSHY_MAINAPP/backend/src/utils/initDatabase.js`
 
-### Phase 9: Website Backend
-- [x] Mirror all backend changes in `website blushy/backend`
+- [x] Add the `partner_data_views` table using the existing database initialization and migration style.
+- [x] Add the `partner_notifications` table using the existing database initialization and migration style.
+- [ ] Confirm every table has required relationship/user identifiers, timestamps, indexes, and uniqueness constraints.
+- [ ] Confirm foreign keys or equivalent cleanup behavior when a connection is removed.
+- [ ] Confirm timestamps are stored and compared consistently in UTC.
+- [ ] Confirm initialization is idempotent and safe to run against an existing database.
+- [ ] Add or update a schema smoke test that initializes a clean database twice without failure.
+- [ ] Verify indexes support list queries for connection, recipient, unread state, and newest-first ordering.
 
-### Phase 10: Website Frontend
-- [x] Mirror all frontend changes in `website blushy/lib`
+**Acceptance:** clean and existing databases initialize successfully; queries cannot return records for an unrelated user; repeated initialization creates no duplicate schema objects.
+
+## Phase 2: Partner Repository
+
+**Owner:** `BLUSHY_MAINAPP/backend/src/repositories/partnerRepository.js`
+
+- [x] Add `getSharedData()`.
+- [x] Add `markDataViewed()`.
+- [x] Add notification create/list/read operations.
+- [ ] Make every read begin with an authorized active connection lookup owned by the requesting user.
+- [ ] Apply permissions in the repository query or one clearly enforced repository boundary, not only in the controller.
+- [ ] Return a stable shape for missing optional data: use `null`, empty arrays, or omitted fields consistently.
+- [ ] Enforce ownership for notification listing and read updates using the authenticated recipient id.
+- [ ] Make mark-viewed and mark-read operations idempotent.
+- [ ] Add duplicate/deduplication behavior for repeated mood and sleep updates.
+- [ ] Keep private categories out of results even when a caller requests them explicitly.
+- [ ] Add repository tests for owner, connected partner, unrelated user, revoked permission, missing connection, and empty data.
+
+**Acceptance:** repository methods are safe when called directly with hostile ids and return deterministic results without leaking private records.
+
+## Phase 3: Partner Controller And Routes
+
+**Owners:** `BLUSHY_MAINAPP/backend/src/controllers/partnerController.js`, `BLUSHY_MAINAPP/backend/src/routes/partnerRoutes.js`
+
+- [x] Add `getPartnerSharedData()`.
+- [x] Add `markPartnerDataViewed()`.
+- [x] Add `listPartnerNotifications()`.
+- [x] Wire new routes under the existing `/partner` prefix.
+- [ ] Confirm all routes use existing auth middleware and rate limiter.
+- [ ] Validate path parameters and request bodies before calling the repository.
+- [ ] Use the established status-code and error-response format.
+- [ ] Do not accept a caller-supplied viewer/user id when the value is available from auth.
+- [ ] Define behavior for no active connection, no permission, stale connection, and malformed ids.
+- [ ] Add route/controller tests for success, 400, 401, 403, 404, 429, and repository failure paths.
+- [ ] Confirm response payloads contain no database-only fields, tokens, or internal error messages.
+
+**Acceptance:** an authenticated partner can fetch only permitted data and can view/read it; unauthorized requests fail without exposing whether another user's record exists.
+
+## Phase 4: Notification Hooks
+
+**Owner:** `BLUSHY_MAINAPP/backend/src/controllers/authController.js`
+
+- [x] Create a notification after a permitted mood update.
+- [x] Create a notification after a permitted sleep update.
+- [ ] Verify hooks run only after the source update succeeds.
+- [ ] Verify hooks target the connected partner, never the updating user.
+- [ ] Verify current sharing permission is checked at notification creation time.
+- [ ] Avoid notification content that reveals a category the recipient is not allowed to see.
+- [ ] Make notification failure non-destructive: record the source update successfully and report hook failure without sensitive values.
+- [ ] Prevent duplicate notifications on retries or repeated requests.
+- [ ] Add tests for allowed, disallowed, disconnected, repeated, and failed-notification cases.
+
+**Acceptance:** a valid update creates exactly the intended notification, while private or failed updates create none and do not break the original request.
+
+## Phase 5: AI Partner Suggestions
+
+**Owners:** `BLUSHY_MAINAPP/backend/src/controllers/aiController.js`, `BLUSHY_MAINAPP/backend/src/routes/aiRoutes.js`
+
+- [x] Add `getPartnerSuggestions()`.
+- [x] Wire `/ai/partner-suggestions` through existing authenticated AI route setup.
+- [ ] Build AI context from repository data that has already passed partner authorization.
+- [ ] Exclude raw private notes, identifiers, credentials, and unshared health categories from prompt/context.
+- [ ] Define a bounded response schema with suggestion text, category, and existing safety metadata.
+- [ ] Add input validation, timeout handling, rate limiting, and provider-error handling.
+- [ ] Make suggestions supportive and non-diagnostic; include the existing medical-safety fallback where required.
+- [ ] Add tests proving an unauthorized category cannot reach AI context.
+- [ ] Add tests for provider timeout, empty context, malformed provider output, and success.
+
+**Acceptance:** suggestions use only authorized partner context, have a stable response shape, and degrade to a safe user-facing error without leaking prompts or provider details.
+
+## Phase 6: Flutter Partner Service
+
+**Owner:** `BLUSHY_MAINAPP/lib/services/api_partner_service.dart`
+
+- [x] Add `getPartnerData()`.
+- [x] Add `getNotifications()`.
+- [x] Add `markNotificationsRead()`.
+- [ ] Match every method to the backend method/path/request/response contract exactly.
+- [ ] Use existing auth headers, base URL, timeout, and error parsing conventions.
+- [ ] Parse null, empty, malformed, unauthorized, rate-limited, and offline responses safely.
+- [ ] Do not cache protected partner data beyond existing app policy; clear it on logout or connection change.
+- [ ] Prevent overlapping refresh calls and ignore stale responses when the screen is disposed.
+- [ ] Add service tests or mock-client tests for success and each user-visible failure state.
+
+**Acceptance:** the service can be used by the screen without raw JSON handling, uncaught exceptions, or stale data after account/connection changes.
+
+## Phase 7: Models And Widgets
+
+**Owners:** `BLUSHY_MAINAPP/lib/features/partner/digibouquet/models/partner_models.dart`, existing partner widget directory, and any new `partner_data_card.dart`
+
+- [x] Add `PartnerSharedData`, `MoodEntry`, `SleepEntry`, `CycleInfo`, `HealthInsights`, and `PartnerNotification` models.
+- [x] Add the partner data card widget.
+- [ ] Make `fromJson` tolerant of absent optional fields and unexpected enum values.
+- [ ] Keep date/time parsing timezone-aware and display dates in the user's locale.
+- [ ] Ensure private categories cannot render merely because malformed JSON includes them.
+- [ ] Define accessible labels, semantic reading order, contrast, text scaling, and touch targets.
+- [ ] Provide explicit loading, empty, error, and retry states for each card/list.
+- [ ] Avoid medical certainty or alarming language in partner-facing copy.
+- [ ] Add widget/model tests for complete, partial, empty, malformed, and permission-filtered data.
+
+**Acceptance:** cards render stable layouts on narrow and wide screens and never crash or reveal unshared fields when data is incomplete.
+
+## Phase 8: Partner Dashboard Integration
+
+**Owners:** existing partner dashboard screen and partner presentation widgets under `BLUSHY_MAINAPP/lib/features/partner/`
+
+- [x] Fetch partner shared data for the partner role.
+- [x] Conditionally render mood, cycle, sleep, and insight cards.
+- [x] Add the notification badge in the partner section.
+- [x] Add the AI partner suggestions widget.
+- [x] Add periodic refresh.
+- [ ] Confirm the screen fetches only after authentication and an active connection are known.
+- [ ] Stop timers/subscriptions in `dispose` and avoid updates after widget disposal.
+- [ ] Prevent refresh storms when returning to foreground or changing tabs.
+- [ ] Refresh after marking viewed/read and update badge counts immediately.
+- [ ] Add retry actions that preserve the selected partner context.
+- [ ] Verify role-based navigation: data owner and receiving partner see the correct screens.
+- [ ] Add widget tests for all states, permission combinations, roles, refresh, and logout.
+- [ ] Manually verify mobile and web layouts at small, medium, and large widths.
+
+**Acceptance:** the dashboard stays responsive, reflects permission changes after refresh, and has no timer, navigation, or set-state-after-dispose errors.
+
+## Phase 9: Website Mirror Gate
+
+- [x] Mirror backend changes in the website backend where that source exists.
+- [x] Mirror frontend changes in the website Flutter source where that source exists.
+- [ ] First locate and confirm actual website directories in this checkout. Do not assume a path named `website blushy` exists.
+- [ ] If no website source exists, mark these tasks `[-] BLOCKED: mirror source not present` and report the missing path instead of fabricating files.
+- [ ] If a mirror exists, compare package versions, auth middleware, API base URL, model names, and route prefixes before copying code.
+- [ ] Run the mirror's own backend and frontend checks after updating it.
+- [ ] Confirm all clients use the same response contract and privacy rules.
+
+**Acceptance:** every confirmed deployable client is updated and tested, or the absent client is explicitly documented as blocked.
+
+## Phase 10: Tests And Static Validation
+
+- [ ] From `BLUSHY_MAINAPP`, run `flutter pub get`.
+- [ ] From `BLUSHY_MAINAPP`, run `flutter analyze` and resolve all new diagnostics.
+- [ ] From `BLUSHY_MAINAPP`, run `flutter test` and focused partner/widget tests.
+- [ ] From `BLUSHY_MAINAPP/backend`, run available backend tests; add a `test` script only if no runnable test command exists.
+- [ ] Run `npm run lint:security` from `BLUSHY_MAINAPP/backend`.
+- [ ] Exercise the API with a local authenticated setup: owner, connected partner, unrelated user, revoked permissions, logout, and expired connection.
+- [ ] Verify repeated requests do not duplicate notifications or corrupt read/viewed state.
+- [ ] Verify database initialization against empty and populated test data.
+- [ ] Record commands, pass/fail results, and unrelated pre-existing failures.
+
+## Phase 11: Security, Privacy And Release Review
+
+- [ ] Review every endpoint for authentication, authorization, object-level access control, input validation, rate limiting, and safe errors.
+- [ ] Confirm logs and analytics contain no sensitive health values or AI prompt content.
+- [ ] Confirm notification previews do not reveal restricted health information on a lock screen unless product policy allows it.
+- [ ] Confirm disconnect/revoke behavior immediately removes access and stops future notifications.
+- [ ] Confirm logout clears in-memory partner data, timers, pending requests, and cached notifications.
+- [ ] Confirm production configuration has no debug endpoints, mock data, test credentials, or permissive CORS changes.
+- [ ] Update `README.md` or feature documentation if endpoint usage, setup, or privacy behavior changed.
+- [ ] Review the final diff for unrelated formatting, generated files, secrets, and accidental changes to `BlushyBeta`.
+
+## Final Definition Of Done
+
+- [ ] All applicable checklist items are `[x]`; blocked items include a reason and owner.
+- [ ] Backend schema, repository, controller, route, hook, and AI tests pass.
+- [ ] Flutter analyze and tests pass.
+- [ ] Security-log validation passes.
+- [ ] Manual privacy matrix passes for owner, partner, unrelated user, revoked permission, disconnected state, and logout.
+- [ ] Mobile and web UI states have been checked.
+- [ ] API contract and documentation match the shipped implementation.
+- [ ] Verification commands and known unrelated failures are recorded below.
+
+## Verification Log
+
+Record the date, command, result, and relevant output here. Never paste secrets or personal health data.
+
+| Date | Command/check | Result | Notes |
+|---|---|---|---|
+| 2026-08-26 | Initial tracker review | Pending | Existing phases 1-10 were marked complete; detailed verification was not recorded. |
+
+## Known Blockers
+
+- [ ] None currently recorded.
 
