@@ -19,6 +19,12 @@ String resolveApiBaseUrl() {
 
   // Debug mode for mobile / native apps
   if (kDebugMode) {
+    try {
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:3000';
+      }
+    } catch (_) {}
+    return 'http://localhost:3000';
     return 'http://127.0.0.1:3000';
   }
 
