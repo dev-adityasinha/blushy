@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { db } from '../utils/db.js';
+import { db, findUserDocument } from '../utils/db.js';
 import { normalizeRole as normalizeRoleValue } from '../utils/role.js';
 import { batchCreateOnboardingEntries } from './periodRepository.js';
 
@@ -172,11 +172,11 @@ async function updateUserEmailVerifiedAt(userId, emailVerifiedAt) {
 }
 
 async function getUserById(userId) {
-  let user = await db.collection('users_man').findOne({ user_id: userId });
-  if (!user) {
-    user = await db.collection('users_woman').findOne({ user_id: userId });
-  }
-  return mapRow(user);
+  // Both collections are probed at once. Sequentially, every woman's record
+  // cost two round trips because the men's collection was always checked and
+  // missed first -- and the chat handler alone calls this three times per
+  // message.
+  return mapRow(await findUserDocument({ user_id: userId }));
 }
 
 async function updateUser(userId, patch) {

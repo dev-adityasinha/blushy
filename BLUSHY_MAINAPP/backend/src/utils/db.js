@@ -57,16 +57,30 @@ export async function withTransaction(executor) {
   return executor(db);
 }
 
+/**
+ * Finds one user without knowing which collection they are in.
+ *
+ * The two probes run together rather than one after the other. Sequentially,
+ * every woman's record cost two round trips because the men's collection was
+ * always checked and missed first -- and this sits under nearly every request,
+ * so the cost was paid everywhere.
+ *
+ * A hit in `users_man` still wins, which is the order the sequential version
+ * resolved in.
+ */
 export async function findUserDocument(query) {
-  let user = await db.collection('users_man').findOne(query);
-  if (!user) {
-    user = await db.collection('users_woman').findOne(query);
-  }
-  return user;
+  const [man, woman] = await Promise.all([
+    db.collection('users_man').findOne(query),
+    db.collection('users_woman').findOne(query),
+  ]);
+  return man ?? woman ?? null;
 }
 
+/** Batch form of the above; both collections are read at once. */
 export async function findUserDocuments(query) {
-  const men = await db.collection('users_man').find(query).toArray();
-  const women = await db.collection('users_woman').find(query).toArray();
+  const [men, women] = await Promise.all([
+    db.collection('users_man').find(query).toArray(),
+    db.collection('users_woman').find(query).toArray(),
+  ]);
   return [...men, ...women];
 }

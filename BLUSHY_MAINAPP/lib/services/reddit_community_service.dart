@@ -4,6 +4,21 @@ import 'api_base_url.dart';
 import 'auth_storage.dart';
 import '../models/community_models.dart';
 
+/// Raised when the server refuses a request because too many have arrived.
+///
+/// Every failure used to collapse into `null`, so being rate limited and the
+/// post genuinely failing produced the same "Failed to publish post" message.
+/// One of those is worth retrying in a minute and the other is not, and the
+/// user could not tell which they had.
+class CommunityRateLimited implements Exception {
+  const CommunityRateLimited([this.retryAfterSeconds]);
+
+  final int? retryAfterSeconds;
+
+  @override
+  String toString() => 'CommunityRateLimited';
+}
+
 class RedditCommunityService {
   final Dio _dio = Dio(BaseOptions(
     baseUrl: resolveApiBaseUrl(),
@@ -60,6 +75,15 @@ class RedditCommunityService {
       if (response.data is Map<String, dynamic> && response.data['post'] != null) {
         return CommunityPost.fromJson(Map<String, dynamic>.from(response.data['post']));
       }
+      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 429) {
+        final retryAfter = int.tryParse(
+          e.response?.headers.value('retry-after') ?? '',
+        );
+        throw CommunityRateLimited(retryAfter);
+      }
+      debugPrint('RedditCommunityService: createPost error: $e');
       return null;
     } catch (e) {
       debugPrint('RedditCommunityService: createPost error: $e');

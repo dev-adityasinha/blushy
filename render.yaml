@@ -23,6 +23,13 @@ services:
       - key: NODE_ENV
         value: production
 
+      # Requests per IP per five minutes. The code default is the same value;
+      # this is here so the number is visible where the service is configured.
+      # Mobile carriers put many subscribers behind one address, so this budget
+      # is shared by more people than it looks.
+      - key: IP_RATE_LIMIT_MAX
+        value: "600"
+
       # Atlas. Network Access must allow 0.0.0.0/0 -- a free Render service
       # has no fixed outbound IP, so an address allowlist will refuse it.
       - key: MONGODB_URI

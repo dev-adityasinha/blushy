@@ -129,6 +129,18 @@ export async function initDatabase() {
     await db.collection('comments').createIndex({ requires_human_review: 1, moderation_updated_at: 1 });
     await db.collection('comments').createIndex({ post_id: 1, moderation_state: 1 });
 
+    // Partner chat. This had no index at all while being the fastest growing
+    // collection in the database -- every read of a conversation, every unread
+    // count and every cleanup scanned all messages for every connection.
+    await db.collection('partner_chat_messages').createIndex({ connection_id: 1, created_at: -1 });
+    // Unread counts filter on sender and read flag within a connection.
+    await db.collection('partner_chat_messages').createIndex(
+      { connection_id: 1, sender_user_id: 1, is_read: 1 },
+    );
+    // A viewer's vote on a post is read once per post in the feed.
+    await db.collection('post_votes').createIndex({ user_id: 1, target_id: 1 });
+    await db.collection('post_votes').createIndex({ target_id: 1 });
+
     console.log('MongoDB database indexes initialized successfully!');
   } catch (error) {
     console.error('Error initializing MongoDB database indexes:', error);

@@ -65,6 +65,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           );
         }
       }
+    } on CommunityRateLimited catch (e) {
+      // Being rate limited is not a failed post -- nothing is wrong with what
+      // she wrote, and retrying shortly will work. Saying so keeps her draft
+      // and stops her rewriting a post that was never the problem.
+      if (mounted) {
+        final wait = e.retryAfterSeconds;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              wait != null
+                  ? 'Too many requests just now. Try again in ${wait}s -- your post is still here.'
+                  : 'Too many requests just now. Give it a moment and try again -- your post is still here.',
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
