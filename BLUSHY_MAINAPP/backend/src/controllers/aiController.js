@@ -499,18 +499,15 @@ export async function createChatReply(req, res, next) {
         });
       }
 
-      if (medicationCapture?.updated) {
-        userProfile = await userRepository.getUserById(userId);
-      }
+      // The re-read that used to sit here was dead: nothing reads userProfile
+      // before the refresh further down, and that refresh runs whenever any
+      // capture reports `updated` -- which is exactly when this one did. Two
+      // round trips to Atlas for a value that was always overwritten first.
 
       onboardingCapture = await onboardingFromChatService.upsertOnboardingFromChatMessage({
         userId,
         message: userMessage,
       });
-
-      if (onboardingCapture.updated) {
-        userProfile = await userRepository.getUserById(userId);
-      }
 
       if (medicationCapture?.needsFollowUp) {
         assistantReply = {

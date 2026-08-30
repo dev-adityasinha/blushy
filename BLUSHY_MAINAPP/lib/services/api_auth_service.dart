@@ -563,15 +563,21 @@ class ApiAuthService implements AuthService {
     if (token == null || token.isEmpty) return {};
 
     try {
-      final meResponse = await _dio.get(
-        '/auth/me',
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-
-      final onboardingResponse = await _dio.get(
-        '/auth/me/onboarding',
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
+      // Two independent reads, so they go out together. Awaiting the first
+      // before starting the second doubled the latency of the very first
+      // request the app makes after sign-in for no reason.
+      final responses = await Future.wait([
+        _dio.get(
+          '/auth/me',
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        ),
+        _dio.get(
+          '/auth/me/onboarding',
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        ),
+      ]);
+      final meResponse = responses[0];
+      final onboardingResponse = responses[1];
 
       final Map<String, dynamic> result = {};
 

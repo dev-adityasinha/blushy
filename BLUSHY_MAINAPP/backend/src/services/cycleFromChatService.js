@@ -1,4 +1,5 @@
 import { userRepository } from '../repositories/userRepository.js';
+import { todayIso } from '../utils/appCalendar.js';
 
 function addDays(date, days) {
   const next = new Date(date);
@@ -10,14 +11,6 @@ function isoDate(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function todayIsoIst(now = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
-}
 
 function parseExplicitDate(message) {
   const normalized = String(message || '').trim();
@@ -53,15 +46,15 @@ function resolveCycleStartDate(message, now = new Date()) {
   }
 
   if (/\bday before yesterday\b/.test(normalized)) {
-    return todayIsoIst(addDays(now, -2));
+    return todayIso(addDays(now, -2));
   }
 
   if (/\byesterday\b|\byesterda+y\b|\byday before yesterday\b/.test(normalized)) {
-    return todayIsoIst(addDays(now, -1));
+    return todayIso(addDays(now, -1));
   }
 
   if (/\btoday\b/.test(normalized)) {
-    return todayIsoIst(now);
+    return todayIso(now);
   }
 
   return null;

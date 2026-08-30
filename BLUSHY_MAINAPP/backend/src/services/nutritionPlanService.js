@@ -1,5 +1,6 @@
 import { createHttpError } from '../utils/httpError.js';
 import { env } from '../utils/env.js';
+import { aiFetch } from '../utils/aiRequest.js';
 import { logger } from '../utils/logger.js';
 
 class NutritionPlanService {
@@ -26,7 +27,7 @@ class NutritionPlanService {
 
     let response;
     try {
-      response = await fetch(env.aiChatApiUrl, {
+      response = await aiFetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.aiChatApiKey}`,

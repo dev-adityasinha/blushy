@@ -42,6 +42,13 @@ export const env = {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+  // Grok reasons by default and spends most of its output budget on thinking
+  // the user never sees. Measured on the real prompts it cost 3-4x the latency
+  // and produced vaguer clinical answers, so it is off unless asked for.
+  aiReasoningEnabled:
+    String(process.env.AI_REASONING_ENABLED ?? 'false').toLowerCase() === 'true',
+  // No call had a timeout before; a stalled provider held the request open.
+  aiRequestTimeoutMs: Number(process.env.AI_REQUEST_TIMEOUT_MS ?? 30000),
   smtpHost: process.env.SMTP_HOST ?? '',
   smtpPort: Number(process.env.SMTP_PORT ?? 587),
   smtpUser: process.env.SMTP_USER ?? '',

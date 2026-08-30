@@ -88,7 +88,19 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: body,
+      body: Column(
+        children: [
+          // Onboarding finishes locally, but the cards behind it are filled by
+          // syncStateWithBackend(), which makes six sequential requests. On a
+          // cold backend that is tens of seconds during which the dashboard
+          // showed defaults and then silently rewrote itself, so it read as
+          // wrong data rather than data still arriving. A banner beats an
+          // unexplained pause, and it keeps whatever is already on screen
+          // readable instead of blanking the page behind a spinner.
+          if (osState.isSyncing) const _DashboardSyncBanner(),
+          Expanded(child: body),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'sia_fab',
         backgroundColor: BlushyColors.dark,
@@ -495,6 +507,42 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
           ),
         ),
       ],
+    );
+  }
+}
+
+
+/// Slim "still loading" strip shown above the dashboard while state syncs.
+class _DashboardSyncBanner extends StatelessWidget {
+  const _DashboardSyncBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: const Color(0xFFFDF2F2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 2, color: BlushyColors.primary),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              'Updating your dashboard…',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: BlushyColors.secondaryText,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

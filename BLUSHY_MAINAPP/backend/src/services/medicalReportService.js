@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { db } from '../utils/db.js';
 import { userRepository } from '../repositories/userRepository.js';
 import { env } from '../utils/env.js';
+import { aiFetch } from '../utils/aiRequest.js';
 
 const require = createRequire(import.meta.url);
 const { PDFParse } = require('pdf-parse');
@@ -105,7 +106,7 @@ If it is not a medical report/prescription (e.g. general chat photo, screenshot 
         messagesPayload = [{ role: 'user', content: prompt }];
       }
 
-      const response = await fetch(env.aiChatApiUrl, {
+      const response = await aiFetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.aiChatApiKey}`,

@@ -1,4 +1,5 @@
 import { db } from '../utils/db.js';
+import { todayIso, dayStart, dayIsoFromStored } from '../utils/appCalendar.js';
 
 async function getColl(userId, baseName) {
   const cleanUserId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
@@ -13,34 +14,6 @@ function formatTime(value) {
   return value.slice(0, 5);
 }
 
-function formatDateOnly(value) {
-  if (!value) {
-    return '';
-  }
-
-  if (value instanceof Date) {
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, '0');
-    const d = String(value.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-
-  if (typeof value === 'string') {
-    if (value.length >= 10) {
-      return value.slice(0, 10);
-    }
-
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      const y = parsed.getFullYear();
-      const m = String(parsed.getMonth() + 1).padStart(2, '0');
-      const d = String(parsed.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-  }
-
-  return '';
-}
 
 function mapRow(row) {
   if (!row) {
@@ -49,7 +22,7 @@ function mapRow(row) {
 
   return {
     userId: row.user_id,
-    entryDate: formatDateOnly(row.entry_date),
+    entryDate: dayIsoFromStored(row.entry_date),
     sleepTime: formatTime(row.sleep_time),
     wakeTime: formatTime(row.wake_time),
     durationMinutes: Number(row.duration_minutes) || 0,
@@ -58,16 +31,13 @@ function mapRow(row) {
   };
 }
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 async function pruneSleepHistory(userId, retentionDays = 7) {
   const cleanUserId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
   const safeRetentionDays = Number.isInteger(retentionDays) && retentionDays > 0 ? retentionDays : 7;
 
   const todayStr = todayIso();
-  const today = new Date(`${todayStr}T00:00:00.000Z`);
+  const today = dayStart(todayStr);
   today.setUTCDate(today.getUTCDate() - (safeRetentionDays - 1));
 
   const collName = await getColl(cleanUserId, 'user_sleep_logs');
@@ -80,7 +50,7 @@ async function pruneSleepHistory(userId, retentionDays = 7) {
 async function getSleepByDate(userId, entryDate = todayIso()) {
   const cleanUserId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
   const finalEntryDate = entryDate || todayIso();
-  const entryDateObj = new Date(`${finalEntryDate}T00:00:00.000Z`);
+  const entryDateObj = dayStart(finalEntryDate);
 
   const collName = await getColl(cleanUserId, 'user_sleep_logs');
   const doc = await db.collection(collName).findOne({
@@ -94,7 +64,7 @@ async function getSleepByDate(userId, entryDate = todayIso()) {
 async function upsertSleepByDate({ userId, entryDate = todayIso(), sleepTime, wakeTime, durationMinutes }) {
   const cleanUserId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
   const finalEntryDate = entryDate || todayIso();
-  const entryDateObj = new Date(`${finalEntryDate}T00:00:00.000Z`);
+  const entryDateObj = dayStart(finalEntryDate);
 
   const filter = { user_id: cleanUserId, entry_date: entryDateObj };
   const collName = await getColl(cleanUserId, 'user_sleep_logs');
@@ -144,7 +114,7 @@ async function getSleepByUserId(userId, limit = 30) {
     .toArray();
 
   return docs.map((doc) => ({
-    date: doc.entry_date ? formatDateOnly(doc.entry_date) : null,
+    date: doc.entry_date ? dayIsoFromStored(doc.entry_date) : null,
     sleepTime: doc.sleep_time,
     wakeTime: doc.wake_time,
     durationMinutes: doc.duration_minutes,

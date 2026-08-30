@@ -1,30 +1,11 @@
 import { db } from '../utils/db.js';
+import { todayIso, dayStart, dayIsoFromStored } from '../utils/appCalendar.js';
 
 async function getColl(userId, baseName) {
   const isMan = await db.collection('users_man').findOne({ user_id: userId });
   return isMan ? `${baseName}_man` : `${baseName}_woman`;
 }
 
-function formatDateOnly(value) {
-  if (!value) return '';
-  if (value instanceof Date) {
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, '0');
-    const d = String(value.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-  if (typeof value === 'string') {
-    if (value.length >= 10) return value.slice(0, 10);
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      const y = parsed.getFullYear();
-      const m = String(parsed.getMonth() + 1).padStart(2, '0');
-      const d = String(parsed.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
-  }
-  return '';
-}
 
 function mapRow(row) {
   if (!row) {
@@ -33,7 +14,7 @@ function mapRow(row) {
 
   return {
     userId: row.user_id,
-    entryDate: formatDateOnly(row.entry_date),
+    entryDate: dayIsoFromStored(row.entry_date),
     mood: row.mood,
     energyLevel: row.energy_level,
     stressLevel: row.stress_level,
@@ -44,21 +25,13 @@ function mapRow(row) {
   };
 }
 
-function todayIso() {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
-}
 
 async function pruneDailyMoodHistory(userId, retentionDays = 30) {
   const cleanUserId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
   const safeRetentionDays = Number.isInteger(retentionDays) && retentionDays > 0 ? retentionDays : 30;
 
   const todayStr = todayIso();
-  const today = new Date(`${todayStr}T00:00:00.000Z`);
+  const today = dayStart(todayStr);
   today.setUTCDate(today.getUTCDate() - (safeRetentionDays - 1));
 
   await db.collection(await getColl(cleanUserId, 'user_daily_moods')).deleteMany({
@@ -72,7 +45,7 @@ async function getDailyMood(userId, entryDate = todayIso()) {
   await pruneDailyMoodHistory(cleanUserId, 30);
 
   const finalEntryDate = entryDate || todayIso();
-  const entryDateObj = new Date(`${finalEntryDate}T00:00:00.000Z`);
+  const entryDateObj = dayStart(finalEntryDate);
 
   const doc = await db.collection(await getColl(cleanUserId, 'user_daily_moods')).findOne({
     user_id: cleanUserId,
@@ -87,7 +60,7 @@ async function upsertDailyMood({ userId, entryDate = todayIso(), mood, energyLev
   await pruneDailyMoodHistory(cleanUserId, 30);
 
   const finalEntryDate = entryDate || todayIso();
-  const entryDateObj = new Date(`${finalEntryDate}T00:00:00.000Z`);
+  const entryDateObj = dayStart(finalEntryDate);
 
   const filter = { user_id: cleanUserId, entry_date: entryDateObj };
   const collectionName = await getColl(cleanUserId, 'user_daily_moods');
@@ -138,7 +111,7 @@ async function getMoodStreakDays(userId, endDate = todayIso()) {
   await pruneDailyMoodHistory(cleanUserId, 30);
 
   const finalEndDate = endDate || todayIso();
-  const endDateObj = new Date(`${finalEndDate}T00:00:00.000Z`);
+  const endDateObj = dayStart(finalEndDate);
 
   const result = await db.collection(await getColl(cleanUserId, 'user_daily_moods'))
     .find({
@@ -149,10 +122,10 @@ async function getMoodStreakDays(userId, endDate = todayIso()) {
     .toArray();
 
   let streakDays = 0;
-  const cursor = new Date(`${finalEndDate}T00:00:00.000Z`);
+  const cursor = dayStart(finalEndDate);
 
   for (const doc of result) {
-    const entryDate = formatDateOnly(doc.entry_date);
+    const entryDate = dayIsoFromStored(doc.entry_date);
     const expectedDate = cursor.toISOString().slice(0, 10);
 
     if (entryDate !== expectedDate) {
@@ -175,7 +148,7 @@ async function getMoodsByUserId(userId, limit = 30) {
     .toArray();
 
   return docs.map((doc) => ({
-    date: doc.entry_date ? formatDateOnly(doc.entry_date) : null,
+    date: doc.entry_date ? dayIsoFromStored(doc.entry_date) : null,
     mood: doc.mood,
     energy: doc.energy_level,
     stress: doc.stress_level,

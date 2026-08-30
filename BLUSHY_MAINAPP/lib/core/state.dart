@@ -555,9 +555,29 @@ class BlushyOSState extends ChangeNotifier {
     }
   }
 
+  /// True while [syncStateWithBackend] is in flight.
+  ///
+  /// The home screen reads this so it can show that figures are still being
+  /// fetched, rather than rendering empty cards that silently fill in later.
+  bool _isSyncing = false;
+  bool get isSyncing => _isSyncing;
+
+  /// Attaches an error handler at launch time, yielding null on failure.
+  ///
+  /// A future started now but awaited several statements later has no listener
+  /// in between, so a fast failure there is reported as an unhandled async
+  /// error even though the code does go on to await it. Catching at the point
+  /// of launch closes that window; the call sites already treat null as "this
+  /// one did not come back".
+  static Future<T?> _never<T>(Future<T> request) =>
+      request.then<T?>((value) => value).catchError((_) => null);
+
   Future<void> syncStateWithBackend() async {
     final token = AuthStorage.getToken();
     if (token == null || token.isEmpty) return;
+
+    _isSyncing = true;
+    notifyListeners();
 
     try {
       final data = await ApiAuthService().fetchUserData();
@@ -747,10 +767,24 @@ class BlushyOSState extends ChangeNotifier {
           medications: _personalContext.medications,
         );
 
+        // These four do not depend on each other, so they go out together and
+        // the round trips overlap instead of stacking up. They used to run one
+        // after another, which on a cold backend meant the dashboard sat empty
+        // for the sum of all four rather than the slowest one.
+        //
+        // Only the requests are concurrent. The results are still applied in a
+        // fixed order below, because mood and sleep both rebuild
+        // `_wellbeingState` with copyWith -- applying those concurrently would
+        // let one silently drop the other's field.
+        final moodFuture = _never(ApiAuthService().getMyDailyMood());
+        final sleepFuture = _never(ApiAuthService().getMySleep());
+        final predictionFuture = _never(ApiPeriodService().getPredictions());
+        final partnerStatusFuture = _never(ApiPartnerService().getPartnerStatus());
+
         // Fetch and hydrate real-time daily mood and symptoms from backend
         try {
-          final moodResponse = await ApiAuthService().getMyDailyMood();
-          if (moodResponse['dailyMood'] is Map) {
+          final moodResponse = await moodFuture;
+          if (moodResponse != null && moodResponse['dailyMood'] is Map) {
             final dm = moodResponse['dailyMood'] as Map<String, dynamic>;
             final moodStr = dm['mood']?.toString();
             final energyStr = dm['energyLevel']?.toString();
@@ -793,8 +827,8 @@ class BlushyOSState extends ChangeNotifier {
 
         // Fetch and hydrate latest sleep from backend
         try {
-          final sleepResponse = await ApiAuthService().getMySleep();
-          if (sleepResponse['sleepLog'] is Map) {
+          final sleepResponse = await sleepFuture;
+          if (sleepResponse != null && sleepResponse['sleepLog'] is Map) {
             final sl = sleepResponse['sleepLog'] as Map<String, dynamic>;
             final durationMins = sl['durationMinutes'];
             if (durationMins is num && durationMins > 0) {
@@ -806,7 +840,7 @@ class BlushyOSState extends ChangeNotifier {
 
         // Fetch and hydrate latest period entries & canonical predictions from backend SSOT
         try {
-          final pred = await ApiPeriodService().getPredictions();
+          final pred = await predictionFuture;
           if (pred != null && pred.hasData) {
             final parsedStart = parseFlexibleDate(pred.lastPeriodStartDate);
             if (parsedStart != null) lastPeriodStart = parsedStart;
@@ -835,8 +869,8 @@ class BlushyOSState extends ChangeNotifier {
 
         // Fetch and hydrate partner connection status from backend
         try {
-          final partnerStatus = await ApiPartnerService().getPartnerStatus();
-          if (partnerStatus.isNotEmpty) {
+          final partnerStatus = await partnerStatusFuture;
+          if (partnerStatus != null && partnerStatus.isNotEmpty) {
             BlushyStorage.write('partner_connection_status.json', partnerStatus);
           }
         } catch (_) {}
@@ -846,6 +880,12 @@ class BlushyOSState extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('BlushyBackend: error syncing state: $e');
+    } finally {
+      // In a finally so a failed request cannot strand the UI in a loading
+      // state for ever. Previously the catch swallowed the error and returned
+      // without notifying, leaving whatever was on screen frozen.
+      _isSyncing = false;
+      notifyListeners();
     }
   }
 
@@ -963,10 +1003,17 @@ class BlushyOSState extends ChangeNotifier {
       _onboardingCompleted = true;
     }
     _saveState();
+
+    // Notify before syncing, not after. Signing in used to hand straight off
+    // to syncStateWithBackend(), which only notifies once six sequential HTTP
+    // round trips have finished -- and not at all if any of them threw. So the
+    // root widget never rebuilt, the app sat on the auth screen looking like
+    // nothing had happened, and the only way forward appeared to be logging in
+    // again. Routing is a local decision and should not wait on the network.
+    notifyListeners();
+
     if (value) {
       syncStateWithBackend();
-    } else {
-      notifyListeners();
     }
   }
 

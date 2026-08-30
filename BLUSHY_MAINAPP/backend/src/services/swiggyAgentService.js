@@ -1,4 +1,5 @@
 import { env } from '../utils/env.js';
+import { aiFetch } from '../utils/aiRequest.js';
 import { createHttpError } from '../utils/httpError.js';
 
 const INSTAMART_TOOLS = [
@@ -191,7 +192,7 @@ Common errors you should handle and explain to the user:
     while (loopCount < maxLoops) {
       loopCount++;
       
-      const response = await fetch(env.aiChatApiUrl, {
+      const response = await aiFetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.aiChatApiKey}`,

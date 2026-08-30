@@ -1,4 +1,5 @@
 import { env } from '../utils/env.js';
+import { aiFetch } from '../utils/aiRequest.js';
 import { createHttpError } from '../utils/httpError.js';
 import { normalizeRole as normalizeRoleValue } from '../utils/role.js';
 
@@ -42,7 +43,7 @@ class AIChatService {
 
     let response;
     try {
-      response = await fetch(env.aiChatApiUrl, {
+      response = await aiFetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.aiChatApiKey}`,
@@ -96,7 +97,7 @@ class AIChatService {
     if (!env.aiChatApiKey) return null;
 
     try {
-      const response = await fetch(env.aiChatApiUrl, {
+      const response = await aiFetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.aiChatApiKey}`,
@@ -160,7 +161,7 @@ class AIChatService {
     }
 
     try {
-      const response = await fetch(env.aiChatApiUrl, {
+      const response = await aiFetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.aiChatApiKey}`,
@@ -295,6 +296,12 @@ function buildSystemPrompt({ role, user, languageCode, aiContext }) {
     '- Do NOT attempt to wrap up, conclude, or end the chat at the end of your response.',
     '- Do NOT use canned closing statements or wrap-up questions that feel like ending a session.',
     '- Keep the chat flowing naturally, open, and engaging so chatting feels effortless.',
+    // Reasoning is off for latency, and the reasoning replies were the ones
+    // that reliably ended on a question ("How is the rest of your day shaping
+    // up?"). That is the behaviour worth keeping, so it is now asked for
+    // explicitly rather than left to emerge.
+    '- Usually end with a light follow-up question that grows out of what she just told you. This is the opposite of a wrap-up: it is how the conversation continues. Make it specific to her message, and vary it -- never a stock phrase.',
+    '- Skip the question when she asked something factual and answering with a question back would feel evasive, or when she has said she wants to be left alone.',
     
     // Cycle & Health Grounding Rules (STRICT CANONICAL PREDICTION INTEGRITY)
     'CANONICAL CYCLE DATA INTEGRITY RULES:',

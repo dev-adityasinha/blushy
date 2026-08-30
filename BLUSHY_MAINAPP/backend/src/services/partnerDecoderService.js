@@ -3,6 +3,7 @@ import { dailyMoodRepository } from '../repositories/dailyMoodRepository.js';
 import { sleepRepository } from '../repositories/sleepRepository.js';
 import { partnerRepository } from '../repositories/partnerRepository.js';
 import { env } from '../utils/env.js';
+import { aiFetch } from '../utils/aiRequest.js';
 import { normalizePermissions, hasGrant } from '../domain/partnerPermissions.js';
 import { createHttpError } from '../utils/httpError.js';
 
@@ -106,10 +107,18 @@ export async function decodePartnerMessage({
   }
 
   const effectivePartnerId = partnerUserId || connection.partnerUserId;
+  // The date is deliberately not computed here. Each repository defaults to
+  // its own notion of "today" and writes rows under it -- and those notions
+  // disagree: dailyMoodRepository uses Asia/Kolkata, sleepRepository uses UTC.
+  // Passing a UTC date to both meant her mood was written under the IST date
+  // and read back under the UTC one, so between 00:00 and 05:30 IST the
+  // decoder silently found nothing and told him nothing had been shared.
+  // Letting each repository answer for itself keeps every read on the same
+  // calendar as the write it is looking for.
   const [partnerUser, todayMood, todaySleep] = await Promise.all([
     userRepository.getUserById(effectivePartnerId),
-    dailyMoodRepository.getDailyMood(effectivePartnerId, new Date().toISOString().slice(0, 10)),
-    sleepRepository.getSleepByDate(effectivePartnerId, new Date().toISOString().slice(0, 10)),
+    dailyMoodRepository.getDailyMood(effectivePartnerId),
+    sleepRepository.getSleepByDate(effectivePartnerId),
   ]);
 
   // Every signal below is gated on the permission that covers it, the same way
@@ -191,7 +200,7 @@ Please analyze this message with high emotional intelligence and provide a struc
 
 Return ONLY raw valid JSON. Do not include markdown formatting or extra text.`;
 
-      const response = await fetch(env.aiChatApiUrl, {
+      const response = await aiFetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.aiChatApiKey}`,

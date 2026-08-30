@@ -1,5 +1,6 @@
 import { dailyMoodRepository } from '../repositories/dailyMoodRepository.js';
 import { userRepository } from '../repositories/userRepository.js';
+import { todayIso } from '../utils/appCalendar.js';
 
 const MOOD_KEYWORDS = {
   great: ['happy', 'great', 'amazing', 'awesome', 'excited', 'joyful', 'wonderful', 'super', 'cheerful', 'grateful'],
@@ -19,9 +20,6 @@ const SYMPTOM_KEYWORDS = [
   'food cravings', 'sugar cravings', 'dizziness', 'dizzy', 'spotting'
 ];
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function containsAnyKeyword(message, keywords) {
   return keywords.some((keyword) => {

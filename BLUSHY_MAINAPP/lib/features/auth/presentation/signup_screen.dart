@@ -175,6 +175,92 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  /// Confirms the account was created, then sends the user to the login tab.
+  ///
+  /// Verification returns a session token and `verifyCode` stores it, so the
+  /// app could sign the user straight in. It deliberately does not: the token
+  /// is cleared so that signing in is a real sign-in rather than a session the
+  /// user never asked for, which also means the password they just chose gets
+  /// exercised once while it is still fresh in mind.
+  ///
+  /// Before this, verification silently flipped the app into an authenticated
+  /// state with no confirmation of any kind, so a successful signup and a
+  /// failed one looked identical.
+  Future<void> _onAccountCreated(String email) async {
+    AuthStorage.clearSession();
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: const Color(0xFFFAF6F0),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                color: Color(0xFFEAF7EE),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_rounded, color: Color(0xFF2E7D4F), size: 30),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Account created',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 21,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF2D2529),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$email is verified and ready.\n'
+                  'Sign in to start your journey.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF7A6B72)),
+            ),
+            const SizedBox(height: 22),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDD0D22),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                ),
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(
+                  'Go to sign in',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    // The email carries over so the only thing left to type is the password.
+    setState(() {
+      _mode = AuthFormMode.login;
+      _emailController.text = email;
+      _passwordController.clear();
+      _errorMessage = null;
+      _successMessage = 'Account created. Sign in to continue.';
+    });
+  }
+
   Future<void> _showOtpVerificationDialog(String email) async {
     final controllers = List.generate(6, (_) => TextEditingController());
     final focusNodes = List.generate(6, (_) => FocusNode());
@@ -297,9 +383,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   // dialog's own context.mounted does not.
                                   if (context.mounted && mounted) {
                                     Navigator.of(dialogContext).pop();
-                                    final state = BlushyOSProvider.of(this.context);
-                                    final onboardingCompleted = AuthStorage.isOnboardingCompleted();
-                                    state.setAuthenticated(true, onboardingCompleted: onboardingCompleted);
+                                    await _onAccountCreated(email);
                                   }
                                 } catch (e) {
                                   setDialogState(() {
