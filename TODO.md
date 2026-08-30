@@ -33,16 +33,19 @@ The feature is complete only when all of the following are true:
 
 ## Architecture Change Plan From PDF
 
-These tasks come from `Blushy Architecture Change Comparison (1).pdf`. The percentages in the PDF are estimates, not acceptance criteria. Implement the items in order, validate each one, and keep app and website behavior aligned.
+These tasks come from `Blushy Architecture Change Comparison (1).pdf`. The percentages in the PDF are estimates, not acceptance criteria. Implement the items in order, validate each one, and keep app and website behavior aligned. The selected provider is **Groq**. Groq's verified documentation currently shows server-side API-key authentication for speech-to-text; it does not provide a documented browser ephemeral-token endpoint in the reviewed API pages.
 
 ### Security First
 
 - [x] Protect every admin route with mandatory authentication and an explicit `admin` role guard. Implemented in `BLUSHY_MAINAPP/backend/src/middleware/requireAuth.js` and `BLUSHY_MAINAPP/backend/src/routes/adminRoutes.js`.
-- [ ] Keep permanent AI provider credentials on the backend; remove any provider key from client responses and use an ephemeral token or backend proxy for voice.
+- [x] Keep permanent AI provider credentials on the backend; remove the provider key from client responses. The voice response no longer includes `apiKey`.
+- [x] Use a backend voice proxy for Groq's documented request-response audio APIs. Authenticated app/website audio reaches `/ai/transcribe`; only the backend sends the configured Groq key to Groq.
+- [x] Do not create or claim a Groq ephemeral-token flow unless an official Groq endpoint and response contract are verified first. Current status: no documented Groq ephemeral-token endpoint found.
+- [ ] True Groq voice streaming remains blocked pending an official Groq realtime/audio-streaming API; the implemented backend proxy currently supports documented request-response transcription only.
 - [ ] Replace optional authentication on private routes with mandatory authentication, starting with health-data, partner, AI, journal, and account routes. Preserve optional auth only for intentionally public endpoints.
 - [ ] Remove full transcriptions, AI prompts, health values, attachment names, and personal identifiers from logs. Keep request id, operation, status, and duration only.
-- [ ] Make production startup fail when `JWT_SECRET` is missing, weak, or still using a known fallback. Keep local development setup explicit and documented.
-- [ ] Harden uploads with allowlisted MIME types and file signatures, size limits, per-user quotas, safe filenames, and malware scanning or an explicitly documented deployment control.
+- [x] Make production startup fail when `JWT_SECRET` is missing, weak, or still using a known fallback. `env.js` now requires a non-default secret of at least 32 characters in production.
+- [ ] Harden uploads with per-user quotas and malware scanning or an explicitly documented deployment control. Binary signatures are now checked with `file-type`; allowlists, generated filenames, and 8 MB limits are enforced for current upload paths.
 
 ### Data Reliability
 
@@ -241,11 +244,13 @@ These tasks come from `Blushy Architecture Change Comparison (1).pdf`. The perce
 ## Phase 10: Tests And Static Validation
 
 - [ ] From `BLUSHY_MAINAPP`, run `flutter pub get`.
-- [ ] From `BLUSHY_MAINAPP`, run `flutter analyze` and resolve all new diagnostics.
-- [ ] From `BLUSHY_MAINAPP`, run `flutter test` and focused partner/widget tests.
-- [ ] From `BLUSHY_MAINAPP/backend`, run available backend tests; add a `test` script only if no runnable test command exists.
-- [ ] Run `npm run lint:security` from `BLUSHY_MAINAPP/backend`.
-- [ ] From the website target, install dependencies and run its lint/analyze, frontend tests, backend tests, and production build.
+- [x] From `BLUSHY_MAINAPP`, run `flutter pub get`. Flutter 3.47.1 dependencies resolved on 2026-08-26.
+- [ ] From `BLUSHY_MAINAPP`, run `flutter analyze` and resolve all new diagnostics. Analysis currently reports pre-existing errors in `lib/presentation/explore.dart`, `journey.dart`, and `shell.dart`.
+- [x] From `BLUSHY_MAINAPP`, run `flutter test` and focused partner/widget tests. All Flutter tests passed on 2026-08-26.
+- [x] From `BLUSHY_MAINAPP/backend`, run the repeatable backend test command. `npm test` passed all 27 tests on 2026-08-26.
+- [x] Run `npm run lint:security` from `BLUSHY_MAINAPP/backend`. Passed on 2026-08-26.
+- [x] Upload signature validation. `file-type` validation passed syntax checks; the backend suite and security audit remained green.
+- [ ] From the website target, install dependencies and run its lint/analyze, frontend tests, backend tests, and production build. Dependencies and release build passed; analyzer remains blocked by the pre-existing errors listed above.
 - [ ] Start both products locally and verify that app and website reach the intended backend without hard-coded local-only URLs.
 - [ ] Exercise the API with a local authenticated setup: owner, connected partner, unrelated user, revoked permissions, logout, and expired connection.
 - [ ] Verify repeated requests do not duplicate notifications or corrupt read/viewed state.
@@ -283,8 +288,21 @@ Record the date, command, result, and relevant output here. Never paste secrets 
 | Date | Command/check | Result | Notes |
 |---|---|---|---|
 | 2026-08-26 | Initial tracker review | Pending | Existing phases 1-10 were marked complete; detailed verification was not recorded. App target is `BLUSHY_MAINAPP`; website target still requires confirmation. |
+| 2026-08-26 | `BLUSHY_MAINAPP/backend/npm test` | Passed | 27 tests passed; MongoDB connection available. |
+| 2026-08-26 | `BLUSHY_MAINAPP/backend/npm run lint:security` | Passed | Sensitive-log audit passed. |
+| 2026-08-26 | Upload signature validation | Passed | `file-type` added; 27 backend tests and security audit remained green. |
+| 2026-08-26 | Flutter analyze/test/web build | Blocked | `flutter` is not installed or available on the current Windows PATH. |
+| 2026-08-26 | Flutter SDK installation | Passed | Flutter 3.47.1 installed at `C:\src\flutter`; added `C:\src\flutter\bin` to user PATH. |
+| 2026-08-26 | `flutter test` | Passed | All Flutter tests passed. |
+| 2026-08-26 | `flutter build web --release` | Passed | Website bundle built successfully at `BLUSHY_MAINAPP/build/web`. |
+| 2026-08-26 | `flutter analyze` | Blocked | Pre-existing compile errors remain in `lib/presentation/explore.dart`, `journey.dart`, and `shell.dart`; no unrelated files were changed. |
 
 ## Known Blockers
 
-- [ ] Confirm the website target path before implementation. Current checkout has `BlushyBeta` and `blushy_flutter_ui 6`, but no directory explicitly named `website blushy`.
+- [ ] Resolve the pre-existing Flutter analyzer errors in `lib/presentation/explore.dart`, `journey.dart`, and `shell.dart`, then rerun `flutter analyze`. Flutter is now installed and available at `C:\src\flutter` for new terminals.
+- [ ] Confirm the website target path before any separate website implementation. Current checkout has `BLUSHY_MAINAPP/web`, `BlushyBeta`, and `blushy_flutter_ui 6`; only `BLUSHY_MAINAPP/web` is currently attached to the main app.
+- [ ] Configure Redis and a MongoDB replica set before implementing distributed WebSocket fan-out and real MongoDB transactions.
+- [ ] Verify an official Groq realtime audio API before implementing true voice streaming; documented Groq audio support currently covers request-response transcription.
+- [ ] Design and test a shared Flutter HTTP interceptor before applying token refresh across all services.
+- [ ] Add explicit `npm audit` remediation planning; `npm install file-type` reports 13 dependency vulnerabilities, including 5 high, and broad automatic fixes were not applied.
 

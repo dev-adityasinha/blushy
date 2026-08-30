@@ -11,6 +11,7 @@ import {
 	loginWithEmail,
 	loginWithGoogle,
 	resetPasswordWithEmail,
+	sendPasswordResetCode,
 	saveMyDailyMood,
 	sendEmailVerification,
 	saveMyOnboarding,
@@ -24,6 +25,8 @@ import {
 	getNutritionPlan,
 	getMyJournal,
 	saveMyJournal,
+	setMyJournalShared,
+	setMySiaConversationShared,
 	refreshAuthToken,
 	saveMyWeight,
 	logout,
@@ -47,6 +50,7 @@ router.post('/login-email', loginRateLimiter, loginWithEmail);
 router.post('/refresh', refreshAuthToken);
 router.post('/logout', optionalAuth, logout);
 router.post('/google', loginWithGoogle);
+router.post('/send-password-reset-code', otpRequestRateLimiter, sendPasswordResetCode);
 router.post('/reset-password', passwordResetRateLimiter, resetPasswordWithEmail);
 router.get('/confirm-email', confirmEmailSignup);
 router.get('/me', optionalAuth, getMe);
@@ -61,6 +65,10 @@ router.put('/me/sleep', optionalAuth, saveMySleep);
 router.get('/me/sleep/history', optionalAuth, getMySleepHistory);
 router.get('/me/journal', optionalAuth, getMyJournal);
 router.put('/me/journal', optionalAuth, saveMyJournal);
+// Per-entry sharing. The partner permission says a partner may receive journal
+// entries; these say which ones actually go.
+router.put('/me/journal/:entryDate/share', optionalAuth, setMyJournalShared);
+router.put('/me/sia-conversations/:conversationId/share', optionalAuth, setMySiaConversationShared);
 router.post('/me/nutrition/answers', optionalAuth, saveNutritionAnswers);
 router.get('/me/nutrition/answers', optionalAuth, getNutritionAnswers);
 router.post('/me/nutrition/generate-plan', optionalAuth, generateNutritionPlan);

@@ -5,6 +5,7 @@ import 'package:blushy_life_app/core/state.dart';
 import 'package:blushy_life_app/core/storage.dart';
 import 'package:blushy_life_app/services/auth_storage.dart';
 import 'package:blushy_life_app/features/auth/presentation/choose_experience_screen.dart';
+import 'helpers/isolated_storage.dart';
 
 class _TestHttpOverrides extends HttpOverrides {
   @override
@@ -16,6 +17,9 @@ class _TestHttpOverrides extends HttpOverrides {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // Each test process gets its own storage directory.
+  useIsolatedStorage();
+
   HttpOverrides.global = _TestHttpOverrides();
 
   group('Logout & Experience Screen Security Tests', () {

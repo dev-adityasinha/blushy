@@ -7,6 +7,7 @@ import { sleepRepository } from '../repositories/sleepRepository.js';
 import { nutritionRepository } from '../repositories/nutritionRepository.js';
 import { partnerRepository } from '../repositories/partnerRepository.js';
 import { journalRepository } from '../repositories/journalRepository.js';
+import { aiHistoryRepository } from '../repositories/aiHistoryRepository.js';
 import { publishToUsers } from '../utils/realtimeHub.js';
 import { aiChatService } from '../services/aiChatService.js';
 import { nutritionPlanService } from '../services/nutritionPlanService.js';
@@ -399,6 +400,19 @@ export async function loginWithGoogle(req, res, next) {
   try {
     const { idToken, role } = req.body ?? {};
     const result = await googleAuthService.signInWithGoogle(idToken, role);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function sendPasswordResetCode(req, res, next) {
+  try {
+    const result = await emailAuthService.sendPasswordResetCode(req.body ?? {}, {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
     res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -1013,6 +1027,78 @@ export async function getMyJournal(req, res, next) {
     res.status(200).json({
       journals,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Marks one day's journal as shared with a partner, or takes it back.
+ *
+ * Sharing is per item on purpose. The `journal` permission says a partner may
+ * receive journal entries at all; this says which days. Without it, granting
+ * the category would release every journal the user has ever written.
+ */
+export async function setMyJournalShared(req, res, next) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw createHttpError(401, 'Authentication required.');
+    }
+
+    const entryDate = typeof req.params?.entryDate === 'string' ? req.params.entryDate.trim() : '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(entryDate)) {
+      throw createHttpError(400, 'A valid entry date (YYYY-MM-DD) is required.');
+    }
+
+    const shared = req.body?.shared;
+    if (typeof shared !== 'boolean') {
+      throw createHttpError(400, 'shared must be true or false.');
+    }
+
+    const result = await journalRepository.setJournalShared({ userId, entryDate, shared });
+    if (!result) {
+      throw createHttpError(404, 'No journal entry for that date.');
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Marks one Sia exchange as shared with a partner, or takes it back.
+ */
+export async function setMySiaConversationShared(req, res, next) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw createHttpError(401, 'Authentication required.');
+    }
+
+    const conversationId = typeof req.params?.conversationId === 'string'
+      ? req.params.conversationId.trim()
+      : '';
+    if (!conversationId) {
+      throw createHttpError(400, 'A conversation id is required.');
+    }
+
+    const shared = req.body?.shared;
+    if (typeof shared !== 'boolean') {
+      throw createHttpError(400, 'shared must be true or false.');
+    }
+
+    const result = await aiHistoryRepository.setConversationShared({
+      userId,
+      conversationId,
+      shared,
+    });
+    if (!result) {
+      throw createHttpError(404, 'Conversation not found.');
+    }
+
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }

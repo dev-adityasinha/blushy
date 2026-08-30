@@ -4,21 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/state.dart';
 import '../../core/stage_config.dart';
 import '../../core/storage.dart';
 import '../../services/journal_storage.dart';
+import '../../services/api_auth_service.dart';
 import '../../services/html_audio_helper.dart';
 import '../../services/api_sia_service.dart';
 import 'journal_cover_widget.dart';
 import 'desk_environment_widget.dart';
 import 'journal_ambient_audio.dart';
-import 'scrapbook_toolbar_widget.dart';
-import 'scrapbook_item_renderers.dart';
-import 'scrapbook_canvas_widget.dart';
 import 'engine/scrapbook_animation_engine.dart';
 import 'ai/insight_scheduler.dart';
-import 'ai/sia_journal_assistant.dart';
 import 'ai/memory_highlights_service.dart';
 import 'ai/mood_timeline_service.dart';
 import 'ai/reflection_service.dart';
@@ -30,7 +28,6 @@ import 'ai/memory_book_service.dart';
 import 'vault/memory_vault.dart';
 import 'vault/year_in_review.dart';
 import 'vault/time_capsule.dart';
-import 'calendar/journal_calendar.dart';
 import 'calendar/memory_map.dart';
 import 'insights/achievement_garden.dart';
 import 'insights/journal_dashboard.dart';
@@ -39,6 +36,9 @@ import 'backup/backup_service.dart';
 import 'export/export_service.dart';
 import 'settings/journal_settings_screen.dart';
 import 'controller/journal_controller.dart';
+import '../../services/api_blushy_service.dart';
+import '../../services/api_contract_client.dart';
+import '../../services/offline_event_queue.dart';
 
 class ScrapbookItem {
   final String id;
@@ -135,10 +135,10 @@ Map<String, dynamic> scrapbookItemToJson(ScrapbookItem item) {
     contentJson = {
       'name': stickerMap['name'],
       'iconCodePoint': (stickerMap['icon'] as IconData).codePoint,
-      'colorValue': (stickerMap['color'] as Color).value,
+      'colorValue': (stickerMap['color'] as Color).toARGB32(),
     };
   } else if (item.type == 'tape') {
-    contentJson = (item.content as Color).value;
+    contentJson = (item.content as Color).toARGB32();
   } else {
     contentJson = item.content;
   }
@@ -152,7 +152,7 @@ Map<String, dynamic> scrapbookItemToJson(ScrapbookItem item) {
     'scale': item.scale,
     'rotation': item.rotation,
     'zIndex': item.zIndex,
-    'customColor': item.customColor?.value,
+    'customColor': item.customColor?.toARGB32(),
   };
 }
 
@@ -164,7 +164,6 @@ ScrapbookItem scrapbookItemFromJson(Map<String, dynamic> json) {
   if (type == 'sticker') {
     final stickerMap = json['content'] as Map<String, dynamic>;
     final String name = stickerMap['name'] as String;
-    final int iconCodePoint = stickerMap['iconCodePoint'] as int;
     final int colorValue = stickerMap['colorValue'] as int? ?? 0xFFE57373;
     IconData resolveIcon(String name) {
       if (name.contains('Flower')) return Icons.local_florist_rounded;
@@ -215,12 +214,16 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     _showCreateOptionsBottomSheet();
   }
   final List<JournalEntryItem> _entries = [];
+
+  /// Days the user has chosen to make available to a partner, and the ones
+  /// currently being written. Sharing is per day, never a blanket release.
+  final Set<String> _sharedJournalDates = <String>{};
+  final Set<String> _sharingJournalDates = <String>{};
   String? _currentEntryId;
 
   String _activeTheme = 'Cream Paper';
   String _activeFont = 'Handwriting';
   String _activeTemplate = 'Daily Reflection';
-  String _activeToolbar = 'Stickers';
 
   final List<ScrapbookItem> _items = [];
   String? _selectedItemId;
@@ -237,23 +240,35 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   final _journalStorage = JournalStorage();
   final _apiSiaService = ApiSiaService();
 
-  String _backendReflection = 'Estrogen is naturally rising. Your focus and mental clarity are at peak rhythm today.';
-  String _backendEmotion = 'Peaceful 😊';
+  /// Null until the server has a reflection drawn from real entries.
+  ///
+  /// This used to default to "Estrogen is naturally rising. Your focus and
+  /// mental clarity are at peak rhythm today." -- shown as an AI reflection on
+  /// the user's own journal, asserting a hormonal state nobody measured, to
+  /// someone who might not have written anything at all.
+  String? _backendReflection;
+  List<String> _reflectionThemes = const [];
+  bool _reflectionLoading = false;
 
-  Future<void> _fetchBackendMemorySummary() async {
+  Future<void> _fetchBackendMemorySummary({bool showSpinner = false}) async {
+    if (showSpinner && mounted) setState(() => _reflectionLoading = true);
     try {
       final data = await _apiSiaService.getMemorySummary();
-      if (data['success'] == true && mounted) {
-        setState(() {
-          if (data['reflection'] != null && (data['reflection'] as String).isNotEmpty) {
-            _backendReflection = data['reflection'];
-          }
-          if (data['emotion'] != null && (data['emotion'] as String).isNotEmpty) {
-            _backendEmotion = data['emotion'];
-          }
-        });
-      }
-    } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        _reflectionLoading = false;
+        final reflection = data['reflection'];
+        // An absent reflection clears the old one rather than leaving a stale
+        // sentence on screen after entries are deleted.
+        _backendReflection = (reflection is String && reflection.isNotEmpty) ? reflection : null;
+        _reflectionThemes = (data['themes'] as List?)
+                ?.map((t) => t.toString())
+                .toList() ??
+            const [];
+      });
+    } catch (_) {
+      if (mounted) setState(() => _reflectionLoading = false);
+    }
   }
 
   int get _calculatedWordsCount {
@@ -339,7 +354,10 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
       case 'very_sad':
         return 'Gentle 😫';
       default:
-        return _backendEmotion;
+        // No mood chosen for this entry. Previously fell back to a server
+        // supplied "Peaceful", which put a feeling on the entry that the
+        // person writing it had not.
+        return 'Not set';
     }
   }
 
@@ -403,7 +421,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         stage = 'partner';
       } else {
         final profile = BlushyStorage.read('user_profile.json');
-        if (profile != null && profile['profile'] != null) {
+        if (profile['profile'] != null) {
           stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
         }
       }
@@ -425,11 +443,10 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   bool _isFabVisible = true;
 
   DeskSurfaceTheme _selectedDeskTheme = DeskSurfaceTheme.wood;
-  CoverMaterial _selectedCoverMaterial = CoverMaterial.leather;
+  final CoverMaterial _selectedCoverMaterial = CoverMaterial.leather;
   Color _selectedCoverColor = const Color(0xFF8B4513);
   bool _showDeskCoverView = true;
   bool _isOpeningCover = false;
-  bool _showSearchModal = false;
 
   String _saveIndicatorStatus = 'idle';
   Timer? _saveStatusTimer;
@@ -498,7 +515,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               ),
               const SizedBox(width: 6),
               Text(
-                'Auto Saving...',
+                AppLocalizations.of(context).journalAutoSaving,
                 style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: const Color(0xFFD97706)),
               ),
             ] else ...[
@@ -541,7 +558,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   const SizedBox(height: 12),
                   SwitchListTile(
-                    activeColor: BlushyColors.primary,
+                    activeThumbColor: BlushyColors.primary,
                     title: Text('Ambient Sounds', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
                     subtitle: Text('Play background environment soundscapes.', style: GoogleFonts.poppins(fontSize: 12)),
                     value: _enableAmbientAudio,
@@ -553,7 +570,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     },
                   ),
                   SwitchListTile(
-                    activeColor: BlushyColors.primary,
+                    activeThumbColor: BlushyColors.primary,
                     title: Text('Long Animations & Transitions', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
                     subtitle: Text('Enable 3D cover flipping and opening motion.', style: GoogleFonts.poppins(fontSize: 12)),
                     value: _enableAnimations,
@@ -563,7 +580,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     },
                   ),
                   SwitchListTile(
-                    activeColor: BlushyColors.primary,
+                    activeThumbColor: BlushyColors.primary,
                     title: Text('Decorative Effects', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
                     subtitle: Text('Coffee steam curves, plant sway, & reflections.', style: GoogleFonts.poppins(fontSize: 12)),
                     value: _enableDecorativeEffects,
@@ -623,12 +640,19 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     super.dispose();
   }
 
-  void _seedSampleEntries() {
-    // Hardcoded mock entries removed. User entries loaded dynamically from database.
-  }
 
   Future<void> _loadSavedJournalEntries() async {
-    final saved = await _journalStorage.loadEntries('default_user');
+    var saved = await _journalStorage.loadEntries('default_user');
+
+    // Nothing on this device: the account may still have journals from a
+    // reinstall or from the other platform. The server copy is the durable one.
+    if (saved.isEmpty) {
+      saved = await _restoreJournalsFromServer();
+      if (saved.isNotEmpty) {
+        await _journalStorage.saveEntries('default_user', saved);
+      }
+    }
+
     if (saved.isNotEmpty && mounted) {
       setState(() {
         for (var localEntry in saved) {
@@ -649,10 +673,65 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               );
               _entries.removeWhere((e) => e.id == entry.id);
               _entries.insert(0, entry);
+              _recordJournalEvent(entry);
             } catch (_) {}
           }
         }
       });
+    }
+  }
+
+  /// Pulls stored journals back down and flattens them into local entries.
+  ///
+  /// The server groups by day, so one document can hold several entries.
+  Future<List<LocalJournalEntry>> _restoreJournalsFromServer() async {
+    try {
+      final journals = await ApiAuthService().getJournals();
+      final restored = <LocalJournalEntry>[];
+      for (final journal in journals) {
+        // The server knows which days are shared; without reading it back the
+        // control would reset to "Share" on every launch.
+        final date = (journal['entryDate'] ?? journal['date'])?.toString();
+        if (date != null && journal['sharedWithPartner'] == true) {
+          _sharedJournalDates.add(date);
+        }
+        final entries = journal['entries'];
+        if (entries is! List) continue;
+        for (final raw in entries) {
+          if (raw is! Map) continue;
+          try {
+            restored.add(LocalJournalEntry.fromJson(Map<String, dynamic>.from(raw)));
+          } catch (_) {
+            // One malformed entry must not cost the user the rest of them.
+          }
+        }
+      }
+      return restored;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Mirrors the local entries to the account, one document per day.
+  ///
+  /// Fire-and-forget: saving must not block on the network, and the local copy
+  /// has already been written by the time this runs.
+  Future<void> _pushJournalsToServer(List<LocalJournalEntry> entries) async {
+    final byDate = <String, List<Map<String, dynamic>>>{};
+    for (final entry in entries) {
+      byDate.putIfAbsent(entry.date, () => []).add(entry.toJson());
+    }
+
+    final service = ApiAuthService();
+    for (final date in byDate.keys) {
+      final dayEntries = byDate[date]!;
+      await service.saveJournalForDate(
+        entryDate: date,
+        entries: dayEntries,
+        summary: dayEntries.length == 1
+            ? (dayEntries.first['title']?.toString() ?? '')
+            : '${dayEntries.length} entries',
+      );
     }
   }
 
@@ -676,7 +755,52 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
       );
     }).toList();
 
+    // The key is already namespaced per authenticated user by BlushyStorage,
+    // so 'default_user' here is only a legacy suffix; changing it would orphan
+    // existing entries.
     await _journalStorage.saveEntries('default_user', listToSave);
+    // The account copy is what survives a reinstall or a move to web.
+    unawaited(_pushJournalsToServer(listToSave));
+  }
+
+  /// Records a journal entry as a health event so it reaches the timeline.
+  ///
+  /// Only metadata is sent: a word count and whether audio was attached. The
+  /// text itself stays local, because journal content is private by default
+  /// and never enters AI context or analytics without explicit permission
+  /// (spec sections 6, 10 and 26).
+  Future<void> _recordJournalEvent(JournalEntryItem entry) async {
+    final text = _getEntryTextPreview(entry);
+    final wordCount = text.trim().isEmpty ? 0 : text.trim().split(RegExp(r'\s+')).length;
+    final hasAudio = entry.items.any((item) => item.type == 'audio');
+
+    if (wordCount == 0 && !hasAudio) return;
+
+    final clientEventId = 'journal:${entry.dateTime.toIso8601String()}';
+
+    final result = await EventsApi.log(
+      eventType: 'journal_created',
+      payload: {
+        // A placeholder stands in for the body: the event records that an
+        // entry exists, not what it says.
+        'text': '[$wordCount words]',
+        if (hasAudio) 'audioRef': 'local',
+      },
+      timestamp: entry.dateTime,
+      clientEventId: clientEventId,
+    );
+
+    if (result.state == ApiState.offline || result.state == ApiState.error) {
+      await OfflineEventQueue.instance.enqueue(
+        eventType: 'journal_created',
+        payload: {
+          'text': '[$wordCount words]',
+          if (hasAudio) 'audioRef': 'local',
+        },
+        clientEventId: clientEventId,
+        timestamp: entry.dateTime,
+      );
+    }
   }
 
   String _getEntryTextPreview(JournalEntryItem entry) {
@@ -702,7 +826,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   }
 
   void _duplicateItem(ScrapbookItem item) {
-    final newId = '${item.id}_copy_${_itemCounter}';
+    final newId = '${item.id}_copy_$_itemCounter';
     setState(() {
       _items.add(item.copyWith(
         id: newId,
@@ -795,8 +919,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   void _createNewEntry({String title = 'Self Reflection', String? templateName}) {
     final String newId = 'entry_${DateTime.now().millisecondsSinceEpoch}';
     final List<ScrapbookItem> initialItems = [
-      ScrapbookItem(id: 'tape_${newId}', type: 'tape', content: const Color(0xFFFBCFE8), position: const Offset(20, 16)),
-      ScrapbookItem(id: 'text_${newId}', type: 'text', content: 'Tap to start writing your reflection...', position: const Offset(20, 70)),
+      ScrapbookItem(id: 'tape_$newId', type: 'tape', content: const Color(0xFFFBCFE8), position: const Offset(20, 16)),
+      ScrapbookItem(id: 'text_$newId', type: 'text', content: 'Tap to start writing your reflection...', position: const Offset(20, 70)),
     ];
 
     final newEntry = JournalEntryItem(
@@ -809,6 +933,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
 
     setState(() {
       _entries.insert(0, newEntry);
+      _recordJournalEvent(newEntry);
       _loadEntry(newEntry);
     });
     _persistAllEntries();
@@ -825,7 +950,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
       _audioRecorder = HtmlAudioRecorder();
       await _audioRecorder!.start();
     } catch (e) {
-      print("Error starting microphone audio recorder: $e");
+      debugPrint("Error starting microphone audio recorder: $e");
     }
 
     _recordingTimer?.cancel();
@@ -851,7 +976,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         recordResult = await _audioRecorder!.stop();
       }
     } catch (e) {
-      print("Error stopping audio recorder: $e");
+      debugPrint("Error stopping audio recorder: $e");
     }
 
     final int secondsRecorded = recordResult?.duration ?? _recordingDuration;
@@ -866,34 +991,58 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     final durationStr = "${(secondsRecorded ~/ 60).toString().padLeft(2, '0')}:${(secondsRecorded % 60).toString().padLeft(2, '0')}";
 
     String transcribedText = '';
+    String? transcriptionProblem;
     if (audioBytes.isNotEmpty) {
       try {
         transcribedText = await ApiSiaService().transcribeAudioBytes(audioBytes, 'dictation_${DateTime.now().millisecondsSinceEpoch}.webm');
+      } on TranscriptionUnavailable catch (e) {
+        // The recording was fine, the service was not. Naming which one keeps
+        // the user from thinking they were not heard.
+        transcriptionProblem = e.message;
       } catch (e) {
-        print("Transcription API call error: $e");
+        debugPrint("Transcription API call error: $e");
+        transcriptionProblem = 'Could not transcribe that recording.';
       }
     }
 
-    if (transcribedText.trim().isEmpty) {
-      transcribedText = "Voice Reflection: Feeling peaceful and reflective today.";
-    }
+    final bool isVoiceNote = _activeToolbarTab == 'Voice Note';
 
     if (mounted) {
       final newId = DateTime.now().millisecondsSinceEpoch;
-      if (_activeToolbarTab == 'Voice Note') {
+      if (isVoiceNote) {
+        // The audio itself is the entry, so it is kept regardless of whether
+        // the words could be recognised.
         _addItem('voice_$newId', 'voice', {
           'url': dataUrl,
           'duration': durationStr,
           'seconds': secondsRecorded,
         }, const Offset(40, 120));
-      } else {
-        _addItem('text_$newId', 'text', transcribedText, const Offset(40, 120));
+      } else if (transcribedText.trim().isNotEmpty) {
+        _addItem('text_$newId', 'text', transcribedText.trim(), const Offset(40, 120));
       }
 
       setState(() {
         _isTranscribing = false;
         _showRecordOverlay = false;
       });
+
+      // Nothing was captured. Previously this wrote "Voice Reflection: Feeling
+      // peaceful and reflective today." into the journal -- inventing a
+      // reflection the user never said, in the one place in the app where the
+      // words are supposed to be entirely theirs.
+      if (!isVoiceNote && transcribedText.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              transcriptionProblem == null
+                  ? 'Nothing was recognised in that recording. You can type it instead.'
+                  : '$transcriptionProblem You can type it instead.',
+            ),
+          ),
+        );
+        return;
+      }
+
       _persistAllEntries();
     }
   }
@@ -941,7 +1090,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     const Icon(Icons.edit_outlined, color: Colors.white, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'New Memory',
+                      AppLocalizations.of(context).journalNewMemory,
                       style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ],
@@ -953,7 +1102,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   }
 
   Color _selectedRibbonColor = const Color(0xFFD97706);
-  String _selectedEmblem = 'sparkles';
+  final String _selectedEmblem = 'sparkles';
 
   Widget _buildDeskCoverOpeningView() {
     return Scaffold(
@@ -1121,7 +1270,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                           const Icon(Icons.arrow_back_rounded, size: 18, color: BlushyColors.text),
                           const SizedBox(width: 6),
                           Text(
-                            'Back to Home',
+                            AppLocalizations.of(context).journalBackToHome,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -1270,10 +1419,65 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'AI Reflection: "$_backendReflection"',
-                      style: GoogleFonts.poppins(fontSize: 12, fontStyle: FontStyle.italic, color: BlushyColors.secondaryText),
-                    ),
+                    if (_reflectionLoading)
+                      Text(
+                        AppLocalizations.of(context).journalReadingYourEntries,
+                        style: GoogleFonts.poppins(
+                            fontSize: 12, color: BlushyColors.secondaryText),
+                      )
+                    else if (_backendReflection != null) ...[
+                      Text(
+                        _backendReflection!,
+                        style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: BlushyColors.secondaryText),
+                      ),
+                      if (_reflectionThemes.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _reflectionThemes
+                              .map((theme) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: BlushyColors.primary
+                                          .withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      theme,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: BlushyColors.primary,
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                      ],
+                    ] else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context).journalNothingToReflect,
+                              style: GoogleFonts.poppins(
+                                  fontSize: 12, color: BlushyColors.secondaryText),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                _fetchBackendMemorySummary(showSpinner: true),
+                            child: Text('Refresh',
+                                style: GoogleFonts.poppins(
+                                    fontSize: 12, color: BlushyColors.primary)),
+                          ),
+                        ],
+                      ),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 12,
@@ -1308,7 +1512,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                       children: [
                         const Icon(Icons.filter_vintage_rounded, size: 48, color: BlushyColors.border),
                         const SizedBox(height: 12),
-                        Text('No memories found yet', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
+                        Text(AppLocalizations.of(context).journalNoMemoriesFound, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
                         const SizedBox(height: 4),
                         Text('Tap "New Memory" or record a voice reflection.', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
                       ],
@@ -1316,7 +1520,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                 )
               else
-                ...filtered.map((entry) => _buildEntryCardTile(entry)).toList(),
+                ...filtered.map((entry) => _buildEntryCardTile(entry)),
             ],
           ),
         ),
@@ -1410,9 +1614,90 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     );
     setState(() {
       _entries.insert(0, newEntry);
+      _recordJournalEvent(newEntry);
       _loadEntry(newEntry);
     });
     _persistAllEntries();
+  }
+
+  /// Per-day share control.
+  ///
+  /// Kept next to the entry rather than in settings: deciding to show someone a
+  /// particular day is a decision about that day, and it should be made while
+  /// looking at it.
+  Widget _buildShareWithPartnerButton(JournalEntryItem entry) {
+    final dateKey = '${entry.dateTime.year}-'
+        '${entry.dateTime.month.toString().padLeft(2, '0')}-'
+        '${entry.dateTime.day.toString().padLeft(2, '0')}';
+    final shared = _sharedJournalDates.contains(dateKey);
+    final busy = _sharingJournalDates.contains(dateKey);
+
+    return InkWell(
+      onTap: busy ? null : () => _toggleJournalShared(dateKey, !shared),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: busy
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    shared ? Icons.people_alt_rounded : Icons.people_outline_rounded,
+                    size: 14,
+                    color: shared ? BlushyColors.primary : BlushyColors.secondaryText,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    shared ? 'Shared' : 'Share',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: shared ? FontWeight.w600 : FontWeight.w400,
+                      color: shared ? BlushyColors.primary : BlushyColors.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Future<void> _toggleJournalShared(String dateKey, bool shared) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _sharingJournalDates.add(dateKey));
+
+    final ok = await ApiAuthService().setJournalShared(
+      entryDate: dateKey,
+      shared: shared,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _sharingJournalDates.remove(dateKey);
+      if (ok) {
+        if (shared) {
+          _sharedJournalDates.add(dateKey);
+        } else {
+          _sharedJournalDates.remove(dateKey);
+        }
+      }
+    });
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          !ok
+              ? 'Could not change sharing for that day.'
+              : shared
+                  ? 'Shared. Your partner sees this day only if you have turned on journal sharing for them.'
+                  : 'No longer shared.',
+        ),
+      ),
+    );
   }
 
   Widget _buildEntryCardTile(JournalEntryItem entry) {
@@ -1473,7 +1758,17 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   '${entry.dateTime.month}/${entry.dateTime.day}/${entry.dateTime.year} • ${entry.dateTime.hour}:${entry.dateTime.minute.toString().padLeft(2, '0')}',
                   style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
                 ),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: BlushyColors.secondaryText),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // A journal day reaches a partner only if it is marked here
+                    // AND they hold the journal permission. Granting the
+                    // category never releases anything on its own.
+                    _buildShareWithPartnerButton(entry),
+                    const SizedBox(width: 10),
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: BlushyColors.secondaryText),
+                  ],
+                ),
               ],
             ),
           ],
@@ -1504,7 +1799,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     child: Container(width: 38, height: 4, decoration: BoxDecoration(color: BlushyColors.border, borderRadius: BorderRadius.circular(10))),
                   ),
                   const SizedBox(height: 16),
-                  Text('Create New Journal', style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text)),
+                  Text(AppLocalizations.of(context).journalCreateNew, style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text)),
                   const SizedBox(height: 12),
                   _buildOptionTile(
                     icon: Icons.edit_note_rounded,
@@ -1685,7 +1980,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Select Journal Template', style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text)),
+                Text(AppLocalizations.of(context).journalSelectTemplate, style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text)),
                 const SizedBox(height: 12),
                 ..._templates.map((tpl) => ListTile(
                       leading: const Icon(Icons.star_outline_rounded, color: BlushyColors.primary),
@@ -2429,7 +2724,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             _startRecordingFlow();
           },
           icon: const Icon(Icons.graphic_eq_rounded, size: 16),
-          label: const Text('Record Voice Note'),
+          label: Text(AppLocalizations.of(context).journalRecordVoiceNote),
           style: OutlinedButton.styleFrom(
             foregroundColor: BlushyColors.primary,
             side: const BorderSide(color: BlushyColors.primary),
@@ -2495,7 +2790,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         child: OutlinedButton.icon(
           onPressed: () => _addItem('text_${DateTime.now().millisecondsSinceEpoch}', 'text', 'New reflection note...', const Offset(40, 100)),
           icon: const Icon(Icons.add_rounded, size: 16),
-          label: const Text('Add Text Box'),
+          label: Text(AppLocalizations.of(context).journalAddTextBox),
           style: OutlinedButton.styleFrom(
             foregroundColor: BlushyColors.primary,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -2565,14 +2860,14 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     children: [
                       const Icon(Icons.shield_rounded, color: Color(0xFF10B981), size: 20),
                       const SizedBox(width: 8),
-                      Text('AI & Privacy Controls', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(AppLocalizations.of(context).journalAiPrivacyControls, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text('Customize which AI companion features run on your journal:', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                  Text(AppLocalizations.of(context).journalAiPrivacySub, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
                   const SizedBox(height: 12),
                   SwitchListTile(
-                    title: Text('Title Generation', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                    title: Text(AppLocalizations.of(context).journalTitleGeneration, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
                     subtitle: Text('Suggest thoughtful entry titles', style: GoogleFonts.poppins(fontSize: 11)),
                     value: _insightScheduler.enableTitles,
                     activeTrackColor: const Color(0xFF10B981),
@@ -2581,8 +2876,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     },
                   ),
                   SwitchListTile(
-                    title: Text('Smart Search & Collections', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                    subtitle: Text('Conceptual semantic search with confidence filtering', style: GoogleFonts.poppins(fontSize: 11)),
+                    title: Text(AppLocalizations.of(context).journalSmartSearch, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: Text(AppLocalizations.of(context).journalSmartSearchSub, style: GoogleFonts.poppins(fontSize: 11)),
                     value: _insightScheduler.enableSearch,
                     activeTrackColor: const Color(0xFF10B981),
                     onChanged: (val) {
@@ -2599,8 +2894,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     },
                   ),
                   SwitchListTile(
-                    title: Text('Cloud AI Engine', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                    subtitle: Text('Allow cloud processing for Sia insights', style: GoogleFonts.poppins(fontSize: 11)),
+                    title: Text(AppLocalizations.of(context).journalCloudAi, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: Text(AppLocalizations.of(context).journalCloudAiSub, style: GoogleFonts.poppins(fontSize: 11)),
                     value: _insightScheduler.enableCloudAi,
                     activeTrackColor: const Color(0xFF10B981),
                     onChanged: (val) {
@@ -2661,7 +2956,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                  child: Text('Close Memory Book', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text(AppLocalizations.of(context).journalCloseMemoryBook, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -2714,7 +3009,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     ),
                     const SizedBox(height: 12),
                     if (results.isEmpty)
-                      Text('No matching entries found above 60% confidence threshold.', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey))
+                      Text(AppLocalizations.of(context).journalNoSearchMatch, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey))
                     else
                       Flexible(
                         child: ListView.builder(
@@ -2726,7 +3021,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                             final explanation = connections.isNotEmpty ? connections.first.explanation : res.matchedConcept;
                             return ListTile(
                               title: Text(res.entry.title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                              subtitle: Text('$explanation • ${(res.confidenceScore * 100).toInt()}% match', style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFFD97706))),
+                              subtitle: Text(explanation, style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFFD97706))),
                               onTap: () {
                                 Navigator.pop(context);
                                 final target = _entries.firstWhere((e) => e.id == res.entry.id, orElse: () => _entries.first);
@@ -2759,52 +3054,6 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     );
   }
 
-  void _showStickerBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Stickers & Stamps', style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text)),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: _stickersList.map((stk) {
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      _addItem('stk_${DateTime.now().millisecondsSinceEpoch}', 'sticker', stk, const Offset(100, 120));
-                    },
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundColor: (stk['color'] as Color).withValues(alpha: 0.15),
-                          child: Icon(stk['icon'] as IconData, color: stk['color'] as Color, size: 28),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(stk['name'].toString().split(' ').last, style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.text)),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   void _showThemeFontPicker() {
     showModalBottomSheet(
@@ -2822,7 +3071,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Paper Theme', style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text)),
+                Text(AppLocalizations.of(context).journalPaperTheme, style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text)),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -2840,7 +3089,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                Text('Font Style', style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text)),
+                Text(AppLocalizations.of(context).journalFontStyle, style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text)),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -2911,7 +3160,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
-                    child: Text('Done Recording', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                    child: Text(AppLocalizations.of(context).journalDoneRecording, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
@@ -2979,9 +3228,9 @@ class _EditColorDialogState extends State<_EditColorDialog> {
   @override
   void initState() {
     super.initState();
-    _red = widget.initialColor.red;
-    _green = widget.initialColor.green;
-    _blue = widget.initialColor.blue;
+    _red = (widget.initialColor.r * 255).round();
+    _green = (widget.initialColor.g * 255).round();
+    _blue = (widget.initialColor.b * 255).round();
     _hexController = TextEditingController(text: _colorToHex(widget.initialColor));
   }
 
@@ -2994,7 +3243,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
   Color get _currentColor => Color.fromRGBO(_red, _green, _blue, 1.0);
 
   String _colorToHex(Color color) {
-    return '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+    return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
   }
 
   void _updateFromHex(String hex) {
@@ -3013,9 +3262,9 @@ class _EditColorDialogState extends State<_EditColorDialog> {
 
   void _setColor(Color color) {
     setState(() {
-      _red = color.red;
-      _green = color.green;
-      _blue = color.blue;
+      _red = (color.r * 255).round();
+      _green = (color.g * 255).round();
+      _blue = (color.b * 255).round();
       _hexController.text = _colorToHex(color);
     });
   }
@@ -3162,7 +3411,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                 spacing: 8,
                 runSpacing: 8,
                 children: _basicColors.map((color) {
-                  final isSelected = _currentColor.value == color.value;
+                  final isSelected = _currentColor.toARGB32() == color.toARGB32();
                   return GestureDetector(
                     onTap: () => _setColor(color),
                     child: Container(
@@ -3203,7 +3452,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                     ),
-                    child: Text('Apply', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                    child: Text(AppLocalizations.of(context).journalApply, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),

@@ -2,9 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:blushy_life_app/core/storage.dart';
 import 'package:blushy_life_app/services/auth_storage.dart';
 import 'package:blushy_life_app/services/sia_dashboard_service.dart';
+import 'helpers/isolated_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // Each test process gets its own storage directory.
+  useIsolatedStorage();
+
 
   group('BlushyStorage & Sia Isolation Unit Tests', () {
     setUp(() {

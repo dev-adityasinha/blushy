@@ -103,15 +103,15 @@ class JourneyScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Text('Menstrual', style: TextStyle(fontSize: 10, color: BlushyColors.textLight)),
-                    Text('Follicular', style: TextStyle(fontSize: 10, color: BlushyColors.textLight)),
-                    Text('Ovulatory', style: TextStyle(fontSize: 10, color: BlushyColors.textLight)),
+                    Text('Menstrual', style: TextStyle(fontSize: 10, color: BlushyColors.textMuted)),
+                    Text('Follicular', style: TextStyle(fontSize: 10, color: BlushyColors.textMuted)),
+                    Text('Ovulatory', style: TextStyle(fontSize: 10, color: BlushyColors.textMuted)),
                     Text('Luteal', style: TextStyle(fontSize: 10, color: BlushyColors.textDark, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const Divider(color: BlushyColors.border, height: 32),
                 Text(
-                  state.cycleInsight,
+                  state.dynamicAiBriefingSummary,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontSize: 13,
                     height: 1.5,
@@ -134,8 +134,12 @@ class JourneyScreen extends StatelessWidget {
                 child: _buildMetricCard(
                   context,
                   'Sleep',
-                  '${state.sleepHours}h',
-                  state.sleepQuality,
+                  state.wellbeingState.sleepQuality != null
+                      ? '${state.wellbeingState.sleepQuality}/10'
+                      : '--',
+                  state.wellbeingState.sleepQuality != null
+                      ? 'Self-reported'
+                      : 'Not logged',
                   BlushyColors.secondary,
                 ),
               ),
@@ -143,9 +147,9 @@ class JourneyScreen extends StatelessWidget {
               Expanded(
                 child: _buildMetricCard(
                   context,
-                  'Committed Tasks',
-                  '${state.completedTasksCount}',
-                  state.completedTasksCount > 0 ? 'Active' : 'Unfinished',
+                  'Journals',
+                  '${state.journals.length}',
+                  state.journals.isEmpty ? 'None yet' : 'Logged',
                   BlushyColors.accent,
                 ),
               ),
@@ -165,7 +169,7 @@ class JourneyScreen extends StatelessWidget {
               alignment: Alignment.center,
               child: const Text(
                 'No journals logged yet. Speak to Sia or write on the Today screen.',
-                style: TextStyle(color: BlushyColors.textLight, fontSize: 13),
+                style: TextStyle(color: BlushyColors.textMuted, fontSize: 13),
               ),
             )
           else
@@ -209,7 +213,7 @@ class JourneyScreen extends StatelessWidget {
                               '${journal.timestamp.hour}:${journal.timestamp.minute.toString().padLeft(2, '0')}',
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: BlushyColors.textLight,
+                                color: BlushyColors.textMuted,
                               ),
                             ),
                           ],
@@ -282,7 +286,7 @@ class JourneyScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: BlushyColors.textLight,
+              color: BlushyColors.textMuted,
             ),
           ),
         ],

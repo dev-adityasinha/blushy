@@ -82,7 +82,7 @@ class _StickerRendererState extends State<StickerRenderer> with SingleTickerProv
           final scaleX = 0.65 + 0.35 * cos(t * pi * 2);
           animatedChild = Transform(
             alignment: Alignment.center,
-            transform: Matrix4.identity()..scale(scaleX, 1.0, 1.0),
+            transform: Matrix4.identity()..scaleByDouble(scaleX, 1.0, 1.0, 1.0),
             child: animatedChild,
           );
         } else if (name.contains('flower') || name.contains('leaf')) { // Gentle sway / drift

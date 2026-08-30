@@ -26,7 +26,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
   // Interactive local states for daily check-in
   String _selectedLogMood = 'Calm';
   String _selectedEnergy = 'Balanced';
-  int _sleepHours = 8;
+  final int _sleepHours = 8;
   final Set<String> _loggedSymptoms = {};
   bool _symptomLoggedToday = false;
 

@@ -5,6 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/colors.dart';
 import '../../../core/theme.dart' hide BlushyColors;
 import '../../../services/api_partner_service.dart';
+import '../../../services/api_blushy_service.dart';
+import '../../../services/api_contract_client.dart';
+import '../../../models/blushy_models.dart';
+import '../../../shared/api_state_card.dart';
 
 class PartnerLearnScreen extends StatefulWidget {
   const PartnerLearnScreen({super.key});
@@ -28,6 +32,8 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
   void initState() {
     super.initState();
     _fetchPartnerState();
+    // Articles come from the reviewed content library.
+    _loadLearnContent();
 
     // Periodically check every 1 hour if partner state has changed
     _hourlyTimer = Timer.periodic(const Duration(hours: 1), (_) {
@@ -216,10 +222,11 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
             onPressed: () async {
               final email = emailController.text.trim();
               if (email.isNotEmpty) {
+                final messenger = ScaffoldMessenger.of(context);
                 Navigator.pop(context);
                 final res = await _partnerService.invitePartnerByEmail(email);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text(res['error'] ?? 'Partner invite sent!'),
                       backgroundColor: res['error'] != null ? BlushyColors.primary : const Color(0xFF10B981),
@@ -351,7 +358,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
         border: Border.all(color: BlushyColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -365,7 +372,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: BlushyColors.primary.withOpacity(0.1),
+                  color: BlushyColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.favorite_border_rounded, size: 20, color: BlushyColors.primary),
@@ -391,7 +398,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
           const SizedBox(height: 14),
           Text(
             "Pairing allows Sia to display partner support recommendations, phase awareness, and relationship care tips tailored to your partner.",
-            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text.withOpacity(0.8), height: 1.4),
+            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text.withValues(alpha: 0.8), height: 1.4),
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -522,292 +529,48 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
     );
   }
 
-  List<Map<String, String>> _getDynamicBodyArticles(String partnerName, Map<String, dynamic>? cycleInfo, Map<String, dynamic>? partnerUser) {
-    final phase = (cycleInfo?['phase'] ?? '').toString().toLowerCase();
-    final lifeStage = (partnerUser?['lifeStage'] ?? '').toString().toLowerCase();
+  // ---------------------------------------------------------------------
+  // Partner Learn library (spec §13, §23).
+  //
+  // The three sections used to be built from ~33 articles hardcoded in this
+  // file. That copy made clinical claims with no source, reviewer or version,
+  // which §31 requires of clinical content. It now comes from the medical
+  // content service, where every article carries provenance and has to pass
+  // clinical review before it is served, and where reading progress and
+  // bookmarks are tracked.
+  // ---------------------------------------------------------------------
 
-    if (lifeStage.contains('pregnancy')) {
-      return [
-        {
-          "category": "Body",
-          "title": "Understanding Pregnancy Fatigue",
-          "snippet": "Why carrying a pregnancy demands immense cardiovascular rest.",
-          "body": "Progesterone surges rapidly to support fetal development, causing significant physical tiredness. Her body is working constantly to build a new life.",
-          "action": "Encourage daytime naps, keep the house quiet, and help with heavy chores.",
-        },
-        {
-          "category": "Body",
-          "title": "Nutrition & Fluid Hydration in Pregnancy",
-          "snippet": "Supporting blood volume expansion and fetal nutrition.",
-          "body": "Blood volume expands by nearly 50% during pregnancy. Regular hydration and nutrient-dense snacks prevent dizziness and fatigue.",
-          "action": "Keep fresh water and healthy snacks readily available throughout the house.",
-        },
-        {
-          "category": "Body",
-          "title": "Postural Comfort & Lower Back Relief",
-          "snippet": "Relieving physical strain as center of gravity shifts.",
-          "body": "Relaxin hormone loosens ligaments, putting pressure on lower back joints and pelvis.",
-          "action": "Offer a foot rub or gently place supportive pillows behind her back when resting.",
-        },
-      ];
+  static const List<({String topic, String heading})> _learnSections = [
+    (topic: 'understand_her_body', heading: 'Understand'),
+    (topic: 'understand_her_emotions', heading: 'Understand'),
+    (topic: 'be_better_at_supporting', heading: 'Be better at supporting'),
+  ];
+
+  final Map<String, ApiResult<List<LibraryItem>>> _learnContent = {};
+
+  Future<void> _loadLearnContent() async {
+    for (final section in _learnSections) {
+      final result = await ContentApi.browse(audience: 'partner', topic: section.topic, limit: 20);
+      if (!mounted) return;
+      setState(() => _learnContent[section.topic] = result);
     }
-
-    if (phase.contains('menstrual') || phase.contains('period')) {
-      return [
-        {
-          "category": "Body",
-          "title": "Navigating Period Energy Reset",
-          "snippet": "Why low estrogen and progesterone trigger biological fatigue.",
-          "body": "During the menstrual phase, progesterone and estrogen levels hit their lowest points. This is a natural biological reset. $partnerName needs quiet rest and lighter physical demands.",
-          "action": "Take over practical chores (dishes, meal prep) so $partnerName can rest guilt-free.",
-        },
-        {
-          "category": "Body",
-          "title": "Relieving Physical Cramps & Muscle Tension",
-          "snippet": "How uterine contractions cause pelvic discomfort.",
-          "body": "Prostaglandins trigger muscular contractions that can radiate to the lower back. Heat therapy and gentle warmth relax pelvic muscles.",
-          "action": "Brew a warm chamomile tea and prepare a hot water bottle or heating pack.",
-        },
-        {
-          "category": "Body",
-          "title": "Restorative Sleep & Warmth",
-          "snippet": "Optimizing room temperature for period recovery.",
-          "body": "Core body temperature drops slightly during bleeding. Warm blankets and early bedtimes support deep regenerative REM sleep.",
-          "action": "Ensure the bedroom is warm and peaceful for an early, restful bedtime.",
-        },
-      ];
-    } else if (phase.contains('follicular')) {
-      return [
-        {
-          "category": "Body",
-          "title": "The Estrogen Energy Surge",
-          "snippet": "Why rising estrogen boosts stamina, focus, and social drive.",
-          "body": "As estrogen climbs, mental sharpness and physical stamina rise rapidly. $partnerName will likely feel energetic, creative, and motivated.",
-          "action": "Suggest active dates, outdoor walks, or tackling new creative projects together.",
-        },
-        {
-          "category": "Body",
-          "title": "High-Metabolic Workout Windows",
-          "snippet": "Capitalizing on optimal muscle recovery and stamina.",
-          "body": "Rising estrogen improves insulin sensitivity and muscle recovery. It is the best window of the month for high-energy exercise.",
-          "action": "Join $partnerName for a workout, run, or energetic weekend activity.",
-        },
-        {
-          "category": "Body",
-          "title": "Social Receptivity & Communication",
-          "snippet": "Why communication feels effortless during mid-follicular days.",
-          "body": "Dopamine and serotonin rise alongside estrogen, enhancing social openness and optimistic outlooks.",
-          "action": "Plan dinner with friends or engage in inspiring, forward-looking conversations.",
-        },
-      ];
-    } else if (phase.contains('ovulation')) {
-      return [
-        {
-          "category": "Body",
-          "title": "Peak Estrogen & Vitality Window",
-          "snippet": "Understanding the biological high-point of the cycle.",
-          "body": "Estrogen hits its monthly peak alongside LH surge, boosting confidence, communication, and natural intimacy drive.",
-          "action": "Plan a special date night or express authentic appreciation for her.",
-        },
-        {
-          "category": "Body",
-          "title": "Ovulation Discomfort & Hydration",
-          "snippet": "Mild pelvic twinges and basal body temperature shifts.",
-          "body": "Some experience mild ovulation discomfort (mittelschmerz) or sudden energy dips right after peak estrogen. Staying hydrated is key.",
-          "action": "Keep fresh water handy and ask gently how her body feels today.",
-        },
-        {
-          "category": "Body",
-          "title": "Optimizing Peak Focus Hours",
-          "snippet": "Making the most of high verbal fluency and confidence.",
-          "body": "Verbal recall and executive focus reach their monthly maximum, equipping $partnerName for key decisions.",
-          "action": "Encourage her goals and offer positive, uplifting validation.",
-        },
-      ];
-    } else if (phase.contains('luteal') || phase.contains('pms')) {
-      return [
-        {
-          "category": "Body",
-          "title": "Progesterone & Natural Slowdown",
-          "snippet": "Why rising progesterone increases thermal heat and fatigue.",
-          "body": "Progesterone promotes quiet inward focus and increases body temperature by 0.5°C. $partnerName may tire more easily in the late afternoon.",
-          "action": "Keep evenings relaxed and minimize late-night social commitments.",
-        },
-        {
-          "category": "Body",
-          "title": "Premenstrual Cravings & Metabolism",
-          "snippet": "Why the body burns 100-300 extra calories per day.",
-          "body": "Metabolic rate increases in the luteal phase. Craving complex carbs, dark chocolate, and magnesium-rich foods is biologically driven.",
-          "action": "Keep healthy snacks, dark chocolate, and magnesium-rich foods available.",
-        },
-        {
-          "category": "Body",
-          "title": "Sensory Ease & Decompression",
-          "snippet": "Lowering noise and stress during premenstrual days.",
-          "body": "Serotonin receptivity dips right before bleeding, making loud environments or chaotic schedules feel overwhelming.",
-          "action": "Create a peaceful home atmosphere and offer quiet downtime.",
-        },
-      ];
-    }
-
-    return [
-      {
-        "category": "Body",
-        "title": "Navigating Period Energy Shifts",
-        "snippet": "Why hormone drops trigger natural fatigue cycles.",
-        "body": "During the menstrual phase, progesterone and estrogen levels hit their lowest points. This is a natural biological reset. $partnerName may need more quiet time, lighter exercise, and extra sleep.",
-        "action": "Take care of practical chores so $partnerName can rest without feeling guilty.",
-      },
-      {
-        "category": "Body",
-        "title": "Understanding Physical Energy Waves",
-        "snippet": "Matching activities with high and low energy days.",
-        "body": "Estrogen surges increase stamina in earlier cycle weeks, while progesterone rises later promote rest. Paying attention to these patterns makes planning joint activities much easier.",
-        "action": "Plan high-energy dates during week 2 and relaxing quiet evenings during week 4.",
-      },
-      {
-        "category": "Body",
-        "title": "Supporting Luteal & Follicular Recovery",
-        "snippet": "How rest and nutrition balance metabolic demands during cycle shifts.",
-        "body": "Metabolic rates increase slightly during the luteal phase while energy lowers. Providing nutrient-rich meals, hydration, and restful evenings supports physical recovery.",
-        "action": "Prepare warm, nourishing meals and encourage restorative evening downtime.",
-      },
-    ];
   }
 
-  List<Map<String, String>> _getDynamicEmotionArticles(String partnerName, Map<String, dynamic>? moodData) {
-    final mood = (moodData?['mood'] ?? '').toString().toLowerCase();
-
-    if (mood.contains('fatigu') || mood.contains('tired') || mood.contains('exhaust')) {
-      return [
-        {
-          "category": "Emotions",
-          "title": "Managing Low Emotional Bandwidth",
-          "snippet": "Why physical fatigue reduces emotional patience.",
-          "body": "Physical exhaustion depletes emotional reserves. What feels manageable when rested can feel overwhelming when tired.",
-          "action": "Avoid bringing up complex or heavy discussions when $partnerName is physically drained.",
-        },
-        {
-          "category": "Emotions",
-          "title": "The Power of Quiet Validation",
-          "snippet": "Listening without attempting immediate problem-solving.",
-          "body": "When tired, $partnerName doesn't need solutions—she needs to feel heard and supported without pressure to perform.",
-          "action": "Listen attentively and say: 'Rest up, I'm taking care of everything tonight.'",
-        },
-        {
-          "category": "Emotions",
-          "title": "De-escalating Decision Fatigue",
-          "snippet": "Lightening mental load during exhaustion.",
-          "body": "Decision fatigue compounds physical weariness. Simple choices like 'what's for dinner?' become stressful.",
-          "action": "Make low-stakes decisions proactively instead of asking open questions.",
-        },
-      ];
-    } else if (mood.contains('anxi') || mood.contains('stress') || mood.contains('overwhelm')) {
-      return [
-        {
-          "category": "Emotions",
-          "title": "Soothing Premenstrual Stress & Anxiety",
-          "snippet": "How GABA receptor shifts increase stress sensitivity.",
-          "body": "Hormonal shifts alter GABA receptors in the brain, lowering the threshold for stress and overthinking.",
-          "action": "Offer a warm hug, brew soothing herbal tea, and reduce household noise.",
-        },
-        {
-          "category": "Emotions",
-          "title": "Emotional Receptivity & Grounding",
-          "snippet": "Providing a calm anchor during emotional waves.",
-          "body": "Anxiety feels like a storm inside. A steady, calm partner provides an external nervous system anchor.",
-          "action": "Stay calm, use a quiet voice, and reassure $partnerName of your steady presence.",
-        },
-        {
-          "category": "Emotions",
-          "title": "De-escalating Mental Overwhelm",
-          "snippet": "Breaking big challenges into single quiet steps.",
-          "body": "Overwhelm occurs when too many demands compete for attention simultaneously.",
-          "action": "Help break tasks down or take a task off her plate immediately.",
-        },
-      ];
-    } else if (mood.contains('happy') || mood.contains('calm') || mood.contains('great') || mood.contains('good')) {
-      return [
-        {
-          "category": "Emotions",
-          "title": "Nurturing Shared Joy & Connection",
-          "snippet": "Capitalizing on positive emotional harmony.",
-          "body": "When mood is bright, positive interactions create long-lasting relationship deposits and emotional intimacy.",
-          "action": "Share a fun experience, laugh together, or try a new activity.",
-        },
-        {
-          "category": "Emotions",
-          "title": "Deepening Mutual Trust & Openness",
-          "snippet": "Expressing gratitude and authentic appreciation.",
-          "body": "Positive emotional states offer the ideal window for open, loving conversations about future goals and dreams.",
-          "action": "Tell $partnerName specifically what you love and appreciate about her.",
-        },
-        {
-          "category": "Emotions",
-          "title": "Sustaining Emotional Balance",
-          "snippet": "Keeping open communication effortless.",
-          "body": "Maintaining positive connection habits during good days builds a strong buffer for future high-stress weeks.",
-          "action": "Plan your upcoming week together with excitement and balance.",
-        },
-      ];
-    }
-
-    return [
-      {
-        "category": "Emotions",
-        "title": "Managing Stress and Premenstrual Shifts",
-        "snippet": "How hormone changes affect emotional bandwidth.",
-        "body": "Premenstrual hormone shifts lower the threshold for stress. What normally feels manageable might feel overwhelming. It isn't overreacting—it's a change in chemical receptors in the brain.",
-        "action": "Listen patiently without offering direct advice unless asked. Validation goes a long way.",
-      },
-      {
-        "category": "Emotions",
-        "title": "Emotional Receptivity & Active Listening",
-        "snippet": "Creating a safe space for open emotional sharing without judgment.",
-        "body": "Active listening means giving full attention without formulating solutions immediately. Acknowledging emotional experience builds closeness and psychological safety.",
-        "action": "Say: 'I hear how tough today was for you, and I am right here with you.'",
-      },
-      {
-        "category": "Emotions",
-        "title": "De-escalating Overwhelm & Anxiety",
-        "snippet": "Simple ways to offer grounding support during stressful moments.",
-        "body": "When stress peaks, cognitive processing becomes heavy. Offering steady presence, a quiet room, or a comforting warm drink helps soothe the nervous system.",
-        "action": "Offer a gentle hug or brew a cup of tea without asking complex questions.",
-      },
-    ];
+  Future<void> _openLearnArticle(LibraryItem item) async {
+    // Opening counts as progress; completion is recorded when they finish.
+    await ContentApi.saveProgress(item.contentId, progressPercent: 100, completed: true);
+    if (!mounted) return;
+    await _loadLearnContent();
   }
 
-  List<Map<String, String>> _getDynamicSupportArticles(String partnerName, List<dynamic> suggestions) {
-    return [
-      {
-        "category": "Support",
-        "title": "Comfort, Help, or Space?",
-        "snippet": "How to check in without adding pressure.",
-        "body": "When $partnerName is overwhelmed, asking 'what can I do?' forces decision-making, adding stress. Instead, categorize help into three pillars: Comfort (tea, heat pad), Help (laundry, dishes), or Space (quiet rest).",
-        "action": "Ask directly: 'Would comfort, practical help, or space support you best right now?'",
-      },
-      {
-        "category": "Support",
-        "title": "Proactive Household Partnership",
-        "snippet": "Taking initiative on daily logistics to lighten mental load.",
-        "body": "Mental load encompasses planning meals, tracking errands, and managing home chores. Taking proactive responsibility for specific tasks removes decision fatigue for your partner.",
-        "action": "Pick 2 daily household tasks (e.g. dishes and trash) and manage them completely.",
-      },
-      {
-        "category": "Support",
-        "title": "Quality Time vs. Quiet Presence",
-        "snippet": "Understanding when shared activities vs quiet presence is needed.",
-        "body": "Some days call for engaging outings and deep conversations, while other days require quiet side-by-side presence. Tuning into what is needed deepens mutual bond.",
-        "action": "Check in: 'Would you like to do an activity together or just relax side-by-side quietly?'",
-      },
-    ];
+  Future<void> _toggleLearnBookmark(LibraryItem item) async {
+    await ContentApi.setBookmark(item.contentId, !item.bookmarked);
+    if (!mounted) return;
+    await _loadLearnContent();
   }
 
   List<Widget> _buildAllowedPartnerArticles() {
     final partnerUser = _sharedData?['partnerUser'];
-    final cycleInfo = _sharedData?['cycleInfo'];
-    final moodData = _sharedData?['mood'];
-    final suggestions = (_sharedData?['suggestions'] is List) ? _sharedData!['suggestions'] : [];
 
     String partnerName = _activeConnection?['partner']?['displayName'] ??
         _activeConnection?['partnerEmail'] ??
@@ -815,58 +578,166 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
     if (partnerName.contains('@')) {
       partnerName = partnerName.split('@').first;
     }
-    String sectionPartnerTitle = (partnerName.startsWith('qpfv') || partnerName.length > 15 || partnerName == 'Partner')
-        ? "Her"
-        : "$partnerName's";
+    final String possessive =
+        (partnerName.startsWith('qpfv') || partnerName.length > 15 || partnerName == 'Partner')
+            ? "Her"
+            : "$partnerName's";
+
+    const headings = {
+      'understand_her_body': 'Body',
+      'understand_her_emotions': 'Emotions',
+      'be_better_at_supporting': 'Support',
+    };
 
     final List<Widget> list = [];
 
-    // 1. Body Category -> Always minimum 3 dynamic articles
-    final bodyArticles = _getDynamicBodyArticles(partnerName, cycleInfo, partnerUser);
-    list.add(_buildSectionTitle("Understand $sectionPartnerTitle Body"));
-    for (var article in bodyArticles) {
-      list.add(_buildArticleTile(
-        context: context,
-        category: article['category'] ?? "Body",
-        title: article['title'] ?? '',
-        snippet: article['snippet'] ?? '',
-        body: article['body'] ?? '',
-        action: article['action'] ?? '',
-      ));
-    }
-    list.add(const SizedBox(height: 16));
+    for (final section in _learnSections) {
+      final title = section.topic == 'be_better_at_supporting'
+          ? 'Be better at supporting'
+          : '${section.heading} $possessive ${headings[section.topic]}';
 
-    // 2. Emotions Category -> Always minimum 3 dynamic articles
-    final emotionArticles = _getDynamicEmotionArticles(partnerName, moodData);
-    list.add(_buildSectionTitle("Understand $sectionPartnerTitle Emotions"));
-    for (var article in emotionArticles) {
-      list.add(_buildArticleTile(
-        context: context,
-        category: article['category'] ?? "Emotions",
-        title: article['title'] ?? '',
-        snippet: article['snippet'] ?? '',
-        body: article['body'] ?? '',
-        action: article['action'] ?? '',
-      ));
-    }
-    list.add(const SizedBox(height: 16));
-
-    // 3. Support Category -> Always minimum 3 dynamic articles
-    final supportArticles = _getDynamicSupportArticles(partnerName, suggestions);
-    list.add(_buildSectionTitle("Be Better at Supporting"));
-    for (var article in supportArticles) {
-      list.add(_buildArticleTile(
-        context: context,
-        category: article['category'] ?? "Support",
-        title: article['title'] ?? '',
-        snippet: article['snippet'] ?? '',
-        body: article['body'] ?? '',
-        action: article['action'] ?? '',
-      ));
+      list.add(_buildSectionTitle(title));
+      list.add(
+        ApiStateCard<List<LibraryItem>>(
+          result: _learnContent[section.topic] ?? const ApiResult.loading(),
+          onRetry: _loadLearnContent,
+          emptyMessage: 'No reviewed articles here yet.',
+          builder: (context, items) {
+            if (items.isEmpty) {
+              return _buildLearnPlaceholder('No reviewed articles here yet.');
+            }
+            return Column(
+              children: items.map((item) => _buildLibraryTile(item, headings[section.topic] ?? '')).toList(),
+            );
+          },
+        ),
+      );
+      list.add(const SizedBox(height: 16));
     }
 
     return list;
   }
+
+  Widget _buildLearnPlaceholder(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: BlushyColors.border, width: 0.8),
+      ),
+      child: Text(
+        message,
+        style: GoogleFonts.poppins(fontSize: 12.5, color: BlushyColors.secondaryText, height: 1.5),
+      ),
+    );
+  }
+
+  Widget _buildLibraryTile(LibraryItem item, String category) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: BlushyColors.border, width: 0.8),
+        ),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item.title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: BlushyColors.text,
+                  ),
+                ),
+              ),
+              if (item.completed)
+                const Icon(Icons.check_circle, size: 16, color: BlushyColors.primary),
+            ],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(
+                item.summary ?? '',
+                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  if (item.readingTimeMinutes != null)
+                    Text(
+                      '${item.readingTimeMinutes} min',
+                      style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                    ),
+                  // Clinical content states where it came from (spec §31).
+                  if (item.source != null) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.source!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+          trailing: IconButton(
+            icon: Icon(
+              item.bookmarked ? Icons.bookmark : Icons.bookmark_border,
+              size: 18,
+              color: item.bookmarked ? BlushyColors.primary : BlushyColors.secondaryText,
+            ),
+            tooltip: item.bookmarked ? 'Remove from saved' : 'Save',
+            onPressed: () => _toggleLearnBookmark(item),
+          ),
+          onTap: () {
+            _openLearnArticle(item);
+            showDialog(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: Text(item.title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                content: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(item.body, style: GoogleFonts.poppins(fontSize: 13, height: 1.5)),
+                      if (item.source != null) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'Source: ${item.source}',
+                          style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildSectionTitle(String title) {
     return Padding(

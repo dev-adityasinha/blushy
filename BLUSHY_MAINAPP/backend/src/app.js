@@ -18,6 +18,17 @@ import onboardingRoutes from './routes/onboardingRoutes.js';
 import periodRoutes from './routes/periodRoutes.js';
 import checkinRoutes from './routes/checkinRoutes.js';
 import insightRoutes from './routes/insightRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
+import lifeStageRoutes from './routes/lifeStageRoutes.js';
+import homeRoutes from './routes/homeRoutes.js';
+import safetyRoutes from './routes/safetyRoutes.js';
+import contentRoutes from './routes/contentRoutes.js';
+import partnerSafeRoutes from './routes/partnerSafeRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import moderationRoutes from './routes/moderationRoutes.js';
+import timeCapsuleRoutes from './routes/timeCapsuleRoutes.js';
+import bouquetRoutes from './routes/bouquetRoutes.js';
+import recoveryRoutes from './routes/recoveryRoutes.js';
 import { httpErrorHandler } from './middleware/errorHandler.js';
 import { ipRateLimiter } from './middleware/rateLimiters.js';
 import { env } from './utils/env.js';
@@ -153,6 +164,22 @@ app.use('/api/checkins', ipRateLimiter, checkinRoutes);
 app.use('/checkins', ipRateLimiter, checkinRoutes);
 app.use('/api/insights', ipRateLimiter, insightRoutes);
 app.use('/insights', ipRateLimiter, insightRoutes);
+
+// ---- Spec-aligned v1 surface (Blushy Backend & AI Feature Specification) ----
+// Every route below returns the standard response contract
+// { data, state, lastUpdated, source, version, permissions, errorCode }
+// and requires authentication unless explicitly documented otherwise.
+app.use('/api/v1/events', ipRateLimiter, eventRoutes);
+app.use('/api/v1/life-stage', ipRateLimiter, lifeStageRoutes);
+app.use('/api/v1', ipRateLimiter, homeRoutes);
+app.use('/api/v1/safety', ipRateLimiter, safetyRoutes);
+app.use('/api/v1/content', ipRateLimiter, contentRoutes);
+app.use('/api/v1/partner', ipRateLimiter, partnerSafeRoutes);
+app.use('/api/v1/notifications', ipRateLimiter, notificationRoutes);
+app.use('/api/v1/moderation', ipRateLimiter, moderationRoutes);
+app.use('/api/v1/capsules', ipRateLimiter, timeCapsuleRoutes);
+app.use('/api/v1/bouquets', ipRateLimiter, bouquetRoutes);
+app.use('/api/v1/recovery', ipRateLimiter, recoveryRoutes);
 
 // Catch-all handler for undefined routes (returns structured JSON instead of default HTML)
 app.use((req, res) => {

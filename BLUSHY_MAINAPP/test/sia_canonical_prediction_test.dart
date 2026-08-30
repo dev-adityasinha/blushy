@@ -3,7 +3,6 @@ import 'package:blushy_life_app/core/cycle_calculator.dart';
 import 'package:blushy_life_app/services/api_period_service.dart';
 import 'package:blushy_life_app/services/sia_dashboard_service.dart';
 import 'package:blushy_life_app/core/state.dart';
-import 'package:blushy_life_app/features/home/models.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

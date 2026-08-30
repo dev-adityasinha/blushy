@@ -5,6 +5,9 @@ import '../../../core/theme.dart' hide BlushyColors;
 import '../../../theme/colors.dart';
 import '../../../services/auth_storage.dart';
 import '../../../services/api_partner_service.dart';
+import '../../../services/api_blushy_service.dart';
+import '../../../models/blushy_models.dart';
+import 'partner_privacy_screen.dart';
 
 class PartnerProfileScreen extends StatefulWidget {
   const PartnerProfileScreen({super.key});
@@ -21,6 +24,26 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
   String _userEmail = '';
   String _userName = '';
 
+  /// Real notification preferences. The switch used to be `value: true` with an
+  /// empty `onChanged`, so it always read ON and could not be changed.
+  NotificationPreferences? _notificationPrefs;
+  bool _notificationsSaving = false;
+
+  /// The categories this screen's switch governs. Partner-facing only: the
+  /// safety category is `alwaysOn` server-side and is deliberately absent, so
+  /// this control cannot silence a safety notice.
+  static const List<String> _partnerNotificationCategories = [
+    'partner_support_request',
+    'partner_shared_update',
+    'sia_proactive',
+  ];
+
+  bool get _notificationsEnabled {
+    final prefs = _notificationPrefs;
+    if (prefs == null) return false;
+    return _partnerNotificationCategories.any((c) => prefs.categories[c] == true);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +56,11 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
       _userEmail = session['email']?.toString() ?? 'partner@blushy.life';
       _userName = _userEmail.contains('@') ? _userEmail.split('@').first : 'Partner';
       _nameController.text = _userName;
+
+      final prefsResult = await NotificationsApi.preferences();
+      if (prefsResult.data != null) {
+        _notificationPrefs = prefsResult.data;
+      }
 
       final connections = await _partnerService.getConnections();
       final active = connections.firstWhere(
@@ -59,6 +87,36 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  /// Turns the partner-facing notification categories on or off together.
+  ///
+  /// Written through the real preferences endpoint, and the switch only moves
+  /// once the server has confirmed -- an optimistic flip that silently failed
+  /// would leave someone believing they had turned notifications off.
+  Future<void> _setNotificationsEnabled(bool enabled) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _notificationsSaving = true);
+
+    final patch = <String, bool>{
+      for (final category in _partnerNotificationCategories) category: enabled,
+    };
+
+    final result = await NotificationsApi.updatePreferences({'categories': patch});
+    if (!mounted) return;
+
+    setState(() {
+      _notificationsSaving = false;
+      if (result.data != null) _notificationPrefs = result.data;
+    });
+
+    if (result.data == null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Could not save that. Please try again.'),
+        ),
+      );
+    }
   }
 
   void _handleLogout() {
@@ -240,11 +298,19 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                           leading: const Icon(Icons.notifications_outlined, color: BlushyColors.primary),
                           title: Text('Push Notifications', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
                           subtitle: Text('Get Sia daily support alerts', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
-                          trailing: Switch(
-                            value: true,
-                            activeColor: BlushyColors.primary,
-                            onChanged: (val) {},
-                          ),
+                          trailing: _notificationsSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Switch(
+                                  value: _notificationsEnabled,
+                                  activeThumbColor: BlushyColors.primary,
+                                  onChanged: _notificationPrefs == null
+                                      ? null
+                                      : _setNotificationsEnabled,
+                                ),
                         ),
                         const Divider(height: 1),
                         ListTile(
@@ -253,22 +319,12 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                           subtitle: Text('Learn how your shared data is protected', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
                           trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: BlushyColors.secondaryText),
                           onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                title: Text('Privacy & Protection', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-                                content: Text(
-                                  'Your partner retains complete control over what cycle, mood, and health updates are shared with your device. Insights update only when permitted.',
-                                  style: GoogleFonts.poppins(fontSize: 13, height: 1.5),
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => PartnerPrivacyScreen(
+                                  connectionId:
+                                      _activeConnection?['connectionId']?.toString(),
                                 ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx),
-                                    child: Text('Understood', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
-                                  ),
-                                ],
                               ),
                             );
                           },

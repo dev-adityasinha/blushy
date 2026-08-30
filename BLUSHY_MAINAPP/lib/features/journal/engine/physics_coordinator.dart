@@ -35,7 +35,6 @@ class PhysicsCoordinator extends ChangeNotifier {
       case DeskLightingMode.night: // Lamp from top-right -> shadow to bottom-left
         return Offset(-baseDistance * 0.8, baseDistance * 1.2);
       case DeskLightingMode.afternoon: // Overhead sun -> subtle downward shadow
-      default:
         return Offset(0, baseDistance);
     }
   }
@@ -59,7 +58,6 @@ class PhysicsCoordinator extends ChangeNotifier {
       case DeskLightingMode.night:
         return Color.fromRGBO(20, 25, 45, opacity);
       case DeskLightingMode.afternoon:
-      default:
         return Color.fromRGBO(0, 0, 0, opacity);
     }
   }

@@ -47,7 +47,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: BlushyColors.text.withOpacity(0.05),
+                          color: BlushyColors.text.withValues(alpha: 0.05),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -97,8 +97,8 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                           boxShadow: [
                             BoxShadow(
                               color: _selectedOption == 1 
-                                  ? BlushyColors.primary.withOpacity(0.08)
-                                  : BlushyColors.text.withOpacity(0.03),
+                                  ? BlushyColors.primary.withValues(alpha: 0.08)
+                                  : BlushyColors.text.withValues(alpha: 0.03),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             )
@@ -113,7 +113,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: _selectedOption == 1 
-                                        ? BlushyColors.primary.withOpacity(0.1) 
+                                        ? BlushyColors.primary.withValues(alpha: 0.1) 
                                         : BlushyColors.background,
                                     shape: BoxShape.circle,
                                   ),
@@ -171,8 +171,8 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                           boxShadow: [
                             BoxShadow(
                               color: _selectedOption == 2 
-                                  ? BlushyColors.primary.withOpacity(0.08)
-                                  : BlushyColors.text.withOpacity(0.03),
+                                  ? BlushyColors.primary.withValues(alpha: 0.08)
+                                  : BlushyColors.text.withValues(alpha: 0.03),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             )
@@ -187,7 +187,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: _selectedOption == 2 
-                                        ? BlushyColors.primary.withOpacity(0.1) 
+                                        ? BlushyColors.primary.withValues(alpha: 0.1) 
                                         : BlushyColors.background,
                                     shape: BoxShape.circle,
                                   ),
@@ -236,7 +236,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
-                      disabledBackgroundColor: BlushyColors.primary.withOpacity(0.4),
+                      disabledBackgroundColor: BlushyColors.primary.withValues(alpha: 0.4),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(

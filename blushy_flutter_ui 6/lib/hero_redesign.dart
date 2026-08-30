@@ -1,22 +1,18 @@
 import 'dart:ui';
 import 'dart:math' as math;
 import 'dart:async';
-import 'dart:js' as js;
-import 'dart:html' as html;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'main.dart';
 import 'blushy_design_system.dart';
 import 'blushy_screens.dart';
 
-void _navigateToBeta() {
+void _navigateToBeta() async {
   const url = 'https://blushy.life/betaversion';
-  try {
-    html.window.location.href = url;
-  } catch (_) {
-    try {
-      js.context.callMethod('open', [url, '_self']);
-    } catch (_) {}
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 

@@ -77,7 +77,7 @@ class BlushyCommunitySection extends StatelessWidget {
                           physics: const BouncingScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 24.0),
                           itemCount: posts.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 16),
+                          separatorBuilder: (_, _) => const SizedBox(width: 16),
                           itemBuilder: (context, index) {
                             final post = posts[index];
                             return _buildCommunityCard(context, post);

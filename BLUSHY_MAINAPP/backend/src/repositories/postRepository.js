@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { db, findUserDocument } from '../utils/db.js';
 
-async function mapPostRow(row, viewerUserId = null) {
+/**
+ * @param commentCount pass a precomputed count when mapping many posts, so a
+ *   feed does not run one count query per row.
+ */
+async function mapPostRow(row, viewerUserId = null, commentCount = null) {
   if (!row) return null;
   
   let userVote = 0;
@@ -22,10 +26,19 @@ async function mapPostRow(row, viewerUserId = null) {
     postId: row.post_id,
     authorId: row.author_id,
     authorName: display_name,
+    audience: row.audience ?? 'female_user',
+    anonymous: row.anonymous === true,
+    moderationState: row.moderation_state ?? 'visible',
+    moderationNotice: row.moderation_notice ?? null,
+    sensitiveTopics: row.sensitive_topics ?? [],
     title: row.title ?? '',
     text: row.text ?? '',
     tags: row.tags ?? [],
     score: row.score ?? 0,
+    // Counts soft-deleted comments too, because listComments still returns
+    // them to keep reply threads intact -- so this matches what the reader
+    // actually sees when they open the post.
+    commentCount: commentCount ?? await db.collection('comments').countDocuments({ post_id: row.post_id }),
     privacy: row.privacy ?? 'public',
     userVote,
     createdAt: new Date(row.created_at).toISOString(),
@@ -184,9 +197,17 @@ async function listFeed(userId, type = 'home') {
 
   const posts = await db.collection('posts').find(query).sort(sortOption).toArray();
 
+  // One grouped count for the whole feed rather than a query per post.
+  const postIds = posts.map((p) => p.post_id);
+  const grouped = postIds.length === 0 ? [] : await db.collection('comments').aggregate([
+    { $match: { post_id: { $in: postIds } } },
+    { $group: { _id: '$post_id', total: { $sum: 1 } } },
+  ]).toArray();
+  const countByPost = new Map(grouped.map((g) => [g._id, g.total]));
+
   const mappedPosts = [];
   for (const p of posts) {
-    mappedPosts.push(await mapPostRow(p, userId));
+    mappedPosts.push(await mapPostRow(p, userId, countByPost.get(p.post_id) ?? 0));
   }
 
   return mappedPosts;

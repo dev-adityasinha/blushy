@@ -4,7 +4,17 @@ abstract class AuthService {
   Future<bool> signUpWithEmail(String email, String password);
   Future<bool> verifyCode(String email, String code);
   Future<bool> loginWithEmail(String email, String password, {String? role});
-  Future<bool> resetPassword(String email);
+  /// Step 1: ask for a reset code to be emailed.
+  Future<bool> requestPasswordResetCode(String email);
+
+  /// Step 2: prove control of the mailbox with the code and set a new password.
+  Future<bool> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+    required String confirmPassword,
+    String? phoneNumber,
+  });
   Future<void> signOut();
 }
 
@@ -53,11 +63,32 @@ class MockAuthService implements AuthService {
   }
 
   @override
-  Future<bool> resetPassword(String email) async {
+  Future<bool> requestPasswordResetCode(String email) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    if (!_registeredEmails.contains(email)) {
-      throw Exception('No account found with this email.');
+    // Deliberately does not reveal whether the account exists, matching the
+    // server: being a user of this app is itself sensitive.
+    if (_registeredEmails.contains(email)) {
+      _verificationCodes[email] = '123456';
     }
+    return true;
+  }
+
+  @override
+  Future<bool> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+    required String confirmPassword,
+    String? phoneNumber,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (newPassword != confirmPassword) {
+      throw Exception('New password and confirm password must match.');
+    }
+    if (_verificationCodes[email] != code) {
+      throw Exception('Invalid reset code.');
+    }
+    _verificationCodes.remove(email);
     return true;
   }
 

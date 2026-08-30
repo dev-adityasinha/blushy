@@ -2,22 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/state.dart';
 import '../../core/storage.dart';
-import '../../core/stage_conflict_engine.dart';
 import '../../theme/colors.dart';
 import '../../services/api_auth_service.dart';
-import 'presentation/stages/first_period_not_started_dashboard.dart';
-import 'presentation/stages/first_period_started_dashboard.dart';
-import 'presentation/stages/living_with_my_cycle_dashboard.dart';
-import 'presentation/stages/hormonal_health_dashboard.dart';
-import 'presentation/stages/trying_to_conceive_dashboard.dart';
-import 'presentation/stages/pregnancy_dashboard.dart';
-import 'presentation/stages/postpartum_dashboard.dart';
-import 'presentation/stages/perimenopause_dashboard.dart';
-import 'presentation/stages/menopause_dashboard.dart';
 import 'presentation/stages/everyday_wellness_dashboard.dart';
 import '../sia/sia_screen.dart';
 import '../../services/sia_dashboard_service.dart';
-import '../../shared/header.dart';
 
 enum HomeWidgetType {
   hero,
@@ -39,7 +28,6 @@ class BlushyHomeScreen extends StatefulWidget {
 
 class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
   Map<String, dynamic> _onboardingData = {};
-  String? _selectedStageTab;
 
   @override
   void initState() {
@@ -75,82 +63,6 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
     return EverydayWellnessDashboard(stageKey: rawStage);
   }
 
-  Widget _buildStageDivider(String stageKey) {
-    final title = StageConflictEngine.getStageTitle(stageKey);
-    final icon = StageConflictEngine.getStageIcon(stageKey);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 24.0),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
-          child: Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        BlushyColors.primary.withValues(alpha: 0.0),
-                        BlushyColors.primary.withValues(alpha: 0.25),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.2), width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: BlushyColors.primary.withValues(alpha: 0.08),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, size: 16, color: BlushyColors.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        title.toUpperCase(),
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                          color: BlushyColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        BlushyColors.primary.withValues(alpha: 0.25),
-                        BlushyColors.primary.withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -238,7 +150,7 @@ class DeveloperContextSimulator extends StatelessWidget {
                       onLifeStageChanged!(item['val'] as String);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary.withOpacity(0.08),
+                      backgroundColor: BlushyColors.primary.withValues(alpha: 0.08),
                       foregroundColor: BlushyColors.primary,
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -279,7 +191,7 @@ class DeveloperContextSimulator extends StatelessWidget {
                   icon: const Icon(Icons.refresh_rounded, size: 16),
                   label: const Text("Reset to Onboarding Step", style: TextStyle(fontSize: 11)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BlushyColors.danger.withOpacity(0.1),
+                    backgroundColor: BlushyColors.danger.withValues(alpha: 0.1),
                     foregroundColor: BlushyColors.danger,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -508,7 +420,7 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFDFBF7),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: BlushyColors.primary.withOpacity(0.3), width: 1.0),
+                    border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.3), width: 1.0),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

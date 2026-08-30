@@ -17,7 +17,6 @@ class PartnerSiaScreen extends StatefulWidget {
 class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
   final TextEditingController _queryController = TextEditingController();
   final List<Map<String, dynamic>> _chatHistory = [];
-  bool _isTyping = false;
 
   Future<void> _sendQuery(String query) async {
     final cleanQuery = query.trim();
@@ -25,7 +24,6 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
     
     setState(() {
       _chatHistory.add({"sender": "user", "text": cleanQuery});
-      _isTyping = true;
     });
     
     _queryController.clear();
@@ -69,7 +67,6 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
 
     if (mounted) {
       setState(() {
-        _isTyping = false;
         _chatHistory.add({"sender": "sia", "text": reply});
       });
     }
@@ -165,7 +162,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                                 ),
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     )
@@ -214,7 +211,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                       style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
                       decoration: InputDecoration(
                         hintText: "Ask about her active stage...",
-                        hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withOpacity(0.5)),
+                        hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
                         border: InputBorder.none,
                       ),
                       onSubmitted: _sendQuery,

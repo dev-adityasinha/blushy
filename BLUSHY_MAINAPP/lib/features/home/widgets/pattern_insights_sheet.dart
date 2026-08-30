@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/colors.dart';
-import '../../../core/state.dart';
 
 class BlushyPatternInsightsSheet extends StatelessWidget {
   const BlushyPatternInsightsSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final state = BlushyOSProvider.of(context);
-    
     return Container(
       decoration: const BoxDecoration(
         color: BlushyColors.background,

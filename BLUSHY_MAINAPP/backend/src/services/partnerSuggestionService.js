@@ -1,3 +1,6 @@
+import { periodDurationBounds } from '../config/periodPredictionConfig.js';
+import { resolvePeriodDuration } from '../domain/periodDuration.js';
+
 function toList(value) {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return [];
@@ -13,7 +16,12 @@ function unique(values) {
   return [...new Set(values.filter((value) => typeof value === 'string' && value.trim().length > 0))];
 }
 
-export function buildCycleInfo(cycleStartDate, onboardingAnswers = {}, referenceDate = new Date()) {
+export function buildCycleInfo(
+  cycleStartDate,
+  onboardingAnswers = {},
+  referenceDate = new Date(),
+  periodEntries = [],
+) {
   const dates = [];
 
   function addDate(val) {
@@ -45,7 +53,10 @@ export function buildCycleInfo(cycleStartDate, onboardingAnswers = {}, reference
       cycleLength = diffDays;
     }
   }
-  const periodLength = Number(onboardingAnswers?.period_duration_days || onboardingAnswers?.cycle_last_period_duration_days) || 5;
+  // Logged end dates outrank the stated answer, which is never populated by
+  // onboarding today, so this used to be a flat 5 for everyone.
+  const { periodDurationDays: periodLength, periodDurationSource } =
+    resolvePeriodDuration(periodEntries, onboardingAnswers, periodDurationBounds);
 
   let ref = new Date();
   if (referenceDate && !(referenceDate instanceof Date) && typeof referenceDate !== 'string') {
@@ -90,6 +101,7 @@ export function buildCycleInfo(cycleStartDate, onboardingAnswers = {}, reference
     currentCycleDay,
     cycleFrequencyDays: cycleLength,
     periodLengthDays: periodLength,
+    periodLengthSource: periodDurationSource,
     nextPeriodStart: nextPeriodStart.toISOString(),
     phase,
   };
@@ -278,6 +290,7 @@ export function buildPartnerSharedDataPayload({
   mood,
   sleep,
   cycleStartDate,
+  periodEntries = [],
   suggestions,
   dynamicNeeds = null,
   connectedAt = null,
@@ -322,7 +335,7 @@ export function buildPartnerSharedDataPayload({
     shareCycle: canShareCycle,
     cycleInfo: canShareCycle
       ? {
-          ...buildCycleInfo(effectiveCycleStart, onboardingAnswers),
+          ...buildCycleInfo(effectiveCycleStart, onboardingAnswers, new Date(), periodEntries),
           answers: extractCycleAnswers(onboardingAnswers),
         }
       : null,

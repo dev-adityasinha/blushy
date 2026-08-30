@@ -37,10 +37,6 @@ export function getPreviousMonthMatchingDayWindow(now = new Date()) {
   };
 }
 
-export function buildMonthlyMirrorDeleteQuery(tableName = 'community_messages') {
-  return `DELETE FROM ${tableName} WHERE created_at >= $1 AND created_at < $2`;
-}
-
 async function removeLocalImageIfPresent(imageUrl) {
   if (typeof imageUrl !== 'string' || imageUrl.trim().length === 0) {
     return;

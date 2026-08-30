@@ -19,6 +19,8 @@ import {
   sendPartnerMessage,
   updatePartnerPermissions,
   toggleSupportAction,
+  listSharedActivitiesController,
+  updateSharedActivityController,
   decodePartnerMessageController,
 } from '../controllers/partnerController.js';
 import { optionalAuth } from '../middleware/optionalAuth.js';
@@ -39,6 +41,8 @@ router.patch('/connections/:connectionId/permissions', optionalAuth, updatePartn
 router.get('/connections/:connectionId/shared-data', optionalAuth, getPartnerSharedData);
 router.post('/connections/:connectionId/shared-data/view', optionalAuth, markPartnerDataViewed);
 router.post('/connections/:connectionId/support-actions/toggle', optionalAuth, toggleSupportAction);
+router.get('/connections/:connectionId/activities', optionalAuth, listSharedActivitiesController);
+router.post('/connections/:connectionId/activities/:activityKey', optionalAuth, updateSharedActivityController);
 router.post('/connections/:connectionId/decode-message', optionalAuth, decodePartnerMessageController);
 router.get('/connections/:connectionId/messages', optionalAuth, listPartnerMessages);
 router.post('/connections/:connectionId/messages', optionalAuth, uploadPartnerAttachment, sendPartnerMessage);

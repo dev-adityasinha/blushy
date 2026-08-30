@@ -37,11 +37,11 @@ class ExploreScreen extends StatelessWidget {
             ),
             child: Row(
               children: const [
-                Icon(Icons.search_rounded, color: BlushyColors.textLight, size: 20),
+                Icon(Icons.search_rounded, color: BlushyColors.textMuted, size: 20),
                 SizedBox(width: 12),
                 Text(
                   'Search medical papers, stories, guides...',
-                  style: TextStyle(color: BlushyColors.textLight, fontSize: 13),
+                  style: TextStyle(color: BlushyColors.textMuted, fontSize: 13),
                 ),
               ],
             ),
@@ -146,7 +146,7 @@ class ExploreScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: BlushyColors.textLight,
+              color: BlushyColors.textMuted,
             ),
           ),
         ],
@@ -194,7 +194,7 @@ class ExploreScreen extends StatelessWidget {
             meta,
             style: const TextStyle(
               fontSize: 11,
-              color: BlushyColors.textLight,
+              color: BlushyColors.textMuted,
             ),
           ),
         ],

@@ -76,9 +76,9 @@ If it is not a medical report/prescription (e.g. general chat photo, screenshot 
   let parsed = { isMedicalReport: false, medications: [], details: '' };
 
   // 4. Query Grok AI/Vision AI for document categorization
-  if (env.grokApiKey) {
+  if (env.aiChatApiKey) {
     try {
-      const requestModel = env.grokModel || 'x-ai/grok-2';
+      const requestModel = env.aiChatModel;
       
       let messagesPayload = [];
       if (isImage) {
@@ -105,10 +105,10 @@ If it is not a medical report/prescription (e.g. general chat photo, screenshot 
         messagesPayload = [{ role: 'user', content: prompt }];
       }
 
-      const response = await fetch(env.grokApiUrl, {
+      const response = await fetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${env.grokApiKey}`,
+          Authorization: `Bearer ${env.aiChatApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

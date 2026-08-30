@@ -21,6 +21,8 @@ async function mapCommentRow(row, viewerUserId = null) {
   return {
     commentId: row.comment_id,
     postId: row.post_id,
+    moderationState: row.moderation_state ?? 'visible',
+    moderationNotice: row.moderation_notice ?? null,
     parentId: row.parent_id ?? null,
     authorId: row.author_id,
     authorName: display_name,

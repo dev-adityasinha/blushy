@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "node src/server.js",
+    "dev:memorydb": "node scripts/dev_server_memorydb.js",
     "start": "node src/server.js",
+    "test": "node --test --test-global-setup=./tests/helpers/globalSetup.js tests/*.test.js",
+    "test:domain": "node --test tests/domain.test.js",
+    "test:integration": "node --test --test-global-setup=./tests/helpers/globalSetup.js tests/integration.test.js",
     "maildev": "maildev --smtp 1025 --web 1080",
     "lint:security": "node ../../scripts/check-sensitive-logs.js"
   },
@@ -15,6 +19,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.1",
+    "file-type": "^20.5.0",
     "google-auth-library": "^10.9.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -28,6 +33,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "maildev": "^2.2.1"
+    "maildev": "^2.2.1",
+    "mongodb-memory-server": "^11.2.0"
   }
 }

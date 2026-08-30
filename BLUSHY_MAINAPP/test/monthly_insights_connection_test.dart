@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:blushy_life_app/services/api_insights_service.dart';
 import 'package:blushy_life_app/services/sia_dashboard_service.dart';
 import 'package:blushy_life_app/core/state.dart';
-import 'package:blushy_life_app/features/home/models.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

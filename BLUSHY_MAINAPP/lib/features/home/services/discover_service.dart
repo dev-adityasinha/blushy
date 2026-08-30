@@ -196,7 +196,7 @@ class DiscoverService {
         conversationSnippets.add(journalData['text'].toString());
       }
 
-      final String allText = "${lifeStage} ${goals.join(' ')} ${symptoms.join(' ')} ${conditions.join(' ')} ${conversationSnippets.join(' ')}".toLowerCase();
+      final String allText = "$lifeStage ${goals.join(' ')} ${symptoms.join(' ')} ${conditions.join(' ')} ${conversationSnippets.join(' ')}".toLowerCase();
 
       final List<String> prioritized = [];
       if (allText.contains('hormon') || allText.contains('pcos') || allText.contains('endo') || allText.contains('cycle')) {

@@ -83,7 +83,6 @@ ${entry.body}
 ''';
 
       case ExportFormat.pdf:
-      default:
         return 'PDF Export Document generated for ${entry.title} [Style: ${style.name}]';
     }
   }

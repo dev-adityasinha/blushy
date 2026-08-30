@@ -998,6 +998,16 @@ class BlushyOSState extends ChangeNotifier {
     currentViewIndex = index;
     notifyListeners();
   }
+
+  String get recommendedActionSubtitle => "Based on your current phase";
+  bool _recommendedActionCompleted = false;
+  bool get recommendedActionCompleted => _recommendedActionCompleted;
+  
+  void completeRecommendedAction() {
+    _recommendedActionCompleted = true;
+    _saveState();
+    notifyListeners();
+  }
 }
 
 

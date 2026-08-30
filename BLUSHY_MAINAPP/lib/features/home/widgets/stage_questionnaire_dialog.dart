@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/state.dart';
 import '../../../core/storage.dart';
 import '../../../theme/colors.dart';
-import '../../../services/api_auth_service.dart';
 
 class StageQuestionnaireDialog extends StatefulWidget {
   final String stageKey;
@@ -105,28 +104,40 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
     if (opt.contains('hygiene') && saved.contains('hygiene')) return true;
     // Sports / School / Active
     if ((opt.contains('sport') || opt.contains('school') || opt.contains('active')) && 
-        (saved.contains('sport') || saved.contains('school') || saved.contains('active'))) return true;
+        (saved.contains('sport') || saved.contains('school') || saved.contains('active'))) {
+      return true;
+    }
     // Tracking
     if (opt.contains('track') && (saved.contains('track') || saved.contains('predict') || saved.contains('period'))) return true;
     // Mood / Emotions / Anxiety / PMS
     if ((opt.contains('mood') || opt.contains('emotion') || opt.contains('pms') || opt.contains('anxiety')) && 
-        (saved.contains('mood') || saved.contains('emotion') || saved.contains('pms') || saved.contains('anxiety'))) return true;
+        (saved.contains('mood') || saved.contains('emotion') || saved.contains('pms') || saved.contains('anxiety'))) {
+      return true;
+    }
     // Sleep / Rest
     if (opt.contains('sleep') && (saved.contains('sleep') || saved.contains('night') || saved.contains('insomnia') || saved.contains('rest'))) return true;
     // Energy / Fatigue
     if ((opt.contains('energy') || opt.contains('fatigue') || opt.contains('stamina')) &&
-        (saved.contains('energy') || saved.contains('fatigue') || saved.contains('stamina'))) return true;
+        (saved.contains('energy') || saved.contains('fatigue') || saved.contains('stamina'))) {
+      return true;
+    }
     // Acne / Skin
     if ((opt.contains('acne') || opt.contains('skin')) && (saved.contains('acne') || saved.contains('skin'))) return true;
     // Ovulation / Fertility
     if ((opt.contains('ovulation') || opt.contains('fertile') || opt.contains('fertility')) &&
-        (saved.contains('ovulation') || saved.contains('fertile') || saved.contains('fertility'))) return true;
+        (saved.contains('ovulation') || saved.contains('fertile') || saved.contains('fertility'))) {
+      return true;
+    }
     // Nutrition / Diet
     if ((opt.contains('nutrition') || opt.contains('diet') || opt.contains('food')) &&
-        (saved.contains('nutrition') || saved.contains('diet') || saved.contains('food'))) return true;
+        (saved.contains('nutrition') || saved.contains('diet') || saved.contains('food'))) {
+      return true;
+    }
     // Fitness / Movement / Exercise
     if ((opt.contains('fitness') || opt.contains('movement') || opt.contains('exercise') || opt.contains('sync')) &&
-        (saved.contains('fitness') || saved.contains('movement') || saved.contains('exercise') || saved.contains('sync'))) return true;
+        (saved.contains('fitness') || saved.contains('movement') || saved.contains('exercise') || saved.contains('sync'))) {
+      return true;
+    }
     // PCOS
     if (opt.contains('pcos') && saved.contains('pcos')) return true;
     // Endometriosis
@@ -147,7 +158,9 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
     if (opt.contains('weight') && saved.contains('weight')) return true;
     // Hot flashes / vasomotor
     if ((opt.contains('flash') || opt.contains('vasomotor') || opt.contains('temp')) &&
-        (saved.contains('flash') || saved.contains('vasomotor') || saved.contains('temp'))) return true;
+        (saved.contains('flash') || saved.contains('vasomotor') || saved.contains('temp'))) {
+      return true;
+    }
     // Regularity
     if (opt.contains('very regular') && saved.contains('very regular')) return true;
     if (opt.contains('mostly regular') && saved.contains('mostly regular')) return true;

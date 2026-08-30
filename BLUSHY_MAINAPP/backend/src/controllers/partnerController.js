@@ -3,6 +3,8 @@ import { partnerRepository } from '../repositories/partnerRepository.js';
 import { userRepository } from '../repositories/userRepository.js';
 import { createHttpError } from '../utils/httpError.js';
 import { publishToUsers } from '../utils/realtimeHub.js';
+import { emailService } from '../services/emailService.js';
+import { logger } from '../utils/logger.js';
 
 async function requireAuthUser(req) {
   const userId = req.user?.userId;
@@ -180,8 +182,29 @@ export async function invitePartner(req, res, next) {
       },
     );
 
+    // The realtime event only reaches someone who already has the app open, so
+    // without this the invitation was created and nobody was ever told. Failure
+    // to send must not roll back an invitation that already exists -- it is
+    // visible in the app either way -- so it is logged, not thrown.
+    let emailed = false;
+    try {
+      await emailService.sendPartnerInvite({
+        to: receiver.email,
+        senderName: sender.display_name || sender.displayName || sender.email,
+      });
+      emailed = true;
+    } catch (error) {
+      logger.warn('Partner invitation created but the notification email failed', {
+        invitationId: invitation.invitationId,
+        message: error?.message,
+      });
+    }
+
     res.status(201).json({
-      message: 'Invitation sent successfully.',
+      message: emailed
+        ? 'Invitation sent successfully.'
+        : 'Invitation created. We could not email them, but it is waiting in their app.',
+      emailed,
       invitation,
     });
   } catch (error) {
@@ -648,6 +671,62 @@ export async function toggleSupportAction(req, res, next) {
     });
 
     res.status(200).json({ completedActionIds });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Shared activities (spec §10, §16)
+ * ------------------------------------------------------------------ */
+
+export async function listSharedActivitiesController(req, res, next) {
+  try {
+    const user = await requireAuthUser(req);
+    const connectionId = String(req.params?.connectionId ?? '').trim();
+    if (!connectionId) throw createHttpError(400, 'Connection id is required.');
+
+    const activities = await partnerRepository.listSharedActivities({
+      connectionId,
+      userId: user.user_id,
+    });
+    // null means the caller is not part of this connection. 404 rather than
+    // 403, so an outsider cannot use the response to confirm it exists.
+    if (activities === null) throw createHttpError(404, 'Connection not found.');
+
+    res.status(200).json({ activities });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateSharedActivityController(req, res, next) {
+  try {
+    const user = await requireAuthUser(req);
+    const connectionId = String(req.params?.connectionId ?? '').trim();
+    const activityKey = String(req.params?.activityKey ?? '').trim();
+    const status = String(req.body?.status ?? '').trim();
+
+    if (!connectionId || !activityKey) {
+      throw createHttpError(400, 'Connection id and activity key are required.');
+    }
+
+    const result = await partnerRepository.setSharedActivityStatus({
+      connectionId,
+      userId: user.user_id,
+      activityKey,
+      status,
+    });
+
+    if (result === null) throw createHttpError(404, 'Connection not found.');
+    if (!result.ok) {
+      throw createHttpError(400, `Cannot move this activity to "${status}".`, {
+        code: result.reason,
+        from: result.from,
+      });
+    }
+
+    res.status(200).json({ activities: result.activities });
   } catch (error) {
     next(error);
   }

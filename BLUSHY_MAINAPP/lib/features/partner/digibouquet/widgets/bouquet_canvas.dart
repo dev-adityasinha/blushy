@@ -14,7 +14,7 @@ class BouquetCanvas extends StatefulWidget {
   final Function(int index, double x, double y)? onFlowerMoved;
 
   const BouquetCanvas({
-    Key? key,
+    super.key,
     required this.flowers,
     required this.greeneryIndex,
     required this.wrappingPaper,
@@ -22,7 +22,7 @@ class BouquetCanvas extends StatefulWidget {
     required this.mode,
     this.isEditing = false,
     this.onFlowerMoved,
-  }) : super(key: key);
+  });
 
   @override
   State<BouquetCanvas> createState() => _BouquetCanvasState();
@@ -39,10 +39,10 @@ class _BouquetCanvasState extends State<BouquetCanvas> {
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.4)),
+          border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.4)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -51,9 +51,7 @@ class _BouquetCanvasState extends State<BouquetCanvas> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final double logicalWidth = 520.0;
-            final double logicalHeight = 580.0;
             final double scaleX = constraints.maxWidth / logicalWidth;
-            final double scaleY = constraints.maxHeight / logicalHeight;
             final double scale = scaleX; // Keep aspect ratio uniform
 
             // Build layers
@@ -105,7 +103,7 @@ class _BouquetCanvasState extends State<BouquetCanvas> {
           height: vaseHeight * scale,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
@@ -113,12 +111,12 @@ class _BouquetCanvasState extends State<BouquetCanvas> {
                 bottomRight: Radius.circular(40),
               ),
               border: Border.all(
-                color: Colors.white.withOpacity(0.35),
+                color: Colors.white.withValues(alpha: 0.35),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -139,7 +137,7 @@ class _BouquetCanvasState extends State<BouquetCanvas> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withOpacity(0.15),
+                        Colors.white.withValues(alpha: 0.15),
                         Colors.transparent,
                       ],
                     ),
@@ -166,12 +164,12 @@ class _BouquetCanvasState extends State<BouquetCanvas> {
                 bottomRight: Radius.circular(50),
               ),
               border: Border.all(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -409,7 +407,7 @@ class _BouquetCanvasState extends State<BouquetCanvas> {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    color.withOpacity(0.85),
+                    color.withValues(alpha: 0.85),
                     Colors.transparent,
                   ],
                 ),
@@ -423,7 +421,7 @@ class _BouquetCanvasState extends State<BouquetCanvas> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: color.withOpacity(0.5),
+                    color: color.withValues(alpha: 0.5),
                     blurRadius: 10 * scale,
                   ),
                 ],

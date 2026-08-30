@@ -2,12 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:blushy_life_app/core/storage.dart';
 import 'package:blushy_life_app/services/auth_storage.dart';
 import 'package:blushy_life_app/services/sia_dashboard_service.dart';
-import 'package:blushy_life_app/services/api_period_service.dart';
 import 'package:blushy_life_app/core/state.dart';
-import 'package:blushy_life_app/features/home/models.dart';
+import 'helpers/isolated_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // Each test process gets its own storage directory.
+  useIsolatedStorage();
+
 
   group('SIA Dynamic Dashboard & Multi-Vector Exit Synchronization Suite', () {
     setUp(() {

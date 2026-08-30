@@ -20,7 +20,7 @@ class BuilderScreen extends StatefulWidget {
   final AuthSession? session;
   final PartnerConnection? connection;
 
-  const BuilderScreen({Key? key, this.session, this.connection}) : super(key: key);
+  const BuilderScreen({super.key, this.session, this.connection});
 
   @override
   State<BuilderScreen> createState() => _BuilderScreenState();
@@ -50,6 +50,8 @@ class _BuilderScreenState extends State<BuilderScreen> {
   }
 
   Future<void> _shareBouquetImage() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final bouquetState = Provider.of<BouquetState>(context, listen: false);
     try {
       final boundary = _canvasKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
@@ -68,10 +70,9 @@ class _BuilderScreenState extends State<BuilderScreen> {
         text: 'I made a beautiful digital bouquet for you! 💐',
       );
 
-      final state = Provider.of<BouquetState>(context, listen: false);
-      state.incrementBouquetCounter();
+      bouquetState.incrementBouquetCounter();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('Could not share image: $e')),
       );
     }
@@ -140,7 +141,6 @@ class _BuilderScreenState extends State<BuilderScreen> {
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<BouquetState>(context);
-    final theme = Theme.of(context);
 
     // Trigger confetti automatically when entering finish step
     if (state.currentStep == 'finish' && _confettiController.state == ConfettiControllerState.stopped) {
@@ -238,9 +238,9 @@ class _BuilderScreenState extends State<BuilderScreen> {
             shape: BoxShape.circle,
             color: isDone
                 ? activeColor
-                : (isActive ? activeColor.withOpacity(0.15) : Colors.transparent),
+                : (isActive ? activeColor.withValues(alpha: 0.15) : Colors.transparent),
             border: Border.all(
-              color: isDone || isActive ? activeColor : Colors.grey.withOpacity(0.4),
+              color: isDone || isActive ? activeColor : Colors.grey.withValues(alpha: 0.4),
               width: 2,
             ),
           ),
@@ -273,7 +273,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
       width: 40,
       height: 2,
       margin: const EdgeInsets.only(left: 8, right: 8, bottom: 14),
-      color: isDone ? const Color(0xFFE8A0B4) : Colors.grey.withOpacity(0.3),
+      color: isDone ? const Color(0xFFE8A0B4) : Colors.grey.withValues(alpha: 0.3),
     );
   }
 
@@ -311,7 +311,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                 height: 6,
                 width: 200,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(3),
                 ),
                 child: FractionallySizedBox(
@@ -392,7 +392,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                   color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: count > 0 ? const Color(0xFFE8A0B4) : Theme.of(context).dividerColor.withOpacity(0.2),
+                    color: count > 0 ? const Color(0xFFE8A0B4) : Theme.of(context).dividerColor.withValues(alpha: 0.2),
                     width: count > 0 ? 2 : 1,
                   ),
                 ),
@@ -465,7 +465,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: Colors.red.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(Icons.remove, size: 14, color: Colors.red),
@@ -619,7 +619,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 4,
                         ),
                       ],
@@ -690,7 +690,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
         children: [
           // Repaint boundary wrapped canvas for screenshots
           Center(
-            child: Container(
+            child: SizedBox(
               width: 320,
               child: RepaintBoundary(
                 key: _canvasKey,

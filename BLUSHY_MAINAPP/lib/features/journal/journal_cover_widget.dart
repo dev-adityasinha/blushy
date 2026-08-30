@@ -36,7 +36,6 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
   late Animation<double> _ribbonSwingAnim;
   late Animation<double> _coverRotateAnim;
   late Animation<double> _pagesFlipAnim;
-  late Animation<double> _paperSettleAnim;
 
   Offset _pointerPos = Offset.zero;
   bool _isUnlocked = false;
@@ -73,9 +72,6 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
     );
 
     // 5. Paper settles (0.85 - 1.0)
-    _paperSettleAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _openController, curve: const Interval(0.85, 1.0, curve: Curves.easeOutBack)),
-    );
   }
 
   @override

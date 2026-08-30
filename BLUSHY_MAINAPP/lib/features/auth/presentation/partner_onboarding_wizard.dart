@@ -169,7 +169,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
         style: GoogleFonts.poppins(fontSize: 16, color: BlushyColors.text),
         decoration: InputDecoration(
           hintText: "Your preferred name",
-          hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withOpacity(0.5)),
+          hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
           border: const UnderlineInputBorder(borderSide: BorderSide(color: BlushyColors.primary)),
         ),
         onChanged: (val) {
@@ -286,7 +286,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
                 onPressed: onNextAction,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: BlushyColors.primary,
-                  disabledBackgroundColor: BlushyColors.primary.withOpacity(0.4),
+                  disabledBackgroundColor: BlushyColors.primary.withValues(alpha: 0.4),
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
@@ -315,7 +315,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
         decoration: BoxDecoration(
-          color: isSelected ? BlushyColors.primary.withOpacity(0.08) : Colors.white,
+          color: isSelected ? BlushyColors.primary.withValues(alpha: 0.08) : Colors.white,
           border: Border.all(color: isSelected ? BlushyColors.primary : BlushyColors.border),
           borderRadius: BorderRadius.circular(16),
         ),
@@ -337,7 +337,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
             else if (isMultiSelect)
               Icon(
                 Icons.check_box_outline_blank,
-                color: BlushyColors.secondaryText.withOpacity(0.4),
+                color: BlushyColors.secondaryText.withValues(alpha: 0.4),
                 size: 20,
               ),
           ],
@@ -375,7 +375,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
               Text(
                 "Everything she shares with you is controlled by her. You will not automatically see private metrics like symptoms, journal records, or private Sia conversations.",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withOpacity(0.8), height: 1.45),
+                style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.8), height: 1.45),
               ),
               const Spacer(),
               ElevatedButton(
@@ -453,7 +453,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
                     ),
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),

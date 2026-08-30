@@ -1,6 +1,7 @@
 import { getPeriodEntries } from '../repositories/periodRepository.js';
 import { getUserById } from '../repositories/userRepository.js';
-import { periodPredictionConfig } from '../config/periodPredictionConfig.js';
+import { periodPredictionConfig, periodDurationBounds } from '../config/periodPredictionConfig.js';
+import { resolvePeriodDuration } from '../domain/periodDuration.js';
 
 function isoDate(d) {
   if (!d || !(d instanceof Date) || Number.isNaN(d.getTime())) return null;
@@ -115,6 +116,8 @@ export async function calculatePeriodPredictions(userId, options = {}) {
         cycleStartDate: null,
         latestConfirmedPeriodStartDate: null,
         periodDurationDays: null,
+        periodDurationSource: null,
+        periodDurationObservations: 0,
         isCurrentPeriod: false,
         periodDay: null,
         isOverdue: false,
@@ -177,6 +180,8 @@ export async function calculatePeriodPredictions(userId, options = {}) {
         cycleStartDate: null,
         latestConfirmedPeriodStartDate: null,
         periodDurationDays: periodPredictionConfig.defaultPeriodDurationDays,
+        periodDurationSource: 'default',
+        periodDurationObservations: 0,
         isCurrentPeriod: false,
         periodDay: null,
         isOverdue: false,
@@ -222,12 +227,8 @@ export async function calculatePeriodPredictions(userId, options = {}) {
   }
 
   const statedCycleLength = parseCycleLengthFromAnswers(onboardingAnswers);
-  const rawDuration = Number(onboardingAnswers.period_duration_days || onboardingAnswers.cycle_last_period_duration_days);
-  const periodDurationDays = Number.isFinite(rawDuration) &&
-    rawDuration >= periodPredictionConfig.minPeriodDurationDays &&
-    rawDuration <= periodPredictionConfig.maxPeriodDurationDays
-      ? Math.round(rawDuration)
-      : periodPredictionConfig.defaultPeriodDurationDays;
+  const { periodDurationDays, periodDurationSource, periodDurationObservations } =
+    resolvePeriodDuration(entries, onboardingAnswers, periodDurationBounds);
 
   let calculatedCycleLength = statedCycleLength;
   let confidenceLevel = 'low';
@@ -331,6 +332,8 @@ export async function calculatePeriodPredictions(userId, options = {}) {
       cycleStartDate: isoDate(latestConfirmedPeriodStartDate),
       latestConfirmedPeriodStartDate: isoDate(latestConfirmedPeriodStartDate),
       periodDurationDays,
+      periodDurationSource,
+      periodDurationObservations,
       isCurrentPeriod,
       periodDay,
       isOverdue,

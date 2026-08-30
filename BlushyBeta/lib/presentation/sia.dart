@@ -40,7 +40,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
       children: [
         // Immersive active header info
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, py: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           color: BlushyColors.background,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,13 +93,13 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                 Expanded(
                   child: TextField(
                     controller: _chatController,
-                    style: const TextStyle(fontSize: 14, color: BlushyColors.textDark),
+                    style: const TextStyle(fontSize: 14, color: BlushyColors.text),
                     onSubmitted: (_) => _sendMessage(state),
                     decoration: InputDecoration(
                       hintText: "Reflect or query Sia...",
-                      hintStyle: const TextStyle(color: BlushyColors.textLight, fontSize: 14),
+                      hintStyle: const TextStyle(color: BlushyColors.secondaryText, fontSize: 14),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, py: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                   ),
                 ),
@@ -153,7 +153,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                   crossAxisAlignment: msg.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, py: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         color: msg.isUser 
                           ? BlushyColors.background 
@@ -167,7 +167,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                           fontSize: 14,
                           fontFamily: msg.isUser ? null : 'Georgia',
                           height: 1.5,
-                          color: BlushyColors.textDark,
+                          color: BlushyColors.text,
                         ),
                       ),
                     ),
@@ -182,7 +182,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                             labelStyle: const TextStyle(
                               fontSize: 12, 
                               fontWeight: FontWeight.w600,
-                              color: BlushyColors.textDark,
+                              color: BlushyColors.text,
                             ),
                             backgroundColor: BlushyColors.surface,
                             side: const BorderSide(color: BlushyColors.border),

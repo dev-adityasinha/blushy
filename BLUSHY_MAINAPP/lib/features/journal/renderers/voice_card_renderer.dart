@@ -20,8 +20,7 @@ class VoiceCardRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     String duration = '00:12';
     String dateStr = 'Today';
-    String mood = 'satisfied';
-
+  
     if (content is Map<String, dynamic>) {
       duration = content['duration'] ?? '00:12';
       dateStr = content['date'] ?? 'Today';

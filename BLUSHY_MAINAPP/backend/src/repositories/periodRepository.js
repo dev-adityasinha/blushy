@@ -65,27 +65,35 @@ async function syncLatestPeriodToUser(userId) {
     const latestDateStr = formatDateOnly(newest[0].period_start_date);
     const parsedDate = new Date(latestDateStr);
 
-    const user = await db.collection(usersColl).findOne({ user_id: cleanUserId });
-    const hasAnswersObj = user?.onboarding_answers && typeof user.onboarding_answers === 'object';
-    const setDoc = {
-      cycle_start_date: parsedDate,
-      updated_at: new Date(),
-    };
-    if (hasAnswersObj) {
-      setDoc['onboarding_answers.last_period'] = latestDateStr;
-      setDoc['onboarding_answers.cycle_start_date'] = latestDateStr;
-      setDoc['onboarding_answers.period_last_start_date'] = latestDateStr;
-    } else {
-      setDoc.onboarding_answers = {
-        last_period: latestDateStr,
-        cycle_start_date: latestDateStr,
-        period_last_start_date: latestDateStr,
-      };
-    }
-
+    // Same shape as syncLegacyProfileStage: rebuilding the object handles a
+    // null, absent or wrongly-typed onboarding_answers in one atomic update,
+    // instead of reading the document first and branching on what it found.
     await db.collection(usersColl).updateOne(
       { user_id: cleanUserId },
-      { $set: setDoc }
+      [
+        {
+          $set: {
+            cycle_start_date: parsedDate,
+            updated_at: new Date(),
+            onboarding_answers: {
+              $mergeObjects: [
+                {
+                  $cond: [
+                    { $eq: [{ $type: '$onboarding_answers' }, 'object'] },
+                    '$onboarding_answers',
+                    {},
+                  ],
+                },
+                {
+                  last_period: latestDateStr,
+                  cycle_start_date: latestDateStr,
+                  period_last_start_date: latestDateStr,
+                },
+              ],
+            },
+          },
+        },
+      ],
     );
   }
 }

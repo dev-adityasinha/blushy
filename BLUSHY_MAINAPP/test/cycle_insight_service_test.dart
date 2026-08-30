@@ -2,9 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:blushy_life_app/core/storage.dart';
 import 'package:blushy_life_app/services/auth_storage.dart';
 import 'package:blushy_life_app/features/home/services/cycle_insight_service.dart';
+import 'helpers/isolated_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // Each test process gets its own storage directory.
+  useIsolatedStorage();
+
 
   group('CycleInsightService Tests', () {
     setUp(() {

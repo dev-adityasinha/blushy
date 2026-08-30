@@ -38,13 +38,16 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
   Widget build(BuildContext context) {
     // Read the shared mode state from storage (synced with Home screen debug toggle)
     final map = BlushyStorage.read('partner_debug_shared_mode');
-    final bool isSharedMode = map != null ? ((map as Map)['value'] as bool? ?? true) : true;
+    final bool isSharedMode = ((map as Map)['value'] as bool? ?? true);
 
-    final state = BlushyOSProvider.of(context);
+    // Subscribes this widget to BlushyOSState. The values below come from
+    // BlushyStorage, which has no change notification of its own, so this
+    // dependency is what rebuilds the tab when the profile changes.
+    BlushyOSProvider.of(context);
     String activeStage = "everydayWellness";
     try {
       final profile = BlushyStorage.read('user_profile.json');
-      if (profile != null && profile['profile'] != null) {
+      if (profile['profile'] != null) {
         activeStage = profile['profile']['lifeStage'] ?? "everydayWellness";
       }
     } catch (_) {}
@@ -125,7 +128,11 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
                   // Milestones
                   _buildUsSharedCard(
                     title: "Next Milestone",
-                    value: activeStage == 'pregnancy' ? "Week 24 Milestones" : "Daily check-in completed",
+                    // Said "Week 24 Milestones" to every partner of a
+                    // pregnant user, whatever week she was actually in.
+                    value: activeStage == 'pregnancy'
+                        ? "Shared pregnancy milestones"
+                        : "Daily check-in completed",
                     icon: Icons.flag_outlined,
                     color: const Color(0xFFFFF9F2),
                   ),

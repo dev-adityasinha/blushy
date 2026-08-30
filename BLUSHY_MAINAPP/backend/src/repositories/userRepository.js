@@ -281,6 +281,20 @@ async function updateOnboardingAnswers(userId, answers) {
     }
   }
 
+  // How many days the period itself lasts, kept in the same 2-10 day window the
+  // prediction engine accepts. Out-of-range input is dropped rather than
+  // clamped, so a typo does not become a plausible-looking answer.
+  const canonicalPeriodDuration =
+    answers?.period_duration_days ?? mergedAnswers.period_duration_days;
+  if (canonicalPeriodDuration != null) {
+    const numDur = Number(canonicalPeriodDuration);
+    if (Number.isFinite(numDur) && numDur >= 2 && numDur <= 10) {
+      mergedAnswers.period_duration_days = String(Math.round(numDur));
+    } else {
+      delete mergedAnswers.period_duration_days;
+    }
+  }
+
   const canonicalLastPeriod = answers?.last_period ?? answers?.last_period_date ?? answers?.cycle_start_date;
   if (canonicalLastPeriod) {
     mergedAnswers.last_period = canonicalLastPeriod;

@@ -5,6 +5,15 @@ import { isUserOnline, publishToUsers } from '../utils/realtimeHub.js';
 import { dailyMoodRepository } from './dailyMoodRepository.js';
 import { sleepRepository } from './sleepRepository.js';
 import { userRepository } from './userRepository.js';
+import { getPeriodEntries } from './periodRepository.js';
+import { env } from '../utils/env.js';
+import {
+  ACTIVITY_STATES,
+  SHARED_ACTIVITIES,
+  isKnownActivity,
+  canTransition,
+  buildActivityList,
+} from '../domain/sharedActivities.js';
 import { buildPartnerCareSuggestions, buildPartnerSharedDataPayload, buildCycleInfo } from '../services/partnerSuggestionService.js';
 import { getDynamicPartnerNeeds } from '../services/partnerNeedsService.js';
 
@@ -127,6 +136,31 @@ function mapMessageRow(row) {
     isDelivered: Boolean(row.is_delivered),
     isRead: Boolean(row.is_read),
   };
+}
+
+/**
+ * Resolves the two roles from the user records when the caller does not have
+ * them.
+ *
+ * Invitations store only the two user ids -- no roles -- so every call that
+ * passed `invitation.senderRole` was passing `undefined`. Every branch of
+ * resolvePermissionOwner then fell through to "the sender", which made the
+ * person who sent the invite the owner of the permissions regardless of role.
+ * A man inviting a woman ended up owning her sharing panel, and she got 403
+ * trying to read or change it, so she could never share anything at all.
+ */
+async function resolvePermissionOwnerFromUsers({ senderUserId, receiverUserId }) {
+  const [sender, receiver] = await Promise.all([
+    findUserDocument({ user_id: senderUserId }),
+    findUserDocument({ user_id: receiverUserId }),
+  ]);
+
+  return resolvePermissionOwner({
+    senderUserId,
+    senderRole: sender?.role,
+    receiverUserId,
+    receiverRole: receiver?.role,
+  });
 }
 
 function resolvePermissionOwner({ senderUserId, senderRole, receiverUserId, receiverRole }) {
@@ -335,11 +369,9 @@ async function createConnectionForInvitation(invitation) {
     return existing.connection_id;
   }
 
-  const permissionOwnerUserId = resolvePermissionOwner({
+  const permissionOwnerUserId = await resolvePermissionOwnerFromUsers({
     senderUserId: invitation.senderUserId,
-    senderRole: invitation.senderRole,
     receiverUserId: invitation.receiverUserId,
-    receiverRole: invitation.receiverRole,
   });
 
   const connectionId = randomUUID();
@@ -444,11 +476,9 @@ async function respondToInvitation({ invitationId, receiverUserId, action }) {
     let connectionId = existingConnection?.connection_id ?? null;
 
     if (!connectionId) {
-      const permissionOwnerUserId = resolvePermissionOwner({
+      const permissionOwnerUserId = await resolvePermissionOwnerFromUsers({
         senderUserId: invitation.senderUserId,
-        senderRole: invitation.senderRole,
         receiverUserId: invitation.receiverUserId,
-        receiverRole: invitation.receiverRole,
       });
 
       connectionId = randomUUID();
@@ -757,25 +787,25 @@ async function decodeMessageHelper({ message, cycleInfo, recentHistory }) {
     ? `on Day ${cycleInfo.currentCycleDay} of her menstrual cycle (${cycleInfo.phase} phase)`
     : `in an unknown phase of her menstrual cycle`;
 
-  const grokApiKey = process.env.GROK_API_KEY || '';
-  const grokApiUrl = process.env.GROK_API_URL || 'https://openrouter.ai/api/v1/chat/completions';
-  const grokModel = process.env.GROK_MODEL || 'x-ai/grok-4.3';
+  // Same provider as the rest of the app; this previously pointed at
+  // OpenRouter with an xAI model while everything else used Groq.
+  const aiChatApiKey = env.aiChatApiKey;
+  const aiChatApiUrl = env.aiChatApiUrl;
+  const aiChatModel = env.aiChatModel;
 
-  if (!grokApiKey) {
+  if (!aiChatApiKey) {
     return `She sent: "${message}". Try responding with warmth and understanding.`;
   }
 
   try {
-    const response = await fetch(grokApiUrl, {
+    const response = await fetch(aiChatApiUrl, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${grokApiKey}`,
+        Authorization: `Bearer ${aiChatApiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://blushy.app',
-        'X-Title': 'Sia',
       },
       body: JSON.stringify({
-        model: grokModel,
+        model: aiChatModel,
         messages: [
           {
             role: 'system',
@@ -1129,8 +1159,16 @@ async function getSharedData({ connectionId, viewerUserId }) {
     data.mood = await dailyMoodRepository.getDailyMood(partnerUserId, today);
   }
 
+  let periodEntries = [];
   if (isPartnerWoman && permissions.shareCycle) {
     data.cycle = effectiveCycleStart;
+    // Gated by the same permission as the cycle itself. Only the derived
+    // period length reaches the partner -- the entries themselves never do.
+    try {
+      periodEntries = await getPeriodEntries(partnerUserId, 20);
+    } catch (err) {
+      console.error('Error fetching period entries for cycle info:', err);
+    }
   }
 
   if (permissions.shareSleep) {
@@ -1139,7 +1177,7 @@ async function getSharedData({ connectionId, viewerUserId }) {
   }
 
   const cycleInfo = (isPartnerWoman && permissions.shareCycle && data.cycle)
-    ? buildCycleInfo(data.cycle, partnerUser?.onboardingAnswers ?? {})
+    ? buildCycleInfo(data.cycle, partnerUser?.onboardingAnswers ?? {}, new Date(), periodEntries)
     : null;
 
   const hasAnyData = (permissions.shareMood && data.mood) || 
@@ -1186,6 +1224,7 @@ async function getSharedData({ connectionId, viewerUserId }) {
     mood: data.mood,
     sleep: data.sleep,
     cycleStartDate: data.cycle,
+    periodEntries,
     suggestions,
     dynamicNeeds,
     connectedAt,
@@ -1417,6 +1456,107 @@ async function getCompletedSupportActions({ connectionId, dateStr }) {
   return doc?.completed_action_ids || [];
 }
 
+
+/* ------------------------------------------------------------------ *
+ * Shared activities (spec §10, §16)
+ * ------------------------------------------------------------------ */
+
+const SHARED_ACTIVITY_COLLECTION = 'partner_shared_activities';
+
+function mapActivityRow(row) {
+  return {
+    status: row.status,
+    startedByUserId: row.started_by_user_id ?? null,
+    completedByUserId: row.completed_by_user_id ?? null,
+    startedAt: row.started_at ? new Date(row.started_at).toISOString() : null,
+    completedAt: row.completed_at ? new Date(row.completed_at).toISOString() : null,
+    completionCount: row.completion_count ?? 0,
+  };
+}
+
+/**
+ * Every activity for a connection, merged with the catalogue.
+ *
+ * Membership is checked first: activity state is shared relationship data and
+ * must not be readable by anyone who simply knows a connection id.
+ */
+async function listSharedActivities({ connectionId, userId }) {
+  const connection = await getConnectionForUser(connectionId, userId);
+  if (!connection) return null;
+
+  const rows = await db.collection(SHARED_ACTIVITY_COLLECTION)
+    .find({ connection_id: connectionId })
+    .toArray();
+
+  const stateByKey = {};
+  for (const row of rows) {
+    stateByKey[row.activity_key] = mapActivityRow(row);
+  }
+  return buildActivityList(stateByKey);
+}
+
+/**
+ * Moves one activity to a new state. Returns null when the caller is not part
+ * of the connection, and `{ ok: false }` when the transition is not legal.
+ */
+async function setSharedActivityStatus({ connectionId, userId, activityKey, status }) {
+  const connection = await getConnectionForUser(connectionId, userId);
+  if (!connection) return null;
+
+  if (!isKnownActivity(activityKey)) {
+    return { ok: false, reason: 'unknown_activity' };
+  }
+
+  const existing = await db.collection(SHARED_ACTIVITY_COLLECTION).findOne({
+    connection_id: connectionId,
+    activity_key: activityKey,
+  });
+  const from = existing?.status ?? ACTIVITY_STATES.NOT_STARTED;
+  const repeatable = SHARED_ACTIVITIES[activityKey].repeatable;
+
+  if (!canTransition(from, status, { repeatable })) {
+    return { ok: false, reason: 'invalid_transition', from, to: status };
+  }
+
+  const now = new Date();
+  const set = { status, updated_at: now };
+  const inc = {};
+
+  if (status === ACTIVITY_STATES.IN_PROGRESS) {
+    set.started_by_user_id = userId;
+    set.started_at = now;
+    set.completed_by_user_id = null;
+    set.completed_at = null;
+  } else if (status === ACTIVITY_STATES.COMPLETED) {
+    set.completed_by_user_id = userId;
+    set.completed_at = now;
+    inc.completion_count = 1;
+  } else {
+    set.started_by_user_id = null;
+    set.started_at = null;
+    set.completed_by_user_id = null;
+    set.completed_at = null;
+  }
+
+  const update = {
+    $set: set,
+    $setOnInsert: {
+      connection_id: connectionId,
+      activity_key: activityKey,
+      created_at: now,
+    },
+  };
+  if (Object.keys(inc).length > 0) update.$inc = inc;
+
+  await db.collection(SHARED_ACTIVITY_COLLECTION).updateOne(
+    { connection_id: connectionId, activity_key: activityKey },
+    update,
+    { upsert: true },
+  );
+
+  return { ok: true, activities: await listSharedActivities({ connectionId, userId }) };
+}
+
 async function toggleCompletedSupportAction({ connectionId, userId, actionId, completed, dateStr }) {
   const dateKey = dateStr || new Date().toISOString().slice(0, 10);
   const now = new Date();
@@ -1623,4 +1763,6 @@ export const partnerRepository = {
   getActiveConnectionForUser,
   getCompletedSupportActions,
   toggleCompletedSupportAction,
+  listSharedActivities,
+  setSharedActivityStatus,
 };

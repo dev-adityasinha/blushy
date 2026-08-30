@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/colors.dart';
-import '../../../core/state.dart';
 
 class BlushySiaMemorySheet extends StatelessWidget {
   const BlushySiaMemorySheet({super.key});
@@ -106,7 +105,7 @@ class BlushySiaMemorySheet extends StatelessWidget {
         Switch(
           value: value,
           onChanged: (val) {},
-          activeColor: BlushyColors.dark,
+          activeThumbColor: BlushyColors.dark,
         ),
       ],
     );

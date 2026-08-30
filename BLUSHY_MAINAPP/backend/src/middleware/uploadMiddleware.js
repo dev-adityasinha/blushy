@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import multer from 'multer';
+import { fileTypeFromFile } from 'file-type';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +42,44 @@ function fileFilter(_req, file, cb) {
   cb(null, true);
 }
 
+function withSignatureValidation(uploadMiddleware, allowedExtensions) {
+  return (req, res, next) => {
+    uploadMiddleware(req, res, async (error) => {
+      if (error || !req.file) {
+        next(error);
+        return;
+      }
+
+      try {
+        const detected = await fileTypeFromFile(req.file.path);
+        if (!detected || !allowedExtensions.has(detected.ext)) {
+          await fs.promises.unlink(req.file.path).catch(() => {});
+          next(new Error('Uploaded file content does not match an allowed file type.'));
+          return;
+        }
+
+        next();
+      } catch (validationError) {
+        await fs.promises.unlink(req.file.path).catch(() => {});
+        next(validationError);
+      }
+    });
+  };
+}
+
+const imageExtensions = new Set(['png', 'jpg', 'jpeg', 'webp', 'bmp', 'heic', 'heif']);
+const attachmentExtensions = new Set([
+  ...imageExtensions,
+  'aac',
+  'flac',
+  'm4a',
+  'mp3',
+  'mp4',
+  'ogg',
+  'wav',
+  'webm',
+]);
+
 const upload = multer({
   storage,
   fileFilter,
@@ -49,7 +88,7 @@ const upload = multer({
   },
 });
 
-export const uploadCommunityImage = upload.single('image');
+export const uploadCommunityImage = withSignatureValidation(upload.single('image'), imageExtensions);
 
 const uploadPostsDir = path.resolve(__dirname, '../../uploads/posts');
 if (!fs.existsSync(uploadPostsDir)) {
@@ -75,7 +114,7 @@ const uploadPosts = multer({
   },
 });
 
-export const uploadPostImage = uploadPosts.single('image');
+export const uploadPostImage = withSignatureValidation(uploadPosts.single('image'), imageExtensions);
 
 const uploadDmsDir = path.resolve(__dirname, '../../uploads/direct_messages');
 if (!fs.existsSync(uploadDmsDir)) {
@@ -101,7 +140,7 @@ const uploadDms = multer({
   },
 });
 
-export const uploadDirectMessageImage = uploadDms.single('image');
+export const uploadDirectMessageImage = withSignatureValidation(uploadDms.single('image'), imageExtensions);
 
 const uploadPartnerChatDir = path.resolve(__dirname, '../../uploads/partner_chat');
 if (!fs.existsSync(uploadPartnerChatDir)) {
@@ -120,9 +159,28 @@ const storagePartnerChat = multer.diskStorage({
 
 const uploadPartnerChat = multer({
   storage: storagePartnerChat,
+  fileFilter: (_req, file, cb) => {
+    const allowedMimeTypes = new Set([
+      ...imageMimeTypes,
+      'audio/aac',
+      'audio/flac',
+      'audio/m4a',
+      'audio/mpeg',
+      'audio/mp4',
+      'audio/ogg',
+      'audio/wav',
+      'audio/webm',
+      'audio/x-m4a',
+    ]);
+    if (!allowedMimeTypes.has(file.mimetype)) {
+      cb(new Error('Only supported image and audio files are allowed.'));
+      return;
+    }
+    cb(null, true);
+  },
   limits: {
-    fileSize: 20 * 1024 * 1024, // 20 MB limit
+    fileSize: 8 * 1024 * 1024,
   },
 });
 
-export const uploadPartnerAttachment = uploadPartnerChat.single('file');
+export const uploadPartnerAttachment = withSignatureValidation(uploadPartnerChat.single('file'), attachmentExtensions);

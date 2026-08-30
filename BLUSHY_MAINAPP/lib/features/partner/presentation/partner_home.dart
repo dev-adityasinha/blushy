@@ -8,6 +8,10 @@ import '../../../core/stage_config.dart';
 import 'partner_sia.dart';
 import '../../../core/theme.dart' hide BlushyColors;
 import '../../../services/api_partner_service.dart';
+import '../../../services/api_blushy_service.dart';
+import '../../../services/api_contract_client.dart';
+import '../../../models/blushy_models.dart';
+import '../../../shared/api_state_card.dart';
 
 class PartnerHomeScreen extends StatefulWidget {
   const PartnerHomeScreen({super.key});
@@ -22,6 +26,46 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
   Map<String, dynamic>? _activeConnection;
   Map<String, dynamic>? _sharedData;
   Set<String> _completedActionIds = {};
+
+  // ---------------------------------------------------------------------
+  // Partner-safe read model (spec sections 19 to 21).
+  //
+  // The legacy shared-data endpoint predates the 13-key permission matrix, so
+  // it can surface categories the woman never granted under the current model.
+  // This is the server-filtered view: it returns only what her present
+  // permissions allow, and stops returning it the moment she revokes.
+  // ---------------------------------------------------------------------
+
+  ApiResult<PartnerHomeModel> _partnerHome = const ApiResult.loading();
+
+  Future<void> _loadPartnerHome(String connectionId) async {
+    if (connectionId.isEmpty) return;
+    final result = await PartnerApi.home(connectionId);
+    if (!mounted) return;
+    setState(() => _partnerHome = result);
+  }
+
+  /// Acknowledge or complete a care request. Only the partner may do this;
+  /// the server enforces it (spec section 11).
+  Future<void> _updateSupportRequest(SupportRequest request, String nextState) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final connectionId = (_activeConnection?['connectionId'] ?? _activeConnection?['_id'] ?? '').toString();
+
+    final result = await PartnerApi.updateSupportRequest(request.requestId, nextState);
+    if (!mounted) return;
+
+    if (result.isReady) {
+      await _loadPartnerHome(connectionId);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(nextState == 'completed' ? 'Marked as done.' : 'Let her know you have seen it.')),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(content: Text(result.errorMessage ?? 'That could not be saved.')),
+      );
+    }
+  }
 
   String _getTodayDateKey() => DateTime.now().toIso8601String().substring(0, 10);
 
@@ -94,6 +138,8 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         Map<String, dynamic> shared = {};
         if (connId.isNotEmpty) {
           shared = await _partnerService.getPartnerSharedData(connId);
+          // The permission-filtered view, loaded alongside.
+          await _loadPartnerHome(connId);
         }
         if (mounted) {
           setState(() {
@@ -215,7 +261,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.grey.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -225,7 +271,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: BlushyColors.primary.withOpacity(0.12),
+                        color: BlushyColors.primary.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.favorite, size: 20, color: BlushyColors.primary),
@@ -254,7 +300,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         dynamicNeeds['message'].toString(),
                         style: GoogleFonts.poppins(
                           fontSize: 13,
-                          color: BlushyColors.text.withOpacity(0.7),
+                          color: BlushyColors.text.withValues(alpha: 0.7),
                         ),
                       ),
                     ),
@@ -285,7 +331,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: BlushyColors.primary.withOpacity(0.1),
+                                            color: BlushyColors.primary.withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: Text(
@@ -333,7 +379,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -386,7 +432,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             height: 1.4,
-                            color: BlushyColors.text.withOpacity(0.85),
+                            color: BlushyColors.text.withValues(alpha: 0.85),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -484,12 +530,313 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
     );
   }
 
+
+  /// Cycle phase from the filtered context, or null when she has not shared it.
+  ///
+  /// Shaped to match what the existing cards already read, so the cards
+  /// themselves did not have to change.
+  static Map<String, dynamic>? _permittedCycleInfo(Map<String, dynamic> permitted) {
+    final phase = permitted['cyclePhase'];
+    if (phase is! Map) return null;
+    return {
+      'phase': phase['phase'],
+      'currentCycleDay': phase['cycleDay'],
+    };
+  }
+
+  static Map<String, dynamic>? _permittedMood(Map<String, dynamic> permitted) {
+    final mood = permitted['mood'];
+    if (mood is! Map) return null;
+    return {'mood': mood['value']};
+  }
+
+  /// Only used until a connection has been through the new sharing screen.
+  static Map<String, dynamic>? _legacyMap(dynamic value) {
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
+  }
+
+  /// The "Us" surface (spec section 21): only what she has explicitly chosen
+  /// to share, plus care requests.
+  ///
+  /// Nothing here queries her health records. The server assembles a
+  /// permission-filtered view and this renders whatever survived that filter.
+  Widget _buildUsSection() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "US",
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: BlushyColors.secondaryText,
+              letterSpacing: 2.0,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ApiStateCard<PartnerHomeModel>(
+            result: _partnerHome,
+            emptyMessage: "Nothing shared yet.",
+            restrictedMessage: "This connection is no longer active.",
+            builder: (context, home) {
+              if (!home.relationshipActive) {
+                return _usCard(
+                  icon: Icons.link_off,
+                  title: "Connection ended",
+                  body: "You no longer have access to anything that was shared.",
+                );
+              }
+
+              final populated = home.sharedSections.where((s) => s.enabled && s.items.isNotEmpty).toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (home.supportRequests.isNotEmpty) ...[
+                    ...home.supportRequests.map(_buildSupportRequestCard),
+                    const SizedBox(height: 4),
+                  ],
+                  if (populated.isEmpty)
+                    // A designed state, not an error: she has not shared
+                    // anything, and the app says so plainly rather than
+                    // implying something is missing.
+                    _usCard(
+                      icon: Icons.lock_outline,
+                      title: "Nothing shared right now",
+                      body: "She decides what to share, and can change it at any time. "
+                          "You can still use Learn and Sia for general support.",
+                    )
+                  else
+                    ...populated.map(_buildSharedSectionCard),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const Map<String, String> _sharedSectionTitles = {
+    'shared_insights': 'What Sia noticed',
+    'cycle_context': 'Cycle context',
+    'fertility_context': 'Fertility context',
+    'pregnancy_milestones': 'Pregnancy milestones',
+    'postpartum_milestones': 'Recovery milestones',
+    'appointments': 'Appointments',
+    'care_requests': 'Care requests',
+  };
+
+  Widget _buildSharedSectionCard(SharedSection section) {
+    final title = _sharedSectionTitles[section.key] ?? section.key.replaceAll('_', ' ');
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: BlushyColors.border, width: 0.8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title.toUpperCase(),
+              style: GoogleFonts.poppins(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: BlushyColors.primary,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...section.items.map((item) {
+              final text = _describeSharedItem(section.key, item);
+              if (text.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  text,
+                  style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text, height: 1.45),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Renders one shared item. Deliberately conservative: only fields the
+  /// server chose to include are read, so an unexpected shape shows nothing
+  /// rather than leaking a raw payload.
+  String _describeSharedItem(String sectionKey, Map<String, dynamic> item) {
+    switch (sectionKey) {
+      case 'shared_insights':
+        return item['description']?.toString() ?? item['title']?.toString() ?? '';
+      case 'cycle_context':
+        final phase = item['phase']?.toString();
+        final day = item['cycleDay'];
+        if (phase == null) return '';
+        return day == null ? phase : '$phase (day $day)';
+      case 'fertility_context':
+        final start = item['start']?.toString();
+        final end = item['end']?.toString();
+        return (start == null || end == null) ? '' : 'Estimated fertile window: $start to $end';
+      case 'pregnancy_milestones':
+      case 'postpartum_milestones':
+        return item['title']?.toString() ?? '';
+      case 'appointments':
+        final title = item['title']?.toString() ?? 'Appointment';
+        final date = item['date']?.toString();
+        return date == null ? title : '$title on $date';
+      default:
+        return item['text']?.toString() ?? item['title']?.toString() ?? '';
+    }
+  }
+
+  /// A care request carries only the request itself - no cycle data, no
+  /// symptoms, no life stage detail (spec section 11).
+  Widget _buildSupportRequestCard(SupportRequest request) {
+    final bool acknowledged = request.state == 'acknowledged';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFDF6F0),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.35), width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.favorite_outline, size: 16, color: BlushyColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    request.label ?? 'She asked for something',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              request.message,
+              style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text, height: 1.45),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (!acknowledged)
+                  TextButton(
+                    onPressed: () => _updateSupportRequest(request, 'acknowledged'),
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
+                    child: Text(
+                      "I have seen this",
+                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.primary),
+                    ),
+                  ),
+                if (!acknowledged) const SizedBox(width: 16),
+                TextButton(
+                  onPressed: () => _updateSupportRequest(request, 'completed'),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
+                  child: Text(
+                    "Done",
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _usCard({required IconData icon, required String title, required String body}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: BlushyColors.border, width: 0.8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: BlushyColors.secondaryText),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: BlushyColors.text,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  body,
+                  style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isConnected = _activeConnection != null && _activeConnection!.isNotEmpty;
     final partnerUser = _sharedData?['partnerUser'];
-    final cycleInfo = _sharedData?['cycleInfo'];
-    final moodData = _sharedData?['mood'];
+
+    // Cycle and mood come from the permission-filtered context, which honours
+    // the current 13-key matrix and migrates the older flags onto it. The
+    // legacy shared-data endpoint reads the old flags directly, so once she
+    // uses the new Partner Mode screen those keys no longer exist and its
+    // cards silently blank out even though she is still sharing.
+    final permitted = _partnerHome.data?.permittedContext ?? const <String, dynamic>{};
+
+    // A successful filtered response with no cycle data means she has not
+    // shared it, so the legacy value must not fill the gap. The old endpoint
+    // is only consulted while the filtered view is unavailable.
+    final bool filteredContextAvailable = _partnerHome.data != null &&
+        (_partnerHome.isReady || _partnerHome.state == ApiState.empty);
+
+    final Map<String, dynamic>? cycleInfo = filteredContextAvailable
+        ? _permittedCycleInfo(permitted)
+        : _legacyMap(_sharedData?['cycleInfo']);
+    final Map<String, dynamic>? moodData = filteredContextAvailable
+        ? _permittedMood(permitted)
+        : _legacyMap(_sharedData?['mood']);
+
     final List<dynamic> suggestions = (_sharedData?['suggestions'] is List) ? _sharedData!['suggestions'] : [];
 
     // Partner display name
@@ -611,6 +958,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                   ),
                 ],
               ),
+              _buildUsSection(),
               const SizedBox(height: 24),
 
               // Sia Noticed (Live Permissions-dependent UI)
@@ -682,7 +1030,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       decoration: BoxDecoration(
                         color: isAllCompleted
                             ? const Color(0xFFE8F5E9)
-                            : BlushyColors.primary.withOpacity(0.08),
+                            : BlushyColors.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -713,7 +1061,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                           border: Border.all(color: const Color(0xFFA5D6A7)),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2E7D32).withOpacity(0.08),
+                              color: const Color(0xFF2E7D32).withValues(alpha: 0.08),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -872,7 +1220,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
               ? []
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withValues(alpha: 0.02),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -915,7 +1263,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                           decoration: BoxDecoration(
                             color: isCompleted
                                 ? const Color(0xFFE8F5E9)
-                                : BlushyColors.primary.withOpacity(0.08),
+                                : BlushyColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -950,8 +1298,94 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
     );
   }
 
+  /// Shown when the partner has not shared cycle data, or has logged none.
+  ///
+  /// Any mood they did share is still shown -- permissions are per signal, so
+  /// having no cycle access does not mean having no access at all.
+  Widget _buildNoCycleSharedCard(String partnerName, Map<String, dynamic>? moodData) {
+    final String? mood = moodData?['mood']?.toString() ?? moodData?['notes']?.toString();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: BlushyColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: BlushyColors.secondaryText.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.lock_outline_rounded,
+                    color: BlushyColors.secondaryText, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "$partnerName's Cycle & Mood",
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
+                    ),
+                    Text(
+                      'Not shared with you',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: BlushyColors.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (mood != null && mood.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF6F0),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                'Mood shared today: $mood',
+                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+          Text(
+            'They choose what to share, and can change it at any time.',
+            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHerLiveCycleCard(String partnerName, Map<String, dynamic>? cycleInfo, Map<String, dynamic>? moodData) {
-    final String phase = cycleInfo?['phase']?.toString() ?? 'Follicular';
+    // With nothing shared this used to default to "Follicular" and tell the
+    // partner "Estrogen is rising. Her focus and mood are high." -- stated as
+    // fact about a real person who had shared nothing. Say so instead.
+    final String? knownPhase = cycleInfo?['phase']?.toString();
+    if (knownPhase == null || knownPhase.trim().isEmpty) {
+      return _buildNoCycleSharedCard(partnerName, moodData);
+    }
+    final String phase = knownPhase;
     final dynamic rawDay = cycleInfo?['currentCycleDay'];
     final int? cycleDay = (rawDay is int) ? rawDay : int.tryParse(rawDay?.toString() ?? '');
     final String? mood = moodData?['mood']?.toString() ?? moodData?['notes']?.toString();
@@ -999,7 +1433,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         border: Border.all(color: BlushyColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1016,7 +1450,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: phaseColor.withOpacity(0.12),
+                      color: phaseColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(phaseIcon, color: phaseColor, size: 22),
@@ -1058,7 +1492,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: phaseColor.withOpacity(0.06),
+              color: phaseColor.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(

@@ -22,10 +22,10 @@ Your task is to transcribe the audio with >95% word accuracy:
 11. Output only the final transcription text. Do not write any explanations, preambles, or meta-comments.`;
 
   console.log('Sending request to Gemini 2.5 Flash...');
-  const response = await fetch(env.grokApiUrl, {
+  const response = await fetch(env.aiChatApiUrl, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.grokApiKey}`,
+      Authorization: `Bearer ${env.aiChatApiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({

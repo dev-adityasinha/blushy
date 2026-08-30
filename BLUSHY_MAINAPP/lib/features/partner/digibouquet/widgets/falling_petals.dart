@@ -28,7 +28,7 @@ class PetalData {
 }
 
 class FallingPetals extends StatefulWidget {
-  const FallingPetals({Key? key}) : super(key: key);
+  const FallingPetals({super.key});
 
   @override
   State<FallingPetals> createState() => _FallingPetalsState();

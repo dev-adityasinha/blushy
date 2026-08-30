@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 
 import { emailVerificationRepository } from '../repositories/emailVerificationRepository.js';
+import { passwordResetRepository } from '../repositories/passwordResetRepository.js';
 import { userRepository } from '../repositories/userRepository.js';
 import { emailService } from './emailService.js';
 import { env } from '../utils/env.js';
@@ -13,6 +14,8 @@ import { normalizePhoneNumber } from '../utils/phone.js';
 import { validateEmailBeforeSend } from '../utils/emailValidator.js';
 
 const VERIFICATION_EXPIRY_MS = 10 * 60 * 1000;
+const RESET_CODE_EXPIRY_MS = 15 * 60 * 1000;
+const RESET_MAX_ATTEMPTS = 5;
 
 function normalizeEmail(email) {
   if (typeof email !== 'string') {
@@ -297,7 +300,12 @@ export async function sendEmailVerification(payload, context = {}) {
     message: 'Verification email sent successfully.',
     expiresIn: 600,
     mode,
-    verificationLink,
+    // The link carries a signed token that verifies the address on its own, so
+    // handing it back to the caller defeats the whole point of emailing it:
+    // anyone could register an address they do not control. It is exposed only
+    // where the delivery fallback is deliberately on, which is never in
+    // production.
+    ...(env.emailDeliveryFallbackEnabled ? { verificationLink } : {}),
     deliveryFallbackUsed: false,
   };
 }
@@ -441,11 +449,74 @@ async function loginWithEmail(payload, context = {}) {
   };
 }
 
+/**
+ * Step 1 of a password reset: email a single-use code.
+ *
+ * Always reports success. Saying "no account for that email" here would turn
+ * the endpoint into a membership oracle for a women's health app, where being
+ * a user is itself sensitive.
+ */
+async function sendPasswordResetCode(payload, context = {}) {
+  enforceStringPayload(payload, ['email']);
+
+  const email = normalizeEmail(payload?.email);
+  if (!email) {
+    throw createHttpError(400, 'Valid email is required.');
+  }
+
+  const generic = { message: 'If an account exists for that email, a reset code has been sent.' };
+
+  const user = await userRepository.getUserByEmail(email);
+  // A Google-only account has no password to reset; sending a code would let
+  // someone convert it into a password account they control.
+  if (!user || !user.passwordHash || !user.emailVerifiedAt) {
+    logger.info(`Password reset code requested for a non-resettable address from ${context.ip ?? 'unknown-ip'}`);
+    return generic;
+  }
+
+  const rawCode = generateUnusedCode();
+  const codeHash = await bcrypt.hash(rawCode, 10);
+
+  await passwordResetRepository.upsertCode({
+    emailHash: hashEmail(email),
+    codeHash,
+    expiry: Date.now() + RESET_CODE_EXPIRY_MS,
+  });
+
+  try {
+    await emailService.sendVerificationLink(email, null, rawCode);
+    logger.info(`Password reset code sent for ${email} from ${context.ip ?? 'unknown-ip'}`);
+  } catch (error) {
+    // The same generic message is returned on a delivery failure as on an
+    // address with no account. Letting this throw would answer the question
+    // the generic message exists to avoid: an unknown address returns 200 and
+    // a real one returns 500, which tells an attacker who has an account here.
+    //
+    // No code is handed back either way -- the reset simply does not arrive.
+    logger.error(`Failed to send password reset code for ${email}`, {
+      message: error?.message,
+      name: error?.name,
+    });
+  }
+
+  return generic;
+}
+
+/**
+ * Step 2: reset the password, proving control of the mailbox with the code.
+ *
+ * The phone number stays as a second factor where we hold one, but it can no
+ * longer stand alone. It used to: when an account had no phone on record the
+ * comparison was skipped entirely, so knowing the email address was enough to
+ * take the account over -- and the attacker's number was then saved to it,
+ * locking the real owner out of this same path.
+ */
 async function resetPasswordWithEmail(payload, context = {}) {
-  enforceStringPayload(payload, ['email', 'phoneNumber', 'newPassword', 'confirmPassword']);
+  enforceStringPayload(payload, ['email', 'phoneNumber', 'code', 'newPassword', 'confirmPassword']);
 
   const email = normalizeEmail(payload?.email);
   const providedPhone = normalizePhoneNumberValue(payload?.phoneNumber);
+  const code = typeof payload?.code === 'string' ? payload.code.trim() : '';
   const newPassword = typeof payload?.newPassword === 'string' ? payload.newPassword.trim() : '';
   const confirmPassword = typeof payload?.confirmPassword === 'string' ? payload.confirmPassword.trim() : '';
 
@@ -453,8 +524,8 @@ async function resetPasswordWithEmail(payload, context = {}) {
     throw createHttpError(400, 'Email is required.');
   }
 
-  if (!providedPhone) {
-    throw createHttpError(400, 'Phone number is required.');
+  if (!code) {
+    throw createHttpError(400, 'Reset code is required. Request one by email first.');
   }
 
   if (newPassword.length < 8) {
@@ -466,6 +537,28 @@ async function resetPasswordWithEmail(payload, context = {}) {
   }
 
   await checkPasswordBreached(newPassword);
+
+  const emailHash = hashEmail(email);
+  const pending = await passwordResetRepository.getByEmailHash(emailHash);
+  if (!pending) {
+    throw createHttpError(400, 'No reset in progress for this email. Request a code first.');
+  }
+
+  if (pending.expiry <= Date.now()) {
+    await passwordResetRepository.deleteByEmailHash(emailHash);
+    throw createHttpError(400, 'Reset code expired. Please request a new one.');
+  }
+
+  if (pending.attempts >= RESET_MAX_ATTEMPTS) {
+    await passwordResetRepository.deleteByEmailHash(emailHash);
+    throw createHttpError(429, 'Too many incorrect attempts. Please request a new code.');
+  }
+
+  const codeMatches = await bcrypt.compare(code, pending.codeHash);
+  if (!codeMatches) {
+    await passwordResetRepository.incrementAttempts(emailHash);
+    throw createHttpError(401, 'Invalid reset code.');
+  }
 
   const user = await userRepository.getUserByEmail(email);
   if (!user) {
@@ -484,6 +577,8 @@ async function resetPasswordWithEmail(payload, context = {}) {
   const normalizedStoredPhone = normalizePhoneNumberForResetComparison(storedPhone);
   const normalizedProvidedPhone = normalizePhoneNumberForResetComparison(providedPhone);
 
+  // Only checked when we hold a number to check against, and only as an extra
+  // hurdle on top of the code -- never as the sole proof of identity.
   if (normalizedStoredPhone && normalizedProvidedPhone && normalizedStoredPhone !== normalizedProvidedPhone) {
     throw createHttpError(401, 'Invalid Phone number.');
   }
@@ -496,16 +591,19 @@ async function resetPasswordWithEmail(payload, context = {}) {
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await userRepository.updatePasswordAndPhone(user.user_id, {
     passwordHash,
-    phoneNumber: storedPhone ? null : normalizePhoneNumber(providedPhone) ?? providedPhone,
+    // Only fill in a missing number when the reset was proven by code and the
+    // caller supplied one; never overwrite a number already on the account.
+    phoneNumber: storedPhone ? null : (providedPhone ? normalizePhoneNumber(providedPhone) ?? providedPhone : null),
   });
   await userRepository.incrementTokenVersion(user.user_id);
+  await passwordResetRepository.deleteByEmailHash(emailHash);
 
   logger.info(`Password reset completed for ${email} from ${context.ip ?? 'unknown-ip'}`);
 
   return {
-    message: storedPhone
-      ? 'Password reset successful.'
-      : 'Password reset successful. Phone number saved to your account.',
+    message: !storedPhone && providedPhone
+      ? 'Password reset successful. Phone number saved to your account.'
+      : 'Password reset successful.',
   };
 }
 
@@ -550,6 +648,7 @@ export const emailAuthService = {
   completeEmailSignup,
   confirmEmailSignup,
   loginWithEmail,
+  sendPasswordResetCode,
   resetPasswordWithEmail,
   refreshAuthToken,
 };

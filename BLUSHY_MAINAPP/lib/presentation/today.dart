@@ -31,7 +31,6 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
 
   HtmlAudioRecorder? _audioRecorder;
   bool _isListeningVoice = false;
-  bool _isTranscribing = false;
 
   bool _recommendedActionCompleted = false;
   final String _recommendedActionTitle = "Hydration & Rest Routine";
@@ -49,7 +48,6 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
     if (_isListeningVoice && _audioRecorder != null) {
       setState(() {
         _isListeningVoice = false;
-        _isTranscribing = true;
       });
 
       try {
@@ -63,7 +61,6 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
 
           if (mounted) {
             setState(() {
-              _isTranscribing = false;
             });
             if (transcribedText.trim().isNotEmpty) {
               _journalInputController.text = transcribedText.trim();
@@ -79,14 +76,12 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
         } else {
           if (mounted) {
             setState(() {
-              _isTranscribing = false;
             });
           }
         }
       } catch (e) {
         if (mounted) {
           setState(() {
-            _isTranscribing = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Voice recording error: $e")),
@@ -171,7 +166,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
               border: Border.all(color: BlushyColors.border, width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: BlushyColors.dark.withOpacity(0.02),
+                  color: BlushyColors.dark.withValues(alpha: 0.02),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -238,7 +233,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
               border: Border.all(
                 color: _recommendedActionCompleted 
                   ? BlushyColors.border 
-                  : BlushyColors.border.withOpacity(0.8),
+                  : BlushyColors.border.withValues(alpha: 0.8),
                 width: 1,
               ),
             ),
@@ -341,7 +336,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                     hintText: "Reflect here... (e.g. 'I am feeling super tired today')",
                     hintStyle: const TextStyle(fontSize: 14, color: BlushyColors.secondaryText),
                     filled: true,
-                    fillColor: BlushyColors.background.withOpacity(0.5),
+                    fillColor: BlushyColors.background.withValues(alpha: 0.5),
                     contentPadding: const EdgeInsets.all(16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),

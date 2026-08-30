@@ -1,7 +1,51 @@
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:flutter/foundation.dart';
+import '../models/blushy_models.dart';
 import 'api_base_url.dart';
+import 'language_preference.dart';
 import 'auth_storage.dart';
+
+/// One night's summary of the user's real conversation with Sia, generated
+/// server-side from actual chat history.
+class DailyChatSummary {
+  const DailyChatSummary({
+    required this.summaryDateIst,
+    required this.summaryText,
+    required this.messageCount,
+    this.firstMessageAt,
+    this.lastMessageAt,
+  });
+
+  final String summaryDateIst;
+  final String summaryText;
+  final int messageCount;
+  final DateTime? firstMessageAt;
+  final DateTime? lastMessageAt;
+
+  static DateTime? _parse(dynamic v) =>
+      v is String && v.isNotEmpty ? DateTime.tryParse(v) : null;
+
+  factory DailyChatSummary.fromJson(Map<String, dynamic> json) {
+    return DailyChatSummary(
+      summaryDateIst: json['summaryDateIst']?.toString() ?? '',
+      summaryText: json['summaryText']?.toString() ?? '',
+      messageCount: (json['messageCount'] as num?)?.toInt() ?? 0,
+      firstMessageAt: _parse(json['firstMessageAt']),
+      lastMessageAt: _parse(json['lastMessageAt']),
+    );
+  }
+}
+
+/// Raised when transcription could not be attempted or completed, as distinct
+/// from a recording that contained no speech.
+class TranscriptionUnavailable implements Exception {
+  const TranscriptionUnavailable(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
 
 class ApiSiaService {
   final Dio _dio = Dio(BaseOptions(
@@ -38,6 +82,9 @@ class ApiSiaService {
     try {
       final payload = <String, dynamic>{
         'message': userMessage,
+        // The server has reviewed strings per language and falls back to
+        // English for anything it does not have.
+        'languageCode': LanguagePreference.code,
       };
       if (healthContext != null && healthContext.isNotEmpty) {
         payload['context'] = healthContext;
@@ -62,6 +109,8 @@ class ApiSiaService {
           moodCapture: data['moodCapture'] is Map<String, dynamic> ? data['moodCapture'] as Map<String, dynamic> : null,
           sleepCapture: data['sleepCapture'] is Map<String, dynamic> ? data['sleepCapture'] as Map<String, dynamic> : null,
           cycleCapture: data['cycleCapture'] is Map<String, dynamic> ? data['cycleCapture'] as Map<String, dynamic> : null,
+          safety: _parseSafety(data),
+          aiGenerated: data['aiGenerated'] != false,
         );
       }
       return SiaChatResult(message: 'I am here for you. How else can I support you today?');
@@ -118,6 +167,8 @@ class ApiSiaService {
           moodCapture: data['moodCapture'] is Map<String, dynamic> ? data['moodCapture'] as Map<String, dynamic> : null,
           sleepCapture: data['sleepCapture'] is Map<String, dynamic> ? data['sleepCapture'] as Map<String, dynamic> : null,
           cycleCapture: data['cycleCapture'] is Map<String, dynamic> ? data['cycleCapture'] as Map<String, dynamic> : null,
+          safety: _parseSafety(data),
+          aiGenerated: data['aiGenerated'] != false,
         );
       }
       return SiaChatResult(message: 'I have received your document and reviewed it.');
@@ -149,11 +200,27 @@ class ApiSiaService {
               final text = item['content']?.toString() ?? item['text']?.toString();
               final role = item['role']?.toString() ?? 'sia';
 
+              // The conversation id and its shared flag used to be dropped
+              // here, which left the screen with no way to identify an
+              // exchange -- and so no way to offer sharing at all.
+              final conversationId = item['id']?.toString() ?? '';
+              final shared = item['sharedWithPartner'] == true ? '1' : '0';
+
               if (userMsg != null && userMsg.trim().isNotEmpty) {
-                result.add({'sender': 'user', 'text': userMsg.trim()});
+                result.add({
+                  'sender': 'user',
+                  'text': userMsg.trim(),
+                  'conversationId': conversationId,
+                  'shared': shared,
+                });
               }
               if (assistantMsg != null && assistantMsg.trim().isNotEmpty) {
-                result.add({'sender': 'sia', 'text': assistantMsg.trim()});
+                result.add({
+                  'sender': 'sia',
+                  'text': assistantMsg.trim(),
+                  'conversationId': conversationId,
+                  'shared': shared,
+                });
               }
               if ((userMsg == null || userMsg.trim().isEmpty) &&
                   (assistantMsg == null || assistantMsg.trim().isEmpty) &&
@@ -219,10 +286,24 @@ class ApiSiaService {
   }
 
   /// Transcribes audio bytes using backend Whisper STT engine: `POST /ai/transcribe`
-  Future<String> transcribeAudioBytes(List<int> bytes, String filename) async {
+  /// [mimeType] must match the bytes: the upload filter checks the declared
+  /// type, and then re-checks it against the file's actual signature.
+  Future<String> transcribeAudioBytes(
+    List<int> bytes,
+    String filename, {
+    String mimeType = 'audio/webm',
+  }) async {
     try {
+      final parts = mimeType.split('/');
       final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(bytes, filename: filename),
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: MediaType(
+            parts.first,
+            parts.length > 1 ? parts.last : 'octet-stream',
+          ),
+        ),
       });
 
       final response = await _dio.post(
@@ -235,9 +316,75 @@ class ApiSiaService {
         return response.data['text'] as String? ?? response.data['transcription'] as String? ?? '';
       }
       return '';
-    } catch (e) {
+    } on DioException catch (e) {
       debugPrint('BlushySia: Error transcribing audio: $e');
-      return '';
+      // An empty string means "the provider heard nothing". A failure to reach
+      // or authenticate with the provider is a different thing, and telling the
+      // user their audio was unclear would be wrong.
+      throw TranscriptionUnavailable(_transcriptionFailureMessage(e));
+    }
+  }
+
+  static String _transcriptionFailureMessage(DioException e) {
+    final data = e.response?.data;
+    Object? code;
+    if (data is Map) {
+      code = data['errorCode'];
+      final details = data['details'];
+      if (code == null && details is Map) code = details['code'];
+    }
+    switch (code) {
+      case 'STT_NOT_CONFIGURED':
+        return 'Voice transcription is not set up on the server yet.';
+      case 'STT_CREDENTIAL_REJECTED':
+        return 'The server could not sign in to the transcription service.';
+      case 'STT_PROVIDER_ERROR':
+      case 'STT_UNREACHABLE':
+        return 'The transcription service is unavailable right now.';
+      default:
+        return 'Could not reach the transcription service. Your recording was not lost.';
+    }
+  }
+
+  /// The user's own daily summaries: `GET /ai/daily-summaries`.
+  ///
+  /// Returns an empty list when there is nothing to show, which is the point:
+  /// the screen that uses this previously composed a letter out of nothing.
+  /// Asks the server to write today's reflection from the conversation so far.
+  ///
+  /// Reflections were previously only produced by a nightly job, so anything
+  /// said today appeared nowhere until after midnight. Returns false when there
+  /// is genuinely nothing to reflect on yet, which is not an error.
+  Future<bool> generateDailySummary() async {
+    try {
+      final response = await _dio.post(
+        '/ai/daily-summaries/generate',
+        options: _authOptions(),
+      );
+      final data = response.data;
+      return data is Map && data['generated'] == true;
+    } on DioException catch (e) {
+      debugPrint('BlushySia: Error generating daily summary: $e');
+      return false;
+    }
+  }
+
+  Future<List<DailyChatSummary>> getDailySummaries({int limit = 7}) async {
+    try {
+      final response = await _dio.get(
+        '/ai/daily-summaries',
+        queryParameters: {'limit': limit},
+        options: _authOptions(),
+      );
+      final data = response.data;
+      final raw = data is Map ? (data['summaries'] as List? ?? const []) : const [];
+      return raw
+          .whereType<Map>()
+          .map((e) => DailyChatSummary.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } on DioException catch (e) {
+      debugPrint('BlushySia: Error fetching daily summaries: $e');
+      return const [];
     }
   }
 
@@ -283,11 +430,37 @@ class SiaChatResult {
   final Map<String, dynamic>? sleepCapture;
   final Map<String, dynamic>? cycleCapture;
 
+  /// Present when a deterministic red flag rule fired on the server.
+  ///
+  /// When [suppressesChat] is true the message is the clinically reviewed
+  /// instruction attached to the rule, not a generated reply, and must be
+  /// shown as safety guidance rather than as a chat bubble.
+  final SafetyFlow? safety;
+
+  /// False when the reply came from the safety ruleset rather than the model.
+  final bool aiGenerated;
+
   SiaChatResult({
     required this.message,
     this.moodCapture,
     this.sleepCapture,
     this.cycleCapture,
+    this.safety,
+    this.aiGenerated = true,
   });
+
+  bool get hasSafety => safety?.triggered == true && (safety?.steps.isNotEmpty ?? false);
+
+  /// True when ordinary wellness content is withheld and only the reviewed
+  /// guidance should be shown.
+  bool get suppressesChat => hasSafety && safety!.suppressWellnessContent;
+}
+
+/// Reads the safety block the chat endpoint attaches when a rule fires.
+SafetyFlow? _parseSafety(Map<String, dynamic> data) {
+  final raw = data['safety'];
+  if (raw is! Map) return null;
+  final flow = SafetyFlow.fromJson(Map<String, dynamic>.from(raw));
+  return flow.steps.isEmpty ? null : flow;
 }
 

@@ -33,7 +33,15 @@ export async function requireAuth(req, _res, next) {
       return next(createHttpError(401, 'Session revoked. Please sign in again.'));
     }
 
-    req.user = decoded;
+    // Role is taken from the user record, not the token.
+    //
+    // Login signs `{userId, tokenVersion}` with no role, so `req.user.role`
+    // was undefined for every normally signed-in user and `requireRole` could
+    // never pass -- the admin surfaces were unreachable no matter what the
+    // database said. Reading it here also means a role change takes effect on
+    // the next request rather than waiting for a new token, which matters more
+    // for revoking an admin than granting one.
+    req.user = { ...decoded, role: dbUser.role ?? decoded.role ?? null };
     return next();
   } catch {
     return next(createHttpError(401, 'Authentication session expired or invalid.'));

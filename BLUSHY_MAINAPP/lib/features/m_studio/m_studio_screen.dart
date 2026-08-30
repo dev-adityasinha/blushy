@@ -1,27 +1,17 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
+import '../../services/api_blushy_service.dart';
+import 'recovery_session_player.dart';
 import '../../core/theme.dart' hide BlushyColors;
 import '../../core/state.dart';
 import '../../core/storage.dart';
 import '../sia/sia_screen.dart';
 import '../journal/journal_screen.dart';
 
-import '../../services/api_auth_service.dart';
 import '../../services/sia_dashboard_service.dart';
+import '../../services/api_sia_service.dart';
 
-String _getTimeBasedGreetingPrefix() {
-  final istNow = DateTime.now().toUtc().add(const Duration(hours: 5, minutes: 30));
-  final hour = istNow.hour;
-  if (hour < 12) {
-    return "Good Morning";
-  } else if (hour < 17) {
-    return "Good Afternoon";
-  } else {
-    return "Good Evening";
-  }
-}
 
 class BlushyMStudioScreen extends StatefulWidget {
   const BlushyMStudioScreen({super.key});
@@ -31,7 +21,6 @@ class BlushyMStudioScreen extends StatefulWidget {
 }
 
 class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerProviderStateMixin {
-  final ApiAuthService _authService = ApiAuthService();
   final GlobalKey<BlushyJournalScreenState> _embeddedJournalKey = GlobalKey<BlushyJournalScreenState>();
   // Tab index names
   final List<String> _tabs = [
@@ -52,50 +41,102 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     text: "Walked along the botanical paths today. Felt extremely introspective and calm as my luteal cycle starts to set in. Focus is high."
   );
 
-  // Voice recording modal simulation
-  bool _isRecordingVoice = false;
-  String _voiceTranscription = '';
 
   // Simulation variables for Recovery
-  bool _recoveryRunning = false;
-  int _recoveryPhase = 0;
 
   // Time capsules state variables
-  String _capsuleRecipient = 'Future Me';
-  String _capsuleDate = 'Six Months';
-  List<Map<String, String>> _capsules = [];
+  /// Capsules live on the account now.
+  ///
+  /// They were kept in device storage, so "Deliver in 6 Months" delivered
+  /// nothing, a reinstall lost them all, and the list seeded two invented
+  /// capsules -- one of which referred to a daughter.
+  List<Map<String, dynamic>> _capsules = [];
+  bool _capsulesLoading = false;
 
-  void _loadCapsules() {
-    try {
-      final saved = BlushyStorage.read('mstudio_capsules');
-      if (saved['capsules'] is List) {
-        final list = saved['capsules'] as List;
-        setState(() {
-          _capsules = list.map((e) => Map<String, String>.from(
-            (e as Map).map((k, v) => MapEntry(k.toString(), v.toString())),
-          )).toList();
-        });
-      }
-    } catch (_) {}
+  /// Guided sessions from the server. Empty until a reviewer approves them.
+  List<Map<String, dynamic>> _sessions = [];
+  bool _sessionsLoading = false;
 
-    if (_capsules.isEmpty) {
-      _capsules = [
-        {'title': 'Letter to Future Me', 'sub': 'Sealed: Jun 14 • Deliver in 6 Months'},
-        {'title': 'Birthday note to Daughter', 'sub': 'Sealed: Jun 10 • Deliver on Birthday'},
-      ];
-    }
+  Future<void> _loadRecoverySessions() async {
+    if (mounted) setState(() => _sessionsLoading = true);
+
+    final result = await RecoveryApi.sessions();
+    if (!mounted) return;
+
+    setState(() {
+      _sessionsLoading = false;
+      _sessions = result.data ?? const [];
+    });
   }
 
-  void _saveCapsules() {
-    try {
-      BlushyStorage.write('mstudio_capsules', {'capsules': _capsules});
-    } catch (_) {}
+  Future<void> _loadCapsules() async {
+    if (mounted) setState(() => _capsulesLoading = true);
+
+    final result = await CapsulesApi.list();
+    if (!mounted) return;
+
+    setState(() {
+      _capsulesLoading = false;
+      // No seeded placeholders. An empty list is what a new account has.
+      _capsules = result.data ?? const [];
+    });
+  }
+
+  /// Opens a capsule that has come due.
+  ///
+  /// The server refuses to return a sealed body, so an early tap is answered
+  /// with the date rather than the contents.
+  Future<void> _openCapsule(Map<String, dynamic> capsule) async {
+    final capsuleId = capsule['capsuleId']?.toString() ?? '';
+    if (capsuleId.isEmpty) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (capsule['sealed'] == true) {
+      final deliverAt = DateTime.tryParse(capsule['deliverAt']?.toString() ?? '');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(deliverAt == null
+              ? 'This one is still sealed.'
+              : 'Still sealed. It opens on ${deliverAt.day}/${deliverAt.month}/${deliverAt.year}.'),
+        ),
+      );
+      return;
+    }
+
+    final opened = await CapsulesApi.open(capsuleId);
+    if (!mounted) return;
+
+    if (opened.data == null) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(opened.errorMessage ?? 'Could not open that capsule.')),
+      );
+      return;
+    }
+
+    await _loadCapsules();
+    if (!mounted) return;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(opened.data!['title']?.toString() ?? 'Capsule'),
+        content: SingleChildScrollView(
+          child: Text(opened.data!['body']?.toString() ?? ''),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
   }
 
   @override
   void initState() {
     super.initState();
     _loadCapsules();
+    _loadRecoverySessions();
+    _loadDailyLetters();
   }
 
   // Daily AI Reflection letters state
@@ -103,105 +144,75 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
   bool _isGeneratingLetter = false;
   List<Map<String, dynamic>> _dailyLetters = [];
 
-  void _initDailyLettersIfNeeded(String userName, String cyclePhase, int cycleDay, String stage) {
-    if (_dailyLetters.isNotEmpty) return;
+  bool _lettersRequested = false;
 
-    final isCycling = stage != 'menopause' && stage != 'pregnancy' && stage != 'postpartum';
-    final String insightHeader = isCycling ? "✦ Cycle & Body Insight" : "✦ Stage Insight";
-    
-    String insightToday = "";
-    String insightYesterday = "";
-    String insight2DaysAgo = "";
-
-    if (stage == 'menopause') {
-      insightToday = "You are maintaining a consistent healthy routine. Prioritising strength training and hydration supports your bone health and joints.";
-      insightYesterday = "Your sleep metrics improved by 18% overnight. Reducing screen time before sleep helps alleviate night sweats.";
-      insight2DaysAgo = "Small daily walking routines and HRT compliance create lasting harmony for your vascular health.";
-    } else if (stage == 'pregnancy') {
-      insightToday = "You are nurturing your baby's growth. Prioritising prenatal yoga and steady hydration supports maternal comfort.";
-      insightYesterday = "Your sleep metrics improved by 18% overnight. Sleeping on your left side helps increase blood flow to baby.";
-      insight2DaysAgo = "Gentle walks and nutrient-rich meals create lasting harmony for your prenatal health.";
-    } else if (stage == 'postpartum') {
-      insightToday = "Your postpartum body is healing. Prioritising pelvic floor recovery and rest decreases pelvic stress factors.";
-      insightYesterday = "Your sleep metrics improved by 18% overnight. Rest while baby sleeps to recover nervous system balance.";
-      insight2DaysAgo = "Small recovery stretches and steady hydration create lasting harmony for baby bonding.";
-    } else {
-      insightToday = "You are on Day $cycleDay of your $cyclePhase. Your body is gently adjusting. Prioritising rest decreased stress factors by 14% compared to last cycle.";
-      insightYesterday = "Day ${cycleDay > 1 ? cycleDay - 1 : 1} of $cyclePhase. Nurturing your energy with steady hydration and quiet moments helps maintain balance.";
-      insight2DaysAgo = "Day ${cycleDay > 2 ? cycleDay - 2 : 1} of $cyclePhase. Small daily routines create lasting harmony for your cycle health.";
+  /// Loads the daily letters the backend actually generated from this user's
+  /// conversations. Nothing is composed here: if there is no history yet the
+  /// list stays empty and the tab says so.
+  Future<void> _loadDailyLetters({bool isRefresh = false}) async {
+    if (_lettersRequested && !isRefresh) return;
+    _lettersRequested = true;
+    if (isRefresh && mounted) {
+      setState(() => _isGeneratingLetter = true);
     }
 
-    _dailyLetters = [
-      {
-        'id': 'letter_today',
-        'dateHeader': 'A DAILY LETTER FROM SIA • TODAY (8:00 AM IST)',
-        'deliveryTime': 'Delivered today at 8:00 AM IST',
-        'highlights': ['Sia Chat Summary', 'Journal Reflection', 'Stage Wellness'],
-        'body': 'Dear $userName,\n\nHere is your daily reflection letter compiled from yesterday\'s check-ins:\n\nConversation Summary: Yesterday during your chat with Sia, you discussed managing fatigue and rest. You asked about gentle post-lunch walks and hydration.\n\nJournal Reflection: You logged: "Had a peaceful walk after lunch. Felt very introspective and calm." Writing down your daily reflections is giving your mind space to settle.\n\n$insightHeader: $insightToday\n\nKeep listening to your body today. I\'m always here whenever you want to talk.\n\nWarmly,\nSia',
-        'isToday': true,
-      },
-      {
-        'id': 'letter_yesterday',
-        'dateHeader': 'A DAILY LETTER FROM SIA • YESTERDAY (8:00 AM IST)',
-        'deliveryTime': 'Delivered yesterday at 8:00 AM IST',
-        'highlights': ['Sia Chat Summary', 'Sleep Recovery'],
-        'body': 'Dear $userName,\n\nHere is your daily reflection letter based on your previous day:\n\nConversation Summary: You asked Sia about sleep quality and evening wind-down routines. We focused on reducing screen time 30 minutes before rest.\n\nJournal Reflection: You recorded gentle stretches and evening calm routines. Your sleep metrics improved by 18% overnight.\n\n$insightHeader: $insightYesterday\n\nWarmly,\nSia',
-        'isToday': false,
-      },
-      {
-        'id': 'letter_2days_ago',
-        'dateHeader': 'A DAILY LETTER FROM SIA • 2 DAYS AGO (8:00 AM IST)',
-        'deliveryTime': 'Delivered 2 days ago at 8:00 AM IST',
-        'highlights': ['Movement Focus', 'Nutrition Check-in'],
-        'body': 'Dear $userName,\n\nReflecting on your previous day\'s wellness journey:\n\nConversation Summary: You explored healthy meal ideas and light morning movement with Sia.\n\nJournal Reflection: You noted positive mood indicators and steady focus throughout the day.\n\n$insightHeader: $insight2DaysAgo\n\nWarmly,\nSia',
-        'isToday': false,
-      },
-    ];
-  }
+    final service = ApiSiaService();
 
-  void _generateFreshDailyLetter(String userName, String cyclePhase, int cycleDay, String stage) {
+    // Asking explicitly writes today's reflection from the conversation so far.
+    // Without this the tab could only ever show what the nightly job had
+    // already produced, so a conversation held today appeared nowhere -- while
+    // the empty state said letters arrive once you have talked to Sia.
+    bool generatedNow = false;
+    if (isRefresh) {
+      generatedNow = await service.generateDailySummary();
+      if (!mounted) return;
+    }
+
+    final summaries = await service.getDailySummaries();
+    if (!mounted) return;
+
     setState(() {
-      _isGeneratingLetter = true;
+      _isGeneratingLetter = false;
+      _dailyLetters = [
+        for (var i = 0; i < summaries.length; i++) _letterFromSummary(summaries[i], i == 0),
+      ];
+      _selectedLetterIdx = 0;
     });
 
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (!mounted) return;
-      
-      final isCycling = stage != 'menopause' && stage != 'pregnancy' && stage != 'postpartum';
-      final String insightHeader = isCycling ? "✦ Cycle & Body Guidance" : "✦ Stage Guidance";
-      
-      String insightToday = "";
-      if (stage == 'menopause') {
-        insightToday = "Rest factors are improving and your routines support joint strength. Take time for a quiet walk or short reflection today.";
-      } else if (stage == 'pregnancy') {
-        insightToday = "Rest factors are improving and baby is growing steadily. Ensure comfortable left-side sleep alignments.";
-      } else if (stage == 'postpartum') {
-        insightToday = "Rest factors are improving and pelvic healing is ongoing. Continue gentle stretching and rest.";
-      } else {
-        insightToday = "You are currently on Day $cycleDay of your $cyclePhase. Rest factors are improving, and your body is in a gentle phase of recovery. Take time for a quiet walk or short reflection today.";
-      }
-
-      setState(() {
-        _isGeneratingLetter = false;
-        _dailyLetters[0] = {
-          'id': 'letter_today_${DateTime.now().millisecondsSinceEpoch}',
-          'dateHeader': 'A DAILY LETTER FROM SIA • TODAY (8:00 AM IST)',
-          'deliveryTime': 'Delivered today at 8:00 AM IST (Refreshed)',
-          'highlights': ['Sia Chat Summary', 'Journal Reflection', 'Live Insights'],
-          'body': 'Dear $userName,\n\nHere is your daily synthesized letter combining yesterday\'s Sia conversations and journal logs:\n\nSia Conversation Summary: You checked in regarding your body\'s natural rhythm and managing fatigue. You discussed light movement, stress relief, and hydration.\n\nJournal Reflection: You logged: "Had a peaceful walk after lunch. Felt very introspective..." Your journal entries show steady emotional recovery and deeper self-awareness.\n\n$insightHeader: $insightToday\n\nKeep listening to your body.\n\nWarmly,\nSia',
-          'isToday': true,
-        };
-        _selectedLetterIdx = 0;
-      });
-
+    if (isRefresh) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Fresh Daily Reflection letter composed by Sia (Delivered at 8:00 AM IST)!"),
+        SnackBar(
+          content: Text(
+            generatedNow
+                ? 'Reflection written from today.'
+                : summaries.isEmpty
+                    ? 'Nothing to reflect on yet. Talk to Sia and check back.'
+                    : 'Reflections up to date.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
-    });
+    }
   }
+
+  Map<String, dynamic> _letterFromSummary(DailyChatSummary summary, bool isNewest) {
+    final when = summary.lastMessageAt;
+    final delivered = when != null
+        ? 'From your conversations on ${summary.summaryDateIst}'
+        : 'From ${summary.summaryDateIst}';
+
+    return {
+      'id': 'letter_${summary.summaryDateIst}',
+      'dateHeader': isNewest
+          ? 'YOUR MOST RECENT REFLECTION • ${summary.summaryDateIst}'
+          : 'REFLECTION • ${summary.summaryDateIst}',
+      'deliveryTime': delivered,
+      'highlights': ['${summary.messageCount} messages'],
+      'body': summary.summaryText,
+      'isToday': isNewest,
+    };
+  }
+
 
   @override
   void dispose() {
@@ -249,27 +260,12 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     } else if (currentTab == 'Time Capsules') {
       _showCreateCapsuleDialog();
     } else if (currentTab == 'AI Reflections') {
-      final state = BlushyOSProvider.of(context);
-      final String userName = (state.personalContext.userName != null && state.personalContext.userName!.isNotEmpty)
-          ? state.personalContext.userName!
-          : "there";
-      final String cyclePhase = state.personalContext.cyclePhase ?? "Luteal Phase";
-      final int cycleDay = state.personalContext.cycleDay ?? 18;
-      String stage = 'everydayWellness';
-      try {
-        if (state.selectedRole == 'partner') {
-          stage = 'partner';
-        } else {
-          final profile = BlushyStorage.read('user_profile.json');
-          if (profile != null && profile['profile'] != null) {
-            stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
-          }
-        }
-      } catch (_) {}
-      _generateFreshDailyLetter(userName, cyclePhase, cycleDay, stage);
+      // The letters come from the server now, so no local profile context is
+      // needed to build them.
+      _loadDailyLetters(isRefresh: true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Starting ${currentTab} creation...')),
+        SnackBar(content: Text('Starting $currentTab creation...')),
       );
     }
   }
@@ -432,11 +428,14 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
   }
 
   Widget _buildJournalTab() {
-    final state = BlushyOSProvider.of(context);
+    // Subscribes this widget to BlushyOSState. The values below come from
+    // BlushyStorage, which has no change notification of its own, so this
+    // dependency is what rebuilds the tab when the profile changes.
+    BlushyOSProvider.of(context);
     String stage = 'everydayWellness';
     try {
       final profile = BlushyStorage.read('user_profile.json');
-      if (profile != null && profile['profile'] != null) {
+      if (profile['profile'] != null) {
         stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
       }
     } catch (_) {}
@@ -551,119 +550,19 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
 
 
   // --- TAB 3: RECOVERY ---
+  /// Guided sessions, loaded from the server.
+  ///
+  /// This tab used to show two fixed cards -- "Period Pain Relief Meditation •
+  /// 12 min" and "Luteal Phase Anxiety Breathing • 8 min" -- both `onTap: () {}`.
+  /// There was no player and no content, and both titles asserted a
+  /// therapeutic effect nobody had reviewed.
   Widget _buildRecoveryTab() {
-    final state = BlushyOSProvider.of(context);
-    String stage = 'everydayWellness';
-    try {
-      final profile = BlushyStorage.read('user_profile.json');
-      if (profile != null && profile['profile'] != null) {
-        stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
-      }
-    } catch (_) {}
-
-    String title1 = 'Period Pain Relief Meditation';
-    String sub1 = 'Coping strategies & muscle relaxation logs • 12 min';
-    String title2 = 'Luteal Phase Anxiety Breathing';
-    String sub2 = 'Parasympathetic booster • 8 min';
-
-    if (stage == 'pregnancy') {
-      title1 = 'Prenatal Pelvic Floor Calm';
-      sub1 = 'Guided stretches for prenatal pelvic health • 10 min';
-      title2 = 'Left-Side Sleep Alignment Meditation';
-      sub2 = 'Breathing helper for comfortable pregnancy sleep • 12 min';
-    } else if (stage == 'postpartum') {
-      title1 = 'Postpartum Core Reconnect';
-      sub1 = 'Gentle core and back recovery exercises • 8 min';
-      title2 = '5-Minute Fatigue Release';
-      sub2 = 'Quick autonomic recharge for new moms • 5 min';
-    } else if (stage == 'menopause') {
-      title1 = 'Hot Flash Cooling Breath';
-      sub1 = 'Deep respiration pacing to lower body temp • 6 min';
-      title2 = 'Joint & Muscle Lubrication Stretch';
-      sub2 = 'Joint range-of-motion relief • 10 min';
-    }
-
     return Column(
       key: const ValueKey('recovery_tab'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFCEFF0),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFF9D6D8)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'RECOVERY SCORE',
-                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.primary, letterSpacing: 1.2),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Optimal Calm State',
-                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-              Text(
-                '84%',
-                style: GoogleFonts.poppins(fontSize: 32, fontWeight: FontWeight.w600, color: BlushyColors.primary, height: 1.1),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        if (_recoveryRunning) ...[
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: BlushyColors.border),
-            ),
-            child: Column(
-              children: [
-                if (_recoveryPhase == 0) ...[
-                  const CircularProgressIndicator(color: BlushyColors.primary),
-                  const SizedBox(height: 12),
-                  Text('Enabling Do Not Disturb...', style: GoogleFonts.poppins(fontSize: 12)),
-                ] else if (_recoveryPhase == 1) ...[
-                  const Icon(Icons.music_note_rounded, color: BlushyColors.success, size: 28),
-                  const SizedBox(height: 12),
-                  Text('Connecting spotify calm loops playlist...', style: GoogleFonts.poppins(fontSize: 12)),
-                ] else ...[
-                  Text(
-                    '“You are stronger than this temporary wave.”',
-                    style: GoogleFonts.poppins(fontSize: 16, fontStyle: FontStyle.italic),
-                  ),
-                  const SizedBox(height: 14),
-                  ElevatedButton(
-                    onPressed: () => setState(() => _recoveryRunning = false),
-                    child: const Text('Complete Session'),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ] else ...[
-          _buildWorkspaceActionCard(
-            title: 'Start Recovery Mode',
-            sub: 'One-tap guided breathing, DND trigger, and Spotify music sync.',
-            icon: Icons.spa_rounded,
-            onTap: _startRecoveryFlow,
-          ),
-        ],
-
-        const SizedBox(height: 32),
         Text(
-          'RECOMMENDED GUIDED CALM',
+          'GUIDED SESSIONS',
           style: GoogleFonts.poppins(
             fontSize: 9,
             fontWeight: FontWeight.w700,
@@ -671,37 +570,148 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
             letterSpacing: 0.5,
           ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'Relaxation techniques you can follow along with. Not medical treatment.',
+          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+        ),
         const SizedBox(height: 14),
-        _buildWorkspaceActionCard(
-          title: title1,
-          sub: sub1,
-          icon: Icons.self_improvement_rounded,
-          onTap: () {},
-        ),
-        const SizedBox(height: 12),
-        _buildWorkspaceActionCard(
-          title: title2,
-          sub: sub2,
-          icon: Icons.air_rounded,
-          onTap: () {},
-        ),
+        if (_sessionsLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          )
+        else if (_sessions.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+            decoration: BlushyTheme.premiumCardDecoration,
+            alignment: Alignment.center,
+            child: Text(
+              // Honest about why: sessions only appear once a reviewer has
+              // approved them, rather than being invented to fill the tab.
+              'No sessions available yet. They appear here once they have been reviewed.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+            ),
+          )
+        else
+          ..._sessions.map((session) {
+            final steps = ((session['steps'] as List?) ?? const [])
+                .map(RecoveryStep.fromJson)
+                .whereType<RecoveryStep>()
+                .toList();
+            final minutes = (((session['totalSeconds'] as num?)?.toInt() ?? 0) / 60).ceil();
+            final done = (session['timesCompleted'] as num?)?.toInt() ?? 0;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: GestureDetector(
+                onTap: steps.isEmpty
+                    ? null
+                    : () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => RecoverySessionPlayer(
+                              sessionId: session['sessionId']?.toString() ?? '',
+                              title: session['title']?.toString() ?? 'Session',
+                              steps: steps,
+                            ),
+                          ),
+                        );
+                        // The count changes when a session finishes.
+                        await _loadRecoverySessions();
+                      },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BlushyTheme.premiumCardDecoration,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: BlushyColors.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.self_improvement_rounded,
+                            size: 18, color: BlushyColors.primary),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              session['title']?.toString() ?? '',
+                              style: GoogleFonts.poppins(
+                                  fontSize: 13, fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              session['summary']?.toString() ?? '',
+                              style: GoogleFonts.poppins(
+                                  fontSize: 11, color: BlushyColors.secondaryText),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              // The duration is computed from the steps, so it
+                              // cannot drift from the session itself.
+                              done > 0
+                                  ? '$minutes min • done $done ${done == 1 ? 'time' : 'times'}'
+                                  : '$minutes min',
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: BlushyColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.play_arrow_rounded,
+                          size: 20, color: BlushyColors.secondaryText),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
       ],
     );
   }
 
-  void _startRecoveryFlow() {
-    setState(() {
-      _recoveryRunning = true;
-      _recoveryPhase = 0;
-    });
+  /// Starts the first available session.
+  ///
+  /// This used to advance two phase counters that nothing rendered any more,
+  /// so the button did nothing visible at all.
+  Future<void> _startRecoveryFlow() async {
+    if (_sessions.isEmpty) {
+      await _loadRecoverySessions();
+      if (!mounted) return;
+      if (_sessions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No sessions available yet.')),
+        );
+        return;
+      }
+    }
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _recoveryPhase = 1);
-    });
+    final session = _sessions.first;
+    final steps = ((session['steps'] as List?) ?? const [])
+        .map(RecoveryStep.fromJson)
+        .whereType<RecoveryStep>()
+        .toList();
+    if (steps.isEmpty) return;
 
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) setState(() => _recoveryPhase = 2);
-    });
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RecoverySessionPlayer(
+          sessionId: session['sessionId']?.toString() ?? '',
+          title: session['title']?.toString() ?? 'Session',
+          steps: steps,
+        ),
+      ),
+    );
+    await _loadRecoverySessions();
   }
 
   // --- TAB 5: TIME CAPSULES ---
@@ -727,132 +737,285 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
           ),
         ),
         const SizedBox(height: 12),
-        Column(
-          children: _capsules.map((cap) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BlushyTheme.premiumCardDecoration,
-              child: Row(
-                children: [
-                  const Icon(Icons.lock_outline_rounded, color: BlushyColors.primary, size: 18),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          cap['title'] ?? '',
-                          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700),
+        if (_capsulesLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          )
+        else if (_capsules.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+            decoration: BlushyTheme.premiumCardDecoration,
+            alignment: Alignment.center,
+            child: Text(
+              'Nothing sealed yet. Write something for a day you choose, and it stays closed until then.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+            ),
+          )
+        else
+          Column(
+            children: _capsules.map((cap) {
+              final sealed = cap['sealed'] == true;
+              final deliverAt = DateTime.tryParse(cap['deliverAt']?.toString() ?? '');
+              final opened = cap['openedAt'] != null;
+
+              return GestureDetector(
+                onTap: () => _openCapsule(cap),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BlushyTheme.premiumCardDecoration,
+                  child: Row(
+                    children: [
+                      Icon(
+                        sealed ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
+                        color: sealed ? BlushyColors.secondaryText : BlushyColors.primary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              cap['title']?.toString() ?? '',
+                              style: GoogleFonts.poppins(
+                                  fontSize: 12, fontWeight: FontWeight.w700),
+                            ),
+                            Text(
+                              // Says what is actually true of this capsule
+                              // rather than a stored label that could drift.
+                              sealed
+                                  ? (deliverAt == null
+                                      ? 'Sealed'
+                                      : 'Opens ${deliverAt.day}/${deliverAt.month}/${deliverAt.year}')
+                                  : (opened ? 'Opened • tap to read again' : 'Ready • tap to open'),
+                              style: GoogleFonts.poppins(
+                                  fontSize: 10, color: BlushyColors.secondaryText),
+                            ),
+                          ],
                         ),
-                        Text(
-                          cap['sub'] ?? '',
-                          style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
+                ),
+              );
+            }).toList(),
+          ),
       ],
     );
   }
 
+  /// Seals a capsule on the account.
+  ///
+  /// The old dialog collected a recipient and a duration but no text, so it
+  /// sealed a "Letter to Future Me" with no letter in it. It also only wrote
+  /// to device storage, so nothing was ever delivered.
   void _showCreateCapsuleDialog() {
-    showDialog(
+    final titleController = TextEditingController();
+    final bodyController = TextEditingController();
+    String window = 'Six months';
+    bool saving = false;
+    String? error;
+
+    const windows = <String, int>{
+      'One month': 30,
+      'Six months': 182,
+      'One year': 365,
+      'Five years': 1826,
+    };
+
+    showDialog<void>(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: Text(
-                'New Time Capsule',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (innerContext, setModalState) {
+          Future<void> seal() async {
+            final title = titleController.text.trim();
+            final body = bodyController.text.trim();
+
+            if (title.isEmpty) {
+              setModalState(() => error = 'Give it a name.');
+              return;
+            }
+            if (body.isEmpty) {
+              setModalState(() => error = 'Write something to seal.');
+              return;
+            }
+
+            setModalState(() {
+              saving = true;
+              error = null;
+            });
+
+            final deliverAt = DateTime.now().add(Duration(days: windows[window] ?? 182));
+            final created = await CapsulesApi.create(
+              title: title,
+              body: body,
+              deliverAt: deliverAt,
+            );
+
+            if (!dialogContext.mounted) return;
+
+            if (created.data == null) {
+              setModalState(() {
+                saving = false;
+                error = created.errorMessage ?? 'Could not seal that.';
+              });
+              return;
+            }
+
+            Navigator.of(dialogContext).pop();
+            await _loadCapsules();
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Sealed until ${deliverAt.day}/${deliverAt.month}/${deliverAt.year}.',
+                ),
               ),
-              content: Column(
+            );
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Text(
+              'New Time Capsule',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DropdownButtonFormField<String>(
-                    value: _capsuleRecipient,
-                    decoration: const InputDecoration(labelText: 'Recipient'),
-                    items: ['Future Me', 'Partner', 'Family'].map((r) {
-                      return DropdownMenuItem(value: r, child: Text(r));
-                    }).toList(),
-                    onChanged: (val) {
-                      setModalState(() {
-                        _capsuleRecipient = val ?? 'Future Me';
-                      });
-                    },
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Name it'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: bodyController,
+                    minLines: 4,
+                    maxLines: 8,
+                    maxLength: 5000,
+                    decoration: const InputDecoration(
+                      labelText: 'What do you want to say?',
+                      alignLabelWithHint: true,
+                    ),
                   ),
                   DropdownButtonFormField<String>(
-                    value: _capsuleDate,
-                    decoration: const InputDecoration(labelText: 'Delivery Options'),
-                    items: ['One Month', 'Six Months', 'One Year'].map((r) {
-                      return DropdownMenuItem(value: r, child: Text(r));
-                    }).toList(),
-                    onChanged: (val) {
-                      setModalState(() {
-                        _capsuleDate = val ?? 'Six Months';
-                      });
-                    },
+                    initialValue: window,
+                    decoration: const InputDecoration(labelText: 'Open it in'),
+                    items: windows.keys
+                        .map((w) => DropdownMenuItem(value: w, child: Text(w)))
+                        .toList(),
+                    onChanged: (val) => setModalState(() => window = val ?? 'Six months'),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      error!,
+                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.primary),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Once sealed it stays closed until that date, on any device you sign in to.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: BlushyColors.secondaryText,
+                    ),
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _capsules.add({
-                        'title': 'Letter to $_capsuleRecipient',
-                        'sub': 'Sealed: Today • Deliver in $_capsuleDate'
-                      });
-                    });
-                    _saveCapsules();
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Time Capsule sealed! You left something for yourself.')),
-                    );
-                  },
-                  child: const Text('Seal'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+            ),
+            actions: [
+              TextButton(
+                onPressed: saving ? null : () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: saving ? null : seal,
+                child: saving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Seal'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+  Widget _buildNoReflectionsYet() {
+    return Container(
+      key: const ValueKey('no_reflections_yet'),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7F5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(Icons.mark_email_unread_outlined, size: 34, color: BlushyColors.primary),
+          const SizedBox(height: 14),
+          Text(
+            'No reflections yet',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: BlushyColors.text,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Sia writes a reflection from the conversations you have had. Talk with her, '
+            'then write one now, or leave it and she will do it overnight.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              height: 1.5,
+              color: BlushyColors.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 18),
+          OutlinedButton.icon(
+            onPressed: () => _loadDailyLetters(isRefresh: true),
+            icon: _isGeneratingLetter
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text("Write today's reflection"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: BlushyColors.primary,
+              side: const BorderSide(color: BlushyColors.primary),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  // --- TAB 6: AI REFLECTIONS ---
   Widget _buildAIReflectionsTab() {
-    final state = BlushyOSProvider.of(context);
-    final String userName = (state.personalContext.userName != null && state.personalContext.userName!.isNotEmpty)
-        ? state.personalContext.userName!
-        : "there";
-    final String cyclePhase = state.personalContext.cyclePhase ?? "Luteal Phase";
-    final int cycleDay = state.personalContext.cycleDay ?? 18;
-    String stage = 'everydayWellness';
-    try {
-      if (state.selectedRole == 'partner') {
-        stage = 'partner';
-      } else {
-        final profile = BlushyStorage.read('user_profile.json');
-        if (profile != null && profile['profile'] != null) {
-          stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
-        }
-      }
-    } catch (_) {}
-
-    _initDailyLettersIfNeeded(userName, cyclePhase, cycleDay, stage);
-    final activeLetter = _dailyLetters[_selectedLetterIdx];
+    // Renders only what the server generated. Unlike the other tabs it reads
+    // nothing from BlushyStorage, so it needs no BlushyOSState subscription to
+    // stay current.
+    if (_dailyLetters.isEmpty) {
+      return _buildNoReflectionsYet();
+    }
+    final activeLetter =
+        _dailyLetters[_selectedLetterIdx.clamp(0, _dailyLetters.length - 1)];
 
     return Column(
       key: const ValueKey('ai_reflections_tab'),
@@ -865,7 +1028,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
           decoration: BoxDecoration(
             color: const Color(0xFFFFF7F5),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: BlushyColors.border.withOpacity(0.6)),
+            border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6)),
           ),
           child: Row(
             children: [
@@ -919,7 +1082,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
             border: Border.all(color: BlushyColors.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1032,7 +1195,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                       runSpacing: 10,
                       children: [
                         OutlinedButton.icon(
-                          onPressed: () => _generateFreshDailyLetter(userName, cyclePhase, cycleDay, stage),
+                          onPressed: () => _loadDailyLetters(isRefresh: true),
                           icon: const Icon(Icons.auto_awesome_rounded, size: 16),
                           label: const Text('Refresh Letter'),
                           style: OutlinedButton.styleFrom(
@@ -1194,47 +1357,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     );
   }
 
-  // --- TAB 7: JOURNEY ---
-  Widget _buildJourneyTab() {
-    return Column(
-      key: const ValueKey('journey_tab'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTimelineEvent('TODAY', 'Voice reflection entry logged. Emotional fatigue reset.', Icons.mic_rounded),
-        _buildTimelineEvent('YESTERDAY', 'Completed Guided Calm pain relief cycle.', Icons.self_improvement_rounded),
-        _buildTimelineEvent('JUNE 12', 'Sealed a Time Capsule to Future Me.', Icons.hourglass_top_rounded),
-      ],
-    );
-  }
 
-  Widget _buildTimelineEvent(String date, String desc, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: BlushyColors.primary),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  date,
-                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  desc,
-                  style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text, height: 1.35),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildWorkspaceActionCard({
     required String title,
@@ -1252,7 +1375,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
           border: Border.all(color: BlushyColors.border),
           boxShadow: [
             BoxShadow(
-              color: BlushyColors.text.withOpacity(0.03),
+              color: BlushyColors.text.withValues(alpha: 0.03),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -1275,7 +1398,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: BlushyColors.primary.withOpacity(0.08),
+                          color: BlushyColors.primary.withValues(alpha: 0.08),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(icon, color: BlushyColors.primary, size: 20),
@@ -1326,54 +1449,6 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     );
   }
 
-  // --- VOICE RECORDING SIMULATION PIPELINE ---
-  void _startVoiceRecordingFlow() {
-    setState(() {
-      _isRecordingVoice = true;
-      _voiceTranscription = 'Listening to your voice...';
-    });
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: Text('Voice Reflection', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 12),
-                  const CircularProgressIndicator(color: BlushyColors.primary),
-                  const SizedBox(height: 16),
-                  Text(
-                    _voiceTranscription,
-                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    setState(() {
-                      _isRecordingVoice = false;
-                      _editorController.text = "“I spent some time listening to nature today and felt extremely content.”";
-                      _activeJournalTemplate = 'Daily Reflection';
-                      _isEditorOpen = true;
-                    });
-                  },
-                  child: const Text('Stop & Format'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   // --- FREE-FORM JOURNAL CANVAS EDITOR ---
   Widget _buildJournalEditor() {

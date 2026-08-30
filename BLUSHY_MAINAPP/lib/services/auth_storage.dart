@@ -34,6 +34,15 @@ class AuthStorage {
     return null;
   }
 
+  /// The refresh token saved at sign-in. It was written and never read, so an
+  /// expired session had no way back other than signing in again.
+  static String? getRefreshToken() {
+    final data = BlushyStorage.read(_storageKey);
+    final value = data['refreshToken'];
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    return null;
+  }
+
   static String? getUserId() {
     final data = BlushyStorage.read(_storageKey);
     final uid = data['userId'] as String?;

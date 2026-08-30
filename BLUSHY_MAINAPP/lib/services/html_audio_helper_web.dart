@@ -1,11 +1,14 @@
 import 'dart:async';
-import 'dart:html' as html;
-import 'dart:js' as js;
-import 'dart:js';
+
+import 'package:flutter/foundation.dart';
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
+
+import 'package:web/web.dart' as web;
 
 class HtmlAudioRecorder {
-  html.MediaRecorder? _mediaRecorder;
-  final List<html.Blob> _chunks = [];
+  web.MediaRecorder? _mediaRecorder;
+  final List<web.Blob> _chunks = [];
   Timer? _timer;
   int _seconds = 0;
   bool _isRecording = false;
@@ -15,29 +18,48 @@ class HtmlAudioRecorder {
   bool get isRecording => _isRecording;
   int get seconds => _seconds;
 
+  /// MediaRecorder produces WebM here; the native half produces m4a. Callers
+  /// label the upload from these rather than assuming a format.
+  String get fileExtension => 'webm';
+  String get mimeType => 'audio/webm';
+
+  /// Stops every track on the recorder's stream, which is what actually
+  /// releases the microphone and clears the browser's recording indicator.
+  void _releaseMicrophone() {
+    try {
+      final tracks = _mediaRecorder?.stream.getTracks().toDart;
+      if (tracks == null) return;
+      for (final track in tracks) {
+        try {
+          track.stop();
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
   Future<void> start() async {
     if (_isRecording) return;
 
     try {
-      final stream = await html.window.navigator.mediaDevices?.getUserMedia({
-        'audio': {
-          'echoCancellation': true,
-          'noiseSuppression': true,
-          'autoGainControl': true,
-        }
-      });
-      if (stream == null) {
-        throw Exception('Microphone access denied or not supported.');
-      }
+      // The audio constraints are a plain JS object; there is no typed
+      // dictionary for them in package:web.
+      final audioConstraints = JSObject()
+        ..setProperty('echoCancellation'.toJS, true.toJS)
+        ..setProperty('noiseSuppression'.toJS, true.toJS)
+        ..setProperty('autoGainControl'.toJS, true.toJS);
+
+      final stream = await web.window.navigator.mediaDevices
+          .getUserMedia(web.MediaStreamConstraints(audio: audioConstraints))
+          .toDart;
 
       _chunks.clear();
-      _mediaRecorder = html.MediaRecorder(stream);
-      _mediaRecorder!.addEventListener('dataavailable', (event) {
-        final blobEvent = event as html.BlobEvent;
-        if (blobEvent.data != null) {
-          _chunks.add(blobEvent.data!);
-        }
-      });
+      _mediaRecorder = web.MediaRecorder(stream);
+      _mediaRecorder!.addEventListener(
+        'dataavailable',
+        ((web.Event event) {
+          _chunks.add((event as web.BlobEvent).data);
+        }).toJS,
+      );
 
       _mediaRecorder!.start();
       _isRecording = true;
@@ -57,29 +79,33 @@ class HtmlAudioRecorder {
 
     final completer = Completer<({List<int> bytes, int duration})>();
 
-    _mediaRecorder!.addEventListener('stop', (event) async {
-      final blob = html.Blob(_chunks, 'audio/webm');
+    _mediaRecorder!.addEventListener(
+      'stop',
+      ((web.Event event) {
+        final blob = web.Blob(
+          _chunks.map((chunk) => chunk as JSAny).toList().toJS,
+          web.BlobPropertyBag(type: 'audio/webm'),
+        );
 
-      final reader = html.FileReader();
-      reader.readAsArrayBuffer(blob);
-      await reader.onLoad.first;
-      final bytes = (reader.result as List).cast<int>();
-
-      if (!completer.isCompleted) {
-        completer.complete((bytes: bytes, duration: _seconds));
-      }
-
-      try {
-        final tracks = _mediaRecorder?.stream?.getTracks();
-        if (tracks != null) {
-          for (final track in tracks) {
-            try {
-              (track as html.MediaStreamTrack).stop();
-            } catch (_) {}
+        final reader = web.FileReader();
+        // onloadend fires for both success and failure, so the recording can
+        // never hang waiting on a read that already gave up.
+        reader.onloadend = ((web.Event _) {
+          if (completer.isCompleted) return;
+          final result = reader.result;
+          if (result.isA<JSArrayBuffer>()) {
+            completer.complete((
+              bytes: (result as JSArrayBuffer).toDart.asUint8List(),
+              duration: _seconds,
+            ));
+          } else {
+            completer.completeError(StateError('Could not read the recording.'));
           }
-        }
-      } catch (_) {}
-    });
+          _releaseMicrophone();
+        }).toJS;
+        reader.readAsArrayBuffer(blob);
+      }).toJS,
+    );
 
     _timer?.cancel();
     _mediaRecorder!.stop();
@@ -92,50 +118,44 @@ class HtmlAudioRecorder {
     if (!_isRecording || _mediaRecorder == null) return;
     _timer?.cancel();
     _mediaRecorder!.stop();
-    try {
-      final tracks = _mediaRecorder?.stream?.getTracks();
-      if (tracks != null) {
-        for (final track in tracks) {
-          try {
-            (track as html.MediaStreamTrack).stop();
-          } catch (_) {}
-        }
-      }
-    } catch (_) {}
+    _releaseMicrophone();
     _isRecording = false;
   }
 }
 
 class HtmlAudioPlayer {
   HtmlAudioPlayer(this.url) {
-    _audioElement = html.AudioElement(url);
-    _audioElement.onTimeUpdate.listen((_) {
-      onTimeUpdate?.call(_audioElement.currentTime.toDouble());
-    });
-    _audioElement.onDurationChange.listen((_) {
-      final d = _audioElement.duration.toDouble();
+    _audioElement = web.HTMLAudioElement()..src = url;
+
+    _audioElement.ontimeupdate = ((web.Event _) {
+      onTimeUpdate?.call(_audioElement.currentTime);
+    }).toJS;
+
+    _audioElement.ondurationchange = ((web.Event _) {
+      final d = _audioElement.duration;
       if (!d.isNaN && !d.isInfinite) {
         onDurationChange?.call(d);
       }
-    });
-    _audioElement.onEnded.listen((_) {
+    }).toJS;
+
+    _audioElement.onended = ((web.Event _) {
       onEnded?.call();
-    });
+    }).toJS;
   }
 
   final String url;
-  late final html.AudioElement _audioElement;
+  late final web.HTMLAudioElement _audioElement;
 
   void Function(double)? onTimeUpdate;
   void Function(double)? onDurationChange;
   void Function()? onEnded;
 
   double get duration {
-    final d = _audioElement.duration.toDouble();
+    final d = _audioElement.duration;
     return (d.isNaN || d.isInfinite) ? 0.0 : d;
   }
 
-  double get currentTime => _audioElement.currentTime.toDouble();
+  double get currentTime => _audioElement.currentTime;
 
   void play() {
     _audioElement.play();
@@ -161,12 +181,12 @@ class HtmlSpeechRecognizer {
   bool _isListening = false;
   bool _manualAbort = false;
 
-  dynamic _wrappedOnAudioReady;
-  dynamic _wrappedOnEnd;
-  dynamic _wrappedOnError;
-  dynamic _wrappedOnSpeechStart;
-  dynamic _wrappedOnSpeechEnd;
-  dynamic _wrappedOnInterimResult;
+  JSFunction? _wrappedOnAudioReady;
+  JSFunction? _wrappedOnEnd;
+  JSFunction? _wrappedOnError;
+  JSFunction? _wrappedOnSpeechStart;
+  JSFunction? _wrappedOnSpeechEnd;
+  JSFunction? _wrappedOnInterimResult;
 
   void Function(String)? onResult;
   void Function(String)? onInterimResult;
@@ -182,76 +202,83 @@ class HtmlSpeechRecognizer {
 
   HtmlSpeechRecognizer();
 
-  Future<void> start({String lang = 'en-US', bool continuous = true}) async {
-    _transcription = '';
-    _isListening = true;
-    _manualAbort = false;
+  Future<void> _handleAudioReady(String base64Audio) async {
+    if (_manualAbort) return;
 
-    _wrappedOnAudioReady = js.allowInterop((String base64Audio) async {
-      if (_manualAbort) return;
+    if (transcriber == null) {
+      onError?.call('no_transcriber');
+      return;
+    }
 
-      if (transcriber == null) {
-        onError?.call('no_transcriber');
-        return;
-      }
-
-      try {
-        final text = await transcriber!(base64Audio);
-        if (_manualAbort) return;
-        final cleanText = text.trim();
-        if (cleanText.isNotEmpty) {
-          _transcription = cleanText;
-          onResult?.call(cleanText);
-        }
-      } catch (e) {
-        print("[HtmlSpeechRecognizer] Error: $e");
-      }
-    });
-
-    _wrappedOnEnd = js.allowInterop(() {
-      if (_manualAbort) return;
-      _isListening = false;
-      onStop?.call();
-    });
-
-    _wrappedOnError = js.allowInterop((String msg) {
-      if (_manualAbort) return;
-      _isListening = false;
-      onError?.call(msg);
-    });
-
-    _wrappedOnSpeechStart = js.allowInterop(() {
-      onSpeechStart?.call();
-    });
-
-    _wrappedOnSpeechEnd = js.allowInterop(() {
-      onSpeechEnd?.call();
-    });
-
-    _wrappedOnInterimResult = js.allowInterop((String text) {
-      if (_manualAbort) return;
-      onInterimResult?.call(text);
-    });
-
-    final wrappedOnResult = js.allowInterop((String text) {
+    try {
+      final text = await transcriber!(base64Audio);
       if (_manualAbort) return;
       final cleanText = text.trim();
       if (cleanText.isNotEmpty) {
         _transcription = cleanText;
         onResult?.call(cleanText);
       }
-    });
+    } catch (e) {
+      debugPrint("[HtmlSpeechRecognizer] Error: $e");
+    }
+  }
 
-    js.context['__blushyDartOnAudioReady'] = _wrappedOnAudioReady;
-    js.context['__blushyDartOnEnd'] = _wrappedOnEnd;
-    js.context['__blushyDartOnError'] = _wrappedOnError;
-    js.context['__blushyDartOnSpeechStart'] = _wrappedOnSpeechStart;
-    js.context['__blushyDartOnSpeechEnd'] = _wrappedOnSpeechEnd;
-    js.context['__blushyDartOnInterimResult'] = _wrappedOnInterimResult;
-    js.context['__blushyDartOnResult'] = wrappedOnResult;
+  Future<void> start({String lang = 'en-US', bool continuous = true}) async {
+    _transcription = '';
+    _isListening = true;
+    _manualAbort = false;
+
+    // toJS rejects a Future-returning signature, so the JS-facing callback is
+    // synchronous and starts the work without awaiting it. The JS caller never
+    // used the returned value, so this matches the previous behaviour.
+    _wrappedOnAudioReady = ((String base64Audio) {
+      unawaited(_handleAudioReady(base64Audio));
+    }).toJS;
+
+    _wrappedOnEnd = (() {
+      if (_manualAbort) return;
+      _isListening = false;
+      onStop?.call();
+    }).toJS;
+
+    _wrappedOnError = ((String msg) {
+      if (_manualAbort) return;
+      _isListening = false;
+      onError?.call(msg);
+    }).toJS;
+
+    _wrappedOnSpeechStart = (() {
+      onSpeechStart?.call();
+    }).toJS;
+
+    _wrappedOnSpeechEnd = (() {
+      onSpeechEnd?.call();
+    }).toJS;
+
+    _wrappedOnInterimResult = ((String text) {
+      if (_manualAbort) return;
+      onInterimResult?.call(text);
+    }).toJS;
+
+    final wrappedOnResult = ((String text) {
+      if (_manualAbort) return;
+      final cleanText = text.trim();
+      if (cleanText.isNotEmpty) {
+        _transcription = cleanText;
+        onResult?.call(cleanText);
+      }
+    }).toJS;
+
+    globalContext['__blushyDartOnAudioReady'] = _wrappedOnAudioReady;
+    globalContext['__blushyDartOnEnd'] = _wrappedOnEnd;
+    globalContext['__blushyDartOnError'] = _wrappedOnError;
+    globalContext['__blushyDartOnSpeechStart'] = _wrappedOnSpeechStart;
+    globalContext['__blushyDartOnSpeechEnd'] = _wrappedOnSpeechEnd;
+    globalContext['__blushyDartOnInterimResult'] = _wrappedOnInterimResult;
+    globalContext['__blushyDartOnResult'] = wrappedOnResult;
 
     try {
-      js.context.callMethod('eval', ['''
+      globalContext.callMethod<JSAny?>('eval'.toJS, '''
 (function() {
   if (window.__blushySR) {
     try { window.__blushySR.onend = null; window.__blushySR.abort(); } catch(e) {}
@@ -295,7 +322,7 @@ class HtmlSpeechRecognizer {
     } catch(e) {}
   }
 })()
-''']);
+'''.toJS);
     } catch (e) {
       _isListening = false;
       onError?.call('start_exception: $e');
@@ -306,7 +333,7 @@ class HtmlSpeechRecognizer {
     _isListening = false;
     _manualAbort = true;
     try {
-      js.context.callMethod('eval', ['''
+      globalContext.callMethod<JSAny?>('eval'.toJS, '''
         (function() {
           window.__blushyVoiceStopped = true;
           if (window.__blushySR) {
@@ -314,7 +341,10 @@ class HtmlSpeechRecognizer {
             window.__blushySR = null;
           }
         })()
-      ''']);
-    } catch (e) {}
+      '''.toJS);
+    } catch (_) {
+      // Nothing to stop: the recognizer was never created, or the page is
+      // already tearing down.
+    }
   }
 }

@@ -5,6 +5,7 @@ import '../../models/community_models.dart';
 import '../../services/reddit_community_service.dart';
 import '../../services/auth_storage.dart';
 import 'user_profile_sheet.dart';
+import 'moderation_widgets.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final CommunityPost post;
@@ -240,7 +241,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: BlushyColors.border.withOpacity(0.6), width: 0.8),
+        border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6), width: 0.8),
         boxShadow: const [
           BoxShadow(
             color: Color(0x042E2623),
@@ -295,7 +296,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       _timeAgo(_post.createdAt),
                       style: GoogleFonts.poppins(
                         fontSize: 10.5,
-                        color: BlushyColors.secondaryText.withOpacity(0.6),
+                        color: BlushyColors.secondaryText.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -350,7 +351,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             _post.text,
             style: GoogleFonts.poppins(
               fontSize: 13.5,
-              color: BlushyColors.text.withOpacity(0.85),
+              color: BlushyColors.text.withValues(alpha: 0.85),
               height: 1.5,
             ),
           ),
@@ -401,7 +402,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '${_post.score > 0 ? _post.score : (_post.userVote == 1 ? 1 : 0)}',
+                        // The server's score is the count. The old fallback invented a 1
+                        // whenever the viewer had voted, even at score 0.
+                        '${_post.score < 0 ? 0 : _post.score}',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -545,7 +548,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             offset: const Offset(0, -4),
             blurRadius: 16,
           ),
@@ -563,7 +566,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: BlushyColors.primary.withOpacity(0.06),
+                color: BlushyColors.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -609,7 +612,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     style: GoogleFonts.poppins(fontSize: 13.5, color: BlushyColors.text),
                     decoration: InputDecoration(
                       hintText: _replyTarget != null ? 'Write a reply...' : 'Add a comment...',
-                      hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withOpacity(0.5)),
+                      hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -705,7 +708,7 @@ class _CommentWidget extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border.withOpacity(0.6), width: 0.8),
+            border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6), width: 0.8),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -747,7 +750,7 @@ class _CommentWidget extends StatelessWidget {
                     _timeAgoFormatted(comment.createdAt),
                     style: GoogleFonts.poppins(
                       fontSize: 10,
-                      color: BlushyColors.secondaryText.withOpacity(0.6),
+                      color: BlushyColors.secondaryText.withValues(alpha: 0.6),
                     ),
                   ),
                   const Spacer(),
@@ -769,6 +772,9 @@ class _CommentWidget extends StatelessWidget {
                   height: 1.45,
                 ),
               ),
+              // Same notice posts carry, for the same reason: a reply about a
+              // health topic is not clinical advice either (spec section 12).
+              if (!isDeleted) ModerationNotice(notice: comment.moderationNotice),
               const SizedBox(height: 10),
 
               // Actions

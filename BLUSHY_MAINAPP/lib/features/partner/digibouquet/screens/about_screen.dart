@@ -7,7 +7,7 @@ import '../state/bouquet_state.dart';
 import '../models/flower.dart';
 
 class AboutScreen extends StatelessWidget {
-  const AboutScreen({Key? key}) : super(key: key);
+  const AboutScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +121,7 @@ class AboutScreen extends StatelessWidget {
                         return Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.01),
+                            color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.black.withValues(alpha: 0.01),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Column(
@@ -241,7 +241,7 @@ class AboutScreen extends StatelessWidget {
             color: color ?? theme.cardColor,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: borderColor ?? theme.dividerColor.withOpacity(0.3),
+              color: borderColor ?? theme.dividerColor.withValues(alpha: 0.3),
             ),
           ),
           child: child,
@@ -285,7 +285,7 @@ class AboutScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.15),
+              color: Colors.grey.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -348,7 +348,6 @@ void showUpiPaymentDialog(BuildContext context) {
   showDialog(
     context: context,
     builder: (context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
@@ -412,11 +411,12 @@ void showUpiPaymentDialog(BuildContext context) {
                     elevation: 0,
                   ),
                   onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
                     final uri = Uri.parse(upiLink);
                     if (await canLaunchUrl(uri)) {
                       await launchUrl(uri);
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         const SnackBar(content: Text('Could not open UPI app. Please copy ID instead.')),
                       );
                     }

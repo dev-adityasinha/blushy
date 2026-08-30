@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../../services/api_blushy_service.dart';
 import '../../../../services/auth_storage.dart';
 import '../models/flower.dart';
 import '../models/bouquet.dart';
@@ -106,6 +109,10 @@ class BouquetState extends ChangeNotifier {
           .whereType<Bouquet>()
           .toList();
     }
+
+    // The account copy is authoritative and is what survives a reinstall or a
+    // move between devices; the local list above just renders immediately.
+    unawaited(syncBouquetsFromAccount());
 
     // Load liked bouquets
     final likedList = _prefs?.getStringList(_k('liked_bouquets'));
@@ -271,6 +278,51 @@ class BouquetState extends ChangeNotifier {
   }
 
   // Saved Bouquets management
+  /// Bouquets someone was given, as opposed to made.
+  List<Bouquet> _receivedBouquets = [];
+  List<Bouquet> get receivedBouquets => _receivedBouquets;
+
+  /// Pulls the account copy down.
+  ///
+  /// These were kept in SharedPreferences on one device, so a reinstall lost
+  /// every bouquet and nothing could ever be sent anywhere.
+  Future<void> syncBouquetsFromAccount() async {
+    final mine = await BouquetsApi.list();
+    final received = await BouquetsApi.list(received: true);
+
+    if (mine.data != null) {
+      _savedBouquets = mine.data!.map(_bouquetFromApi).toList();
+    }
+    if (received.data != null) {
+      _receivedBouquets = received.data!.map(_bouquetFromApi).toList();
+    }
+    notifyListeners();
+  }
+
+  static Bouquet _bouquetFromApi(Map<String, dynamic> json) => Bouquet(
+        id: json['bouquetId']?.toString() ?? '',
+        flowers: (json['flowers'] as List?)?.map((f) => f.toString()).toList() ?? const [],
+        greeneryIndex: (json['greeneryIndex'] as num?)?.toInt() ?? 0,
+        seed: (json['seed'] as num?)?.toInt() ?? 0,
+        creator: json['creator']?.toString() ?? '',
+        mode: json['mode']?.toString() ?? 'color',
+        message: json['message']?.toString() ?? '',
+        wrappingPaper: json['wrappingPaper']?.toString() ?? 'wrap-classic',
+        ribbonColorIndex: (json['ribbonColorIndex'] as num?)?.toInt() ?? 0,
+        date: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      );
+
+  /// Sends a bouquet to a connected partner.
+  ///
+  /// The server copies it to them, so what they were given cannot be edited or
+  /// deleted out from under them later.
+  Future<bool> sendBouquetToPartner(String bouquetId, String connectionId) async {
+    final result = await BouquetsApi.send(bouquetId, connectionId: connectionId);
+    if (result.data == null) return false;
+    await syncBouquetsFromAccount();
+    return true;
+  }
+
   Future<void> saveBouquetToGarden(String creatorName) async {
     final bouquet = Bouquet(
       id: math.Random().nextInt(999999).toString(),
@@ -286,9 +338,31 @@ class BouquetState extends ChangeNotifier {
     );
 
     _savedBouquets.insert(0, bouquet);
+    // Kept locally so the garden appears immediately, then written to the
+    // account, which is the copy that survives a reinstall.
     final stringList = _savedBouquets.map((b) => json.encode(b.toJson())).toList();
     await _prefs?.setStringList(_k('saved_bouquets'), stringList);
     notifyListeners();
+
+    final saved = await BouquetsApi.create(
+      creator: creatorName,
+      flowers: bouquet.flowers,
+      greeneryIndex: bouquet.greeneryIndex,
+      seed: bouquet.seed,
+      mode: bouquet.mode,
+      message: bouquet.message,
+      wrappingPaper: bouquet.wrappingPaper,
+      ribbonColorIndex: bouquet.ribbonColorIndex,
+    );
+
+    // Adopt the server id so this bouquet can be sent later; the local random
+    // id means nothing to the account.
+    if (saved.data != null) {
+      final serverId = saved.data!['bouquetId']?.toString();
+      if (serverId != null && serverId.isNotEmpty) {
+        await syncBouquetsFromAccount();
+      }
+    }
   }
 
   Future<void> deleteSavedBouquet(String id) async {
@@ -296,6 +370,8 @@ class BouquetState extends ChangeNotifier {
     final stringList = _savedBouquets.map((b) => json.encode(b.toJson())).toList();
     await _prefs?.setStringList(_k('saved_bouquets'), stringList);
     notifyListeners();
+
+    await BouquetsApi.remove(id);
   }
 
   // Likes

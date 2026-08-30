@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/state.dart';
 import '../services/api_sia_service.dart';
-import '../services/html_audio_helper_web.dart';
+import '../services/html_audio_helper.dart';
 import '../theme/colors.dart';
 
 class VoiceNoteBottomSheet extends StatefulWidget {

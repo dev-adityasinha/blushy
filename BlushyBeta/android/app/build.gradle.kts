@@ -7,6 +7,8 @@ plugins {
 android {
     namespace = "com.blushy.blushy_love_app"
     compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
+    buildToolsVersion = "36.0.0"
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

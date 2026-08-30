@@ -1,25 +1,31 @@
+import 'dart:async';
 // Dynamic dashboard generated for stage: everyday_wellness
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:io';
-import 'dart:convert';
 import 'dart:math' show min;
 import '../../../../core/state.dart';
 import '../../../../core/storage.dart';
 import '../../../../core/cycle_calculator.dart';
 import '../../../../theme/colors.dart';
-import '../../../../theme/spacing.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/voice_note_bottom_sheet.dart';
 import '../../../../services/api_auth_service.dart';
-import '../../../../services/api_period_service.dart';
-import '../../../../core/theme.dart' hide BlushyColors;
 import '../../../../core/stage_conflict_engine.dart';
 import '../../models.dart';
-import '../../mock_data.dart';
-import '../../services/cycle_insight_service.dart';
-import '../../widgets/my_health_screen.dart';
 import '../../widgets/cycle_card.dart';
+import '../../widgets/real_insights_list.dart';
+import '../../widgets/real_cycle_history.dart';
+import '../../widgets/real_journey_timeline.dart';
 import '../../../../services/sia_dashboard_service.dart';
+import '../../../../services/api_blushy_service.dart';
+import '../../../../services/api_contract_client.dart';
+import '../../../../services/auth_storage.dart';
+import '../../checkin_event_mapper.dart';
+import '../../../../services/offline_event_queue.dart';
+import '../../../../shared/api_state_card.dart';
+import '../doctor_summary_screen.dart';
+import '../../../../models/blushy_models.dart';
 import '../../../../services/api_insights_service.dart';
 import '../../../../services/api_community_service.dart';
 import '../../../community/post_detail_screen.dart';
@@ -56,7 +62,6 @@ class EverydayWellnessDashboard extends StatefulWidget {
 
 class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> with SingleTickerProviderStateMixin {
   late final AnimationController _animController;
-  late final Animation<double> _fadeAnimation;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   Widget _wrapDashboardLayout({
@@ -81,67 +86,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   bool get _effectiveShrinkWrap => widget.isNested;
 
-  // Interactive local states for daily check-in / First Periods
-  final Map<String, bool> _completedDailyTasks = {};
-  bool _missionCompleted = false;
-  final Set<String> _backpackItems = {};
   final Set<String> _savedArticles = {};
   String? _selectedFeeling;
-  String? _selectedSymptom;
   String? _selectedEnergy;
-  String? _selectedStress = 'Low';
-  String? _selectedWaterIntake = '1 Litre';
-  String? _selectedSleepQuality = 'Restful';
-  final Set<String> _selectedSymptoms = {};
   double? _loggedWeight;
-  String? _siaFeelingFollowUp;
-  final Map<String, bool> _expandedQuestions = {};
-  String _journalSentence = '';
-  bool _isDrawingMode = false;
 
   // Coach marks state
-  bool _showCoachMarks = false;
-  int _coachMarkStep = 0;
 
   // Onboarding answers state
   Map<String, dynamic> _onboardingData = {};
-  bool _showFirstPeriodTransition = false;
-  bool _isDiscoveryRevealed = false;
-  bool _familyMissionCompleted = false;
-  bool _prepMissionCompleted = false;
   
-  // Before You Go states
-  int? _beforeYouGoSelectedIndex;
-  final TextEditingController _beforeYouGoController = TextEditingController();
-  bool _beforeYouGoSubmitted = false;
 
-  final List<Map<String, dynamic>> _beforeYouGoQuestions = [
-    {
-      "question": "Have you been thinking about your first period lately?",
-      "options": ["A little", "Quite a lot", "Not really"],
-      "reply": "Thank you for telling me. I'll remember that."
-    },
-    {
-      "question": "Did anything make you curious about your body today?",
-      "options": ["Yes", "Maybe", "Not today"],
-      "reply": "I'm really glad you shared that with me."
-    },
-    {
-      "question": "Was there anything that made you smile today?",
-      "options": ["Family", "Friends", "Something else"],
-      "reply": "That's beautiful. I'll keep this in mind."
-    },
-    {
-      "question": "Have you noticed any changes in your body recently?",
-      "options": ["A few changes", "No changes", "Not sure"],
-      "reply": "That's completely normal. Your body is growing beautifully."
-    },
-    {
-      "question": "Did anything feel confusing this week?",
-      "options": ["Yes, a bit", "No, all clear", "Not sure"],
-      "reply": "I'll be here whenever you're ready to talk about it."
-    }
-  ];
 
   // firstPeriodNotStarted interactive states
   final List<String> _lessons = [
@@ -185,12 +140,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     }
   }
 
-  // Today's Check-in state variables (null = not logged yet today)
-  String? _checkInFlow;
-  final Set<String> _checkInSymptoms = {};
   String? _checkInMood;
   String? _checkInEnergy;
-  bool _checkInSaved = false;
 
   // livingWithMyCycle interactive states
   String _livingDiscoverTopic = 'Cycle Health';
@@ -205,7 +156,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // hormonalHealth interactive states
   String _hormonalDiscoverTopic = 'Understanding PCOS';
-  String _hormonalCommunityTab = 'PCOS';
   final Set<String> _hormonalSavedArticles = {};
   String? _hormonalBloating;
   String? _hormonalAcne;
@@ -214,10 +164,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   String? _hormonalPain;
   String? _hormonalCramps;
   String? _hormonalFlow;
-  String? _hormonalEnergy;
-  String? _hormonalSleep;
-  String? _hormonalStress;
-  String? _hormonalWater;
   String? _hormonalExercise;
 
   // tryingToConceive interactive states
@@ -227,11 +173,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   String? _ttcLhTest;
   double? _ttcBbt;
   String? _ttcIntercourse;
-  String? _ttcFlow;
-  String? _ttcEnergy;
-  String? _ttcSleep;
-  String? _ttcStress;
-  String? _ttcWater;
   String? _ttcExercise;
   String? _ttcVitamins;
 
@@ -241,10 +182,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   String? _pregnancyBabyMovement;
   int? _pregnancyKickCount;
   String? _pregnancyContractions;
-  String? _pregnancyEnergy;
-  String? _pregnancySleep;
-  String? _pregnancyStress;
-  String? _pregnancyWater;
   String? _pregnancyExercise;
   String? _pregnancyVitamins;
 
@@ -256,15 +193,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   String? _postpartumBleeding;
   String? _postpartumIncision;
   String? _postpartumPelvic;
-  String? _postpartumMood;
-  String? _postpartumEnergy;
-  String? _postpartumSleep;
-  String? _postpartumStress;
   String? _postpartumWater;
-  String? _postpartumPelvicRest;
-  String? _postpartumWalk;
   String? _postpartumExercise;
-  String? _postpartumVitamins;
 
   // perimenopause interactive states
   String _periDiscoverTopic = 'Hormonal Changes';
@@ -272,15 +202,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   final Set<String> _periSavedArticles = {};
   String? _periHotFlashes;
   String? _periNightSweats;
-  String? _periJointPain;
   String? _periBrainFog;
-  String? _periMoodSwings;
-  String? _periSleepDisturbances;
   String? _periHormoneTherapy;
   String? _periFlow;
-  String? _periEnergy;
-  String? _periSleep;
-  String? _periStress;
   String? _periWater;
   String? _periExercise;
 
@@ -296,21 +220,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   String? _menoHormoneTherapy;
   String? _menoStrength;
   String? _menoWalking;
-  String? _menoFlow;
-  String? _menoEnergy;
-  String? _menoSleep;
-  String? _menoStress;
   String? _menoWater;
 
   // everydayWellness interactive states
   String _wellnessDiscoverTopic = 'Nutrition';
   String _wellnessCommunityTab = 'Wellness';
   final Set<String> _wellnessSavedArticles = {};
-  String? _wellnessHydration;
   String? _wellnessExercise;
   String? _wellnessMeditation;
-  String? _wellnessFlow;
-  String? _wellnessEnergy;
   String? _wellnessSleep;
   String? _wellnessStress;
   String? _wellnessWater;
@@ -332,124 +249,614 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   PersonalContext get pc => _currentPc;
 
-  // Helper to dynamically calculate real-time cycle dates without mock values
+  // ---------------------------------------------------------------------
+  // Cycle Hero data source.
+  //
+  // Cycle day, phase and predictions are calculated by the backend and read
+  // from here; the dashboard no longer derives them locally. The previous
+  // implementation used `daysDiff % cycleLength`, which invented a cycle day
+  // for cycles that were never logged: a period logged 61 days ago on a
+  // 28-day cycle displayed "Cycle Day 6" instead of a period 33 days late.
+  // The server returns the real day count plus an explicit overdue state.
+  // ---------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------
+  // Daily check-in writes.
+  //
+  // Each card used to write only to local storage and to
+  // `saveOnboardingAnswers`, so a tap produced no timestamped health event and
+  // nothing downstream (patterns, care plan, doctor summary) could see it.
+  // These now post a validated event, which is what the pattern engine reads.
+  //
+  // The selectors offer buckets ("6-8h", "Medium", "2L"). Each bucket maps to
+  // the value the backend scale expects, and the label the user actually
+  // picked travels with it as `reportedAs`, so a bucketed answer is never
+  // shown back as a precise measurement.
+  // ---------------------------------------------------------------------
+
+  /// Posts one check-in event. Failures are non-fatal: the local write has
+  /// already happened, and the offline queue can replay from there.
+  ///
+  /// The bucket-to-event mapping lives in [CheckinEventMapper] so it can be
+  /// tested without building this widget.
+  Future<void> _recordCheckinEvent(String metric, String rawValue) async {
+    final mapped = CheckinEventMapper.map(metric, rawValue);
+    if (mapped == null) return;
+
+    final clientEventId = CheckinEventMapper.idempotencyKey(
+      userId: AuthStorage.getUserId() ?? 'anon',
+      metric: metric,
+      day: DateTime.now(),
+    );
+
+    final result = await EventsApi.log(
+      eventType: mapped.eventType,
+      payload: mapped.payload,
+      clientEventId: clientEventId,
+    );
+
+    // A write that could not reach the server is queued rather than lost, and
+    // replays with the same id so it cannot be recorded twice (spec §25).
+    if (result.state == ApiState.offline || result.state == ApiState.error) {
+      await OfflineEventQueue.instance.enqueue(
+        eventType: mapped.eventType,
+        payload: mapped.payload,
+        clientEventId: clientEventId,
+      );
+      return;
+    }
+
+    // A symptom or pain entry can trip a red flag rule; surface the reviewed
+    // guidance rather than letting the ordinary confirmation stand.
+    if (mounted && result.data?.hasSafetyEscalation == true) {
+      setState(() => _checkinSafety = result.data!.safety);
+    }
+  }
+
+  /// Set when a check-in write returns a safety escalation, so the screen can
+  /// show the reviewed guidance instead of a wellness confirmation.
+  SafetyFlow? _checkinSafety;
+
+  /// Rehydrates today's check-in selections from the server.
+  ///
+  /// The cards read their selected state from `daily_checkin.json`, which was
+  /// only ever written on this device, so a check-in made on web did not show
+  /// on Android and vice versa. Today's stored events are the shared source of
+  /// truth; this maps them back onto the labels the cards render and refreshes
+  /// the local copy so every existing read site stays correct.
+  /// Replays writes made while offline, then refreshes what depends on them.
+  Future<void> _flushOfflineQueue() async {
+    await OfflineEventQueue.instance.load();
+    final result = await OfflineEventQueue.instance.flush();
+    if (!mounted || !result.didAnything) return;
+    await _loadTodayCheckins();
+    if (!mounted) return;
+    await _loadPatterns();
+  }
+
+  Future<void> _loadTodayCheckins() async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+
+    final result = await EventsApi.list(
+      eventTypes: const [
+        'mood_logged', 'symptom_logged', 'energy_logged', 'sleep_logged',
+        'stress_logged', 'hydration_logged', 'pain_logged', 'flow_logged',
+        'activity_logged',
+      ],
+      from: startOfDay,
+      limit: 100,
+    );
+
+    if (!mounted || !result.isReady || result.data == null) return;
+
+    // Oldest first, so a later entry for the same metric wins.
+    final events = result.data!.reversed;
+    final selections = <String, String>{};
+    for (final event in events) {
+      final mapped = CheckinEventMapper.reverse(event.eventType, event.payload);
+      if (mapped != null) selections[mapped.key] = mapped.value;
+    }
+
+    if (selections.isEmpty) return;
+
+    final checkin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
+    selections.forEach((metric, label) {
+      checkin[metric] = label;
+      if (metric == 'mood') checkin['feeling'] = label;
+    });
+    checkin['date'] = now.toIso8601String();
+    BlushyStorage.write('daily_checkin.json', checkin);
+
+    setState(() {
+      if (selections['mood'] != null) _selectedFeeling = selections['mood'];
+      if (selections['energy'] != null) _selectedEnergy = selections['energy'];
+      if (selections['sleep'] != null) _livingSleep = selections['sleep'];
+      if (selections['stress'] != null) _livingStress = selections['stress'];
+      if (selections['water'] != null) _livingWater = selections['water'];
+      if (selections['flow'] != null) _livingFlow = selections['flow'];
+      if (selections['pain'] != null) _livingPain = selections['pain'];
+      if (selections['exercise'] != null) _livingExercise = selections['exercise'];
+    });
+  }
+
+  /// Renders the reviewed red flag instruction and the location-aware
+  /// resources that came with it. The wording is the clinically reviewed text
+  /// from the rule, not anything generated here.
+  Widget _buildCheckinSafetyBanner(SafetyFlow safety) {
+    final step = safety.steps.isNotEmpty ? safety.steps.first : null;
+    if (step == null) return const SizedBox.shrink();
+
+    final bool urgent = safety.isEmergency;
+    final Color accent = urgent ? const Color(0xFFB3261E) : const Color(0xFFB26A00);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(urgent ? Icons.emergency_outlined : Icons.warning_amber_rounded, color: accent, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  step.title,
+                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: accent),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            step.instruction,
+            style: GoogleFonts.poppins(fontSize: 12.5, height: 1.45, color: BlushyColors.text),
+          ),
+          if (safety.emergencyNumber != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Emergency number: ${safety.emergencyNumber}',
+              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: accent),
+            ),
+          ],
+          if (step.source != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Source: ${step.source}',
+              style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+            ),
+          ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => setState(() => _checkinSafety = null),
+              child: Text('Dismiss', style: GoogleFonts.poppins(fontSize: 12, color: accent)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Patterns and the Sia Note.
+  //
+  // These previously rendered hardcoded sentences chosen by keyword-matching
+  // recent chat topics, with a fixed "Medium" confidence and an "Evidence:"
+  // line that actually contained advice. Nothing was derived from the user's
+  // own logs, and nothing could be traced or invalidated.
+  //
+  // They now render structured insights computed by the backend pattern
+  // engine, each carrying the events it was derived from, its strength, when
+  // it was generated and which engine version produced it (spec section 8).
+  // ---------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------
+  // Care Plan.
+  //
+  // Each life stage previously rendered its own hardcoded list of paragraphs,
+  // including a fabricated appointment ("24 Week glucose screening ...
+  // scheduled for tomorrow at 10 AM") and supplement instructions tied to
+  // nothing the user reported. The hormonal branch rendered
+  // `dummyCareRecommendations` from mock_data.dart.
+  //
+  // Care Plan cards are action objects, not paragraphs (spec section 10): each
+  // carries why it was suggested, where it came from, a completion state and a
+  // validity window. Repeats are held back by a server-side cooldown, and the
+  // whole plan is withheld while a safety escalation is active.
+  // ---------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------
+  // Timeline.
+  //
+  // Timeline is raw chronological history; Patterns is interpretation, and the
+  // two must not duplicate each other (spec section 11). The old card rendered
+  // an "AI Summary" line per row, which is interpretation, on top of
+  // `dummyTimelineSummaries` from mock_data.dart - a list that is now empty, so
+  // the card had been silently rendering nothing. The TTC variant listed
+  // fabricated events ("June 10 Started TTC Journey") as the user's history.
+  // ---------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------
+  // Reflection.
+  //
+  // The prompt came from `dummyReflectionPrompts`, indexed by `day % length`
+  // over a list of length one, so every user saw the same question every day.
+  // More seriously, "Send" only set a local flag: the answer was never stored
+  // anywhere, and the spec requires the response to be persisted.
+  //
+  // Prompts are now data driven and stage aware, and TTC gets the emotionally
+  // neutral options the spec asks for rather than a generic mood question.
+  // Responses are private by default and never shared with a partner unless
+  // that is granted explicitly (spec section 12).
+  // ---------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------
+  // Condition profile.
+  //
+  // Only conditions the user reported being diagnosed with. Blushy never
+  // infers a diagnosis from logs, and shows no estimated hormone levels
+  // because it ingests no validated lab or device data (spec section 14).
+  // ---------------------------------------------------------------------
+
+  ApiResult<Map<String, dynamic>> _conditionsResult = const ApiResult.loading();
+
+  Future<void> _loadConditions() async {
+    final result = await BranchApi.conditions();
+    if (!mounted) return;
+    setState(() => _conditionsResult = result);
+  }
+
+
+  Future<void> _loadReflection() async {
+    final result = await ReflectionsApi.current();
+    if (!mounted) return;
+    setState(() {
+      // An answer already given this period is shown as answered.
+      final existing = result.data?['reflection'];
+      if (existing is Map && existing['response'] != null) {
+      }
+    });
+  }
+
+
+
+
+
+  ApiResult<Timeline> _timelineResult = const ApiResult.loading();
+
+  /// Entries accumulated across pages, so "Load more" appends rather than
+  /// replacing what is already on screen.
+  final List<TimelineEntry> _timelineEntries = [];
+  bool _timelineHasMore = false;
+  bool _timelineLoadingMore = false;
+
+  static const int _timelinePageSize = 20;
+
+  Future<void> _loadTimeline({bool append = false}) async {
+    if (append) {
+      if (_timelineLoadingMore || !_timelineHasMore) return;
+      setState(() => _timelineLoadingMore = true);
+    }
+
+    final result = await EventsApi.timeline(
+      limit: _timelinePageSize,
+      skip: append ? _timelineEntries.length : 0,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _timelineResult = result;
+      _timelineLoadingMore = false;
+      if (result.isReady && result.data != null) {
+        if (!append) _timelineEntries.clear();
+        _timelineEntries.addAll(result.data!.entries);
+        _timelineHasMore = result.data!.hasMore;
+      } else if (!append) {
+        _timelineEntries.clear();
+        _timelineHasMore = false;
+      }
+    });
+  }
+
+  static const Map<String, IconData> _timelineIcons = {
+    'period_logged': Icons.water_drop_rounded,
+    'flow_logged': Icons.opacity_rounded,
+    'symptom_logged': Icons.healing_rounded,
+    'pain_logged': Icons.bolt_rounded,
+    'mood_logged': Icons.bubble_chart_rounded,
+    'energy_logged': Icons.battery_charging_full_rounded,
+    'sleep_logged': Icons.nightlight_round,
+    'hydration_logged': Icons.local_drink_rounded,
+    'stress_logged': Icons.air_rounded,
+    'activity_logged': Icons.directions_run_rounded,
+    'hot_flash_logged': Icons.whatshot_rounded,
+    'journal_created': Icons.edit_note_rounded,
+    'appointment_logged': Icons.event_note_outlined,
+    'bbt_logged': Icons.thermostat_rounded,
+    'lh_test_logged': Icons.science_outlined,
+    'cervical_mucus_logged': Icons.opacity_outlined,
+    'pregnancy_week_updated': Icons.child_friendly_outlined,
+    'pregnancy_ended': Icons.event_available_outlined,
+    'feeding_logged': Icons.restaurant_outlined,
+    'recovery_metric_logged': Icons.self_improvement_outlined,
+    'condition_reported': Icons.medical_information_outlined,
+    'life_scene_set': Icons.landscape_outlined,
+  };
+
+  static String _timelineDateLabel(DateTime date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final now = DateTime.now();
+    final sameDay = date.year == now.year && date.month == now.month && date.day == now.day;
+    if (sameDay) return 'Today';
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
+      return 'Yesterday';
+    }
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
+  ApiResult<CarePlan> _carePlanResult = const ApiResult.loading();
+
+  Future<void> _loadCarePlan() async {
+    final result = await CarePlanApi.load();
+    if (!mounted) return;
+    setState(() => _carePlanResult = result);
+  }
+
+  Future<void> _completeCareAction(CareAction action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await CarePlanApi.complete(action.id);
+    if (!mounted) return;
+    await _loadCarePlan();
+    if (!mounted) return;
+    messenger.showSnackBar(SnackBar(content: Text('Done: ${action.title}')));
+  }
+
+  Future<void> _dismissCareAction(CareAction action) async {
+    await CarePlanApi.dismiss(action.id);
+    if (!mounted) return;
+    await _loadCarePlan();
+  }
+
+  static IconData _careActionIcon(String category) {
+    switch (category) {
+      case 'sleep':
+        return Icons.nightlight_round;
+      case 'energy':
+        return Icons.bolt_rounded;
+      case 'hydration':
+        return Icons.water_drop_outlined;
+      case 'comfort':
+        return Icons.spa_outlined;
+      case 'emotional':
+      case 'mental_health':
+        return Icons.favorite_outline;
+      case 'cycle':
+        return Icons.calendar_month_outlined;
+      case 'appointment':
+        return Icons.event_note_outlined;
+      case 'preventive':
+        return Icons.health_and_safety_outlined;
+      case 'experiment':
+        return Icons.science_outlined;
+      default:
+        return Icons.check_circle_outline;
+    }
+  }
+
+  ApiResult<List<Insight>> _patternsResult = const ApiResult.loading();
+
+  Future<void> _loadPatterns({bool refresh = false}) async {
+    if (mounted && refresh) {
+      setState(() => _patternsResult = const ApiResult.loading());
+    }
+    final result = await PatternsApi.load(refresh: refresh);
+    if (!mounted) return;
+    setState(() => _patternsResult = result);
+  }
+
+  Future<void> _markInsightHelpful(Insight insight) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await PatternsApi.feedback(insight.id, helpful: true);
+    if (!mounted) return;
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Noted. Sia will keep showing observations like this.')),
+    );
+  }
+
+  /// Not useful: the insight stops being served until its evidence materially
+  /// changes, and the feedback is recorded for future ranking (spec section 9).
+  Future<void> _markInsightNotUseful(Insight insight) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await PatternsApi.feedback(insight.id, helpful: false);
+    if (!mounted) return;
+    await _loadPatterns();
+    if (!mounted) return;
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Thanks. You will not see that one again.')),
+    );
+  }
+
+  /// Human-readable strength. This describes how consistently the pattern
+  /// appears in the logs, never medical certainty.
+  static String _strengthLabel(Insight insight) {
+    final strength = insight.strength;
+    if (strength == null || strength.isEmpty) return 'Observation';
+    return '${strength[0].toUpperCase()}${strength.substring(1)} pattern';
+  }
+
+  /// The real evidence line: how many observations, over what window.
+  static String _evidenceLine(Insight insight) {
+    final parts = <String>[];
+    if (insight.observationCount != null) {
+      parts.add('${insight.observationCount} of your logs');
+    }
+    if (insight.sourceEventIds.isNotEmpty) {
+      parts.add('${insight.sourceEventIds.length} entries');
+    }
+    if (insight.periodStart != null && insight.periodEnd != null) {
+      final days = insight.periodEnd!.difference(insight.periodStart!).inDays;
+      if (days > 0) parts.add('over the last $days days');
+    }
+    return parts.isEmpty ? 'Based on your recent logs' : 'Based on ${parts.join(', ')}';
+  }
+
+  ApiResult<CycleState> _cycleResult = const ApiResult.loading();
+
+  /// Last successful server response, so an offline refresh can keep showing
+  /// the last known real values instead of falling back to local arithmetic.
+  CycleState? _lastKnownCycle;
+
+  Future<void> _loadCycleFromServer() async {
+    final result = await CycleApi.current(
+      timezone: DateTime.now().timeZoneName,
+    );
+    if (!mounted) return;
+    setState(() {
+      _cycleResult = result;
+      if (result.isReady && result.data != null) {
+        _lastKnownCycle = result.data;
+      }
+    });
+  }
+
+  static String _formatDayMonth(String? isoDate) {
+    if (isoDate == null || isoDate.isEmpty) return 'Not available';
+    final parsed = DateTime.tryParse(isoDate);
+    if (parsed == null) return 'Not available';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[parsed.month - 1]} ${parsed.day}';
+  }
+
+  /// Projects the server cycle state into the map shape the dashboard cards
+  /// already consume, so every existing card keeps working unchanged.
+  ///
+  /// The `state` key is new: cards that want to distinguish loading from empty
+  /// from "not enough data yet" can read it, and the ones that only read
+  /// `isLogged` behave exactly as before.
   Map<String, dynamic> _getDynamicCycleDates([PersonalContext? pc]) {
-    final curPc = pc ?? _currentPc;
-    final DateTime? pStart = curPc.lastPeriodStart;
-    if (pStart == null) {
-      return {
-        'isLogged': false,
-        'cycleDay': null,
-        'cycleDayText': 'Not Logged',
-        'subtitle': 'No period logged yet. Tap to set your last period start date.',
-        'ovulationText': 'Not logged',
-        'fertileWindow': 'Not logged',
-        'expectedPeriod': 'Not logged',
-        'recTestDay': 'Not logged',
-        'phaseName': 'Not Logged',
-      };
+    Map<String, dynamic> unavailable(String state, String dayText, String subtitle) => {
+          'state': state,
+          'isLogged': false,
+          'cycleDay': null,
+          'cycleDayText': dayText,
+          'subtitle': subtitle,
+          'ovulationText': 'Not available',
+          'fertileWindow': 'Not available',
+          'expectedPeriod': 'Not available',
+          'recTestDay': 'Not available',
+          'phaseName': 'Not Logged',
+        };
+
+    final cycle = _cycleResult.data ?? _lastKnownCycle;
+
+    // Branches that do not use cycle language at all (menopause, pregnancy).
+    if (cycle != null && !cycle.cycleTrackingAvailable) {
+      return unavailable(
+        'restricted',
+        'Cycle tracking paused',
+        cycle.restrictedMessage ?? 'Your current stage does not use cycle tracking.',
+      );
     }
 
-    final int cycleLen = (curPc.cycleLength != null && curPc.cycleLength! > 0) ? curPc.cycleLength! : 28;
-    final int daysDiff = DateTime.now().difference(pStart).inDays;
-    final int currentCycleDay = (daysDiff >= 0) ? (daysDiff % cycleLen) + 1 : 1;
+    switch (_cycleResult.state) {
+      case ApiState.loading:
+        return unavailable('loading', 'Loading…', 'Fetching your cycle.');
 
-    final int completedCycles = (daysDiff >= 0) ? (daysDiff ~/ cycleLen) : 0;
-    final DateTime currentCycleStart = pStart.add(Duration(days: completedCycles * cycleLen));
-    final DateTime nextPeriodDate = currentCycleStart.add(Duration(days: cycleLen));
+      case ApiState.empty:
+        // No period data at all. Never show a simulated cycle day here.
+        return unavailable(
+          'empty',
+          'Not Logged',
+          'No period logged yet. Tap to set your last period start date.',
+        );
 
-    final int ovulationDay = cycleLen - 14;
-    final DateTime ovulationDate = currentCycleStart.add(Duration(days: ovulationDay > 0 ? ovulationDay - 1 : 13));
-    final DateTime fertileStart = ovulationDate.subtract(const Duration(days: 4));
-    final DateTime fertileEnd = ovulationDate.add(const Duration(days: 1));
-    final DateTime recTestDay = nextPeriodDate.add(const Duration(days: 3));
+      case ApiState.offline:
+      case ApiState.error:
+        if (cycle == null) {
+          return unavailable(
+            _cycleResult.state == ApiState.offline ? 'offline' : 'error',
+            'Cycle Day unavailable',
+            _cycleResult.state == ApiState.offline
+                ? 'You are offline. Your cycle will refresh when you reconnect.'
+                : 'Could not load your cycle. Pull to refresh.',
+          );
+        }
+        break;
 
-    String formatD(DateTime d) {
-      final m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month - 1];
-      return '$m ${d.day}';
+      default:
+        break;
     }
 
-    String ovulationStatus = (currentCycleDay >= ovulationDay) ? 'Completed' : 'Upcoming';
-    String phaseName = 'Follicular Phase';
-    if (currentCycleDay <= 5) {
-      phaseName = 'Menstrual Phase';
-    } else if (currentCycleDay < ovulationDay - 1) {
-      phaseName = 'Follicular Phase';
-    } else if (currentCycleDay <= ovulationDay + 1) {
-      phaseName = 'Ovulatory Phase';
+    if (cycle == null || cycle.currentCycleDay == null) {
+      return unavailable(
+        'empty',
+        'Not Logged',
+        'No period logged yet. Tap to set your last period start date.',
+      );
+    }
+
+    final int cycleDay = cycle.currentCycleDay!;
+    final bool predictionsAvailable = cycle.hasPrediction;
+
+    // Predictions are withheld until there is enough history to give them
+    // honestly; the card shows the reason instead of a fabricated date.
+    const notEnough = 'Not enough data yet';
+
+    final bool hasOvulation = cycle.estimatedOvulationDate != null;
+    final String ovulationText = hasOvulation
+        ? _formatDayMonth(cycle.estimatedOvulationDate)
+        : notEnough;
+    final String expectedPeriod =
+        predictionsAvailable ? _formatDayMonth(cycle.nextPeriodStartDate) : notEnough;
+    final String fertileWindow = (cycle.fertileWindowStart != null && cycle.fertileWindowEnd != null)
+        ? '${_formatDayMonth(cycle.fertileWindowStart)} - ${_formatDayMonth(cycle.fertileWindowEnd)}'
+        : notEnough;
+
+    final nextPeriod = cycle.nextPeriodStartDate == null
+        ? null
+        : DateTime.tryParse(cycle.nextPeriodStartDate!);
+    final String recTestDay = nextPeriod == null
+        ? notEnough
+        : _formatDayMonth(nextPeriod.add(const Duration(days: 3)).toIso8601String());
+
+    // A late period is surfaced as late, not folded into a new cycle.
+    final String subtitle;
+    if (cycle.isOverdue) {
+      subtitle = cycle.lateNotice ??
+          'Your period is ${cycle.daysOverdue ?? 0} day(s) later than your logged pattern suggests.';
+    } else if (hasOvulation) {
+      subtitle = 'Expected Ovulation: $ovulationText';
     } else {
-      phaseName = 'Luteal Phase';
+      subtitle = cycle.sufficiencyMessage ?? 'Keep logging to build your cycle picture.';
     }
 
     return {
+      'state': _cycleResult.state == ApiState.insufficientData ? 'insufficient_data' : 'ready',
       'isLogged': true,
-      'cycleDay': currentCycleDay,
-      'cycleDayText': 'Cycle Day $currentCycleDay',
-      'subtitle': 'Expected Ovulation: ${formatD(ovulationDate)} ($ovulationStatus)',
-      'ovulationText': '${formatD(ovulationDate)} ($ovulationStatus)',
-      'fertileWindow': '${formatD(fertileStart)} - ${formatD(fertileEnd)}',
-      'expectedPeriod': formatD(nextPeriodDate),
-      'recTestDay': formatD(recTestDay),
-      'phaseName': phaseName,
+      'cycleDay': cycleDay,
+      'cycleDayText': cycle.isOverdue
+          ? 'Day $cycleDay · ${cycle.daysOverdue ?? 0} days late'
+          : 'Cycle Day $cycleDay',
+      'subtitle': subtitle,
+      'ovulationText': ovulationText,
+      'fertileWindow': fertileWindow,
+      'expectedPeriod': expectedPeriod,
+      'recTestDay': recTestDay,
+      'phaseName': cycle.phase ?? 'Not Logged',
+      // Provenance, so the card can show which calculation produced the number.
+      'calculationVersion': cycle.calculationVersion,
+      'confidenceLevel': cycle.confidenceLevel,
+      'isOverdue': cycle.isOverdue,
+      'disclaimer': cycle.disclaimer,
     };
-  }
-
-  Future<void> _pickAndSavePeriodDate(BuildContext context) async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _currentPc.lastPeriodStart ?? now,
-      firstDate: now.subtract(const Duration(days: 365)),
-      lastDate: now,
-      helpText: "SELECT LAST PERIOD START DATE",
-      confirmText: "SAVE",
-      cancelText: "CANCEL",
-    );
-
-    if (picked != null && mounted) {
-      final provider = BlushyOSProvider.of(context);
-      final cur = provider.personalContext;
-      final int daysDiff = now.difference(picked).inDays;
-      final int cLen = (cur.cycleLength != null && cur.cycleLength! > 0) ? cur.cycleLength! : 28;
-      final int cDay = (daysDiff >= 0) ? (daysDiff % cLen) + 1 : 1;
-
-      provider.updatePersonalContext(PersonalContext(
-        userName: cur.userName,
-        dateOfBirth: cur.dateOfBirth,
-        weight: cur.weight,
-        lifeStage: cur.lifeStage,
-        dueDate: cur.dueDate,
-        babyBirthDate: cur.babyBirthDate,
-        trackingPreference: cur.trackingPreference,
-        cyclePattern: cur.cyclePattern,
-        confidence: cur.confidence,
-        lifeContexts: cur.lifeContexts,
-        userGoals: cur.userGoals,
-        userSymptoms: cur.userSymptoms,
-        medicalConditions: cur.medicalConditions,
-        preferences: cur.preferences,
-        cycleLength: cLen,
-        cycleDay: cDay,
-        cyclePhase: cDay <= 5 ? 'Menstrual Phase' : (cDay <= 13 ? 'Follicular Phase' : (cDay <= 16 ? 'Ovulatory Phase' : 'Luteal Phase')),
-        lastPeriodStart: picked,
-        medications: cur.medications,
-      ));
-
-      try {
-        final profileData = BlushyStorage.read('user_profile.json') ?? {};
-        final profileMap = Map<String, dynamic>.from(profileData['profile'] ?? profileData);
-        profileMap['period_last_start_date'] = picked.toIso8601String();
-        profileMap['last_period'] = picked.toIso8601String();
-        BlushyStorage.write('user_profile.json', {'profile': profileMap});
-        await ApiPeriodService().logPeriodEntry(periodStartDate: picked, source: 'manual_tracker');
-      } catch (_) {}
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Period logged: ${picked.day}/${picked.month}/${picked.year} (Day $cDay)")),
-        );
-      }
-    }
   }
 
   List<String> _extractStrings(dynamic val) {
@@ -527,19 +934,39 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOut,
-    );
     _animController.forward();
     _checkFirstLaunchCoach();
     _loadOnboardingData();
+    // Cycle day, phase and predictions come from the backend calculation
+    // service rather than being derived on the client.
+    _loadCycleFromServer();
+    // Patterns are computed from the user's own logged events.
+    _loadPatterns();
+    // Care plan actions come from the rule engine, with safety suppression.
+    _loadCarePlan();
+    // Timeline is the user's own logged events, in order.
+    _loadTimeline();
+    // Reflection prompt follows the current life stage.
+    _loadReflection();
+    // Conditions the user reported being diagnosed with.
+    _loadConditions();
+    // Anything logged offline is sent before today's state is read back.
+    _flushOfflineQueue();
+    // Today's check-in selections, so they follow the account across devices.
+    _loadTodayCheckins();
     SiaDashboardService().refreshNotifier.addListener(_onSiaRefresh);
   }
 
   void _onSiaRefresh() {
     if (mounted) {
       _loadOnboardingData();
+      _loadCycleFromServer();
+      _loadPatterns();
+      _loadCarePlan();
+      _loadTimeline();
+      _loadReflection();
+      _loadConditions();
+      _loadTodayCheckins();
       setState(() {});
     }
   }
@@ -551,18 +978,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     try {
       BlushyStorage.write('logged_weight.json', {'weight': val});
       final weightData = BlushyStorage.read('weight_history.json');
-      final List history = weightData is Map && weightData['history'] is List ? List.from(weightData['history']) : [];
+      final List history = weightData['history'] is List ? List.from(weightData['history']) : [];
       history.add({'weight': val, 'date': DateTime.now().toIso8601String()});
       BlushyStorage.write('weight_history.json', {'history': history});
 
       final profileData = BlushyStorage.read('user_profile.json');
-      if (profileData is Map) {
-        final Map answers = Map.from(profileData['answers'] as Map? ?? profileData['profile']?['answers'] as Map? ?? {});
-        answers['weight_current'] = val.toString();
-        answers['weight'] = val.toString();
-        profileData['answers'] = answers;
-        BlushyStorage.write('user_profile.json', profileData);
-      }
+      final Map answers = Map.from(profileData['answers'] as Map? ?? profileData['profile']?['answers'] as Map? ?? {});
+      answers['weight_current'] = val.toString();
+      answers['weight'] = val.toString();
+      profileData['answers'] = answers;
+      BlushyStorage.write('user_profile.json', profileData);
     } catch (_) {}
     ApiAuthService().saveWeightLog(val).catchError((_) => false);
 
@@ -600,28 +1025,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     try {
       final decoded = BlushyStorage.read('user_profile.json');
       final weightData = BlushyStorage.read('logged_weight.json');
-      final savedWeight = weightData is Map ? weightData['weight'] : null;
+      final savedWeight = weightData['weight'];
       
       final checkinData = BlushyStorage.read('daily_checkin.json');
-      if (checkinData is Map) {
-        if (checkinData['feeling'] != null) _selectedFeeling = checkinData['feeling'].toString();
-        if (checkinData['mood'] != null) _selectedFeeling = checkinData['mood'].toString();
-        if (checkinData['energy'] != null) _selectedEnergy = checkinData['energy'].toString();
-        if (checkinData['sleep'] != null) _livingSleep = checkinData['sleep'].toString();
-        if (checkinData['stress'] != null) _livingStress = checkinData['stress'].toString();
-        if (checkinData['water'] != null) _livingWater = checkinData['water'].toString();
-        if (checkinData['flow'] != null) _livingFlow = checkinData['flow'].toString();
-        if (checkinData['pain'] != null) _livingPain = checkinData['pain'].toString();
-        if (checkinData['exercise'] != null) _livingExercise = checkinData['exercise'].toString();
-      }
+      if (checkinData['feeling'] != null) _selectedFeeling = checkinData['feeling'].toString();
+      if (checkinData['mood'] != null) _selectedFeeling = checkinData['mood'].toString();
+      if (checkinData['energy'] != null) _selectedEnergy = checkinData['energy'].toString();
+      if (checkinData['sleep'] != null) _livingSleep = checkinData['sleep'].toString();
+      if (checkinData['stress'] != null) _livingStress = checkinData['stress'].toString();
+      if (checkinData['water'] != null) _livingWater = checkinData['water'].toString();
+      if (checkinData['flow'] != null) _livingFlow = checkinData['flow'].toString();
+      if (checkinData['pain'] != null) _livingPain = checkinData['pain'].toString();
+      if (checkinData['exercise'] != null) _livingExercise = checkinData['exercise'].toString();
 
       setState(() {
-        if (decoded is Map) {
-          final p = decoded['profile'];
-          _onboardingData = p is Map ? Map<String, dynamic>.from(p) : Map<String, dynamic>.from(decoded);
-        } else {
-          _onboardingData = {};
-        }
+        final p = decoded['profile'];
+        _onboardingData = p is Map ? Map<String, dynamic>.from(p) : Map<String, dynamic>.from(decoded);
         if (savedWeight != null && savedWeight.toString().isNotEmpty) {
           _loggedWeight = double.tryParse(savedWeight.toString());
         }
@@ -797,7 +1216,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       final file = File('coach_first_launch.json');
       if (file.existsSync()) {
         setState(() {
-          _showCoachMarks = true;
         });
         file.deleteSync();
       }
@@ -1181,7 +1599,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   // 2. ACTIVE FOCUS TOPIC HEADERS (RENDERED ONLY AT THE START)
                   ...stages.map((stageKey) {
                     return _buildStageSectionHeader(stageKey);
-                  }).toList(),
+                  }),
                   SizedBox(height: isMobile ? 24 : 36),
 
                   // 3. DEDUPLICATED CYCLE TRACKER (Only 1 authoritative cycle / uterus card)
@@ -1211,7 +1629,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         SizedBox(height: isMobile ? 32 : 48),
                       ],
                     );
-                  }).toList(),
+                  }),
 
                   // 8. SINGLE MERGED MONTHLY REFLECTION & JOURNEY
                   _buildLivingJourney(),
@@ -1227,477 +1645,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- FIRST PERIODS OS REDESIGN ---
 
-  Map<String, dynamic> _getPersonalizedBranchAData(PersonalContext pc) {
-    final istNow = DateTime.now().toUtc().add(const Duration(hours: 5, minutes: 30));
-    final hour = istNow.hour;
-    String timeOfDay = "day";
-    if (hour < 12) {
-      timeOfDay = "morning";
-    } else if (hour < 17) {
-      timeOfDay = "afternoon";
-    } else {
-      timeOfDay = "evening";
-    }
 
-    final String displayName = pc.userName ?? "there";
-    final String stageStr = _onboardingData['lifeStage'] ?? 'firstPeriodNotStarted';
-    final bool hasStarted = stageStr == 'firstPeriodStarted';
-
-    if (hasStarted) {
-      final bool isDataLogged = pc.lastPeriodStart != null && (pc.cycleDay ?? 0) > 0;
-      final int cycleDay = pc.cycleDay ?? 0;
-      final greeting = "${_getTimeBasedGreetingPrefix()}, $displayName";
-
-      // 1. Dynamic Hero, Sia Note, and Guidance based on cycle phase
-      String heroTitle = "Welcome to Your New Journey";
-      String heroDesc = "Your first period is a new chapter. Every cycle teaches you something about your body.";
-      String heroInsight = "Day $cycleDay of your cycle • Recovery phase • Your body is gently returning to its baseline. Rest well.";
-      String siaNote = "This is only your third cycle. Your body is still learning too. You've been checking in consistently this week. We're beginning to understand your rhythm. You can ask me absolutely anything.";
-      
-      final Map<String, dynamic> discovery = {
-        'title': "Building healthy habits",
-        'readTime': "3 min read",
-        'type': "GUIDE",
-        'desc': "Discover how sleep, gentle movement, and proper nourishment build a strong foundation for your cycle health.",
-        'imageUrl': "assets/illustrations/pad_guide.png",
-        'completedRatio': 0.8,
-        'usefulness': "95% helpful today",
-        'saved': false,
-      };
-
-      final List<String> prompts = [];
-      final List<Map<String, String>> communityPosts = [];
-
-      String heroPhaseName = "Recovery Phase";
-
-      if (cycleDay <= 5) {
-        // Period Phase
-        heroTitle = " Day $cycleDay";
-        heroPhaseName = "Period Phase";
-        heroDesc = "Your body is letting go of the old lining. Take things gently today. Hydrate well. A warm compress may help cramps.";
-        heroInsight = "Period Phase • You may feel more tired than usual. This is completely normal.";
-        siaNote = "You've been checking in consistently this week. Since you asked about cramps last week, let's see if your body follows a similar pattern this cycle. Remember, it is okay to feel tired or just want to rest during your period.";
-        
-        discovery['title'] = "Managing cramps";
-        discovery['desc'] = "From warm compresses to gentle hydration, explore simple and comforting ways to soothe menstrual cramps at home.";
-        discovery['readTime'] = "4 min read";
-        discovery['type'] = "STORY";
-        discovery['usefulness'] = "99% helpful today";
-        discovery['completedRatio'] = 0.5;
-
-        prompts.addAll([
-          "Is this flow normal?",
-          "Why is my flow changing?",
-          "Why do cramps happen?",
-          "Can I play sports?",
-        ]);
-
-        communityPosts.addAll([
-          {"user": "Anonymous", "text": "My first day at school during my period. I was so nervous but everything went fine!"},
-          {"user": "Anonymous", "text": "How I told my mum when it first happened. It was a really sweet moment."},
-        ]);
-      } else if (cycleDay <= 11) {
-        // Follicular (Growing) Phase
-        heroTitle = " Day $cycleDay";
-        heroPhaseName = "Growing Phase";
-        heroDesc = "Your body is rebuilding energy after your period. You may feel more energetic over the next few days.";
-        heroInsight = "Follicular Phase • Energy is returning. Great day to try something new.";
-        siaNote = "We're beginning to understand your rhythm, $displayName. Your body is still finding its path, and this is only your third cycle. Take this follicular phase to explore what feels good as your natural energy levels return.";
-        
-        discovery['title'] = "Understanding cycle phases";
-        discovery['desc'] = "Learn about the four seasons of your body and how estrogen and progesterone rise and fall to create your rhythm.";
-        discovery['readTime'] = "5 min read";
-        discovery['type'] = "GUIDE";
-        discovery['usefulness'] = "95% helpful today";
-        discovery['completedRatio'] = 0.2;
-
-        prompts.addAll([
-          "Why is my flow changing?",
-          "Why are my periods irregular?",
-          "What causes cramps?",
-          "Can stress affect my cycle?",
-        ]);
-
-        communityPosts.addAll([
-          {"user": "Anonymous", "text": "Pads vs tampons - what did you start with?"},
-          {"user": "Anonymous", "text": "Does swimming make cramps feel better or worse?"},
-        ]);
-      } else if (cycleDay <= 16) {
-        // Ovulation Phase
-        heroTitle = " Day $cycleDay";
-        heroPhaseName = "Ovulation Phase";
-        heroDesc = "Your body is releasing an egg. Your confidence may feel higher. Stay active, hydrate well, and listen to your inner rhythm.";
-        heroInsight = "Ovulation Phase • You may feel more social and expressive.";
-        siaNote = "You've been checking in consistently this week. We're beginning to understand your rhythm. This is only your third cycle, so your body is still learning too. Notice how your confidence levels shine during this ovulation phase.";
-        
-        discovery['title'] = "Understanding discharge";
-        discovery['desc'] = "Observe how your body signals ovulation with clear, stretchy cervical fluid, a natural sign of fertility.";
-        discovery['readTime'] = "4 min read";
-        discovery['type'] = "GUIDE";
-        discovery['usefulness'] = "90% helpful today";
-        discovery['completedRatio'] = 0.6;
-
-        prompts.addAll([
-          "What is ovulation?",
-          "Is white discharge normal?",
-          "Can I swim?",
-          "Why are my friends changing faster?",
-        ]);
-
-        communityPosts.addAll([
-          {"user": "Anonymous", "text": "What helped my cramps during gym class? Sipping warm water really helped."},
-          {"user": "Anonymous", "text": "How do you track your second cycle without feeling anxious?"},
-        ]);
-      } else {
-        // Luteal Phase
-        heroTitle = " Day $cycleDay";
-        heroPhaseName = "Luteal Phase";
-        heroDesc = "Your body is winding down. Be kind to yourself today. Extra sleep and nourishing meals may help.";
-        heroInsight = "Luteal Phase • You might notice mood changes or feeling more emotional.";
-        siaNote = "Since you asked about cramps last week, let's see if your body follows a similar pattern as we enter the luteal phase. Remember, your body is still finding its path, and taking time to rest is a beautiful part of this cycle.";
-        
-        discovery['title'] = "Why are early cycles irregular?";
-        discovery['desc'] = "Your ovaries are still learning to communicate with your brain. Explore why irregularity is completely normal in your first few years.";
-        discovery['readTime'] = "5 min read";
-        discovery['type'] = "STORY";
-        discovery['usefulness'] = "88% helpful today";
-        discovery['completedRatio'] = 0.4;
-
-        prompts.addAll([
-          "Why are my periods irregular?",
-          "What causes cramps?",
-          "Can stress affect my cycle?",
-          "What if my next period is late?",
-        ]);
-
-        communityPosts.addAll([
-          {"user": "Anonymous", "text": "Does swimming make cramps feel better or worse?"},
-          {"user": "Anonymous", "text": "What helped my cramps during gym class?"},
-        ]);
-      }
-
-      final journeySteps = [
-        {'title': 'Period', 'done': true},
-        {'title': 'Recovery', 'done': true, 'current': cycleDay <= 15},
-        {'title': 'Growing', 'done': cycleDay > 15, 'current': cycleDay > 15},
-        {'title': 'Next Period', 'done': false},
-      ];
-
-      final communityStats = "${100 - cycleDay} girls are sharing stories in the circle today";
-      final funFact = "The uterus is about the size of a small pear.";
-
-      final confidenceJourney = [
-        {'title': 'My First Period', 'done': true},
-        {'title': 'Learning Hygiene', 'done': true},
-        {'title': 'Understanding My Cycle', 'done': true},
-        {'title': 'Managing Cramps', 'done': cycleDay > 4},
-        {'title': 'Tracking My Second Cycle', 'done': cycleDay > 25},
-        {'title': 'Building Healthy Habits', 'done': cycleDay > 15},
-      ];
-
-      // Transition attributes
-      final double transitionScore = cycleDay / 28.0;
-
-      return {
-        'greeting': greeting,
-        'siaNote': siaNote,
-        'journeySteps': journeySteps,
-        'discovery': discovery,
-        'prompts': prompts,
-        'communityStats': communityStats,
-        'communityPosts': communityPosts,
-        'funFact': funFact,
-        'confidenceJourney': confidenceJourney,
-        'hasStarted': true,
-        'isDataLogged': isDataLogged,
-        'heroTitle': heroTitle,
-        'heroPhaseName': heroPhaseName,
-        'heroDesc': heroDesc,
-        'heroInsight': heroInsight,
-        'transitionScore': transitionScore,
-        'cycleCount': 1,
-        'isTransitionReady': false,
-      };
-    } else {
-      // BRANCH A: Not Started
-      final greeting = "${_getTimeBasedGreetingPrefix()}, $displayName";
-      String siaNote = "I know growing up can feel confusing sometimes. You don't have to figure everything out alone. I'm always here whenever you have questions. Even the small ones.";
-      
-      final answers = _onboardingData['answers'] ?? {};
-      final bool feelsNervous = answers.values.any((val) => val.toString().toLowerCase().contains('nervous') || val.toString().toLowerCase().contains('scared'));
-      final bool wantsBodyChanges = answers.values.any((val) => val.toString().toLowerCase().contains('body changes') || val.toString().toLowerCase().contains('puberty'));
-
-      if (feelsNervous) {
-        siaNote = "It's completely okay to feel nervous about growing up, $displayName. Your body is doing some beautiful, quiet growing, and we will take it one step at a time together.";
-      } else if (wantsBodyChanges) {
-        siaNote = "Everyone grows at their own pace, $displayName. Your story doesn't have to look like anyone else's. I'm always here to help you understand all the changes.";
-      }
-
-      final journeySteps = [
-        {'title': 'Learning About My Body', 'done': true},
-        {'title': 'Understanding Puberty', 'done': true},
-        {'title': 'Preparing for My First Period', 'done': false},
-        {'title': 'My First Period', 'done': false, 'locked': true},
-      ];
-
-      final Map<String, dynamic> discovery = {
-        'title': "Why do periods happen?",
-        'readTime': "4 min read",
-        'type': "GUIDE",
-        'desc': "Your body is preparing for a new chapter. Every month, the uterus grows a soft lining. If it's not needed, it gently leaves the body as a period. It's a natural, healthy sign of growing up.",
-        'imageUrl': "assets/illustrations/period_prep.png",
-        'completedRatio': 0.6,
-      };
-
-      if (wantsBodyChanges) {
-        discovery['title'] = "How your body changes";
-        discovery['desc'] = "From height spurts to soft changes, hormones help your body grow in many different ways. Let's explore what's normal during puberty.";
-        discovery['readTime'] = "5 min read";
-        discovery['type'] = "STORY";
-        discovery['completedRatio'] = 0.2;
-      }
-
-      final prompts = [
-        "When will I get my first period?",
-        "Is white discharge normal?",
-        "Why are my friends changing faster?",
-        "Can I ask anything?",
-      ];
-
-      const communityStats = "142 girls are learning together this week";
-      final communityPosts = [
-        {"user": "Anonymous", "text": "I'm nervous about my first period. What if it happens at school?"},
-        {"user": "Anonymous", "text": "Can I swim during my period? My friends say no but I want to match them."},
-        {"user": "Anonymous", "text": "Why do cramps happen and how can I soothe them?"},
-      ];
-
-      const funFact = "The uterus is about the size of a small pear.";
-
-      return {
-        'greeting': greeting,
-        'siaNote': siaNote,
-        'journeySteps': journeySteps,
-        'discovery': discovery,
-        'prompts': prompts,
-        'communityStats': communityStats,
-        'communityPosts': communityPosts,
-        'funFact': funFact,
-        'hasStarted': false,
-      };
-    }
-  }
-
-  Map<String, dynamic> _getPersonalizedBranchCData(PersonalContext pc) {
-    final istNow = DateTime.now().toUtc().add(const Duration(hours: 5, minutes: 30));
-    final int hour = istNow.hour;
-    String timeOfDay = "day";
-    if (hour < 12) {
-      timeOfDay = "morning";
-    } else if (hour < 17) {
-      timeOfDay = "afternoon";
-    } else {
-      timeOfDay = "evening";
-    }
-
-    final String displayName = pc.userName ?? "there";
-    final int cycleDay = pc.cycleDay ?? 0;
-
-    String greeting;
-    if (hour < 12) {
-      greeting = "Good Morning, $displayName. Hope you slept well.";
-    } else if (hour < 17) {
-      greeting = "Good Afternoon, $displayName. Hope your day is going well.";
-    } else {
-      greeting = "Good Evening, $displayName. Hope you had a great day.";
-    }
-
-    String heroTitle = "AI Daily Brief";
-    String heroSub = "Ovulation Phase";
-    String heroText = "";
-    String siaInsight = "";
-    String dailyTheme = "Wellness Day";
-
-    final Map<String, dynamic> focusTopic = {
-      'title': "",
-      'readTime': "3 min read",
-      'type': "NUTRITION",
-      'desc': "",
-      'imageUrl': "assets/illustrations/hydration.png",
-      'saved': false,
-    };
-
-    final List<String> prompts = [];
-    final List<Map<String, dynamic>> wellnessFeed = [];
-    final List<Map<String, String>> communityPosts = [];
-
-    if (cycleDay <= 5) {
-      dailyTheme = "Rest & Recovery Day";
-      heroSub = "Period Phase";
-      heroText = "You're in your Period Phase. You may notice lower energy today. Prioritise resting and stay well hydrated. A warm compress may help cramps.";
-      
-      siaInsight = "I remember you usually prefer walking instead of intense workouts during this phase. Let's take it gently today, $displayName. Last month, light walks and warm compresses helped reduce cramps by 30%.";
-      
-      focusTopic['title'] = "20-Minute Gentle Recovery Walk";
-      focusTopic['desc'] = "Approaching your period with lower sleep stats increases fatigue. Today, this low-impact walk is perfect to stay active without stressing your body.";
-      focusTopic['type'] = "MOVEMENT";
-      focusTopic['readTime'] = "2 min read";
-
-      prompts.addAll([
-        "How to manage period cramps?",
-        "Best iron-rich foods for recovery?",
-        "Can stress delay my period?",
-        "Why am I bloated today?",
-      ]);
-
-      wellnessFeed.addAll([
-        {
-          'title': "Why energy changes during the period phase",
-          'desc': "Learn how hormonal drops trigger physical fatigue and why listening to your desire for rest is scientifically essential.",
-          'readTime': "4 min read",
-          'type': "HORMONAL HEALTH",
-        },
-        {
-          'title': "Managing cramps naturally",
-          'desc': "Simple, heat-based therapy and nutritional tips that help relax uterine muscles safely during your cycle.",
-          'readTime': "5 min read",
-          'type': "NUTRITION",
-        }
-      ]);
-
-      communityPosts.addAll([
-        {"user": "Elena", "text": "Stretching during the first two days of period changed everything. Highly recommend gentle yoga!"},
-        {"user": "Chloe", "text": "Warm ginger tea is my absolute go-to for light cramps comfort."},
-      ]);
-    } else if (cycleDay <= 12) {
-      dailyTheme = "Growth & Confidence Day";
-      heroSub = "Follicular Phase";
-      heroText = "You're entering your Follicular Phase. Estrogen is rising, and you slept well yesterday, making this a great time for focused work or starting new habits.";
-      
-      siaInsight = "I notice you usually feel your most creative and focused during this week, $displayName. Last month, you completed three lessons on Day 8. Let's make the most of this motivation.";
-      
-      focusTopic['title'] = "Start a Creative Project Outline";
-      focusTopic['desc'] = "Your energy and focus are naturally higher over the next few days. Establishing goals today aligns with your peak mental stamina.";
-      focusTopic['type'] = "PRODUCTIVITY";
-      focusTopic['readTime'] = "3 min read";
-
-      prompts.addAll([
-        "Why is my energy returning?",
-        "Great workouts for follicular phase?",
-        "How to build healthy habits?",
-        "Why do hormones affect focus?",
-      ]);
-
-      wellnessFeed.addAll([
-        {
-          'title': "Why physical energy returns with rising estrogen",
-          'desc': "Establish strong exercise and dietary habits as your body builds up strength during the follicular phase.",
-          'readTime': "5 min read",
-          'type': "FITNESS",
-        },
-        {
-          'title': "Learning through the follicular phase",
-          'desc': "Discover how brain plasticity responds to rising hormonal levels to enhance memory and focus.",
-          'readTime': "4 min read",
-          'type': "HORMONAL HEALTH",
-        }
-      ]);
-
-      communityPosts.addAll([
-        {"user": "Sofia", "text": "Follicular phase is my favorite. I feel like I can learn anything and have endless energy!"},
-        {"user": "Maya", "text": "Perfect time to start a new gym routine. Motivation feels so natural right now."},
-      ]);
-    } else if (cycleDay <= 17) {
-      dailyTheme = "Peak Energy & Movement Day";
-      heroSub = "Ovulation Phase";
-      heroText = "You're entering Ovulation. Your energy and confidence may naturally feel higher over the next couple of days. You slept well yesterday, making this a great time for focused work or exercise.";
-      
-      siaInsight = "I remember you usually enjoy higher-intensity workouts or social tasks around Day 14. Your body is ready for active movement today, $displayName.";
-      
-      focusTopic['title'] = "25-Minute Strength Workout";
-      focusTopic['desc'] = "With peak physical energy and stability, this targeted strength routine helps build consistent muscle tone safely.";
-      focusTopic['type'] = "MOVEMENT";
-      focusTopic['readTime'] = "4 min read";
-
-      prompts.addAll([
-        "What ovulation means?",
-        "Why do I feel more social?",
-        "Cervical discharge explanation?",
-        "Best exercises for peak energy?",
-      ]);
-
-      wellnessFeed.addAll([
-        {
-          'title': "Optimizing strength during your peak ovulation",
-          'desc': "Explore how peak estrogen levels support cardiovascular performance and muscle synthesis.",
-          'readTime': "5 min read",
-          'type': "FITNESS",
-        },
-        {
-          'title': "Understanding cervical discharge changes",
-          'desc': "Learn how healthy body awareness correlates with natural phase changes in ovulation.",
-          'readTime': "3 min read",
-          'type': "HORMONAL HEALTH",
-        }
-      ]);
-
-      communityPosts.addAll([
-        {"user": "Elena", "text": "Exercising during ovulation phase feels so much easier. My strength is peak today!"},
-        {"user": "Chloe", "text": "I feel so much more talkative and outgoing this week. Hormones are wild!"},
-      ]);
-    } else {
-      dailyTheme = "Mindfulness & Sleep Reset";
-      heroSub = "Luteal Phase";
-      heroText = "Period expected in 3 days. You've reported higher stress this week. You slept less than usual and you're approaching your period. Prioritise sleep tonight.";
-      
-      siaInsight = "I remember you usually experience mild headaches or fatigue tomorrow. Let's prepare today by staying hydrated and reducing evening screen time, $displayName.";
-      
-      focusTopic['title'] = "15-Minute Mindfulness Breathing";
-      focusTopic['desc'] = "You slept less than usual and stress is slightly elevated. Doing this gentle breathing exercise tonight will help lower cortisol and promote sleep recovery.";
-      focusTopic['type'] = "MINDFULNESS";
-      focusTopic['readTime'] = "3 min read";
-
-      prompts.addAll([
-        "Why am I bloated today?",
-        "Can stress delay my period?",
-        "How do hormones affect sleep?",
-        "Why is my skin breaking out?",
-      ]);
-
-      wellnessFeed.addAll([
-        {
-          'title': "How hormonal shifts affect sleep and dreams",
-          'desc': "Explore why progesterone rises, how it changes sleep architecture, and tips to get restful sleep.",
-          'readTime': "5 min read",
-          'type': "SLEEP",
-        },
-        {
-          'title': "Managing luteal bloating and mood shifts",
-          'desc': "Simple magnesium-rich foods and evening habits that help stabilize mood and reduce pre-period headaches.",
-          'readTime': "4 min read",
-          'type': "NUTRITION",
-        }
-      ]);
-
-      communityPosts.addAll([
-        {"user": "Anna", "text": "Switching to chamomile tea and reading instead of scrolling on Day 24 helped my sleep tremendously."},
-        {"user": "Sophia", "text": "The pre-period bloating is so real, but warm epsom salt baths bring immediate comfort."},
-      ]);
-    }
-
-    return {
-      'greeting': greeting,
-      'heroTitle': heroTitle,
-      'heroSub': heroSub,
-      'heroText': heroText,
-      'siaInsight': siaInsight,
-      'focusTopic': focusTopic,
-      'prompts': prompts,
-      'wellnessFeed': wellnessFeed,
-      'communityPosts': communityPosts,
-      'cycleDay': cycleDay,
-      'dailyTheme': dailyTheme,
-    };
-  }
 
   // --- SECTION 1: SIA'S DAILY LETTER (HERO) ---
   Widget _buildSiasDailyLetter(String name) {
@@ -1784,12 +1732,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isCompleted ? BlushyColors.primary.withOpacity(0.4) : BlushyColors.border,
+                      color: isCompleted ? BlushyColors.primary.withValues(alpha: 0.4) : BlushyColors.border,
                       width: isCompleted ? 1.5 : 0.8,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
+                        color: Colors.black.withValues(alpha: 0.02),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -2220,7 +2168,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "My mom bought me my first pouch!",
+                      "Read what others are sharing",
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -2229,7 +2177,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "Preparing together makes it feel exciting and not scary at all.",
+                      "Real conversations from the community, not examples.",
                       style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
                     ),
                   ],
@@ -2417,7 +2365,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       ApiAuthService().saveOnboardingAnswers({'first_period_kit': _periodKitChecklist}).catchError((_) => <String, dynamic>{});
                     },
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),
@@ -2492,7 +2440,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ],
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),
@@ -2502,12 +2450,39 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 5: GROWING JOURNEY ---
   Widget _buildGrowingJourney() {
+    // Which step is active comes from the life stage the user actually chose,
+    // not from a fixed list that always highlighted the first one.
+    const stageTitles = [
+      "Learning About My Body",
+      "Understanding Puberty",
+      "Preparing For My First Period",
+      "My First Period",
+      "Living With My Cycle",
+    ];
+
+    final normalizedStage = (BlushyOSProvider.of(context).personalContext.lifeStage ?? '')
+        .toLowerCase()
+        .replaceAll('_', '')
+        .replaceAll(' ', '');
+
+    int activeIndex = 0;
+    if (normalizedStage.contains('notstarted')) {
+      activeIndex = 0;
+    } else if (normalizedStage.contains('firstperiod')) {
+      activeIndex = 3;
+    } else if (normalizedStage.isNotEmpty) {
+      // Any later branch means the first period has happened.
+      activeIndex = 4;
+    }
+
     final List<Map<String, String>> timelineStages = [
-      {"title": "Learning About My Body", "status": "active"},
-      {"title": "Understanding Puberty", "status": "pending"},
-      {"title": "Preparing For My First Period", "status": "pending"},
-      {"title": "My First Period", "status": "pending"},
-      {"title": "Living With My Cycle", "status": "pending"},
+      for (var i = 0; i < stageTitles.length; i++)
+        {
+          "title": stageTitles[i],
+          "status": i == activeIndex
+              ? "active"
+              : (i < activeIndex ? "done" : "pending"),
+        },
     ];
 
     return Container(
@@ -2531,7 +2506,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           ),
           const SizedBox(height: 20),
           ...timelineStages.map((stage) {
-            final isActive = stage['status'] == "active";
+            final isActive = stage['status'] == "active" || stage['status'] == "done";
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2592,7 +2567,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 ),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -2779,7 +2754,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             image: backgroundImage,
             boxShadow: [
               BoxShadow(
-                color: BlushyColors.text.withOpacity(0.04),
+                color: BlushyColors.text.withValues(alpha: 0.04),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -3006,13 +2981,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ),
                   ),
                   IconButton(
-                    onPressed: () => _pickAndSavePeriodDate(context),
+                    onPressed: () => _showLogPeriodBottomSheet(context),
                     icon: const Icon(
                       Icons.edit,
                       color: BlushyColors.primary,
                       size: 20,
                     ),
-                    tooltip: "Log Period",
+                    tooltip: AppLocalizations.of(context).dashLogPeriod,
                   ),
                 ],
               ),
@@ -3062,7 +3037,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         ? (DateTime.now().difference(curPc.lastPeriodStart!).inDays + 1)
                         : (curPc.cycleDay ?? 1);
                     final bool isMenstrual = day <= activeCycleDay && day <= 5;
-                    final bool isTodayCircle = day == activeCycleDay;
                     return Container(
                       width: 24,
                       height: 24,
@@ -3163,7 +3137,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
-            "HOW ARE YOU TODAY?",
+            AppLocalizations.of(context).dashHowAreYouToday,
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -3183,17 +3157,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
-                "MOOD",
+                AppLocalizations.of(context).dashMood,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json') ?? {})['feeling'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
                   final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
@@ -3215,7 +3193,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withOpacity(0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected ? BlushyColors.primary : BlushyColors.border,
@@ -3247,14 +3225,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Energy Selector
               Text(
-                "ENERGY LEVEL",
+                AppLocalizations.of(context).dashEnergyLevel,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 children: energyOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedEnergy = checkinData['energy'] ?? (BlushyStorage.read('logged_energy.json') ?? {})['energy'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedEnergy = checkinData['energy'] ?? (BlushyStorage.read('logged_energy.json'))['energy'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeEnergy = _selectedEnergy ?? savedEnergy ?? (wb.energy != null ? (wb.energy! >= 7 ? 'High' : (wb.energy! >= 4 ? 'Medium' : 'Low')) : null);
                   final isSelected = activeEnergy != null && activeEnergy.toString().toLowerCase() == opt.toLowerCase();
@@ -3293,7 +3271,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Flow Selector
               Text(
-                "FLOW LEVEL",
+                AppLocalizations.of(context).dashFlowLevel,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -3335,7 +3313,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Notes & Voice logging
               Text(
-                "NOTES & REFLECTIONS",
+                AppLocalizations.of(context).dashNotesReflections,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -3443,7 +3421,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.01),
+                      color: Colors.black.withValues(alpha: 0.01),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -3615,12 +3593,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Has anyone skipped their second period?",
+                      "Questions people are asking",
                       style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "Yes, my second cycle was 52 days! It's super common for it to skip a month.",
+                      "Open the community to read and reply.",
                       style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
                     ),
                   ],
@@ -3639,12 +3617,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "PMS Mood Swings tips?",
+                      "Tips people are sharing",
                       style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "Writings helps me, and telling my sister I feel touchy today.",
+                      "Open the community to read and reply.",
                       style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
                     ),
                   ],
@@ -3829,7 +3807,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       });
                     },
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),
@@ -3848,63 +3826,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 6: MY JOURNEY (Milestones) ---
+  /// Real logged events, not a scripted timeline. Replaced a hardcoded list
+  /// that marked milestones complete on a freshly installed app.
   Widget _buildStartedJourney() {
-    final List<Map<String, dynamic>> milestones = [
-      {"title": "Logged first period", "done": true},
-      {"title": "Completed first month", "done": true},
-      {"title": "Learned about cramps", "done": true},
-      {"title": "Tracked five cycles", "done": false},
-      {"title": "Built confidence", "done": false},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: BlushyColors.border, width: 0.8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "MY JOURNEY MILESTONES",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ...milestones.map((m) {
-            final isDone = m['done'] as bool;
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                children: [
-                  Icon(
-                    isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-                    color: isDone ? BlushyColors.success : BlushyColors.disabled.withOpacity(0.5),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      m['title'],
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: isDone ? FontWeight.bold : FontWeight.normal,
-                        color: isDone ? BlushyColors.text : BlushyColors.secondaryText,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ],
-      ),
+    return const RealJourneyTimeline(
+      title: 'Your Cycle Journey',
+      emptyHeadline: 'Your journey starts with your first period log',
     );
   }
 
@@ -4085,7 +4012,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       primaryBtnText: hasLogged ? "Check In" : "Log Period Date",
       onPrimaryTap: () {
         if (!hasLogged) {
-          _pickAndSavePeriodDate(context);
+          _showLogPeriodBottomSheet(context);
         } else {
           _scrollToCheckIn();
         }
@@ -4107,7 +4034,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
     final pc = _currentPc;
     final wb = BlushyOSProvider.of(context).wellbeingState;
-    final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
+    final checkinData = BlushyStorage.read('daily_checkin.json');
     final String? savedMood = checkinData['feeling'] ?? checkinData['mood'];
     final String? savedEnergy = checkinData['energy'];
     final String? savedSleep = checkinData['sleep'];
@@ -4198,7 +4125,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         IconButton(
                           icon: const Icon(Icons.edit, color: BlushyColors.primary, size: 20),
                           onPressed: () {
-                            _pickAndSavePeriodDate(context);
+                            _showLogPeriodBottomSheet(context);
                           },
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -4237,7 +4164,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               ElevatedButton(
                 onPressed: () {
                   if (!hasPeriodLogged) {
-                    _pickAndSavePeriodDate(context);
+                    _showLogPeriodBottomSheet(context);
                   } else {
                     _scrollToCheckIn();
                   }
@@ -4353,6 +4280,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         initialDate: selectedStart,
                         firstDate: DateTime.now().subtract(const Duration(days: 365)),
                         lastDate: DateTime.now(),
+                        helpText: "SELECT PERIOD START DATE",
+                        confirmText: "SELECT",
+                        cancelText: "CANCEL",
                       );
                       if (picked != null) {
                         setModalState(() {
@@ -4397,6 +4327,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         initialDate: selectedEnd ?? selectedStart.add(const Duration(days: 5)),
                         firstDate: selectedStart,
                         lastDate: DateTime.now().add(const Duration(days: 10)),
+                        helpText: "SELECT PERIOD END DATE",
+                        confirmText: "SELECT",
+                        cancelText: "CANCEL",
                       );
                       if (picked != null) {
                         setModalState(() {
@@ -4447,7 +4380,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pop(context);
-                            _simulateLogPeriod(selectedStart, selectedEnd);
+                            _logPeriodRange(selectedStart, selectedEnd);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: BlushyColors.primary,
@@ -4473,13 +4406,35 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  void _simulateLogPeriod(DateTime startDate, DateTime? endDate) {
-    final now = DateTime.now();
+  Future<void> _logPeriodRange(DateTime startDate, DateTime? endDate) async {
+    // Captured before the await below.
+    final messenger = ScaffoldMessenger.of(context);
     final provider = BlushyOSProvider.of(context);
     final cur = provider.personalContext;
-    final int daysDiff = now.difference(startDate).inDays;
+
+    // Persist the event, then take the recalculated cycle from the response.
+    final logged = await CycleApi.logPeriod(startDate: startDate, endDate: endDate);
+    if (!mounted) return;
+
+    final CycleState? serverCycle = logged.data?.cycle;
+    if (serverCycle != null) {
+      setState(() {
+        _lastKnownCycle = serverCycle;
+        _cycleResult = ApiResult<CycleState>(
+          data: serverCycle,
+          state: logged.state == ApiState.loading ? ApiState.ready : logged.state,
+          source: logged.source,
+          version: logged.version,
+          lastUpdated: logged.lastUpdated,
+        );
+      });
+    } else {
+      await _loadCycleFromServer();
+      if (!mounted) return;
+    }
+
     final int cLen = (cur.cycleLength != null && cur.cycleLength! > 0) ? cur.cycleLength! : 28;
-    final int cDay = (daysDiff >= 0) ? (daysDiff % cLen) + 1 : 1;
+    final int? cDay = serverCycle?.currentCycleDay;
 
     provider.updatePersonalContext(PersonalContext(
       userName: cur.userName,
@@ -4498,7 +4453,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       preferences: cur.preferences,
       cycleLength: cLen,
       cycleDay: cDay,
-      cyclePhase: cDay <= 5 ? 'Menstrual Phase' : (cDay <= 13 ? 'Follicular Phase' : (cDay <= 16 ? 'Ovulatory Phase' : 'Luteal Phase')),
+      // Phase comes from the server calculation, not re-derived here.
+      cyclePhase: serverCycle?.phase ?? cur.cyclePhase,
       lastPeriodStart: startDate,
       medications: cur.medications,
     ));
@@ -4512,20 +4468,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     });
 
     try {
-      final profileData = BlushyStorage.read('user_profile.json') ?? {};
+      final profileData = BlushyStorage.read('user_profile.json');
       final profileMap = Map<String, dynamic>.from(profileData['profile'] ?? profileData);
       profileMap['period_last_start_date'] = startDate.toIso8601String();
       profileMap['last_period'] = startDate.toIso8601String();
       BlushyStorage.write('user_profile.json', {'profile': profileMap});
-      ApiPeriodService().logPeriodEntry(
-        periodStartDate: startDate,
-        periodEndDate: endDate,
-        source: 'manual_tracker',
-      );
+      // Already persisted by CycleApi.logPeriod above.
     } catch (_) {}
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Period logged successfully! Cycle reset to Day 1.")),
+
+    if (!mounted) return;
+    // Report the day the server actually calculated rather than asserting the
+    // cycle reset to day 1, which was not true for a back-dated entry.
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          cDay == null ? 'Period logged.' : 'Period logged. You are on day $cDay.',
+        ),
+      ),
     );
   }
 
@@ -4607,17 +4566,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
-                "MOOD",
+                AppLocalizations.of(context).dashMood,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedFeeling = checkinData['feeling'] ?? checkinData['mood'] ?? (BlushyStorage.read('logged_feeling.json') ?? {})['feeling'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedFeeling = checkinData['feeling'] ?? checkinData['mood'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
                   final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
@@ -4640,12 +4603,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         periodActive: currentWb.periodActive,
                       ));
 
-                      final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json') ?? {});
+                      final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
                       updatedCheckin['feeling'] = moodLabel;
                       updatedCheckin['mood'] = moodLabel;
                       updatedCheckin['mood_score'] = moodScore;
                       updatedCheckin['date'] = DateTime.now().toIso8601String();
                       BlushyStorage.write('daily_checkin.json', updatedCheckin);
+                      // Persist as a timestamped health event so patterns, care plan and
+                      // doctor summaries can actually see this entry.
+                      _recordCheckinEvent('mood', moodLabel.toString());
 
                       ApiAuthService().saveOnboardingAnswers({
                         'daily_mood': moodLabel,
@@ -4704,7 +4670,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               ),
               // Energy Selector
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
-              _buildLivingHorizontalSelector("ENERGY LEVEL", energyOptions, _selectedEnergy, (val) {
+              _buildLivingHorizontalSelector(AppLocalizations.of(context).dashEnergyLevel, energyOptions, _selectedEnergy, (val) {
                 final int energyScore = (val == 'High') ? 9 : (val == 'Medium' ? 7 : 4);
                 setState(() => _selectedEnergy = val);
 
@@ -4719,11 +4685,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   periodActive: currentWb.periodActive,
                 ));
 
-                final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json') ?? {});
+                final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
                 updatedCheckin['energy'] = val;
                 updatedCheckin['energy_score'] = energyScore;
                 updatedCheckin['date'] = DateTime.now().toIso8601String();
                 BlushyStorage.write('daily_checkin.json', updatedCheckin);
+                // Persist as a timestamped health event so patterns, care plan and
+                // doctor summaries can actually see this entry.
+                _recordCheckinEvent('energy', val.toString());
 
                 ApiAuthService().saveOnboardingAnswers({
                   'daily_energy': val,
@@ -4750,12 +4719,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               // Flow Selector (Shown if selected or tracking cycle)
               if (_isMetricSelected(pc, ['flow', 'period', 'bleeding', 'spotting'])) ...[
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("FLOW LEVEL", flowOptions, _livingFlow, (val) {
+                _buildLivingHorizontalSelector(AppLocalizations.of(context).dashFlowLevel, flowOptions, _livingFlow, (val) {
                   setState(() => _livingFlow = val);
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json') ?? {});
+                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
                   updatedCheckin['flow'] = val;
                   updatedCheckin['date'] = DateTime.now().toIso8601String();
                   BlushyStorage.write('daily_checkin.json', updatedCheckin);
+                  // Persist as a timestamped health event so patterns, care plan and
+                  // doctor summaries can actually see this entry.
+                  _recordCheckinEvent('flow', val.toString());
                   ApiAuthService().saveOnboardingAnswers({
                     'daily_flow': val,
                     'daily_checkin': updatedCheckin,
@@ -4768,10 +4740,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
                 _buildLivingHorizontalSelector("PAIN LEVEL", painOptions, _livingPain, (val) {
                   setState(() => _livingPain = val);
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json') ?? {});
+                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
                   updatedCheckin['pain'] = val;
                   updatedCheckin['date'] = DateTime.now().toIso8601String();
                   BlushyStorage.write('daily_checkin.json', updatedCheckin);
+                  // Persist as a timestamped health event so patterns, care plan and
+                  // doctor summaries can actually see this entry.
+                  _recordCheckinEvent('pain', val.toString());
                   ApiAuthService().saveOnboardingAnswers({
                     'daily_pain': val,
                     'daily_checkin': updatedCheckin,
@@ -4797,11 +4772,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     periodActive: currentWb.periodActive,
                   ));
 
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json') ?? {});
+                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
                   updatedCheckin['sleep'] = val;
                   updatedCheckin['sleep_hours'] = sleepHours;
                   updatedCheckin['date'] = DateTime.now().toIso8601String();
                   BlushyStorage.write('daily_checkin.json', updatedCheckin);
+                  // Persist as a timestamped health event so patterns, care plan and
+                  // doctor summaries can actually see this entry.
+                  _recordCheckinEvent('sleep', val.toString());
 
                   ApiAuthService().saveOnboardingAnswers({
                     'daily_sleep': val,
@@ -4816,10 +4794,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
                 _buildLivingHorizontalSelector("STRESS LEVEL", stressOptions, _livingStress, (val) {
                   setState(() => _livingStress = val);
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json') ?? {});
+                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
                   updatedCheckin['stress'] = val;
                   updatedCheckin['date'] = DateTime.now().toIso8601String();
                   BlushyStorage.write('daily_checkin.json', updatedCheckin);
+                  // Persist as a timestamped health event so patterns, care plan and
+                  // doctor summaries can actually see this entry.
+                  _recordCheckinEvent('stress', val.toString());
                   ApiAuthService().saveOnboardingAnswers({
                     'daily_stress': val,
                     'daily_checkin': updatedCheckin,
@@ -4831,10 +4812,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
               _buildLivingHorizontalSelector("DAILY WATER", waterOptions, _livingWater, (val) {
                 setState(() => _livingWater = val);
-                final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json') ?? {});
+                final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
                 updatedCheckin['water'] = val;
                 updatedCheckin['date'] = DateTime.now().toIso8601String();
                 BlushyStorage.write('daily_checkin.json', updatedCheckin);
+                // Persist as a timestamped health event so patterns, care plan and
+                // doctor summaries can actually see this entry.
+                _recordCheckinEvent('water', val.toString());
                 ApiAuthService().saveOnboardingAnswers({
                   'daily_water': val,
                   'daily_checkin': updatedCheckin,
@@ -4846,10 +4830,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
                 _buildLivingHorizontalSelector("EXERCISE ACTIVITY", exerciseOptions, _livingExercise, (val) {
                   setState(() => _livingExercise = val);
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json') ?? {});
+                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
                   updatedCheckin['exercise'] = val;
                   updatedCheckin['date'] = DateTime.now().toIso8601String();
                   BlushyStorage.write('daily_checkin.json', updatedCheckin);
+                  // Persist as a timestamped health event so patterns, care plan and
+                  // doctor summaries can actually see this entry.
+                  _recordCheckinEvent('exercise', val.toString());
                   ApiAuthService().saveOnboardingAnswers({
                     'daily_exercise': val,
                     'daily_checkin': updatedCheckin,
@@ -4860,7 +4847,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Notes & Reflections
               Text(
-                "NOTES & REFLECTIONS",
+                AppLocalizations.of(context).dashNotesReflections,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -4971,18 +4958,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 4: SIA INSIGHTS (AI section) ---
   Widget _buildLivingSiaInsights() {
-    final List<Map<String, String>> observations = SiaDashboardService().getSiaObservations(
-      pc: _currentPc,
-      state: BlushyOSProvider.of(context),
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
-            "SIA INSIGHTS",
+            AppLocalizations.of(context).dashSiaInsights,
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -4992,59 +4974,107 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           ),
         ),
         const SizedBox(height: 16),
-        ...observations.map((item) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFBF7),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item['insight']!,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(context, "Sia Observation Analysis", item['explanation']!);
-                        },
-                        child: Text(
-                          "Explain Insight",
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
+        ApiStateCard<List<Insight>>(
+          result: _patternsResult,
+          onRetry: () => _loadPatterns(refresh: true),
+          emptyMessage: "Sia has not noticed anything in your logs yet.",
+          insufficientDataMessage:
+              "Once you have logged a few days, Sia will start sharing what it notices.",
+          builder: (context, insights) {
+            if (insights.isEmpty) {
+              return _buildPatternsPlaceholder("Sia has not noticed anything in your logs yet.");
+            }
+            // The Sia Note surfaces the strongest current observation.
+            return _buildSiaNoteCard(insights.first);
+          },
+        ),
       ],
     );
   }
+
+  Widget _buildSiaNoteCard(Insight insight) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFDFBF7),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: BlushyColors.border, width: 0.8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    insight.description,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.text,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _evidenceLine(insight),
+              style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Helpful / not helpful, which the ranking uses later.
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => _markInsightHelpful(insight),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
+                      child: Text(
+                        AppLocalizations.of(context).dashHelpful,
+                        style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    TextButton(
+                      onPressed: () => _markInsightNotUseful(insight),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
+                      child: Text(
+                        AppLocalizations.of(context).dashNotUseful,
+                        style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      ),
+                    ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: () => _showArticleDialog(
+                    context,
+                    "How Sia noticed this",
+                    "${insight.description}\n\n${_evidenceLine(insight)}.\n\n"
+                        "This describes a pattern in what you logged. It does not explain why, "
+                        "and it is not a diagnosis. Blushy shows it so you can decide whether it "
+                        "matches your experience.",
+                  ),
+                  child: Text(
+                    "Explain Insight",
+                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   // --- SECTION 5: DISCOVER (Personalized educational feed) ---
   Widget _buildLivingDiscover() {
@@ -5188,7 +5218,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
     return ValueListenableBuilder<int>(
       valueListenable: SiaDashboardService().refreshNotifier,
-      builder: (context, _, __) {
+      builder: (context, _, _) {
         return FutureBuilder<DashboardPersonalizedCommunityPayload>(
           future: ApiCommunityService().getDashboardPersonalizedFeed(),
           builder: (context, snapshot) {
@@ -5304,7 +5334,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                     Icon(Icons.chat_bubble_outline_rounded, size: 28, color: BlushyColors.disabled),
                                     const SizedBox(height: 8),
                                     Text(
-                                      "No community posts in this topic yet.",
+                                      AppLocalizations.of(context).dashNoCommunityPosts,
                                       style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
                                       textAlign: TextAlign.center,
                                     ),
@@ -5393,106 +5423,196 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 7: MY PATTERNS (Personalized observations dynamically generated from onboarding choices) ---
   Widget _buildLivingPatterns() {
-    final List<CycleInsight> activeInsights = SiaDashboardService().getCyclePatterns(
-      pc: _currentPc,
-      state: BlushyOSProvider.of(context),
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "CYCLE PATTERNS & INSIGHTS",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context).dashPatternsTitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: BlushyColors.secondaryText,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              // Refresh recomputes from current logs; it does not create a
+              // duplicate insight (spec section 9).
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                color: BlushyColors.secondaryText,
+                tooltip: "Recalculate",
+                onPressed: () => _loadPatterns(refresh: true),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
-        ...activeInsights.map((insight) {
-          IconData insightIcon;
-          final titleLower = insight.title.toLowerCase();
-          if (titleLower.contains('mood')) {
-            insightIcon = Icons.bubble_chart_rounded;
-          } else if (titleLower.contains('energy')) {
-            insightIcon = Icons.bolt_rounded;
-          } else if (titleLower.contains('sleep')) {
-            insightIcon = Icons.bedtime_rounded;
-          } else if (titleLower.contains('symptom')) {
-            insightIcon = Icons.healing_rounded;
-          } else {
-            insightIcon = Icons.analytics_rounded;
-          }
+        ApiStateCard<List<Insight>>(
+          result: _patternsResult,
+          onRetry: () => _loadPatterns(refresh: true),
+          emptyMessage: "Nothing stands out in your logs yet.",
+          insufficientDataMessage:
+              "Keep logging for a couple of weeks and Blushy will start showing what it notices.",
+          builder: (context, insights) {
+            if (insights.isEmpty) {
+              return _buildPatternsPlaceholder("Nothing stands out in your logs yet.");
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: insights.map(_buildInsightCard).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildPatternsPlaceholder(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: BlushyColors.border, width: 0.8),
+      ),
+      child: Text(
+        message,
+        style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText, height: 1.5),
+      ),
+    );
+  }
+
+  Widget _buildInsightCard(Insight insight) {
+    IconData insightIcon;
+    final typeLower = "${insight.type} ${insight.title}".toLowerCase();
+    if (typeLower.contains("mood")) {
+      insightIcon = Icons.bubble_chart_rounded;
+    } else if (typeLower.contains("energy")) {
+      insightIcon = Icons.bolt_rounded;
+    } else if (typeLower.contains("sleep")) {
+      insightIcon = Icons.bedtime_rounded;
+    } else if (typeLower.contains("symptom")) {
+      insightIcon = Icons.healing_rounded;
+    } else {
+      insightIcon = Icons.analytics_rounded;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: BlushyColors.border, width: 0.8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Icon(insightIcon, size: 18, color: BlushyColors.primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            insight.title.toUpperCase(),
-                            style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: BlushyColors.taupe,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      Icon(insightIcon, size: 18, color: BlushyColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
                         child: Text(
-                          "${insight.confidenceLevel} Confidence",
-                          style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w600, color: BlushyColors.secondaryText),
+                          insight.title.toUpperCase(),
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: BlushyColors.primary,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    insight.observation,
-                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: BlushyColors.taupe,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Evidence: ${insight.evidence}",
-                    style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.4),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Text(
-                      insight.timestamp,
-                      style: GoogleFonts.poppins(fontSize: 9, color: BlushyColors.secondaryText.withOpacity(0.8), fontStyle: FontStyle.italic),
+                  child: Text(
+                    _strengthLabel(insight),
+                    style: GoogleFonts.poppins(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: BlushyColors.secondaryText,
                     ),
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Observational wording produced by the pattern engine.
+            Text(
+              insight.description,
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: BlushyColors.text),
+            ),
+            const SizedBox(height: 8),
+            // Real evidence: how many of the logs this was derived from.
+            Text(
+              _evidenceLine(insight),
+              style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.4),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              AppLocalizations.of(context).dashPatternNotDiagnosis,
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                color: BlushyColors.secondaryText,
+                fontStyle: FontStyle.italic,
               ),
             ),
-          );
-        }).toList(),
-      ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => _markInsightNotUseful(insight),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
+                  child: Text(
+                    AppLocalizations.of(context).dashNotUseful,
+                    style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                  ),
+                ),
+                if (insight.generatedAt != null)
+                  Text(
+                    _relativeTime(insight.generatedAt!),
+                    style: GoogleFonts.poppins(
+                      fontSize: 9,
+                      color: BlushyColors.secondaryText.withValues(alpha: 0.8),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
+
+  static String _relativeTime(DateTime when) {
+    final diff = DateTime.now().difference(when);
+    if (diff.inMinutes < 1) return "just now";
+    if (diff.inHours < 1) return "${diff.inMinutes}m ago";
+    if (diff.inDays < 1) return "${diff.inHours}h ago";
+    return "${diff.inDays}d ago";
+  }
+
 
   // --- SECTION 8: JOURNEY (Monthly reflections) ---
   Widget _buildLivingJourney() {
@@ -5561,7 +5681,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 ],
               ),
             );
-          }).toList(),
+          }),
           const Divider(height: 36, color: Color(0xFFF5F0EB)),
           Text(
             "SIA'S REFLECTION",
@@ -5739,13 +5859,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 2: MY CYCLE HEALTH (Irregular tracking metrics & Ovary shape) ---
   Widget _buildHormonalCycleHealth() {
-    final List<Map<String, String>> history = [
-      {"cycle": "Cycle #5", "len": "38 Days"},
-      {"cycle": "Cycle #4", "len": "61 Days"},
-      {"cycle": "Cycle #3", "len": "42 Days"},
-      {"cycle": "Cycle #2", "len": "71 Days"},
-      {"cycle": "Cycle #1", "len": "29 Days"},
-    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -5790,7 +5903,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               Builder(
                 builder: (context) {
                   final cycleData = _getDynamicCycleDates(pc);
-                  final bool isLogged = cycleData['isLogged'] == true;
 
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -5824,7 +5936,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             IconButton(
                               icon: const Icon(Icons.edit, color: BlushyColors.primary, size: 20),
                               onPressed: () {
-                                _pickAndSavePeriodDate(context);
+                                _showLogPeriodBottomSheet(context);
                               },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -5870,52 +5982,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 48,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: history.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final item = history[index];
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFAF6F0),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: BlushyColors.border, width: 0.8),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            item['len']!,
-                            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                          ),
-                          Text(
-                            item['cycle']!,
-                            style: GoogleFonts.poppins(fontSize: 8, color: BlushyColors.secondaryText),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
+              const RealCycleHistory(),
               const SizedBox(height: 28),
 
-              // Cycle Metrics Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildMetricLabel("Average", "48.2 Days"),
-                  _buildMetricLabel("Shortest", "29 Days"),
-                  _buildMetricLabel("Longest", "71 Days"),
-                  _buildMetricLabel("Regularity", "Moderate"),
-                ],
-              ),
-              const SizedBox(height: 24),
               
               // Educational explanation cards instead of direct prediction certainty
               Container(
@@ -5933,7 +6002,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            "Your recent cycles have ranged between 38 and 71 days. This variation helps Sia understand your unique hormonal rhythm.",
+                            // Read "between 38 and 71 days" for everyone. Both
+                            // numbers were literals, shown as her own history.
+                            "Cycle length varies for many people, and the history above is drawn from what you have logged.",
                             style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
                           ),
                         ),
@@ -6025,17 +6096,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
-                "MOOD",
+                AppLocalizations.of(context).dashMood,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json') ?? {})['feeling'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
                   final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
@@ -6057,7 +6132,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withOpacity(0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected ? BlushyColors.primary : BlushyColors.border,
@@ -6106,7 +6181,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               // Flow Selector
               if (_isMetricSelected(pc, ['flow', 'irregular', 'heavy period', 'spotting'])) ...[
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("FLOW LEVEL", flowOptions, _hormonalFlow, (val) {
+                _buildLivingHorizontalSelector(AppLocalizations.of(context).dashFlowLevel, flowOptions, _hormonalFlow, (val) {
                   setState(() => _hormonalFlow = val);
                 }, logCategoryKey: 'hormone_log'),
               ],
@@ -6162,7 +6237,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text("Log Weight"),
+                      title: Text(AppLocalizations.of(context).dashLogWeight),
                       content: const TextField(
                         decoration: InputDecoration(hintText: "Enter weight in kg"),
                         keyboardType: TextInputType.number,
@@ -6174,7 +6249,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   );
                 },
                 icon: const Icon(Icons.monitor_weight_outlined, size: 18),
-                label: const Text("Log Weight"),
+                label: Text(AppLocalizations.of(context).dashLogWeight),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: BlushyColors.primary,
                   side: const BorderSide(color: BlushyColors.primary),
@@ -6186,7 +6261,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Notes & Reflections
               Text(
-                "NOTES & REFLECTIONS",
+                AppLocalizations.of(context).dashNotesReflections,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -6236,14 +6311,27 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 4: SIA INSIGHTS (Observations) ---
-  Widget _buildHormonalSiaInsights() {
+  /// Condition profile (spec section 14).
+  ///
+  /// Shows only what the user told Blushy they were diagnosed with, the
+  /// reviewed education that matches it, and observations drawn from their own
+  /// logs. Nothing here infers a diagnosis, and no estimated hormone levels are
+  /// displayed because Blushy ingests no validated lab or device data.
+  ///
+  /// This previously rendered `dummyConditionInsights`, which is an empty list,
+  /// so the card showed nothing at all.
+  /// The hormonal branch shows the same real Sia observation as every other
+  /// branch, rather than its own copy.
+  Widget _buildHormonalSiaInsights() => _buildLivingSiaInsights();
+
+  Widget _buildConditionProfileCard() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
-            "SIA INSIGHTS",
+            AppLocalizations.of(context).dashYourConditions,
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -6253,83 +6341,139 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           ),
         ),
         const SizedBox(height: 16),
-        ...dummyConditionInsights.map((item) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
+        ApiStateCard<Map<String, dynamic>>(
+          result: _conditionsResult,
+          onRetry: _loadConditions,
+          emptyMessage:
+              "Add any conditions you have been diagnosed with to see related information here.",
+          builder: (context, data) {
+            final conditions = (data["conditions"] as List?) ?? const [];
+            if (conditions.isEmpty) {
+              return _buildPatternsPlaceholder(
+                data["message"]?.toString() ??
+                    "Add any conditions you have been diagnosed with to see related information here.",
+              );
+            }
+
+            final observations = (data["observations"] as List?) ?? const [];
+
+            return Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFFDFBF7),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: BlushyColors.border, width: 0.8),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.description,
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: BlushyColors.text,
+                  ...conditions.map((raw) {
+                    final block = Map<String, dynamic>.from(raw as Map);
+                    final content = (block["content"] as List?) ?? const [];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.medical_information_outlined,
+                                  size: 16, color: BlushyColors.primary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  block["condition"]?.toString() ?? "",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: BlushyColors.text,
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "• ${item.contextLabel}",
-                              style: GoogleFonts.poppins(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w500,
-                                color: BlushyColors.secondaryText,
-                                fontStyle: FontStyle.italic,
+                            ],
+                          ),
+                          if (content.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, left: 24),
+                              child: Text(
+                                AppLocalizations.of(context).dashNoReviewedArticle,
+                                style: GoogleFonts.poppins(
+                                    fontSize: 11, color: BlushyColors.secondaryText),
                               ),
-                            ),
-                          ],
-                        ),
+                            )
+                          else
+                            ...content.map((c) {
+                              final article = Map<String, dynamic>.from(c as Map);
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 6, left: 24),
+                                child: GestureDetector(
+                                  onTap: () => _showArticleDialog(
+                                    context,
+                                    article["title"]?.toString() ?? "",
+                                    "${article["body"] ?? ""}\n\nSource: ${article["source"] ?? "not stated"}",
+                                  ),
+                                  child: Text(
+                                    article["title"]?.toString() ?? "",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: BlushyColors.primary,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openAskSiaChat(context, "Tell me about: ${item.description}"),
-                        child: Text("Ask Sia", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
+                    );
+                  }),
+                  if (observations.isNotEmpty) ...[
+                    const Divider(height: 24, color: Color(0xFFF5F0EB)),
+                    Text(
+                      "FROM YOUR LOGS",
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.primary,
+                        letterSpacing: 1.0,
                       ),
-                      const SizedBox(width: 12),
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(context, item.title, item.explanation);
-                        },
+                    ),
+                    const SizedBox(height: 8),
+                    ...observations.map((raw) {
+                      final obs = Map<String, dynamic>.from(raw as Map);
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
                         child: Text(
-                          "Learn More",
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                          obs["description"]?.toString() ?? "",
+                          style: GoogleFonts.poppins(
+                              fontSize: 12, color: BlushyColors.text, height: 1.4),
                         ),
-                      ),
-                    ],
+                      );
+                    }),
+                  ],
+                  const SizedBox(height: 12),
+                  Text(
+                    data["disclaimer"]?.toString() ??
+                        "Blushy does not diagnose conditions or estimate hormone levels.",
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: BlushyColors.secondaryText,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
-            ),
-          );
-        }).toList(),
+            );
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildHormonalAppointmentSummary() {
-    final summary = dummyAppointmentSummary;
 
+  Widget _buildAppointmentSummaryCard() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -6361,7 +6505,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 children: [
                   Expanded(
                     child: Text(
-                      summary.title,
+                      AppLocalizations.of(context).dashPrepareSummary,
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -6374,7 +6518,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               ),
               const SizedBox(height: 8),
               Text(
-                summary.summary,
+                "Blushy can pull together what you have logged over a date range you choose. "
+                "You decide what stays in before you share it.",
                 style: GoogleFonts.poppins(
                   fontSize: 12.5,
                   color: BlushyColors.secondaryText,
@@ -6382,116 +6527,32 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 ),
               ),
               const SizedBox(height: 20),
-              
-              Text(
-                "RECENT CHANGES",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: BlushyColors.primary,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Column(
-                children: summary.recentChanges.map((change) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("• ", style: TextStyle(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
-                        Expanded(
-                          child: Text(
-                            change,
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, height: 1.4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-
-              Text(
-                "QUESTIONS TO DISCUSS",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: BlushyColors.primary,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Column(
-                children: summary.discussionPoints.map((point) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("• ", style: TextStyle(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
-                        Expanded(
-                          child: Text(
-                            point,
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, height: 1.4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              
-              const SizedBox(height: 20),
-              const Divider(color: BlushyColors.border, height: 1),
-              const SizedBox(height: 16),
-              
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      summary.notes,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: BlushyColors.secondaryText,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    "Generated: ${summary.generatedAt.year}-${summary.generatedAt.month.toString().padLeft(2, '0')}-${summary.generatedAt.day.toString().padLeft(2, '0')}",
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      color: BlushyColors.secondaryText,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Exporting clinical summary PDF for your doctor...")),
-                    );
-                  },
-                  icon: const Icon(Icons.file_download_outlined, size: 18),
-                  label: Text(
-                    "Export Clinical Summary",
-                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
+                child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BlushyColors.primary,
                     foregroundColor: Colors.white,
-                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
                   ),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DoctorSummaryScreen()),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context).dashBuildMySummary,
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "A record of what you reported and what the app noticed. Not a diagnosis.",
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: BlushyColors.secondaryText,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
             ],
@@ -6501,7 +6562,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  // --- SECTION 5: UNDERSTANDING MY PATTERNS (Pattern Cards) ---
+
   Widget _buildHormonalPatterns() {
     final List<Map<String, String>> patternCards = [
       {
@@ -6603,20 +6664,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
 
   // --- SECTION 6: YOUR CARE PLAN (Daily Recommendations) ---
-  Widget _buildHormonalCarePlan() {
+  /// The Care Plan section, shared by every life stage. The backend decides
+  /// which actions apply to the current branch, so there is one implementation
+  /// rather than a hardcoded list per stage.
+  Widget _buildCarePlanSection({String heading = "TODAY'S CARE PLAN"}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
-            "YOUR CARE PLAN",
+            heading,
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -6633,65 +6697,144 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: dummyCareRecommendations.map((item) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item.icon, size: 20, color: BlushyColors.primary),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                item.title,
-                                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: item.priority == 'High' ? BlushyColors.primary.withOpacity(0.1) : const Color(0x0F2E2623),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  "${item.priority} Priority",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: item.priority == 'High' ? BlushyColors.primary : BlushyColors.secondaryText,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item.description,
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.text, height: 1.45),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Why: ${item.reason}",
-                            style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText, fontStyle: FontStyle.italic),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+          child: ApiStateCard<CarePlan>(
+            result: _carePlanResult,
+            onRetry: _loadCarePlan,
+            emptyMessage: "Nothing to suggest right now. That is a good sign.",
+            // While a red flag or a concerning screening result is active the
+            // server withholds ordinary wellness suggestions entirely.
+            restrictedMessage:
+                "Suggestions are paused while Blushy shows you the safety guidance above.",
+            builder: (context, plan) {
+              if (plan.suppressed || plan.actions.isEmpty) {
+                return Text(
+                  plan.suppressed
+                      ? "Suggestions are paused while Blushy shows you the safety guidance above."
+                      : "Nothing to suggest right now. That is a good sign.",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: BlushyColors.secondaryText,
+                    height: 1.5,
+                  ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: plan.actions.map(_buildCareActionRow).toList(),
               );
-            }).toList(),
+            },
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildCareActionRow(CareAction action) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(_careActionIcon(action.category), size: 20, color: BlushyColors.primary),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        action.title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: BlushyColors.text,
+                        ),
+                      ),
+                    ),
+                    if (action.isHighPriority)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: BlushyColors.taupe,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          "Priority",
+                          style: GoogleFonts.poppins(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: BlushyColors.secondaryText,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  action.description,
+                  style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.45),
+                ),
+                // Why this was suggested, so no recommendation appears without
+                // a stated basis (spec section 10).
+                if (action.reason != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    action.reason!,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: BlushyColors.secondaryText,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => _completeCareAction(action),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30)),
+                      child: Text(
+                        action.cta,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: BlushyColors.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    TextButton(
+                      onPressed: () => _dismissCareAction(action),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30)),
+                      child: Text(
+                        AppLocalizations.of(context).dashNotNow,
+                        style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      ),
+                    ),
+                    const Spacer(),
+                    // Clinical suggestions say where they came from.
+                    if (action.source == 'clinical_content')
+                      Text(
+                        "Reviewed guidance",
+                        style: GoogleFonts.poppins(fontSize: 9, color: BlushyColors.secondaryText),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHormonalCarePlan() {
+    return _buildCarePlanSection(heading: "YOUR CARE PLAN");
   }
 
   // --- SECTION 7: LEARN ---
@@ -6700,30 +6843,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       "Understanding PCOS", "Understanding Endometriosis", "Understanding PMDD", "Understanding Irregular Cycles", "Hormones Explained"
     ];
 
-    final Map<String, List<Map<String, String>>> learnFeeds = {
-      "Understanding PCOS": [
-        {"title": "PCOS Insulin Resistance Link", "desc": "How diet tweaks and movement improve insulin signaling and restore menstrual cycle timing."},
-        {"title": "Androgen Regulation Basics", "desc": "Slowing hirsutism and acne spikes through natural cortisol regulation."}
-      ],
-      "Understanding Endometriosis": [
-        {"title": "Managing Pelvic Inflammation", "desc": "Anti-inflammatory nutrition guides to soothe pelvic cramps and uterine muscle stiffness."},
-        {"title": "Adenomyosis vs Endometriosis", "desc": "Understanding tissue lining growth differences and symptom triggers."}
-      ],
-      "Understanding PMDD": [
-        {"title": "PMDD Neurotransmitter Shifts", "desc": "Why progesterone drop spikes serotonin dips, driving heavy premenstrual dysphoria."},
-        {"title": "PMS vs PMDD Indicators", "desc": "How tracking helps verify symptoms to present clearly at doctor visits."}
-      ],
-      "Understanding Irregular Cycles": [
-        {"title": "Thyroid and Menstrual Timings", "desc": "How T3/T4 thyroid hormone variances disrupt follicular growth and delay periods."},
-        {"title": "Skipping Ovulation Weeks", "desc": "Why anovulatory cycles happen and what they mean for long-term health."}
-      ],
-      "Hormones Explained": [
-        {"title": "The Estrogen/Progesterone Balance", "desc": "A beginner's guide to how your regulatory hormones coordinate your rhythm."},
-        {"title": "Cortisol: The Cycle Hijacker", "desc": "How daily chronic stress delays ovulation and extends cycle lengths."}
-      ]
-    };
+    // The 74 articles that used to live in these maps are now seeded
+    // through the reviewed content pipeline, so each one carries a
+    // reviewer and a review date and is served only once approved.
 
-    final articles = learnFeeds[_hormonalDiscoverTopic] ?? [];
+    final articles = _educationFor(_hormonalDiscoverTopic);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -6849,7 +6973,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
 
   // --- SECTION 9: HEALTH TIMELINE (Chronological Health Journey) ---
-  Widget _buildHormonalTimeline() {
+  /// Timeline: the user's own logged events in order, nothing else.
+  ///
+  /// Deliberately carries no confidence, correlation or summary. Interpretation
+  /// belongs to the Patterns card, and the spec is explicit that the two must
+  /// not duplicate each other.
+  Widget _buildTimelineSection({
+    String heading = "PAST JOURNEY TIMELINE",
+    String subheading = "Chronological record of what you have logged",
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -6859,7 +6991,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "PAST JOURNEY TIMELINE",
+                heading,
                 style: GoogleFonts.poppins(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -6869,11 +7001,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               ),
               const SizedBox(height: 4),
               Text(
-                "Chronological record of completed cycles and monthly summaries",
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: BlushyColors.secondaryText,
-                ),
+                subheading,
+                style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
               ),
             ],
           ),
@@ -6886,68 +7015,118 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
-          child: Column(
-            children: dummyTimelineSummaries.map((item) {
-              final isLast = item == dummyTimelineSummaries.last;
-              return Padding(
-                padding: EdgeInsets.only(bottom: isLast ? 0 : 20.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 30,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.month,
-                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+          child: ApiStateCard<Timeline>(
+            result: _timelineResult,
+            onRetry: _loadTimeline,
+            emptyMessage: AppLocalizations.of(context).dashNothingLoggedYet,
+            builder: (context, timeline) {
+              if (_timelineEntries.isEmpty) {
+                return Text(
+                  AppLocalizations.of(context).dashNothingLoggedYet,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: BlushyColors.secondaryText,
+                    height: 1.5,
+                  ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...List.generate(_timelineEntries.length, (index) {
+                    return _buildTimelineRow(
+                      _timelineEntries[index],
+                      isLast: index == _timelineEntries.length - 1 && !_timelineHasMore,
+                    );
+                  }),
+                  if (_timelineHasMore)
+                    Align(
+                      alignment: Alignment.center,
+                      child: TextButton(
+                        onPressed: _timelineLoadingMore ? null : () => _loadTimeline(append: true),
+                        child: Text(
+                          _timelineLoadingMore ? "Loading..." : "Load earlier entries",
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: BlushyColors.primary,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item.cycleLength,
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: BlushyColors.secondaryText),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                    Expanded(
-                      flex: 70,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.star_rounded, size: 14, color: BlushyColors.warning),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  item.keyChange,
-                                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            "AI Summary: \"${item.aiSummary}\"",
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, fontStyle: FontStyle.italic, height: 1.4),
-                          ),
-                          if (!isLast) ...[
-                            const SizedBox(height: 16),
-                            const Divider(height: 1, color: Color(0xFFF5F0EB)),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               );
-            }).toList(),
+            },
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildTimelineRow(TimelineEntry entry, {required bool isLast}) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 20.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 26,
+            child: Text(
+              _timelineDateLabel(entry.date),
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: BlushyColors.primary,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 74,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      _timelineIcons[entry.eventType] ?? Icons.circle_outlined,
+                      size: 14,
+                      color: BlushyColors.secondaryText,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        entry.displayText,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: BlushyColors.text,
+                        ),
+                      ),
+                    ),
+                    // An entry the user did not confirm is labelled rather than
+                    // shown as their own record (spec section 6).
+                    if (!entry.editable)
+                      Text(
+                        "Derived",
+                        style: GoogleFonts.poppins(fontSize: 9, color: BlushyColors.secondaryText),
+                      ),
+                  ],
+                ),
+                if (!isLast) ...[
+                  const SizedBox(height: 16),
+                  const Divider(height: 1, color: Color(0xFFF5F0EB)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHormonalTimeline() {
+    return _buildTimelineSection(heading: "PAST JOURNEY TIMELINE", subheading: "Chronological record of what you have logged");
   }
 
   // --- SECTION 10: MONTHLY REFLECTION ---
@@ -6984,7 +7163,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       const SizedBox(height: 32),
                       _buildHormonalSiaInsights(),
                       const SizedBox(height: 32),
-                      _buildHormonalAppointmentSummary(),
+                      _buildConditionProfileCard(),
+                      const SizedBox(height: 32),
+                      _buildAppointmentSummaryCard(),
                       const SizedBox(height: 32),
                       _buildHormonalPatterns(),
                       const SizedBox(height: 32),
@@ -7023,8 +7204,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildHormonalCheckIn(),
                       const SizedBox(height: 48),
                       _buildHormonalSiaInsights(),
+                      const SizedBox(height: 32),
+                      _buildConditionProfileCard(),
                       const SizedBox(height: 48),
-                      _buildHormonalAppointmentSummary(),
+                      _buildAppointmentSummaryCard(),
                       const SizedBox(height: 48),
                       _buildHormonalPatterns(),
                       const SizedBox(height: 48),
@@ -7079,8 +7262,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 _buildHormonalCheckIn(),
                                 const SizedBox(height: 48),
                                 _buildHormonalSiaInsights(),
+                                const SizedBox(height: 32),
+                                _buildConditionProfileCard(),
                                 const SizedBox(height: 48),
-                                _buildHormonalAppointmentSummary(),
+                                _buildAppointmentSummaryCard(),
                                 const SizedBox(height: 48),
                                 _buildHormonalCarePlan(),
                                 const SizedBox(height: 48),
@@ -7190,7 +7375,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Builder(
             builder: (context) {
               final cycleData = _getDynamicCycleDates(pc);
-              final bool isLogged = cycleData['isLogged'] == true;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -7227,7 +7411,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             IconButton(
                               icon: const Icon(Icons.edit, color: BlushyColors.primary, size: 20),
                               onPressed: () {
-                                _pickAndSavePeriodDate(context);
+                                _showLogPeriodBottomSheet(context);
                               },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -7341,17 +7525,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
-                "MOOD",
+                AppLocalizations.of(context).dashMood,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json') ?? {})['feeling'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
                   final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
@@ -7373,7 +7561,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withOpacity(0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected ? BlushyColors.primary : BlushyColors.border,
@@ -7537,166 +7725,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 4: FERTILITY INSIGHTS (AI Observations) ---
+  /// Server-derived patterns. Replaced a hardcoded list that asserted
+  /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildTtcInsights() {
-    final List<Map<String, String>> insights = [
-      {
-        "insight": "You usually ovulate later than average.",
-        "desc": "Based on your last 3 cycles, your LH peak consistently falls on Day 17. Identifying this timing helps optimize planning windows."
-      },
-      {
-        "insight": "Your sleep has improved this cycle.",
-        "desc": "You've logged 8 hours of sleep consistently, keeping morning stress hormones lower."
-      },
-      {
-        "insight": "Your LH surge typically lasts one day.",
-        "desc": "This short surge indicates that timing intercourse within 24 hours of a positive test is key."
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "FERTILITY INSIGHTS",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...insights.map((item) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFBF7),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item['insight']!,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openAskSiaChat(context, "Tell me about: ${item['insight']}"),
-                        child: Text("Ask Sia", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
-                      ),
-                      const SizedBox(width: 12),
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(context, "Fertility Analysis", item['desc']!);
-                        },
-                        child: Text(
-                          "Learn More",
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ],
+    return const RealInsightsList(
+      title: 'What your logs show',
     );
   }
 
   // --- SECTION 5: TODAY'S PLAN ---
+  /// The real care plan, which already handles empty, restricted and
+  /// safety-suppressed states. This used to be a fixed list of suggestions
+  /// with a hardcoded personal target ("2.2L today").
   Widget _buildTtcPlan() {
-    final List<Map<String, dynamic>> recommendations = [
-      {"icon": Icons.water_drop_outlined, "title": "Hydration Focus", "desc": "Maintain clear fluid intake target (2.2L today) to optimize mucus thickness."},
-      {"icon": Icons.restaurant, "title": "Antioxidant Rich Nutrition", "desc": "Add berries, nuts, and leafy greens to support mitochondrial cellular health."},
-      {"icon": Icons.directions_run, "title": "Gentle Exercise", "desc": "30 minutes of yoga or light movement to stimulate pelvic circulation."},
-      {"icon": Icons.medication_outlined, "title": "Prenatal Vitamins", "desc": "Take your folic acid and prenatal multivitamin with your morning meal."},
-      {"icon": Icons.nightlight_round, "title": "Rest Priority", "desc": "Unwind 1 hour before bed to facilitate deep, recuperative sleep."},
-      {"icon": Icons.favorite_border, "title": "Partner Touchpoint", "desc": "Share your fertility window timeline updates explicitly with your partner."},
-      {"icon": Icons.calendar_month_outlined, "title": "Ovulation Testing", "desc": "Take your LH strip test in the afternoon when luteinizing concentration is peak."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S PLAN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: recommendations.map((item) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item['icon'] as IconData, size: 20, color: BlushyColors.primary),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['title'] as String,
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['desc'] as String,
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.45),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
+    return _buildCarePlanSection(heading: "TODAY'S PLAN");
   }
 
   // --- SECTION 6: LEARN ---
@@ -7705,30 +7747,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       "Understanding Ovulation", "Fertile Window", "Egg Health", "Stress & Fertility", "Understanding BBT"
     ];
 
-    final Map<String, List<Map<String, String>>> learnFeeds = {
-      "Understanding Ovulation": [
-        {"title": "The LH Surge Explained", "desc": "How luteinizing hormone signals follicles to release an egg and how to identify surges correctly."},
-        {"title": "Anovulatory Cycle Signals", "desc": "Identifying cycles without ovulation using temperature and cervical indicators."}
-      ],
-      "Fertile Window": [
-        {"title": "Timing Intercourse for Conception", "desc": "Optimizing timing within the 5 days leading up to ovulation and the day of."},
-        {"title": "Sperm Longevity in Uterus", "desc": "Why eggwhite cervical mucus is vital for keeping sperm active for up to 5 days."}
-      ],
-      "Egg Health": [
-        {"title": "Mitochondria and Egg Quality", "desc": "Nutritional and lifestyle factors that protect cellular division energy levels."},
-        {"title": "CoQ10 and Oocyte Vitality", "desc": "Coenzyme Q10 clinical summaries on oocyte development and cellular health."}
-      ],
-      "Stress & Fertility": [
-        {"title": "Cortisol vs Progesterone", "desc": "How high adrenal stress hormones can delay ovulation or shorten the luteal phase."},
-        {"title": "Calming the Nervous System", "desc": "Simple daily mindfulness triggers to keep autonomic nervous signals balanced."}
-      ],
-      "Understanding BBT": [
-        {"title": "The Progesterone Thermal Shift", "desc": "Why core body temperature jumps 0.3C - 0.5C immediately after ovulation occurs."},
-        {"title": "Identifying Implantation Dips", "desc": "Understanding mid-luteal temperature fluctuations without countdown anxiety."}
-      ]
-    };
+    // The 74 articles that used to live in these maps are now seeded
+    // through the reviewed content pipeline, so each one carries a
+    // reviewer and a review date and is served only once approved.
 
-    final articles = learnFeeds[_ttcDiscoverTopic] ?? [];
+    final articles = _educationFor(_ttcDiscoverTopic);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -7935,7 +7958,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ],
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),
@@ -7944,164 +7967,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 8: MY PATTERNS ---
+  /// Server-derived patterns. Replaced a hardcoded list that asserted
+  /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildTtcPatterns() {
-    final List<Map<String, String>> patterns = [
-      {
-        "title": "Ovulation Pattern",
-        "desc": "\"You usually ovulate between Days 16 and 18.\"",
-        "detail": "Consistent tracking helps identify that your LH surge peaks around Day 17, giving you a precise timing window."
-      },
-      {
-        "title": "Sleep Pattern",
-        "desc": "\"You sleep more consistently before ovulation.\"",
-        "detail": "Pre-ovulatory estrogen rises naturally facilitate deeper rest cycles."
-      },
-      {
-        "title": "Lifestyle Pattern",
-        "desc": "\"You've been consistent with vitamins for 28 days.\"",
-        "detail": "Steady prenatal nutrient supplies protect follicular development."
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "MY PATTERNS",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...patterns.map((card) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    card['title']!,
-                    style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    card['desc']!,
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    card['detail']!,
-                    style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.4),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openAskSiaChat(context, "Explain this pattern: ${card['title']}"),
-                        child: Text("Ask Sia", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(context, card['title']!, "Clinical pattern maps: ${card['detail']}");
-                        },
-                        child: Text("Learn More", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ],
+    return const RealInsightsList(
+      title: 'Patterns in your logs',
     );
   }
 
   // --- SECTION 9: JOURNEY TIMELINE ---
   Widget _buildTtcJourneyTimeline() {
-    final List<Map<String, String>> events = [
-      {"date": "June 10", "title": "Started TTC Journey", "detail": "Configured primary wellness goals."},
-      {"date": "June 25", "title": "Logged First Ovulation", "detail": "LH peak and cervical indicators recorded."},
-      {"date": "July 08", "title": "Completed First Cycle", "detail": "Cycle length verified at 28 days."},
-      {"date": "July 12", "title": "Started Prenatal Vitamins", "detail": "Daily capsule streak initiated."},
-      {"date": "July 19", "title": "Partner Joined Mode", "detail": "Synced shared task schedules."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "JOURNEY TIMELINE",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            children: events.map((item) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 25,
-                    child: Text(
-                      item['date']!,
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 75,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title']!,
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item['detail']!,
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                        ),
-                        const Divider(height: 24, color: Color(0xFFF5F0EB)),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
+    return _buildTimelineSection(heading: "YOUR JOURNEY", subheading: "Chronological record of what you have logged");
   }
 
   // --- SECTION 10: MONTHLY REFLECTION ---
@@ -8271,13 +8147,90 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   final ScrollController _pregnancyHomeScrollController = ScrollController();
 
   // --- SECTION 1: TODAY WITH BABY (HERO) ---
+  /// Weeks pregnant, from the due date the user supplied.
+  ///
+  /// Null when no due date is known, so callers say so rather than naming a
+  /// week nobody reported.
+  int? _pregnancyWeek() {
+    final DateTime? dueDate = BlushyOSProvider.of(context).personalContext.dueDate;
+    if (dueDate == null) return null;
+    final daysToGo = dueDate.difference(DateTime.now()).inDays;
+    return ((280 - daysToGo) / 7).floor();
+  }
+
+  /// Reviewed education articles for one topic, keyed by the topic chip label.
+  ///
+  /// These were seven hardcoded `learnFeeds` maps holding 74 clinical articles
+  /// written straight into the widget tree -- no reviewer, no review date, no
+  /// locale. They are seeded through the content pipeline now, so an article
+  /// awaiting clinical review simply does not appear.
+  final Map<String, List<Map<String, String>>> _educationByTopic = {};
+  final Set<String> _educationLoading = {};
+
+  List<Map<String, String>> _educationFor(String topic) {
+    final cached = _educationByTopic[topic];
+    if (cached != null) return cached;
+
+    if (!_educationLoading.contains(topic)) {
+      _educationLoading.add(topic);
+      unawaited(_loadEducation(topic));
+    }
+    // Empty until it arrives. An empty list renders the same "nothing here"
+    // state as a topic with no approved content, which is the honest answer
+    // in both cases.
+    return const [];
+  }
+
+  Future<void> _loadEducation(String topic) async {
+    final result = await ContentApi.browse(
+      topic: _educationTopicKey(topic),
+      contentType: 'article',
+      limit: 10,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _educationLoading.remove(topic);
+      _educationByTopic[topic] = [
+        for (final item in result.data ?? const <LibraryItem>[])
+          {'title': item.title, 'desc': item.summary ?? ''},
+      ];
+    });
+  }
+
+  /// The seed slugs topics the same way, so the chip label finds its content.
+  static String _educationTopicKey(String label) => label
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+
   Widget _buildPregnancyHero(String name) {
+    // Every pregnant user saw "WEEK 24" and "112 Days To Go" regardless of
+    // their due date. The date is on the personal context and nothing read it.
+    final DateTime? dueDate = BlushyOSProvider.of(context).personalContext.dueDate;
+    final int? daysToGo = dueDate?.difference(DateTime.now()).inDays;
+    // 280 days from the last period is the convention a due date is set by, so
+    // the week follows from how far the due date still is.
+    final int? week = daysToGo == null ? null : ((280 - daysToGo) / 7).floor();
+    final String trimester = week == null
+        ? ''
+        : week < 14
+            ? 'First trimester'
+            : week < 28
+                ? 'Second trimester'
+                : 'Third trimester';
+
     return _buildUnifiedHeroCard(
       category: "Today with Baby",
       title: "${_getTimeBasedGreetingPrefix()}, $name",
       subtitle: "Your baby is growing rapidly this week. Don't forget to take moments to rest—you deserve them.",
-      metricsTitle: "PREGNANCY STATUS: WEEK 24",
-      metricsValue: "Second Trimester • 112 Days To Go",
+      metricsTitle: week == null
+          ? "PREGNANCY"
+          : "PREGNANCY STATUS: WEEK $week",
+      metricsValue: daysToGo == null
+          // Better than naming a week nobody supplied a date for.
+          ? "Add your due date to see your week"
+          : "$trimester • $daysToGo days to go",
       primaryBtnText: "Today's Check-In",
       onPrimaryTap: _scrollToCheckIn,
       secondaryBtnText: "Ask Sia",
@@ -8317,7 +8270,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               ),
               const SizedBox(height: 6),
               Text(
-                "Week 24 Development",
+                // Fixed at week 24 for everyone. The due date is on the
+                // personal context, the same source the hero card now reads.
+                _pregnancyWeek() == null
+                    ? "This week"
+                    : "Week ${_pregnancyWeek()} development",
                 style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
@@ -8346,7 +8303,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Your baby is about the size of a cantaloupe melon.",
+                          // Was a fixed week-24 comparison shown at every
+                          // stage of pregnancy. Size guidance belongs in the
+                          // reviewed content pipeline, keyed by week.
+                          "Your midwife or doctor can tell you what to expect at this stage.",
                           style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.primary, height: 1.3),
                         ),
                         const SizedBox(height: 16),
@@ -8366,7 +8326,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
@@ -8396,7 +8356,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 children: [
                   OutlinedButton(
                     onPressed: () {
-                      _showArticleDialog(context, "Week 24 Development Details", "At 24 weeks, the baby's lungs are developing surfactant to facilitate independent breathing later. The inner ear balance senses have fully matured, allowing the baby to sense coordination, movement, and mother's position shifts.");
+                      // Week-specific development detail is clinical content and belongs
+                      // in the reviewed pipeline, keyed by week. This was fixed at
+                      // week 24 and shown at every stage.
+                      _showArticleDialog(context, "Development this week", "Week by week development notes will appear here once they have been reviewed. Your midwife or doctor is the best source in the meantime.");
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: BlushyColors.primary,
@@ -8415,127 +8378,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 3: YOUR PREGNANCY JOURNEY ---
+  /// Real logged events, not a scripted timeline. Replaced a hardcoded list
+  /// that marked milestones complete on a freshly installed app.
   Widget _buildPregnancyJourneyTimeline() {
-    final List<Map<String, dynamic>> milestones = [
-      {"title": "First Trimester Complete", "status": "Completed", "icon": Icons.check_circle, "color": BlushyColors.success},
-      {"title": "20 Week Scan Done", "status": "Completed", "icon": Icons.check_circle, "color": BlushyColors.success},
-      {"title": "Third Trimester Begins", "status": "Week 28", "icon": Icons.schedule, "color": BlushyColors.warning},
-      {"title": "Birth Preparation", "status": "Week 32", "icon": Icons.schedule, "color": BlushyColors.disabled},
-      {"title": "Hospital Bag Prep", "status": "Week 36", "icon": Icons.schedule, "color": BlushyColors.disabled},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "YOUR PREGNANCY JOURNEY",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "Trimester & Milestone Progress",
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Week 24 of 40",
-                        style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "Expected Due Date: November 15",
-                        style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: BlushyColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      "Trimester 2",
-                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Simple Progress Bar
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: const LinearProgressIndicator(
-                  value: 24 / 40,
-                  minHeight: 8,
-                  backgroundColor: Color(0xFFF5F0EB),
-                  valueColor: AlwaysStoppedAnimation<Color>(BlushyColors.primary),
-                ),
-              ),
-              const SizedBox(height: 28),
-              Text(
-                "JOURNEY MILESTONES",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
-              ),
-              const SizedBox(height: 16),
-              ...milestones.map((m) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    children: [
-                      Icon(m['icon'] as IconData, color: m['color'] as Color, size: 20),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          m['title'] as String,
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text),
-                        ),
-                      ),
-                      Text(
-                        m['status'] as String,
-                        style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ],
-          ),
-        ),
-      ],
+    return const RealJourneyTimeline(
+      title: 'Your Pregnancy Log',
+      emptyHeadline: 'Your pregnancy timeline is empty so far',
     );
   }
 
@@ -8581,17 +8429,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
-                "MOOD",
+                AppLocalizations.of(context).dashMood,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json') ?? {})['feeling'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
                   final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
@@ -8613,7 +8465,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withOpacity(0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected ? BlushyColors.primary : BlushyColors.border,
@@ -8777,7 +8629,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Notes & Reflections
               Text(
-                "NOTES & REFLECTIONS",
+                AppLocalizations.of(context).dashNotesReflections,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -8836,164 +8688,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 5: SIA INSIGHTS ---
+  /// Server-derived patterns. Replaced a hardcoded list that asserted
+  /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPregnancyInsights() {
-    final List<Map<String, String>> insights = [
-      {
-        "insight": "You've been sleeping better this week.",
-        "desc": "Logging 8 hours of sleep aligns with lower evening fatigue markers reported in your second trimester."
-      },
-      {
-        "insight": "You've consistently taken your prenatal vitamins.",
-        "desc": "Great job! A 14-day vitamin streak ensures a steady supply of folate and iron for baby's neural growth."
-      },
-      {
-        "insight": "Your hydration has improved.",
-        "desc": "Averaging 2.5L has resolved the leg cramps typically experienced during Week 24."
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "SIA INSIGHTS",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...insights.map((item) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFBF7),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item['insight']!,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openAskSiaChat(context, "Tell me about: ${item['insight']}"),
-                        child: Text("Ask Sia", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
-                      ),
-                      const SizedBox(width: 12),
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(context, "Pregnancy Insights Analysis", item['desc']!);
-                        },
-                        child: Text(
-                          "Learn More",
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ],
+    return const RealInsightsList(
+      title: 'What your logs show',
     );
   }
 
   // --- SECTION 6: TODAY'S CARE PLAN ---
   Widget _buildPregnancyCarePlan() {
-    final List<Map<String, dynamic>> recommendations = [
-      {"icon": Icons.water_drop_outlined, "title": "Hydration Focus", "desc": "Keep fluid levels high (2.5L target) to support amniotic fluid volume."},
-      {"icon": Icons.restaurant, "title": "Nutrition Focus", "desc": "Incorporate iron-rich snacks (spinach, pumpkin seeds) to prevent maternal anemia."},
-      {"icon": Icons.directions_run, "title": "Prenatal Stretch", "desc": "15-minute gentle hip-opening stretches to prepare pelvis for labor."},
-      {"icon": Icons.medication_outlined, "title": "Prenatal Vitamins", "desc": "Take your iron and calcium supplements with water after breakfast."},
-      {"icon": Icons.calendar_month_outlined, "title": "Upcoming Appointment", "desc": "24 Week glucose screening appointment is scheduled for tomorrow at 10 AM."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S CARE PLAN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: recommendations.map((item) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item['icon'] as IconData, size: 20, color: BlushyColors.primary),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['title'] as String,
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['desc'] as String,
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.45),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
+    return _buildCarePlanSection(heading: "TODAY'S CARE PLAN");
   }
 
   // --- SECTION 7: BABY PREPARATION (Checklists) ---
@@ -9071,7 +8776,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ],
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),
@@ -9085,30 +8790,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       "Baby Development", "Mother's Body", "Nutrition", "Sleep", "Labour Preparation"
     ];
 
-    final Map<String, List<Map<String, String>>> learnFeeds = {
-      "Baby Development": [
-        {"title": "Baby Sensory Milestones", "desc": "How Week 24 inner ear development improves coordination and how baby reacts to outside speech sounds."},
-        {"title": "Fetal Lung Surfactant", "desc": "Understanding respiratory tissue growths and surfactant layers preparing for life outside."}
-      ],
-      "Mother's Body": [
-        {"title": "Second Trimester Skin Changes", "desc": "Linea nigra and stretch mark facts under pregnancy melanocyte-stimulating hormone rises."},
-        {"title": "Sciatic Nerve Pain Soothers", "desc": "How uterus alignment pressure affects pelvic nerves and quick stretches to relieve shooting leg pain."}
-      ],
-      "Nutrition": [
-        {"title": "Iron Intake and Red Blood Cells", "desc": "Increasing dietary iron to support the expanded vascular system during the second trimester."},
-        {"title": "Maternal Calcium Reserves", "desc": "Protecting maternal bone density while facilitating baby's skeletal bone hardening stages."}
-      ],
-      "Sleep": [
-        {"title": "Left Side Sleep Positions", "desc": "Why sleeping on your left side optimizes blood flow through the inferior vena cava to the placenta."},
-        {"title": "Managing Midnight Restlessness", "desc": "Soothe restless legs through warm baths and magnesium-rich evening protocols."}
-      ],
-      "Labour Preparation": [
-        {"title": "Understanding Braxton Hicks", "desc": "How uterus micro-contractions act as practice exercises and how to differentiate them from real labor."},
-        {"title": "Writing a Gentle Birth Plan", "desc": "A premium collaborative template detailing options for delivery positions and postpartum settings."}
-      ]
-    };
+    // The 74 articles that used to live in these maps are now seeded
+    // through the reviewed content pipeline, so each one carries a
+    // reviewer and a review date and is served only once approved.
 
-    final articles = learnFeeds[_pregnancyDiscoverTopic] ?? [];
+    final articles = _educationFor(_pregnancyDiscoverTopic);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -9305,7 +8991,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ],
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),
@@ -9314,74 +9000,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 10: MY JOURNEY ---
+  /// Real logged events. Replaced a scripted timeline that asserted clinical
+  /// facts the user never recorded ("Pregnancy Confirmed - Home test positive").
   Widget _buildPregnancyJourney() {
-    final List<Map<String, String>> events = [
-      {"date": "March 15", "title": "Pregnancy Confirmed", "detail": "Home test positive."},
-      {"date": "April 20", "title": "Heartbeat Confirmed", "detail": "First clinic scan completed."},
-      {"date": "May 25", "title": "First Ultrasound", "detail": " trimester measurements verified."},
-      {"date": "June 18", "title": "Entered Second Trimester", "detail": "Slight improvement in morning nausea."},
-      {"date": "July 12", "title": "Baby's First Kick", "detail": "Movement logged in evening notes."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "MY JOURNEY",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            children: events.map((item) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 25,
-                    child: Text(
-                      item['date']!,
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 75,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title']!,
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item['detail']!,
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                        ),
-                        const Divider(height: 24, color: Color(0xFFF5F0EB)),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+    return const RealJourneyTimeline(
+      title: 'Your Pregnancy Journey',
+      emptyHeadline: 'Your pregnancy journey is empty so far',
     );
   }
 
@@ -9423,6 +9047,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       const SizedBox(height: 32),
                       _buildPregnancyCarePlan(),
                       const SizedBox(height: 32),
+                      _buildAppointmentSummaryCard(),
+                      const SizedBox(height: 32),
                       _buildPregnancyPrep(),
                       const SizedBox(height: 32),
                       _buildPregnancyLearn(),
@@ -9462,6 +9088,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildPregnancyInsights(),
                       const SizedBox(height: 48),
                       _buildPregnancyCarePlan(),
+                      _buildAppointmentSummaryCard(),
+                      const SizedBox(height: 32),
                       const SizedBox(height: 48),
                       _buildPregnancyPrep(),
                       const SizedBox(height: 48),
@@ -9529,6 +9157,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 _buildPregnancyInsights(),
                                 const SizedBox(height: 48),
                                 _buildPregnancyCarePlan(),
+                                _buildAppointmentSummaryCard(),
+                                const SizedBox(height: 32),
                                 const SizedBox(height: 48),
                                 _buildPregnancyPrep(),
                                 const SizedBox(height: 48),
@@ -9593,137 +9223,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 2: YOUR RECOVERY ---
+  /// Real logged events, not a scripted timeline. Replaced a hardcoded list
+  /// that marked milestones complete on a freshly installed app.
   Widget _buildPostpartumRecoveryTimeline() {
-    final List<Map<String, dynamic>> milestones = [
-      {"week": "Birth", "desc": "Initial healing & bonding", "checked": true},
-      {"week": "Week 2", "desc": "Physical resting & feeding patterns", "checked": true},
-      {"week": "Week 6 Check-up", "desc": "Clinical recovery & screening", "checked": true},
-      {"week": "3 Months", "desc": "Gradual routine integration", "checked": false},
-      {"week": "6 Months", "desc": "Returning to physical exercise", "checked": false},
-      {"week": "1 Year", "desc": "Long term tissue realignment", "checked": false},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "YOUR RECOVERY",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "Healing Milestone Timeline",
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "6 Weeks Postpartum",
-                        style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "Upcoming: Week 6 Clinical Check-up",
-                        style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              ...milestones.map((m) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        m['checked'] as bool ? Icons.check_circle : Icons.radio_button_unchecked,
-                        color: m['checked'] as bool ? BlushyColors.success : BlushyColors.disabled,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              m['week'] as String,
-                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                            ),
-                            Text(
-                              m['desc'] as String,
-                              style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-              Text(
-                "RECOVERY SUMMARY",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
-              ),
-              const SizedBox(height: 12),
-              Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildMetricLabel("Energy Level", "Improving")),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildMetricLabel("Sleep State", "Interrupted")),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildMetricLabel("Tissues", "Healing Progressing")),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildMetricLabel("Pelvic State", "Recovering")),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
+    return const RealJourneyTimeline(
+      title: 'Your Recovery Log',
+      emptyHeadline: 'Your recovery timeline is empty so far',
     );
   }
 
@@ -9770,17 +9275,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
-                "MOOD",
+                AppLocalizations.of(context).dashMood,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json') ?? {})['feeling'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
                   final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
@@ -9802,7 +9311,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withOpacity(0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected ? BlushyColors.primary : BlushyColors.border,
@@ -9888,7 +9397,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text("Log Weight"),
+                      title: Text(AppLocalizations.of(context).dashLogWeight),
                       content: const TextField(
                         decoration: InputDecoration(hintText: "Enter weight in kg"),
                         keyboardType: TextInputType.number,
@@ -9900,7 +9409,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   );
                 },
                 icon: const Icon(Icons.monitor_weight_outlined, size: 18),
-                label: const Text("Log Weight"),
+                label: Text(AppLocalizations.of(context).dashLogWeight),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: BlushyColors.primary,
                   side: const BorderSide(color: BlushyColors.primary),
@@ -9912,7 +9421,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Notes & Reflections
               Text(
-                "NOTES & REFLECTIONS",
+                AppLocalizations.of(context).dashNotesReflections,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -9971,164 +9480,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 4: SIA INSIGHTS ---
+  /// Server-derived patterns. Replaced a hardcoded list that asserted
+  /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPostpartumInsights() {
-    final List<Map<String, String>> insights = [
-      {
-        "insight": "You've been getting slightly more sleep this week.",
-        "desc": "Splitting feed shifts has allowed a consolidated 4-hour sleep block, improving energy recovery."
-      },
-      {
-        "insight": "You've remembered your hydration goals more consistently.",
-        "desc": "Averaging 2.5L is keeping your postpartum milk supplies steady and matching breastfeeding demands."
-      },
-      {
-        "insight": "You report fewer pain symptoms compared with last week.",
-        "desc": "Incision sore levels have dropped, aligning with week-6 skin tissue repair completions."
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "SIA INSIGHTS",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...insights.map((item) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFBF7),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item['insight']!,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openAskSiaChat(context, "Tell me about: ${item['insight']}"),
-                        child: Text("Ask Sia", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
-                      ),
-                      const SizedBox(width: 12),
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(context, "Postpartum Recovery Insights", item['desc']!);
-                        },
-                        child: Text(
-                          "Learn More",
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ],
+    return const RealInsightsList(
+      title: 'What your logs show',
     );
   }
 
   // --- SECTION 5: YOUR CARE PLAN ---
   Widget _buildPostpartumCarePlan() {
-    final List<Map<String, dynamic>> recommendations = [
-      {"icon": Icons.nightlight_round, "title": "Rest Focus", "desc": "Rest while baby is sleeping. Skip chores to facilitate muscle tissue repair."},
-      {"icon": Icons.water_drop_outlined, "title": "Hydration Focus", "desc": "Drink 2.5L target to support lochia drainage and breastfeeding demands."},
-      {"icon": Icons.restaurant, "title": "Warm Nutrition Foods", "desc": "Eat warm soups, bone broths, and cooked grains to ease digestion constraints."},
-      {"icon": Icons.self_improvement, "title": "Pelvic Floor Focus", "desc": "Perform 5-minute gentle kegels and pelvic alignment breathing exercises."},
-      {"icon": Icons.calendar_month_outlined, "title": "Clinical Check-up Reminder", "desc": "Your clinical Week 6 check-up appointment is scheduled for next Tuesday."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "YOUR CARE PLAN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: recommendations.map((item) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item['icon'] as IconData, size: 20, color: BlushyColors.primary),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['title'] as String,
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['desc'] as String,
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.45),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
+    return _buildCarePlanSection(heading: "TODAY'S CARE PLAN");
   }
 
   // --- SECTION 6: BABY & YOU ---
@@ -10197,7 +9559,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ],
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),
@@ -10211,30 +9573,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       "Physical Recovery", "Mental Health", "Postpartum Depression", "Breastfeeding", "Pelvic Floor Recovery"
     ];
 
-    final Map<String, List<Map<String, String>>> learnFeeds = {
-      "Physical Recovery": [
-        {"title": "Healing the Incision Site", "desc": "How postpartum skin tissues recover from surgeries or tearing, and hygiene targets to check daily."},
-        {"title": "Lochia Flow Stages Traced", "desc": "Differentiating bleeding types from weeks 1 to 6 and recognizing normal color shifts."}
-      ],
-      "Mental Health": [
-        {"title": "Understanding the Baby Blues", "desc": "Why hormone drops (estrogen/progesterone) during the first 14 days spike emotional sensitivity."},
-        {"title": "Prioritizing Rest Over Chores", "desc": "Mindset tools to bypass social pressure and prioritize postpartum mental recovery."}
-      ],
-      "Postpartum Depression": [
-        {"title": "PPD Indicators & Screening", "desc": "Recognizing chronic anxiety, sleep shifts, or bonding challenges early."},
-        {"title": "Support Networks Overview", "desc": "Identifying professional counselors and community postpartum resources."}
-      ],
-      "Breastfeeding": [
-        {"title": "Achieving a Comfortable Latch", "desc": "Step-by-step guidance on positions (cradle, football) to prevent sore nipples."},
-        {"title": "Managing Milk Supply Spikes", "desc": "How hydration and regular demand patterns optimize breast milk production."}
-      ],
-      "Pelvic Floor Recovery": [
-        {"title": "Pelvic Floor Restorations", "desc": "Safe post-birth kegel routines and diaphragmatic breathing steps to stabilize deep core tissues."},
-        {"title": "Checking for Diastasis Recti", "desc": "How to inspect abdominal separation at week 6 and what movements to avoid."}
-      ]
-    };
+    // The 74 articles that used to live in these maps are now seeded
+    // through the reviewed content pipeline, so each one carries a
+    // reviewer and a review date and is served only once approved.
 
-    final articles = learnFeeds[_postpartumDiscoverTopic] ?? [];
+    final articles = _educationFor(_postpartumDiscoverTopic);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -10461,74 +9804,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 9: MY JOURNEY ---
+  /// Real logged events, not a scripted timeline. Replaced a hardcoded list
+  /// that marked milestones complete on a freshly installed app.
   Widget _buildPostpartumJourney() {
-    final List<Map<String, String>> milestones = [
-      {"date": "June 01", "title": "Baby Born!", "detail": "Welcomed little one to the world."},
-      {"date": "June 15", "title": "First Gentle Walk", "detail": "10 minutes fresh air stroll around the block."},
-      {"date": "July 02", "title": "First Full Night's Sleep", "detail": "Consolidated 6 hours segment logged."},
-      {"date": "July 12", "title": "6 Week Check-up Completed", "detail": "Incision and tissue recovery checked."},
-      {"date": "July 20", "title": "Restarted Pelvic Floor exercises", "detail": "Consistent 5 min stretch streak."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "MY JOURNEY",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            children: milestones.map((item) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 25,
-                    child: Text(
-                      item['date']!,
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 75,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title']!,
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item['detail']!,
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                        ),
-                        const Divider(height: 24, color: Color(0xFFF5F0EB)),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+    return const RealJourneyTimeline(
+      title: 'Your Postpartum Journey',
+      emptyHeadline: 'Your postpartum journey is empty so far',
     );
   }
 
@@ -10568,6 +9849,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       const SizedBox(height: 32),
                       _buildPostpartumCarePlan(),
                       const SizedBox(height: 32),
+                      _buildAppointmentSummaryCard(),
+                      const SizedBox(height: 32),
                       _buildPostpartumBabyAndYou(),
                       const SizedBox(height: 32),
                       _buildPostpartumLearn(),
@@ -10605,6 +9888,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildPostpartumInsights(),
                       const SizedBox(height: 48),
                       _buildPostpartumCarePlan(),
+                      _buildAppointmentSummaryCard(),
+                      const SizedBox(height: 32),
                       const SizedBox(height: 48),
                       _buildPostpartumBabyAndYou(),
                       const SizedBox(height: 48),
@@ -10659,6 +9944,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 _buildPostpartumInsights(),
                                 const SizedBox(height: 48),
                                 _buildPostpartumCarePlan(),
+                                _buildAppointmentSummaryCard(),
+                                const SizedBox(height: 32),
                                 const SizedBox(height: 48),
                                 _buildPostpartumBabyAndYou(),
                                 const SizedBox(height: 48),
@@ -10715,6 +10002,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 2: MY CHANGING CYCLE ---
   Widget _buildPeriChangingCycle(PersonalContext pc) {
+    // These two lines read "Cycle Day 47" and "Last Period: 47 Days Ago" for
+    // everyone, regardless of what they had logged. `pc` was already in scope
+    // and carries the real dates; nothing was reading it.
+    final DateTime? periStart = pc.lastPeriodStart;
+    final int? periDaysSince =
+        periStart == null ? null : DateTime.now().difference(periStart).inDays;
     final List<int> recentCycles = [31, 45, 62, 39, 54];
 
     return Column(
@@ -10770,12 +10063,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Cycle Day 47",
+                                periDaysSince == null
+                                    ? "Cycle day not known yet"
+                                    : "Cycle Day ${periDaysSince + 1}",
                                 style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                "Last Period: 47 Days Ago",
+                                periDaysSince == null
+                                    // Saying so beats inventing a number for
+                                    // someone tracking an irregular cycle.
+                                    ? "Log a period start date to see this"
+                                    : "Last period: $periDaysSince days ago",
                                 style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
                               ),
                             ],
@@ -10785,7 +10084,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         IconButton(
                           icon: const Icon(Icons.edit, color: BlushyColors.primary, size: 20),
                           onPressed: () {
-                            _pickAndSavePeriodDate(context);
+                            _showLogPeriodBottomSheet(context);
                           },
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -10799,11 +10098,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: BlushyColors.primary.withOpacity(0.1),
+                      color: BlushyColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      "Highly Variable",
+                      // "Highly Variable" was asserted to everyone. It is a
+                      // description of her cycle, and nothing had measured it.
+                      periDaysSince == null ? "Tracking" : "In transition",
                       style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
                     ),
                   ),
@@ -10816,7 +10117,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 child: Column(
                   children: [
                     Text(
-                      "Day 47",
+                      periDaysSince == null ? "—" : "Day ${periDaysSince + 1}",
                       style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -10824,7 +10125,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       ),
                     ),
                     Text(
-                      "Late Phase",
+                      // Naming a phase during perimenopause needs data nobody
+                      // has here, so it says what it actually knows.
+                      periDaysSince == null
+                          ? "No period logged yet"
+                          : "Since your last logged period",
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         color: BlushyColors.secondaryText,
@@ -10887,15 +10192,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               ),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildMetricLabel("Average Length", "46.2 Days"),
-                  _buildMetricLabel("Shortest Cycle", "31 Days"),
-                  _buildMetricLabel("Longest Cycle", "62 Days"),
-                  _buildMetricLabel("Variability", "High (±14d)"),
-                ],
-              ),
+              // The four figures here were literals presented as her own
+              // cycle statistics. The history above is computed from real logs.
+              const RealCycleHistory(),
               const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -10905,7 +10204,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   border: Border.all(color: const Color(0xFFF3E4DD), width: 0.8),
                 ),
                 child: Text(
-                  "\"Your cycles have gradually become less predictable over recent months. We're noticing longer gaps between periods, which is typical for the perimenopause transition.\"",
+                  // This claimed to have noticed a trend across her recent
+                  // months. Nothing had analysed anything; it was a fixed
+                  // sentence shown to everyone in this stage.
+                  "Cycles often become less predictable during the perimenopause transition. What you log here builds your own picture over time.",
                   style: GoogleFonts.poppins(fontSize: 12, fontStyle: FontStyle.italic, color: BlushyColors.secondaryText),
                 ),
               ),
@@ -10915,13 +10217,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text("Period Logged (Simulated)"),
-                            backgroundColor: BlushyColors.primary,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                        // Opens the real logging sheet. This used to show
+                        // "Period Logged (Simulated)" and record nothing.
+                        _showLogPeriodBottomSheet(context);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BlushyColors.primary,
@@ -10930,7 +10228,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         elevation: 0,
                       ),
                       child: Text(
-                        "Log Period",
+                        AppLocalizations.of(context).dashLogPeriod,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -11014,17 +10312,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
-                "MOOD",
+                AppLocalizations.of(context).dashMood,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json') ?? {})['feeling'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
                   final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
@@ -11046,7 +10348,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withOpacity(0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected ? BlushyColors.primary : BlushyColors.border,
@@ -11140,7 +10442,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text("Log Weight"),
+                      title: Text(AppLocalizations.of(context).dashLogWeight),
                       content: const TextField(
                         decoration: InputDecoration(hintText: "Enter weight in kg"),
                         keyboardType: TextInputType.number,
@@ -11152,7 +10454,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   );
                 },
                 icon: const Icon(Icons.monitor_weight_outlined, size: 18),
-                label: const Text("Log Weight"),
+                label: Text(AppLocalizations.of(context).dashLogWeight),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: BlushyColors.primary,
                   side: const BorderSide(color: BlushyColors.primary),
@@ -11164,7 +10466,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Notes & Reflections
               Text(
-                "NOTES & REFLECTIONS",
+                AppLocalizations.of(context).dashNotesReflections,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -11223,284 +10525,26 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 4: SIA INSIGHTS ---
+  /// Server-derived patterns. Replaced a hardcoded list that asserted
+  /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPeriInsights() {
-    final List<Map<String, String>> insights = [
-      {
-        "insight": "Your hot flashes have become less frequent over the past month.",
-        "desc": "Tracking logs show a 30% drop in intensity, correlating with regular hormone therapy schedules."
-      },
-      {
-        "insight": "You tend to sleep better on days when you exercise.",
-        "desc": "Deep sleep segments extended by 40 minutes on days with walk/strength targets."
-      },
-      {
-        "insight": "Brain fog appears to increase after poor sleep.",
-        "desc": "Observations indicate a strong link between night sweat disruptions and next-day focus levels."
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "SIA INSIGHTS",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...insights.map((item) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFBF7),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item['insight']!,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openAskSiaChat(context, "Tell me about: ${item['insight']}"),
-                        child: Text("Ask Sia", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
-                      ),
-                      const SizedBox(width: 12),
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(context, "Perimenopause Insight Details", item['desc']!);
-                        },
-                        child: Text(
-                          "Learn More",
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ],
+    return const RealInsightsList(
+      title: 'What your logs show',
     );
   }
 
   // --- SECTION 5: UNDERSTANDING MY PATTERNS ---
+  /// Server-derived patterns. Replaced a hardcoded list that asserted
+  /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPeriPatterns() {
-    final List<Map<String, String>> patterns = [
-      {
-        "title": "Cycle Pattern",
-        "desc": "\"Your periods are becoming further apart.\"",
-        "detail": "Cycles have expanded from an average of 31 days to 54 days over the last year. This is expected as ovarian reserve levels naturally shift."
-      },
-      {
-        "title": "Sleep Pattern",
-        "desc": "\"Sleep quality tends to decrease after hot flash episodes.\"",
-        "detail": "Night sweat episodes trigger brief waking states, interrupting REM cycles and causing fatigue the following day."
-      },
-      {
-        "title": "Mood Pattern",
-        "desc": "\"Stress levels often increase after poor sleep.\"",
-        "detail": "Cortisol baselines show sensitivity spikes on mornings following night sweats and fragmented sleep."
-      },
-      {
-        "title": "Hot Flash Pattern",
-        "desc": "\"Hot flashes are most common during the evening.\"",
-        "detail": "Thermal logs suggest temperature regulation spikes are clustered between 7 PM and 10 PM."
-      },
-      {
-        "title": "Lifestyle Pattern",
-        "desc": "\"Regular walks appear to improve your energy.\"",
-        "detail": "30-minute cardio walking sessions correlate with stable energy baselines and positive mood logs."
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "UNDERSTANDING MY PATTERNS",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "AI-Generated Perimenopause Cards",
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 240,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: patterns.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              final card = patterns[index];
-              return Container(
-                width: 280,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: BlushyColors.border, width: 0.8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      card['title']!.toUpperCase(),
-                      style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      card['desc']!,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Why This Matters: Shifts reflect endocrine fluctuations during the transition.",
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            _showArticleDialog(context, card['title']!, card['detail']!);
-                          },
-                          child: Text("Learn More", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
-                        ),
-                        TextButton(
-                          onPressed: () => _openAskSiaChat(context, "Tell me about my ${card['title']}"),
-                          child: Text("Ask Sia", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+    return const RealInsightsList(
+      title: 'Patterns in your logs',
     );
   }
 
   // --- SECTION 6: TODAY'S CARE PLAN ---
   Widget _buildPeriCarePlan() {
-    final List<Map<String, dynamic>> recommendations = [
-      {"icon": Icons.ac_unit, "title": "Cooling Strategy", "desc": "Keep a cold water mist or small fan nearby during the evening peak hot flash hours."},
-      {"icon": Icons.nightlight_round, "title": "Sleep Support Focus", "desc": "Dim bedroom lights 1 hour before sleep; keep room temperature at 18C (65F)."},
-      {"icon": Icons.fitness_center, "title": "Bone Health Strength", "desc": "Incorporate 15 minutes of resistance weights or strength training to support bone mineral densities."},
-      {"icon": Icons.restaurant, "title": "Phytoestrogens Nutrition", "desc": "Add flaxseeds, tofu, or soy to meals to naturally cushion estrogen dips gently."},
-      {"icon": Icons.check_circle_outline, "title": "Hormone Therapy Reminder", "desc": "Take scheduled estrogen/progesterone supplement according to clinical plan."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S CARE PLAN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: recommendations.map((item) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item['icon'] as IconData, size: 20, color: BlushyColors.primary),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['title'] as String,
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['desc'] as String,
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.45),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
+    return _buildCarePlanSection(heading: "TODAY'S CARE PLAN");
   }
 
   // --- SECTION 7: LEARN ---
@@ -11509,30 +10553,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       "Understanding Perimenopause", "Hormonal Changes", "Hot Flashes", "Sleep", "Bone Health"
     ];
 
-    final Map<String, List<Map<String, String>>> learnFeeds = {
-      "Understanding Perimenopause": [
-        {"title": "The Perimenopause Transition", "desc": "What happens during the transition phase leading to menopause, and what to expect regarding cycle lengths."},
-        {"title": "Recognizing Early Indicators", "desc": "From skipped cycles to minor mood adjustments: identifying the markers early."}
-      ],
-      "Hormonal Changes": [
-        {"title": "Estrogen & Progesterone Fluctuations", "desc": "Why erratic swings in progesterone cause variable cycle spacing and emotional shifts."},
-        {"title": "Role of FSH Levels", "desc": "How follicle-stimulating hormones spike as ovaries change their active ovulation responses."}
-      ],
-      "Hot Flashes": [
-        {"title": "Science of Vasomotor Symptoms", "desc": "How estrogen drops trick the hypothalamus into triggering cooling flush responses."},
-        {"title": "Managing Evening Flares", "desc": "Lifestyle adjustments, clothing layers, and nutrition tweaks to buffer hot flash triggers."}
-      ],
-      "Sleep": [
-        {"title": "Tackling Sleep Fragmentation", "desc": "Why progesterone drop impairs melatonin release, and tips for deep sleep extensions."},
-        {"title": "Coping with Night Sweats", "desc": "Optimal fabrics and sleeping hygiene targets to handle midnight temperature spikes."}
-      ],
-      "Bone Health": [
-        {"title": "Maintaining Bone Mineral Density", "desc": "Why estrogen drops trigger bone density loss, and the importance of daily calcium targets."},
-        {"title": "Strength Training Benefits", "desc": "How resistance exercises and weights preserve bone structure and joint health."}
-      ]
-    };
+    // The 74 articles that used to live in these maps are now seeded
+    // through the reviewed content pipeline, so each one carries a
+    // reviewer and a review date and is served only once approved.
 
-    final articles = learnFeeds[_periDiscoverTopic] ?? [];
+    final articles = _educationFor(_periDiscoverTopic);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -11759,74 +10784,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 9: MY TRANSITION ---
+  /// Real logged events, not a scripted timeline. Replaced a hardcoded list
+  /// that marked milestones complete on a freshly installed app.
   Widget _buildPeriTransition() {
-    final List<Map<String, String>> milestones = [
-      {"date": "Jan 2025", "title": "First Irregular Cycle", "detail": "Tracked a 45-day cycle length variation."},
-      {"date": "Mar 2025", "title": "Hot Flashes Began", "detail": "Logged mild evening temperature flushes."},
-      {"date": "May 2025", "title": "Started Strength Training", "detail": "Added 15 mins resistance weights twice a week."},
-      {"date": "June 2025", "title": "Discussed Symptoms With Doctor", "detail": "Reviewed cycle variances and hormone checks."},
-      {"date": "July 2025", "title": "Started Hormone Therapy", "detail": "Began custom hormonal alignment plan."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "MY TRANSITION",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            children: milestones.map((item) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 25,
-                    child: Text(
-                      item['date']!,
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 75,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title']!,
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item['detail']!,
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                        ),
-                        const Divider(height: 24, color: Color(0xFFF5F0EB)),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+    return const RealJourneyTimeline(
+      title: 'Your Transition Log',
+      emptyHeadline: 'Your transition timeline is empty so far',
     );
   }
 
@@ -11868,6 +10831,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       const SizedBox(height: 32),
                       _buildPeriCarePlan(),
                       const SizedBox(height: 32),
+                      _buildAppointmentSummaryCard(),
+                      const SizedBox(height: 32),
                       _buildPeriLearn(),
                       const SizedBox(height: 32),
                       _buildPeriCommunity(),
@@ -11905,6 +10870,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildPeriPatterns(),
                       const SizedBox(height: 48),
                       _buildPeriCarePlan(),
+                      _buildAppointmentSummaryCard(),
+                      const SizedBox(height: 32),
                       const SizedBox(height: 48),
                       _buildPeriLearn(),
                       const SizedBox(height: 48),
@@ -11959,6 +10926,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 _buildPeriPatterns(),
                                 const SizedBox(height: 48),
                                 _buildPeriCarePlan(),
+                                _buildAppointmentSummaryCard(),
+                                const SizedBox(height: 32),
                                 const SizedBox(height: 48),
                                 _buildPeriLearn(),
                                 const SizedBox(height: 48),
@@ -12013,9 +10982,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 2: MY WELLBEING ---
   // --- SECTION 2: MY WELLBEING ---
-  Widget _buildMenoWellbeing([PersonalContext? pcParam, CurrentWellbeingState? wbParam]) {
+  Widget _buildMenoWellbeing([CurrentWellbeingState? wbParam]) {
     final state = BlushyOSProvider.of(context);
-    final pc = pcParam ?? state.personalContext;
     final wb = wbParam ?? state.wellbeingState;
 
     final String? sleepVal = _wellnessSleep ?? (wb.sleepQuality != null ? "${wb.sleepQuality}h" : null);
@@ -12238,17 +11206,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
-                "MOOD",
+                AppLocalizations.of(context).dashMood,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json') ?? {})['feeling'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
                   final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
@@ -12270,7 +11242,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withOpacity(0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected ? BlushyColors.primary : BlushyColors.border,
@@ -12388,7 +11360,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Notes & Reflections
               Text(
-                "NOTES & REFLECTIONS",
+                AppLocalizations.of(context).dashNotesReflections,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -12447,94 +11419,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 4: SIA INSIGHTS ---
+  /// Server-derived patterns. Replaced a hardcoded list that asserted
+  /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildMenoInsights() {
-    final List<Map<String, String>> insights = [
-      {
-        "insight": "You've reported fewer hot flashes this month.",
-        "desc": "Thermal symptom frequency decreased from 4 events/day to 1 event/day, aligned with active cooling guidelines."
-      },
-      {
-        "insight": "Strength training days are followed by higher energy.",
-        "desc": "Muscle stimulation increases baseline metabolism rates, helping buffer next-day sluggishness levels."
-      },
-      {
-        "insight": "You tend to sleep better after evening stretching.",
-        "desc": "Stretching exercises lower night cortisol levels, promoting smooth melatonin transitions."
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "SIA INSIGHTS",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...insights.map((item) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFBF7),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item['insight']!,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openAskSiaChat(context, "Tell me about: ${item['insight']}"),
-                        child: Text("Ask Sia", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
-                      ),
-                      const SizedBox(width: 12),
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(context, "Menopause Insight details", item['desc']!);
-                        },
-                        child: Text(
-                          "Learn More",
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ],
+    return const RealInsightsList(
+      title: 'What your logs show',
     );
   }
 
@@ -12660,71 +11549,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 6: TODAY'S CARE PLAN ---
   Widget _buildMenoCarePlan() {
-    final List<Map<String, dynamic>> recommendations = [
-      {"icon": Icons.fitness_center, "title": "Strength training", "desc": "Perform 15-minute resistance bands workout to stimulate post-menopause bone density."},
-      {"icon": Icons.directions_walk, "title": "Heart Health walk", "desc": "Take a brisk 20-minute walk outdoors to support cardiovascular elasticity targets."},
-      {"icon": Icons.restaurant, "title": "Protein nutrition target", "desc": "Incorporate 25g protein (eggs, tofu, beans) into lunch to prevent muscle declines."},
-      {"icon": Icons.nightlight_round, "title": "Evening stretching", "desc": "Do 10 minutes of light floor stretches before bed to support deeper sleep cycles."},
-      {"icon": Icons.check_circle_outline, "title": "HRT compliance", "desc": "Take scheduled estrogen / hormone therapy supplement according to guidelines."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S CARE PLAN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: recommendations.map((item) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item['icon'] as IconData, size: 20, color: BlushyColors.primary),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['title'] as String,
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['desc'] as String,
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.45),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
+    return _buildCarePlanSection(heading: "TODAY'S CARE PLAN");
   }
 
   // --- SECTION 7: LEARN ---
@@ -12733,30 +11558,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       "Understanding Menopause", "Bone Health", "Heart Health", "Strength Training", "Nutrition"
     ];
 
-    final Map<String, List<Map<String, String>>> learnFeeds = {
-      "Understanding Menopause": [
-        {"title": "Life After Menopause", "desc": "Adapting to stable baseline hormone levels and understanding the shifts in post-menopausal vascular parameters."},
-        {"title": "The Post-Transition Phase", "desc": "Shifting the wellness perspective from cycle trackings to lifelong vitality and muscle health."}
-      ],
-      "Bone Health": [
-        {"title": "Preserving Bone Mineral density", "desc": "Why estrogen drops trigger osteoblast cell slowdowns, and the role of daily calcium plus Vitamin D."},
-        {"title": "Resistance exercises for bones", "desc": "How load-bearing routines stimulate joint tissues and prevent natural post-menopausal wear."}
-      ],
-      "Heart Health": [
-        {"title": "Endothelial Health after Menopause", "desc": "Estrogen drop influences blood vessel elasticity. Learn how active walking preserves cardiac tone."},
-        {"title": "Managing blood pressure baselines", "desc": "Practical habits, hydration routines, and sodium constraints to buffer cardiac spikes."}
-      ],
-      "Strength Training": [
-        {"title": "Sarcopenia prevention guidelines", "desc": "Why post-menopausal bodies require active strength resistances, and simple bands routines."},
-        {"title": "Joint-safe strength movements", "desc": "Low-impact modifications for squats, chest presses, and glute bridges to protect cartilage."}
-      ],
-      "Nutrition": [
-        {"title": "Meeting daily protein targets", "desc": "Why post-menopausal users require high protein density (1.2g/kg) to maintain lean tissues."},
-        {"title": "Calcium rich foods to include", "desc": "Sourcing calcium from leafy greens, fortified milks, almonds, and dairy sources."}
-      ]
-    };
+    // The 74 articles that used to live in these maps are now seeded
+    // through the reviewed content pipeline, so each one carries a
+    // reviewer and a review date and is served only once approved.
 
-    final articles = learnFeeds[_menoDiscoverTopic] ?? [];
+    final articles = _educationFor(_menoDiscoverTopic);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -12983,74 +11789,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 9: MY WELLNESS JOURNEY ---
+  /// Real logged events, not a scripted timeline. Replaced a hardcoded list
+  /// that marked milestones complete on a freshly installed app.
   Widget _buildMenoWellnessJourney() {
-    final List<Map<String, String>> milestones = [
-      {"date": "June 2024", "title": "Reached Menopause", "detail": "Completed 12 consecutive months period-free transition."},
-      {"date": "Aug 2024", "title": "Started Strength Training", "detail": "Configured resistance weights twice a week target."},
-      {"date": "Dec 2024", "title": "Began daily walking habit", "detail": "Established stable 6,000 steps minimum target."},
-      {"date": "Mar 2025", "title": "Reduced hot flashes", "detail": "Confirmed a 70% decrease in night sweat intensities."},
-      {"date": "June 2025", "title": "One Year Of Wellness Tracking", "detail": "Celebrated daily healthy habit consistency updates."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "MY WELLNESS JOURNEY",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            children: milestones.map((item) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 25,
-                    child: Text(
-                      item['date']!,
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 75,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title']!,
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item['detail']!,
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                        ),
-                        const Divider(height: 24, color: Color(0xFFF5F0EB)),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+    return const RealJourneyTimeline(
+      title: 'Your Wellness Journey',
+      emptyHeadline: 'Your wellness journey is empty so far',
     );
   }
 
@@ -13092,6 +11836,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       const SizedBox(height: 32),
                       _buildMenoCarePlan(),
                       const SizedBox(height: 32),
+                      _buildAppointmentSummaryCard(),
+                      const SizedBox(height: 32),
                       _buildMenoLearn(),
                       const SizedBox(height: 32),
                       _buildMenoCommunity(),
@@ -13129,6 +11875,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildMenoPatterns(),
                       const SizedBox(height: 48),
                       _buildMenoCarePlan(),
+                      _buildAppointmentSummaryCard(),
+                      const SizedBox(height: 32),
                       const SizedBox(height: 48),
                       _buildMenoLearn(),
                       const SizedBox(height: 48),
@@ -13183,6 +11931,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 _buildMenoPatterns(),
                                 const SizedBox(height: 48),
                                 _buildMenoCarePlan(),
+                                _buildAppointmentSummaryCard(),
+                                const SizedBox(height: 32),
                                 const SizedBox(height: 48),
                                 _buildMenoLearn(),
                                 const SizedBox(height: 48),
@@ -13565,17 +12315,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
-                "MOOD",
+                AppLocalizations.of(context).dashMood,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json') ?? {};
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json') ?? {})['feeling'];
+                  final checkinData = BlushyStorage.read('daily_checkin.json');
+                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
                   final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
                   final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
@@ -13597,7 +12351,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withOpacity(0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected ? BlushyColors.primary : BlushyColors.border,
@@ -13632,7 +12386,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
               // Energy Level Selector
-              _buildLivingHorizontalSelector("ENERGY LEVEL", ["Low", "Balanced", "High"], _checkInEnergy?.isNotEmpty == true ? _checkInEnergy : null, (val) {
+              _buildLivingHorizontalSelector(AppLocalizations.of(context).dashEnergyLevel, ["Low", "Balanced", "High"], _checkInEnergy?.isNotEmpty == true ? _checkInEnergy : null, (val) {
                 setState(() => _checkInEnergy = val);
               }),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
@@ -13684,7 +12438,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       backgroundColor: const Color(0xFFFAF6F0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       title: Text(
-                        "Log Weight",
+                        AppLocalizations.of(context).dashLogWeight,
                         style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.text),
                       ),
                       content: Column(
@@ -13741,7 +12495,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   color: _loggedWeight != null ? BlushyColors.success : BlushyColors.primary,
                 ),
                 label: Text(
-                  _loggedWeight != null ? "Logged Weight: ${_loggedWeight!.toStringAsFixed(1)} kg" : "Log Weight",
+                  _loggedWeight != null ? "Logged Weight: ${_loggedWeight!.toStringAsFixed(1)} kg" : AppLocalizations.of(context).dashLogWeight,
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     color: _loggedWeight != null ? BlushyColors.text : BlushyColors.primary,
@@ -13758,7 +12512,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
               // Notes & Reflections
               Text(
-                "NOTES & REFLECTIONS",
+                AppLocalizations.of(context).dashNotesReflections,
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -13808,163 +12562,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 4: SIA INSIGHTS ---
+  /// Server-derived patterns. Replaced a hardcoded list that asserted
+  /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildWellnessInsights() {
-    final List<Map<String, String>> insights = [
-      {
-        "insight": "You feel more energetic after sleeping at least 7.5 hours.",
-        "desc": "Observations trace a 25% energy baseline boost on mornings following 7.5+ hour sleep records."
-      },
-      {
-        "insight": "You usually drink less water on busy workdays.",
-        "desc": "Logs confirm daily hydration goals drop slightly on days with high stress/work activities."
-      },
-      {
-        "insight": "You've been consistently happier after morning walks.",
-        "desc": "Walk metrics track positive mood ratings in check-ins immediately following 20 mins movement stretches."
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "SIA INSIGHTS",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...insights.map((item) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFBF7),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item['insight']!,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openAskSiaChat(context, "Tell me about: ${item['insight']}"),
-                        child: Text("Ask Sia", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
-                      ),
-                      const SizedBox(width: 12),
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(context, "Wellness Insight details", item['desc']!);
-                        },
-                        child: Text(
-                          "Learn More",
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ],
+    return const RealInsightsList(
+      title: 'What your logs show',
     );
   }
 
   // --- SECTION 5: TODAY'S PLAN ---
+  /// The real care plan, which already handles empty, restricted and
+  /// safety-suppressed states. This used to be a fixed list of suggestions
+  /// with a hardcoded personal target ("2.2L today").
   Widget _buildWellnessPlan() {
-    final List<Map<String, dynamic>> recommendations = [
-      {"icon": Icons.water_drop_outlined, "title": "Hydration Focus", "desc": "Keep a 2.5L water bottle on desk. Drink regularly to avoid afternoon sluggishness."},
-      {"icon": Icons.directions_walk, "title": "Outdoor brisk walk", "desc": "Take a 20-minute walk during lunch to refresh posture and support heart baselines."},
-      {"icon": Icons.self_improvement, "title": "Mindful stretches", "desc": "Complete 5 minutes of gentle diaphragmatic breathing stretches to relieve back tensions."},
-      {"icon": Icons.nightlight_round, "title": "Sleep Wind-down", "desc": "Banish screens 45 minutes before bedtime to facilitate natural melatonin drops."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S PLAN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: recommendations.map((item) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item['icon'] as IconData, size: 20, color: BlushyColors.primary),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['title'] as String,
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['desc'] as String,
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.45),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
+    return _buildCarePlanSection(heading: "TODAY'S PLAN");
   }
 
   // --- SECTION 6: DISCOVER ---
@@ -13973,38 +12584,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       "Nutrition", "Exercise", "Women's Health", "Mental Wellbeing", "Sleep", "Stress", "Productivity"
     ];
 
-    final Map<String, List<Map<String, String>>> learnFeeds = {
-      "Nutrition": [
-        {"title": "Optimal Breakfast Protein", "desc": "How starting the day with 25-30g protein balances glucose curves and prevents mid-day fatigue spikes."},
-        {"title": "Gut Health & Digestion", "desc": "Incorporate fermented foods and high fibers to maintain comfortable microbiome balances."}
-      ],
-      "Exercise": [
-        {"title": "Low Impact Strength routines", "desc": "Simple resistance bands and bodyweight sequences to keep core muscle fibers toned safely."},
-        {"title": "Walking for Vitality", "desc": "Why brisk daily walks lower vascular risks and keep joint flexibilities steady."}
-      ],
-      "Women's Health": [
-        {"title": "Balancing Daily Schedules", "desc": "How tracking non-reproductive health symptoms (mood, focus, sleep) builds body awareness."},
-        {"title": "Hormones & Lifestyle baselines", "desc": "Understanding minor endocrine cycles and adjusting exercise patterns accordingly."}
-      ],
-      "Mental Wellbeing": [
-        {"title": "diaphragmatic breathing guidelines", "desc": "Why 5 minutes of deep nose inhalation triggers vagal nerve relaxations, lowering anxiety."},
-        {"title": "Gratitude Journaling", "desc": "Simple daily prompts to anchor positive thoughts and reduce chronic morning stresses."}
-      ],
-      "Sleep": [
-        {"title": "Managing Sleep hygiene", "desc": "Room lighting levels, optimal temperatures, and evening screens setups to optimize deep rest segments."},
-        {"title": "Wind-down Stretching routines", "desc": "Floor stretches to release physical tensions and facilitate smoother sleep transitions."}
-      ],
-      "Stress": [
-        {"title": "Lowering Morning Cortisol", "desc": "Bypassing early phone scrolls to regulate nervous systems and prevent adrenaline spikes."},
-        {"title": "Managing workplace anxiety", "desc": "Mindful breathing pauses and desk alignments to handle work stresses."}
-      ],
-      "Productivity": [
-        {"title": "The Pomodoro focus focus method", "desc": "Structuring 25-minute focus intervals with active walking breaks to maximize mental recovery."},
-        {"title": "Managing digital distractions", "desc": "Setting up device notifications filters to protect daily focus blocks."}
-      ]
-    };
+    // The 74 articles that used to live in these maps are now seeded
+    // through the reviewed content pipeline, so each one carries a
+    // reviewer and a review date and is served only once approved.
 
-    final articles = learnFeeds[_wellnessDiscoverTopic] ?? [];
+    final articles = _educationFor(_wellnessDiscoverTopic);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -14238,23 +12822,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
     final String sleepDesc = _wellnessSleep != null
         ? "\"You've logged $_wellnessSleep sleep today.\""
-        : "\"Sleep check-in: 7-8h restful baseline.\"";
+        : "\"No sleep logged today yet.\"";
 
     final String hydrationDesc = _wellnessWater != null
         ? "\"You've logged $_wellnessWater water intake today.\""
-        : "\"Hydration goal tracked: 2.5L daily target.\"";
+        : "\"No water logged today yet.\"";
 
     final String movementDesc = _wellnessExercise != null
         ? "\"You've logged $_wellnessExercise for movement today.\""
-        : "\"Active movement tracked consistently.\"";
+        : "\"No movement logged today yet.\"";
 
     final String moodDesc = _selectedFeeling != null
         ? "\"You've logged feeling '$_selectedFeeling' today.\""
-        : "\"Mood and emotional balance checked regularly.\"";
+        : "\"No mood logged today yet.\"";
 
     final String weightDesc = _loggedWeight != null
         ? "\"Current weight logged: ${_loggedWeight!.toStringAsFixed(1)} kg.\""
-        : "\"Weight tracking: record your optional weight logs.\"";
+        : "\"No weight logged. This one is optional.\"";
 
     final List<Map<String, String>> allHabitCards = [
       {
@@ -14400,74 +12984,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 9: MY WELLNESS JOURNEY ---
+  /// Real logged events, not a scripted timeline. Replaced a hardcoded list
+  /// that marked milestones complete on a freshly installed app.
   Widget _buildWellnessJourney() {
-    final List<Map<String, String>> milestones = [
-      {"date": "Day 01", "title": "Started Wellness Journey", "detail": "Configured baseline lifestyle goals and daily schedules."},
-      {"date": "Day 07", "title": "Completed First Week of Logs", "detail": "Consistent mood and sleep check-ins completed."},
-      {"date": "Day 15", "title": "Built Daily Hydration Habit", "detail": "Averaged 2.5L water targets for 7 days streak."},
-      {"date": "Day 30", "title": "Completed One Month of Check-Ins", "detail": "Celebrated habit consistency records."},
-      {"date": "Day 45", "title": "Improved Sleep Segments", "detail": "Extended deep sleep segments by 30 mins average."},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "MY WELLNESS JOURNEY",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            children: milestones.map((item) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 25,
-                    child: Text(
-                      item['date']!,
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 75,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title']!,
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item['detail']!,
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                        ),
-                        const Divider(height: 24, color: Color(0xFFF5F0EB)),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+    return const RealJourneyTimeline(
+      title: 'Your Wellness Journey',
+      emptyHeadline: 'Your wellness journey is empty so far',
     );
   }
 
@@ -14635,5045 +13157,47 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  Widget _buildFirstPeriodsOS(PersonalContext pc, BlushyOSState state) {
-    if (_showFirstPeriodTransition) {
-      return _buildFirstPeriodMilestoneTransition(state);
-    }
 
-    final data = _getPersonalizedBranchAData(pc);
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-    final bool hasStarted = data['hasStarted'] == true;
-
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: const Color(0xFFFAF6F0), // Soft cream luxury background
-      endDrawer: DeveloperContextSimulator(
-        onLifeStageChanged: (stage) {
-          final currentData = BlushyStorage.read('user_profile.json');
-          final profile = Map<String, dynamic>.from(currentData['profile'] ?? {});
-          profile['lifeStage'] = stage;
-          currentData['profile'] = profile;
-          BlushyStorage.write('user_profile.json', currentData);
-          _loadOnboardingData();
-        },
-      ),
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
-            child: ListView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-              children: [
-                _buildBranchSwitcher(state),
-                
-                // 1. Redesigned Hero: Greeting & Tagline
-                _buildUnifiedHeroCard(
-                  category: "BLUSHY PREPARATION • EDITION 01",
-                  title: "${_getTimeBasedGreetingPrefix()}, $displayName",
-                  subtitle: "Your body is beginning a beautiful new phase of change and growth.",
-                  metricsTitle: "FIRST PERIOD STATUS",
-                  metricsValue: "Not Started • Preparing with care",
-                  primaryBtnText: "Explore Guide",
-                  onPrimaryTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text("Scroll down to explore preparation options"),
-                        backgroundColor: BlushyColors.primary,
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  secondaryBtnText: "Ask Sia",
-                  onSecondaryTap: () => _openAskSiaChat(context, null),
-                ),
-                const SizedBox(height: 36),
-
-                if (!hasStarted) ...[
-                  // --- BRANCH A REDESIGNED STORY FLOW ---
-
-                  // Section 1: Sia's Visually Rewritten Letter
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.favorite_rounded, color: BlushyColors.primary, size: 14),
-                            const SizedBox(width: 8),
-                            Text(
-                              "LATEST NOTE",
-                              style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Growing up\ncan feel confusing.",
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontStyle: FontStyle.italic,
-                            color: BlushyColors.text,
-                            height: 1.4,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          "You don't have to\nfigure everything out today.",
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontStyle: FontStyle.italic,
-                            color: BlushyColors.text,
-                            height: 1.4,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          "I'll always be here.",
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontStyle: FontStyle.italic,
-                            color: BlushyColors.text,
-                            height: 1.4,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Align(
-                          alignment: Alignment.bottomLeft,
-                          child: Text(
-                            "Love,\nSia",
-                            style: GoogleFonts.poppins(
-                              fontSize: 16, 
-                              fontWeight: FontWeight.bold, 
-                              fontStyle: FontStyle.italic, 
-                              color: BlushyColors.primary
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Section 2: Today's Tiny Mission (Single CTA)
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: BlushyColors.primary.withOpacity(0.04),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.spa_outlined, color: BlushyColors.primary, size: 14),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "TODAY'S TINY MISSION",
-                                  style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: BlushyColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                "2 min",
-                                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Learn why discharge happens.",
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Understand how your body quietly cleanses and prepares itself for changes.",
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: BlushyColors.secondaryText,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _missionCompleted ? BlushyColors.success : BlushyColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _missionCompleted = !_missionCompleted;
-                              });
-                            },
-                            child: Text(
-                              _missionCompleted ? "Mission Completed! " : "Start Learning",
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Section 3: Today's Discovery (Curiosity Reveal Card)
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3EAE0), // Warm editorial paper bag surface
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.auto_awesome_outlined, color: BlushyColors.warning, size: 14),
-                            const SizedBox(width: 8),
-                            Text(
-                              "TODAY'S DISCOVERY",
-                              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.warning, letterSpacing: 1.2),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Did you know?",
-                          style: GoogleFonts.poppins(
-                            fontSize: 24, 
-                            fontWeight: FontWeight.bold, 
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Your body is already preparing for your first period long before it arrives.",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16, 
-                            fontStyle: FontStyle.italic,
-                            color: BlushyColors.text,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        if (!_isDiscoveryRevealed)
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isDiscoveryRevealed = true;
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    "Tap to Reveal",
-                                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Icon(Icons.arrow_forward_rounded, size: 16, color: BlushyColors.primary),
-                                ],
-                              ),
-                            ),
-                          )
-                        else
-                          TweenAnimationBuilder<double>(
-                            duration: const Duration(milliseconds: 500),
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: Text(
-                                    "Hormones are quietly preparing your body, and white discharge is a completely natural sign of this preparation. It helps keep your reproductive system clean and healthy!",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 13, 
-                                      color: BlushyColors.secondaryText,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Section 4: Growing Journey (Milestone Timeline)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.alt_route_outlined, color: BlushyColors.success, size: 14),
-                          const SizedBox(width: 8),
-                          Text(
-                            "MY GROWING JOURNEY",
-                            style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.success, letterSpacing: 1.2),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Milestone 1
-                      _buildMilestoneRow("Learning About My Body", "Completed", true, false, true),
-                      _buildTimelineLine(true),
-                      // Milestone 2
-                      _buildMilestoneRow("Understanding Puberty", "Completed", true, false, true),
-                      _buildTimelineLine(true),
-                      // Milestone 3
-                      _buildMilestoneRow("Preparing For My First Period", "Current Step", false, true, false),
-                      _buildTimelineLine(false),
-                      // Milestone 4
-                      _buildMilestoneRow("My First Period", "Locked", false, false, false),
-                    ],
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Section 5: Ask Sia (Prompt suggestion chips)
-                  _buildAskSiaPromptSection(data),
-                  const SizedBox(height: 48),
-
-                  // Section 6: Growing Together (Family activities / real-life actions)
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.people_outline_rounded, color: BlushyColors.info, size: 14),
-                            const SizedBox(width: 8),
-                            Text(
-                              "GROWING TOGETHER",
-                              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.info, letterSpacing: 1.2),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        // Family Mission
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.home_outlined, color: BlushyColors.info, size: 24),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Today's Family Mission",
-                                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "Ask your mum: \"What was your first period like?\"",
-                                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      side: BorderSide(color: _familyMissionCompleted ? BlushyColors.success : BlushyColors.info),
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _familyMissionCompleted = !_familyMissionCompleted;
-                                      });
-                                    },
-                                    child: Text(
-                                      _familyMissionCompleted ? "Completed " : "Mark Complete",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 11,
-                                        color: _familyMissionCompleted ? BlushyColors.success : BlushyColors.info,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Prep Mission
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.backpack_outlined, color: BlushyColors.info, size: 24),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Preparation Together",
-                                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "Pack one sanitary pad inside your school bag.",
-                                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      side: BorderSide(color: _prepMissionCompleted ? BlushyColors.success : BlushyColors.info),
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _prepMissionCompleted = !_prepMissionCompleted;
-                                      });
-                                    },
-                                    child: Text(
-                                      _prepMissionCompleted ? "Completed " : "Mark Complete",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 11,
-                                        color: _prepMissionCompleted ? BlushyColors.success : BlushyColors.info,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Section 7: Community cards (Shared anonymous experiences)
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.forum_outlined, color: BlushyColors.secondary, size: 14),
-                            const SizedBox(width: 8),
-                            Text(
-                              "SHARED EXPERIENCES",
-                              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondary, letterSpacing: 1.2),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Someone your age asked...",
-                          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          "\"I'm scared my first period will happen at school.\"",
-                          style: GoogleFonts.poppins(fontSize: 16, fontStyle: FontStyle.italic, color: BlushyColors.text, height: 1.4),
-                        ),
-                        const SizedBox(height: 16),
-                        GestureDetector(
-                          onTap: () {
-                            // Link to Sia Screen conversation
-                          },
-                          child: Row(
-                            children: [
-                              Text(
-                                "See how Sia answered",
-                                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                              ),
-                              const SizedBox(width: 6),
-                              const Icon(Icons.arrow_forward_rounded, size: 14, color: BlushyColors.primary),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            const Icon(Icons.favorite_outline_rounded, size: 14, color: BlushyColors.disabled),
-                            const SizedBox(width: 6),
-                            Text(
-                              "Helpful to 92 girls",
-                              style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.disabled),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Section 8: "Before You Go..." Redesigned Check-in
-                  _buildBeforeYouGoSection(),
-                  const SizedBox(height: 48),
-
-                  // Section 9: Polaroid Scrapbook Fun Facts
-                  _buildPolaroidScrapbookSection(data),
-                  const SizedBox(height: 72),
-                ] else ...[
-                  // Branch B: Started (Keeps the same dashboard but using updated Poppins typography)
-                  if (pc.lastPeriodStart == null) ...[
-                    _buildFirstPeriodWelcomeOnboardingCard(state),
-                    const SizedBox(height: 48),
-                    _buildSiaLetterSection(data),
-                    const SizedBox(height: 56),
-                    _buildTalkToSiaSection(data, state),
-                    const SizedBox(height: 56),
-                    _buildPolaroidScrapbookSection(data),
-                    const SizedBox(height: 60),
-                  ] else ...[
-                    _buildFirstPeriodHeroCard(data, pc),
-                    const SizedBox(height: 56),
-                    _buildTodayCheckInComponent(),
-                    const SizedBox(height: 56),
-                    _buildYourGrowingJourneySection(),
-                    const SizedBox(height: 56),
-                    _buildForwardTimeline(pc),
-                    const SizedBox(height: 56),
-                    _buildSiaLetterSection(data),
-                    const SizedBox(height: 56),
-                    _buildYourPatternsSection(pc),
-                    const SizedBox(height: 56),
-                    _buildForYouMagazineSection(data),
-                    const SizedBox(height: 56),
-                    _buildTalkToSiaSection(data, state),
-                    const SizedBox(height: 56),
-                    _buildPolaroidScrapbookSection(data),
-                    const SizedBox(height: 60),
-                  ]
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBeforeYouGoSection() {
-    final int day = DateTime.now().day;
-    final int questionIndex = day % dummyReflectionPrompts.length;
-    final currentPrompt = dummyReflectionPrompts[questionIndex];
-    final String questionText = currentPrompt.question;
-    final List<String> options = currentPrompt.chips;
-    final String replyText = currentPrompt.replyText;
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF6F0), // Cream paper background
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: BlushyColors.secondary.withOpacity(0.3), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.mail_outline_rounded, color: BlushyColors.primary, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                "BEFORE YOU GO...",
-                style: GoogleFonts.poppins(
-                  fontSize: 12, 
-                  fontWeight: FontWeight.w600, 
-                  color: BlushyColors.primary, 
-                  letterSpacing: 1.2
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Sia has one little question before you head off.",
-            style: GoogleFonts.poppins(
-              fontSize: 14, 
-              fontWeight: FontWeight.w500,
-              color: BlushyColors.secondaryText,
-              height: 1.5
-            ),
-          ),
-          const SizedBox(height: 24),
-          
-          // Question layout
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: BlushyColors.secondary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  "Sia",
-                  style: GoogleFonts.poppins(
-                    fontSize: 11, 
-                    fontWeight: FontWeight.bold, 
-                    color: BlushyColors.primary
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  questionText,
-                  style: GoogleFonts.poppins(
-                    fontSize: 16, 
-                    fontWeight: FontWeight.w600, 
-                    color: BlushyColors.text,
-                    height: 1.4
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          
-          if (!_beforeYouGoSubmitted) ...[
-            // Three option chips
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: List.generate(options.length, (index) {
-                final isSelected = _beforeYouGoSelectedIndex == index;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _beforeYouGoSelectedIndex = index;
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSelected ? BlushyColors.secondary.withOpacity(0.15) : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected ? BlushyColors.primary : BlushyColors.border,
-                        width: 1.5
-                      ),
-                    ),
-                    child: Text(
-                      options[index],
-                      style: GoogleFonts.poppins(
-                        fontSize: 13, 
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected ? BlushyColors.primary : BlushyColors.text
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 24),
-            
-            // Optional diary section
-            Text(
-              "Want to tell me a little more?",
-              style: GoogleFonts.poppins(
-                fontSize: 13, 
-                fontWeight: FontWeight.w600, 
-                color: BlushyColors.text
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _beforeYouGoController,
-              maxLines: 3,
-              style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
-              decoration: InputDecoration(
-                hintText: currentPrompt.placeholder,
-                hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withOpacity(0.6), fontSize: 13),
-                fillColor: Colors.white,
-                filled: true,
-                contentPadding: const EdgeInsets.all(16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: BlushyColors.border, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: BlushyColors.border, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: BlushyColors.primary, width: 1.5),
-                ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.mic_none_rounded, color: BlushyColors.secondaryText),
-                  onPressed: () {
-                    // voice input simulation placeholder
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            
-            // Skip & Submit Actions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _beforeYouGoSubmitted = true;
-                    });
-                  },
-                  child: Text(
-                    "Skip",
-                    style: GoogleFonts.poppins(color: BlushyColors.secondaryText, fontSize: 13),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BlushyColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    elevation: 0,
-                  ),
-                  onPressed: _beforeYouGoSelectedIndex == null ? null : () {
-                    setState(() {
-                      _beforeYouGoSubmitted = true;
-                    });
-                  },
-                  child: Text(
-                    "Send",
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-          ] else ...[
-            // Warm acknowledgement layout
-            TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 500),
-              tween: Tween(begin: 0.0, end: 1.0),
-              builder: (context, value, child) {
-                return Opacity(
-                  opacity: value,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: BlushyColors.secondary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.favorite_rounded, color: BlushyColors.primary, size: 16),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                replyText,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13, 
-                                  color: BlushyColors.text, 
-                                  fontStyle: FontStyle.italic,
-                                  height: 1.4
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _beforeYouGoSelectedIndex = null;
-                            _beforeYouGoController.clear();
-                            _beforeYouGoSubmitted = false;
-                          });
-                        },
-                        child: Text(
-                          "Answer again",
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 
   Widget _buildBranchSwitcher(BlushyOSState state) => const SizedBox.shrink();
 
-  Widget _buildMilestoneRow(String title, String subtitle, bool isDone, bool isCurrent, bool hasConnector) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isDone ? BlushyColors.success : (isCurrent ? BlushyColors.primary : BlushyColors.disabled.withOpacity(0.3)),
-          ),
-          child: Icon(
-            isDone ? Icons.check : (isCurrent ? Icons.play_arrow : Icons.lock_outline),
-            size: 14,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-                  color: isCurrent ? BlushyColors.text : BlushyColors.secondaryText,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: isCurrent ? BlushyColors.primary : BlushyColors.disabled,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildTimelineLine(bool isActive) {
-    return Container(
-      margin: const EdgeInsets.only(left: 13, top: 4, bottom: 4),
-      width: 2,
-      height: 24,
-      color: isActive ? BlushyColors.success : BlushyColors.disabled.withOpacity(0.2),
-    );
-  }
 
   // --- EDITORIAL COMPOSTIONS ---
 
-  Widget _buildFirstPeriodHeroCard(Map<String, dynamic> data, PersonalContext pc) {
-    final int cycleDay = pc.cycleDay ?? 0;
 
-    String phaseName = "Follicular Phase";
-    String friendlyExplain = "";
-    String todayFocus = "";
-    int activePhaseIndex = 0; // 0: Period, 1: Follicular, 2: Ovulation, 3: Luteal
-    IconData phaseIcon = Icons.spa_rounded;
-    
-    if (cycleDay <= 5) {
-      phaseName = "Period Phase";
-      friendlyExplain = "Your body is letting go of the old lining. Many people notice lower energy or cramps during this phase. That's completely normal.";
-      todayFocus = "Rest • Hydration • Comfort";
-      activePhaseIndex = 0;
-      phaseIcon = Icons.water_drop_rounded;
-    } else if (cycleDay <= 11) {
-      phaseName = "Follicular Phase";
-      friendlyExplain = "Your body is recovering after your period and preparing for ovulation. Some people notice more energy during this phase.";
-      todayFocus = "Hydration • Movement • Energy";
-      activePhaseIndex = 1;
-      phaseIcon = Icons.eco_rounded;
-    } else if (cycleDay <= 16) {
-      phaseName = "Ovulation Phase";
-      friendlyExplain = "Your body is releasing an egg. You may feel more social or energetic this week. Listen to your body's rhythm.";
-      todayFocus = "Socializing • Activity • Vitality";
-      activePhaseIndex = 2;
-      phaseIcon = Icons.wb_sunny_rounded;
-    } else {
-      phaseName = "Luteal Phase";
-      friendlyExplain = "Your body is winding down. Be extra gentle with yourself. You might notice mood changes or feeling more emotional.";
-      todayFocus = "Extra Sleep • Warmth • Quiet Time";
-      activePhaseIndex = 3;
-      phaseIcon = Icons.nights_stay_rounded;
-    }
 
-    String confidenceText = "";
-    if (pc.confidence == DataConfidence.low) {
-      confidenceText = "We're just getting to know your cycle.";
-    } else if (pc.confidence == DataConfidence.medium) {
-      confidenceText = "We're beginning to recognise your body's rhythm.";
-    } else {
-      confidenceText = "Your predictions are now based on your personal cycle history and will continue adapting over time.";
-    }
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: BlushyColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: BlushyColors.dark.withOpacity(0.02),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Cycle Day $cycleDay",
-                      style: BlushyTypography.displayL(color: BlushyColors.text),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: BlushyColors.primary, size: 20),
-                      onPressed: () {
-                        _pickAndSavePeriodDate(context);
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      splashRadius: 20,
-                      tooltip: "Log / Edit Period Date",
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: BlushyColors.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  "Day $cycleDay/28",
-                  style: BlushyTypography.chipLabel(color: BlushyColors.primary),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(phaseIcon, size: 16, color: BlushyColors.primary),
-              const SizedBox(width: 6),
-              Text(
-                phaseName,
-                style: BlushyTypography.caption(color: BlushyColors.primary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "\"$friendlyExplain\"",
-            style: BlushyTypography.bodyLarge(color: BlushyColors.text).copyWith(fontStyle: FontStyle.italic),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF6F0),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.star_rounded, size: 16, color: BlushyColors.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Today's Focus: $todayFocus",
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: BlushyColors.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-           const SizedBox(height: 28),
-           const Center(
-             child: SizedBox(
-               width: 260,
-               height: 95,
-               child: BlushyCycleCard(purePainterMode: true),
-             ),
-           ),
-           const SizedBox(height: 12),
-           Row(
-             mainAxisAlignment: MainAxisAlignment.center,
-             children: [
-               _buildStartedLegendDot("Menstrual", const Color(0xFFDD0D22)),
-               const SizedBox(width: 14),
-               _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
-               const SizedBox(width: 14),
-               _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800)),
-               const SizedBox(width: 14),
-               _buildStartedLegendDot("Luteal", const Color(0xFFFF6B6C)),
-             ],
-           ),
-          const SizedBox(height: 20),
-          const Divider(color: BlushyColors.border),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(Icons.info_outline_rounded, size: 14, color: BlushyColors.secondaryText),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  confidenceText,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: BlushyColors.secondaryText,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildProgressPhaseNode(String name, bool isActive) {
-    return Column(
-      children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: isActive ? BlushyColors.primary : BlushyColors.disabled.withOpacity(0.3),
-            shape: BoxShape.circle,
-            border: isActive ? Border.all(color: Colors.white, width: 2) : null,
-            boxShadow: isActive ? [BoxShadow(color: BlushyColors.primary.withOpacity(0.4), blurRadius: 6)] : null,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          name,
-          style: GoogleFonts.poppins(
-            fontSize: 9,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            color: isActive ? BlushyColors.primary : BlushyColors.secondaryText.withOpacity(0.5),
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildProgressArrow() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14.0),
-      child: Icon(Icons.chevron_right_rounded, size: 12, color: BlushyColors.disabled.withOpacity(0.3)),
-    );
-  }
 
-  Widget _buildForwardTimeline(PersonalContext pc) {
-    if (pc.lastPeriodStart == null) return const SizedBox.shrink();
 
-    final prevStart = pc.lastPeriodStart!;
-    final prevStartStr = "${prevStart.day}/${prevStart.month}/${prevStart.year}";
-    final expectedNext = prevStart.add(const Duration(days: 28));
-    final expectedNextStr = "${expectedNext.day}/${expectedNext.month}/${expectedNext.year}";
 
-    final int cycleDay = pc.cycleDay ?? 0;
 
-    final steps = [
-      {"label": "Last Period", "desc": "Started on $prevStartStr", "icon": Icons.check_circle_rounded, "color": BlushyColors.success},
-      {"label": "Today", "desc": "Cycle Day $cycleDay of your rhythm", "icon": Icons.adjust_rounded, "color": BlushyColors.primary},
-      {"label": "Estimated Ovulation Window", "desc": "Approx. Day 13-15 of cycle", "icon": Icons.help_outline_rounded, "color": BlushyColors.warning},
-      {"label": "Estimated Next Period", "desc": "Approx. around $expectedNextStr", "icon": Icons.calendar_month_rounded, "color": BlushyColors.primary.withOpacity(0.5)},
-    ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.timeline_rounded, color: BlushyColors.primary, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              "LOOK AHEAD TIMELINE",
-              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "Your Upcoming Cycle Path",
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "We're still learning your unique cycle. Predictions will become more personalised as you continue tracking. Never present predictions as certainty.",
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: BlushyColors.secondaryText,
-            height: 1.45,
-          ),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-            boxShadow: [
-              BoxShadow(
-                color: BlushyColors.dark.withOpacity(0.02),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            children: List.generate(steps.length, (index) {
-              final step = steps[index];
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    children: [
-                      Icon(step['icon'] as IconData, size: 18, color: step['color'] as Color),
-                      if (index < steps.length - 1)
-                        Container(
-                          width: 2,
-                          height: 36,
-                          color: BlushyColors.border,
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            step['label'] as String,
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            step['desc'] as String,
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
 
-  Widget _buildFirstPeriodJourneyChecklist(Map<String, dynamic> data, [PersonalContext? pc]) {
-    if (pc != null && pc.lastPeriodStart != null) {
-      final prevStart = pc.lastPeriodStart!;
-      final prevStartStr = "${prevStart.day}/${prevStart.month}/${prevStart.year}";
-      final expectedNext = prevStart.add(const Duration(days: 28));
-      final expectedNextStr = "${expectedNext.day}/${expectedNext.month}/${expectedNext.year}";
 
-      final int cycleDay = pc.cycleDay ?? 0;
 
-      final steps = [
-        {"label": "Previous Period", "desc": "Started on $prevStartStr", "icon": Icons.check_circle_rounded, "color": BlushyColors.success},
-        {"label": "Today", "desc": "Cycle Day $cycleDay of your rhythm", "icon": Icons.lens, "color": BlushyColors.primary},
-        {"label": "Estimated Ovulation Window", "desc": "We're still learning your cycle. These dates are gentle estimates and will become more personalised over time.", "icon": Icons.help_outline_rounded, "color": BlushyColors.warning},
-        {"label": "Expected Next Period", "desc": "Approx. around $expectedNextStr", "icon": Icons.calendar_today_rounded, "color": BlushyColors.primary.withOpacity(0.5)},
-      ];
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            " My Cycle Timeline",
-            style: GoogleFonts.poppins(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: BlushyColors.text,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "Here is a forward-looking view of your cycle rhythm.",
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: BlushyColors.secondaryText,
-            ),
-          ),
-          const SizedBox(height: 24),
-          ...steps.map((step) {
-            final isToday = step['label'] == 'Today';
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 20.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(step['icon'] as IconData, color: step['color'] as Color, size: isToday ? 18 : 20),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          step['label'] as String,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          step['desc'] as String,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: BlushyColors.secondaryText,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-          const SizedBox(height: 12),
-          const Divider(color: Color(0x1F2E2623), thickness: 1),
-        ],
-      );
-    }
 
-    final List<dynamic> items = data['journeySteps'] ?? [];
-    final bool hasStarted = data['hasStarted'] == true;
-    final String title = hasStarted ? " My First Cycle Timeline" : " Learning About My Body";
-    final String subtitle = hasStarted 
-        ? "Here is a simplified view of your body's natural rhythm." 
-        : "You're building confidence one step at a time.";
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          subtitle,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: BlushyColors.secondaryText,
-          ),
-        ),
-        const SizedBox(height: 24),
-        ...items.map((item) {
-          final bool isDone = item['done'] == true;
-          final bool isLocked = item['locked'] == true;
-          final bool isCurrent = item['current'] == true;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 20.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  isDone 
-                      ? Icons.check_circle_rounded 
-                      : (isLocked ? Icons.lock_outline_rounded : Icons.radio_button_unchecked_rounded),
-                  color: isDone 
-                      ? BlushyColors.success 
-                      : (isLocked ? BlushyColors.secondaryText.withOpacity(0.3) : BlushyColors.primary),
-                  size: 20,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Opacity(
-                    opacity: isLocked ? 0.5 : 1.0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title'] ?? "",
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                            color: isCurrent ? BlushyColors.primary : BlushyColors.text,
-                            decoration: (isDone && !hasStarted) ? TextDecoration.lineThrough : null,
-                          ),
-                        ),
-                        if (isLocked)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              "Locked until you start your period",
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                color: BlushyColors.secondaryText.withOpacity(0.6),
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                        if (isCurrent && hasStarted)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              "Your body is recovering and returning to its baseline state.",
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                color: BlushyColors.secondaryText,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-        if (!hasStarted) ...[
-          const SizedBox(height: 24),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _showFirstPeriodTransition = true;
-                });
-              },
-              icon: const Icon(Icons.favorite_rounded, size: 18),
-              label: const Text("Log My First Period"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: BlushyColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
 
-  // 1. Sia's Letter (Handwritten letter effect, no box container)
-  Widget _buildSiaLetterSection(Map<String, dynamic> data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.auto_awesome, color: BlushyColors.primary, size: 14),
-            const SizedBox(width: 8),
-            Text(
-              "SIA'S PERSONAL NOTE",
-              style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          "\"${data['siaNote'] ?? 'I know growing up can feel confusing sometimes. You don\'t have to figure everything out alone.'}\"",
-          style: GoogleFonts.poppins(
-            fontSize: 22,
-            fontStyle: FontStyle.italic,
-            color: BlushyColors.text,
-            height: 1.45,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.bottomRight,
-          child: Text(
-            "— Love, Sia",
-            style: GoogleFonts.poppins(
-              fontSize: 16, 
-              fontWeight: FontWeight.bold, 
-              fontStyle: FontStyle.italic, 
-              color: BlushyColors.primary
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
 
-  // 2. Because You Shared (Split layout, vertical divider, no box container)
-  Widget _buildRelationalSplitSection() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "BECAUSE YOU SHARED",
-                style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.secondary, letterSpacing: 1.2),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "PE class felt a bit awkward last week",
-                style: GoogleFonts.poppins(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.w600, 
-                  color: BlushyColors.text, 
-                  height: 1.2
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          height: 50,
-          width: 1,
-          color: const Color(0x1F2E2623),
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-        ),
-        Expanded(
-          flex: 3,
-          child: InkWell(
-            onTap: () {},
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "SIA'S RECOMMENDATION",
-                  style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.2),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  "How to manage cramps and sports at school",
-                  style: GoogleFonts.poppins(
-                    fontSize: 12, 
-                    fontWeight: FontWeight.bold, 
-                    color: BlushyColors.primary, 
-                    decoration: TextDecoration.underline
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
-  // 3. Today's Discovery (Curated learning topic card with reading metadata and progress bar)
-  Widget _buildForYouMagazineSection(Map<String, dynamic> data) {
-    final discovery = data['discovery'] ?? {};
-    final String title = discovery['title'] ?? "Why do periods happen?";
-    final String type = discovery['type'] ?? "GUIDE";
-    final String readTime = discovery['readTime'] ?? "4 min read";
-    final double progress = discovery['completedRatio'] ?? 0.0;
-    final String? usefulness = discovery['usefulness'] as String?;
-    final bool isSaved = _savedArticles.contains(title);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "FOR YOU",
-              style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.warning, letterSpacing: 1.2),
-            ),
-            Row(
-              children: [
-                if (usefulness != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: BlushyColors.success.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      usefulness,
-                      style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.success),
-                    ),
-                  ),
-                ],
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: BlushyColors.primary.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    "$type • $readTime",
-                    style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 28, 
-            fontWeight: FontWeight.bold, 
-            color: BlushyColors.text, 
-            height: 1.15
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          discovery['desc'] ?? "",
-          style: GoogleFonts.poppins(
-            fontSize: 13, 
-            color: BlushyColors.secondaryText, 
-            height: 1.5
-          ),
-        ),
-        if (progress > 0.0) ...[
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: BlushyColors.border,
-                    color: BlushyColors.primary,
-                    minHeight: 4,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                "${(progress * 100).toInt()}% read",
-                style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(height: 14),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            InkWell(
-              onTap: () {},
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Read Guide",
-                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward_rounded, size: 14, color: BlushyColors.primary),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: Icon(
-                isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                color: isSaved ? BlushyColors.primary : BlushyColors.secondaryText,
-                size: 20,
-              ),
-              onPressed: () {
-                setState(() {
-                  if (isSaved) {
-                    _savedArticles.remove(title);
-                  } else {
-                    _savedArticles.add(title);
-                  }
-                });
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
 
-  // 3.5. Ask Sia (Conversational suggested prompts)
-  Widget _buildAskSiaPromptSection(Map<String, dynamic> data) {
-    final List<dynamic> suggestions = data['prompts'] ?? [];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "ASK SIA",
-          style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "What are you wondering today?",
-          style: GoogleFonts.poppins(
-            fontSize: 26, 
-            fontWeight: FontWeight.bold, 
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: suggestions.map((s) => InkWell(
-            onTap: () {
-              // Switch navigation tab to Sia Screen
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border),
-              ),
-              child: Text(
-                s as String,
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, fontWeight: FontWeight.w500),
-              ),
-            ),
-          )).toList(),
-        ),
-        const SizedBox(height: 18),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
 
-  // 4. Continue Creating (Polaroid style layout, warm background band)
-  // 8. Daily Fun Fact (Did you know? postcard card layout)
-  Widget _buildPolaroidScrapbookSection(Map<String, dynamic> data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "DAILY FUN FACT",
-          style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.info, letterSpacing: 1.2),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(24),
-          color: const Color(0xFFF3EAE0), // Warm beige postcard surface
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Did you know?",
-                style: GoogleFonts.poppins(
-                  fontSize: 26, 
-                  fontWeight: FontWeight.bold, 
-                  color: BlushyColors.text,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                data['funFact'] ?? "The uterus is about the size of a small pear.",
-                style: GoogleFonts.poppins(
-                  fontSize: 22, 
-                  fontStyle: FontStyle.italic,
-                  color: BlushyColors.text,
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "As you grow up, it gently changes and prepares to support your body's unique health journey.",
-                style: GoogleFonts.poppins(
-                  fontSize: 12, 
-                  color: BlushyColors.secondaryText,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
 
-  // 5. Community Preview (First Period Circle questions preview)
-  Widget _buildSubstackQuoteSection(Map<String, dynamic> data) {
-    final List<dynamic> posts = data['communityPosts'] ?? [];
-    final String stats = data['communityStats'] ?? "142 girls are learning together this week";
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "COMMUNITY PREVIEW",
-          style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "First Period Circle",
-          style: GoogleFonts.poppins(
-            fontSize: 26, 
-            fontWeight: FontWeight.bold, 
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          stats,
-          style: GoogleFonts.poppins(
-            fontSize: 12, 
-            color: BlushyColors.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...posts.map((post) => Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: BlushyColors.border),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.forum_outlined, size: 14, color: BlushyColors.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  post['text'] ?? "",
-                  style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text, fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
-        )).toList(),
-        const SizedBox(height: 12),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
 
-  // 9. Explore More / Growing with Confidence (Educational recommendations or milestone progress tracker)
-  Widget _buildDiscoverEditorialSection(Map<String, dynamic> data) {
-    final bool hasStarted = data['hasStarted'] == true;
 
-    if (hasStarted) {
-      final List<dynamic> confidenceSteps = data['confidenceJourney'] ?? [];
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "GROWING WITH CONFIDENCE",
-            style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Your Confidence Journey",
-            style: GoogleFonts.poppins(
-              fontSize: 26, 
-              fontWeight: FontWeight.bold, 
-              color: BlushyColors.text,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: confidenceSteps.length,
-            itemBuilder: (context, index) {
-              final step = confidenceSteps[index];
-              final bool isDone = step['done'] == true;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  children: [
-                    Icon(
-                      isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-                      color: isDone ? BlushyColors.success : BlushyColors.secondaryText.withOpacity(0.4),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      step['title'] as String,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: isDone ? BlushyColors.text : BlushyColors.text.withOpacity(0.6),
-                        fontWeight: isDone ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      );
-    }
 
-    final topics = [
-      "Preparing for Your First Period",
-      "Body Confidence",
-      "Hygiene Basics",
-      "School & Sports",
-      "Healthy Habits",
-      "Growing Up",
-      "Friendships",
-      "Nutrition",
-    ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "EXPLORE MORE",
-          style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "Guides for growing up",
-          style: GoogleFonts.poppins(
-            fontSize: 26, 
-            fontWeight: FontWeight.bold, 
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 2.8,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: topics.length,
-          itemBuilder: (context, index) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border),
-              ),
-              child: Center(
-                child: Text(
-                  topics[index],
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12, 
-                    fontWeight: FontWeight.w600, 
-                    color: BlushyColors.text,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
 
-  // 7. Mini Journal (Embedded M Studio prompts, no emojis, enhanced elements)
-  Widget _buildGentleReflectSection(Map<String, dynamic> data) {
-    final bool hasStarted = data['hasStarted'] == true;
-    final feelings = hasStarted 
-        ? [
-            {'label': 'Happy', 'color': BlushyColors.warning},
-            {'label': 'Confident', 'color': BlushyColors.success},
-            {'label': 'Nervous', 'color': BlushyColors.secondary},
-            {'label': 'Tired', 'color': BlushyColors.info},
-            {'label': 'Crampy', 'color': BlushyColors.danger},
-          ]
-        : [
-            {'label': 'Happy', 'color': BlushyColors.warning},
-            {'label': 'Curious', 'color': BlushyColors.info},
-            {'label': 'Nervous', 'color': BlushyColors.secondary},
-            {'label': 'Excited', 'color': BlushyColors.info},
-          ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "M STUDIO",
-          style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.2),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "How are you feeling today?",
-          style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.bold, color: BlushyColors.text),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: feelings.map((f) {
-            final isSelected = _selectedFeeling == f['label'];
-            final col = f['color'] as Color;
-            return InkWell(
-              onTap: () {
-                setState(() {
-                  _selectedFeeling = f['label'] as String;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected ? col.withOpacity(0.12) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isSelected ? col : BlushyColors.border),
-                ),
-                child: Text(
-                  f['label'] as String,
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: BlushyColors.text),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        if (hasStarted) ...[
-          const SizedBox(height: 18),
-          Text(
-            "Any symptoms today?",
-            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: ['None', 'Cramps', 'Headache', 'Bloating', 'Backache'].map((symptom) {
-              final isSel = _selectedSymptom == symptom;
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedSymptom = symptom;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSel ? BlushyColors.primary.withOpacity(0.08) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isSel ? BlushyColors.primary : BlushyColors.border),
-                  ),
-                  child: Text(
-                    symptom,
-                    style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.text),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            "Energy level",
-            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: ['Low', 'Medium', 'High'].map((energy) {
-              final isSel = _selectedEnergy == energy;
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedEnergy = energy;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSel ? BlushyColors.primary.withOpacity(0.08) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isSel ? BlushyColors.primary : BlushyColors.border),
-                  ),
-                  child: Text(
-                    energy,
-                    style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.text),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-        const SizedBox(height: 18),
-        // One sentence record input
-        TextField(
-          style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
-          decoration: InputDecoration(
-            hintText: "Write one sentence about today...",
-            hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withOpacity(0.5), fontSize: 13),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: BlushyColors.border)),
-          ),
-          onChanged: (val) {
-            _journalSentence = val.trim();
-          },
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            OutlinedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _isDrawingMode = !_isDrawingMode;
-                });
-              },
-              icon: Icon(Icons.gesture_rounded, size: 16, color: _isDrawingMode ? BlushyColors.primary : BlushyColors.secondaryText),
-              label: Text("Sketch", style: GoogleFonts.poppins(fontSize: 11, color: _isDrawingMode ? BlushyColors.primary : BlushyColors.secondaryText)),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: _isDrawingMode ? BlushyColors.primary : BlushyColors.border),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Voice note recording is a mock placeholder")),
-                );
-              },
-              icon: const Icon(Icons.mic_none_outlined, size: 16, color: BlushyColors.secondaryText),
-              label: Text("Voice", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText)),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: BlushyColors.border),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-          ],
-        ),
-        if (_isDrawingMode) ...[
-          const SizedBox(height: 12),
-          Container(
-            height: 120,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: BlushyColors.primary.withOpacity(0.5)),
-            ),
-            child: const Center(
-              child: Text(
-                "Drawing Canvas (Interactive Placeholder)",
-                style: TextStyle(color: BlushyColors.secondaryText, fontSize: 12, fontStyle: FontStyle.italic),
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(height: 18),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: BlushyColors.primary),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(
-              "Write More",
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
 
-  // --- MULTI-WIDGET ADAPTIVE RENDERER ---
-  Widget _buildHomeWidget(
-    HomeWidgetType type,
-    BlushyOSState state,
-    PersonalContext pc,
-    bool isPregnancy,
-    bool isPostpartum,
-    bool isMenopause,
-    bool hasPCOS,
-    bool hasEndo,
-    bool isTTC,
-    bool trackingDisabled,
-  ) {
-    switch (type) {
-      case HomeWidgetType.hero:
-        return _buildHeroWidget(pc, isPregnancy, isPostpartum, isMenopause, hasPCOS, trackingDisabled);
-      case HomeWidgetType.aiInsight:
-        return _buildAiInsightWidget(state, pc);
-      case HomeWidgetType.primaryAction:
-        return _buildPrimaryActionWidget(pc);
-      case HomeWidgetType.tracking:
-        return _buildTrackingWidget(pc, isPregnancy, isPostpartum, hasPCOS, trackingDisabled);
-      case HomeWidgetType.dailyChecklist:
-        return _buildDailyChecklistWidget(isPregnancy, hasPCOS, isPostpartum, trackingDisabled);
-      case HomeWidgetType.recommendations:
-        return _buildRecommendationsWidget(isPregnancy, hasPCOS, isMenopause, trackingDisabled, pc);
-      case HomeWidgetType.quickActions:
-        return _buildQuickActionsWidget(isPregnancy, isPostpartum, hasEndo, trackingDisabled, pc);
-      case HomeWidgetType.healthTimeline:
-        return _buildHealthTimelineWidget(pc, state);
-    }
-  }
 
-  // --- 1. HERO WIDGET ---
-  Widget _buildHeroWidget(PersonalContext pc, bool isPregnancy, bool isPostpartum, bool isMenopause, bool hasPCOS, bool trackingDisabled) {
-    String heading = "";
-    String headline = "";
-    String supporting = "";
-    String actionLabel = "";
-    IconData icon = Icons.info_outline;
 
-    if (isPregnancy) {
-      heading = "PREGNANCY STAGE";
-      headline = "Week 24 Progress";
-      supporting = "Your baby's hearing is developing this week. Sounds are beginning to register.";
-      actionLabel = "See Today's Progress";
-      icon = Icons.child_care_outlined;
-    } else if (isPostpartum) {
-      heading = "RECOVERY POSTPARTUM";
-      headline = "Day 24 Healing Window";
-      supporting = "Sleep recovery has improved this week. Physical healing markers remain stable.";
-      actionLabel = "Log recovery symptoms";
-      icon = Icons.healing_outlined;
-    } else if (isMenopause) {
-      heading = "MENOPAUSE WELLNESS";
-      headline = "Stable Hot Flash Trends";
-      supporting = "Bone density priorities and sleep recovery indicators remain high today.";
-      actionLabel = "Track today's trend";
-      icon = Icons.nights_stay_outlined;
-    } else if (hasPCOS) {
-      heading = "PCOS SUPPORT";
-      headline = "Sleep improved by 18% this week";
-      supporting = "Sia observed longer recovery segments, which may positively influence hormonal balance.";
-      actionLabel = "View Insights";
-      icon = Icons.monitor_heart_outlined;
-    } else if (trackingDisabled) {
-      heading = "WELLBEING BALANCE";
-      headline = "Everyday Vitality Overview";
-      supporting = "Your priorities are centered on better sleep, self-care, and stress management today.";
-      actionLabel = "Start breathing session";
-      icon = Icons.spa_outlined;
-    } else {
-      final String stageStr = _onboardingData['lifeStage'] ?? '';
-      final bool isLivingWithCycle = stageStr == 'reproductiveYears';
-      if (isLivingWithCycle) {
-        final cData = _getPersonalizedBranchCData(pc);
-        heading = cData['heroTitle'] ?? "AI DAILY BRIEF";
-        headline = "You're entering ${cData['heroSub']}";
-        supporting = cData['heroText'] ?? "";
-        actionLabel = "View cycle analytics";
-        icon = Icons.insights_outlined;
-      } else {
-        final phase = pc.cyclePhase ?? 'Follicular Phase';
-        final day = pc.cycleDay ?? 0;
-        heading = "CYCLE STATUS";
-        headline = "$phase • Day $day";
-        supporting = "Sia noticed you're entering your follicular phase. Today your physical energy may feel naturally higher.";
-        actionLabel = "Log today's symptoms";
-        icon = Icons.calendar_month_outlined;
-      }
-    }
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: BlushyColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x022E2623),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: BlushyColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                heading.toUpperCase(),
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: BlushyColors.primary,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            headline,
-            style: GoogleFonts.poppins(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: BlushyColors.text,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            supporting,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: BlushyColors.secondaryText,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Starting context: $headline')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BlushyColors.primary.withOpacity(0.06),
-              foregroundColor: BlushyColors.primary,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: Text(
-              actionLabel,
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 2. AI INSIGHT WIDGET ---
-  Widget _buildAiInsightWidget(BlushyOSState state, PersonalContext pc) {
-    final String stageStr = _onboardingData['lifeStage'] ?? '';
-    final bool isLivingWithCycle = stageStr == 'reproductiveYears';
-
-    String insightText = state.dynamicAiBriefingSummary;
-    String headerLabel = "SIA'S PROACTIVE INSIGHT";
-    
-    if (isLivingWithCycle) {
-      final cData = _getPersonalizedBranchCData(pc);
-      insightText = cData['siaInsight'] ?? insightText;
-      headerLabel = "SIA'S CYCLE INSIGHT";
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: BlushyColors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.auto_awesome_outlined, color: BlushyColors.primary, size: 24),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  headerLabel,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: BlushyColors.secondaryText,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  insightText,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: BlushyColors.text,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  // --- 3. PRIMARY ACTION WIDGET ---
-  Widget _buildPrimaryActionWidget(PersonalContext pc) {
-    final String stageStr = _onboardingData['lifeStage'] ?? '';
-    final bool isLivingWithCycle = stageStr == 'reproductiveYears';
-
-    if (isLivingWithCycle) {
-      final cData = _getPersonalizedBranchCData(pc);
-      final focus = cData['focusTopic'] ?? {};
-      final String focusTitle = focus['title'] ?? "Wellness Balance";
-      final String focusDesc = focus['desc'] ?? "";
-      final String focusType = focus['type'] ?? "MINDFULNESS";
-      final String readTime = focus['readTime'] ?? "3 min read";
-
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: BlushyColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x022E2623),
-              blurRadius: 16,
-              offset: Offset(0, 4),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "WELLNESS FOCUS • $focusType",
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: BlushyColors.primary,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                Text(
-                  readTime,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: BlushyColors.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              focusTitle,
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: BlushyColors.text,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              focusDesc,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: BlushyColors.secondaryText,
-                height: 1.45,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    foregroundColor: BlushyColors.primary,
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        "Explore guidance",
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward, size: 14),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.bookmark_border_rounded, color: BlushyColors.secondaryText, size: 20),
-                  onPressed: () {},
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: BlushyColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "TODAY'S ACTION",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Track symptoms to refine predictions",
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: BlushyColors.text,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "Adding sleep, mood, or energy signals helps Sia predict cycle phase variations safely.",
-            style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText, height: 1.45),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 4. TRACKING WIDGET ---
-  Widget _buildTrackingWidget(PersonalContext pc, bool isPregnancy, bool isPostpartum, bool hasPCOS, bool trackingDisabled) {
-    final String stageStr = _onboardingData['lifeStage'] ?? '';
-    final bool isLivingWithCycle = stageStr == 'reproductiveYears' || stageStr == 'livingWithMyCycle';
-
-    if (isLivingWithCycle) {
-      final cycleData = _getDynamicCycleDates(pc);
-      if (cycleData['isLogged'] != true) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: BlushyColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Cycle Day: Not Logged",
-                style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: BlushyColors.text),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "Log your last period start date to unlock live phase tracking and hormonal rhythm insights.",
-                style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => _pickAndSavePeriodDate(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BlushyColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                ),
-                child: Text("Log Period Start Date", style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-              ),
-            ],
-          ),
-        );
-      }
-      final int cycleDay = cycleData['cycleDay'] as int;
-      
-      int activeIndex = 0;
-      String phaseTitle = "Transition";
-      String explanation = "";
-      String bodyChanges = "";
-      String emotionalChanges = "";
-      String energyExpect = "";
-      String wellnessSug = "";
-      String trendMessage = "";
-      String predictionMsg = "";
-      
-      if (cycleDay <= 5) {
-        activeIndex = 0;
-        phaseTitle = "Period";
-        explanation = "Your body is shedding the uterine lining. Estrogen and progesterone are at their lowest baseline.";
-        bodyChanges = "You may notice mild cramps, lower back fatigue, or breast tenderness.";
-        emotionalChanges = "Some people experience mood shifts or a natural desire for quiet reflection.";
-        energyExpect = "Lower physical stamina. It is completely normal to need extra rest.";
-        wellnessSug = "Prioritise hydration, sleep, warm compresses, and iron-rich foods.";
-        trendMessage = "This cycle is tracking similarly to last month.";
-        predictionMsg = "Period expected to end in ${6 - cycleDay} days.";
-      } else if (cycleDay <= 12) {
-        activeIndex = 1;
-        phaseTitle = "Follicular";
-        explanation = "Estrogen rises to rebuild energy, thicken the uterine lining, and prepare a new egg.";
-        bodyChanges = "Stamina returns, skin feels clearer, and physical agility boosts.";
-        emotionalChanges = "You may feel more motivated, focused, and creative.";
-        energyExpect = "Physical energy naturally climbs to its baseline.";
-        wellnessSug = "Great time to build fitness habits or start complex tasks.";
-        trendMessage = "Your estrogen is rising smoothly, boosting focus.";
-        predictionMsg = "Follicular peak expected in ${13 - cycleDay} days.";
-      } else if (cycleDay <= 17) {
-        activeIndex = 2;
-        phaseTitle = "Transition";
-        explanation = "Estrogen and testosterone levels peak. Your stamina is naturally at its highest.";
-        bodyChanges = "High physical stamina and energy level baseline.";
-        emotionalChanges = "Some people notice higher confidence, sociability, and brighter mood.";
-        energyExpect = "Physical stamina and energy are at their peak.";
-        wellnessSug = "Stay active, listen to your body, try strength workouts.";
-        trendMessage = "Your cycle is tracking with high regularity.";
-        predictionMsg = "Next period expected in ${29 - cycleDay} days.";
-      } else {
-        activeIndex = 3;
-        phaseTitle = "Luteal";
-        explanation = "Progesterone peaks to wind down the cycle. Physical systems prepare for rest or renewal.";
-        bodyChanges = "Mild bloating, breast tenderness, appetite changes, or acne.";
-        emotionalChanges = "Some people notice sensitivity, fatigue, or mood changes.";
-        energyExpect = "Energy naturally winds down; sleep needs increase.";
-        wellnessSug = "Prioritise gentle movement, stress reduction, and healthy nutrition.";
-        trendMessage = "Your cycle appears slightly longer than usual (+1 day).";
-        predictionMsg = "Period expected in ${29 - cycleDay} days.";
-      }
-
-      final phases = [
-        {"name": "Period", "icon": ""},
-        {"name": "Follicular", "icon": ""},
-        {"name": "Transition", "icon": ""},
-        {"name": "Luteal", "icon": ""},
-      ];
-
-      final String nextPeriodDaysText = cycleDay <= 5 ? "Active" : "${29 - cycleDay} days away";
-      final String phaseIcon = phases[activeIndex]['icon']!;
-
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: BlushyColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x022E2623),
-              blurRadius: 16,
-              offset: Offset(0, 4),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. CYCLE JOURNEY HEADER BLOCK
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Day $cycleDay",
-                      style: GoogleFonts.poppins(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.text,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "$phaseIcon $phaseTitle Phase",
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: BlushyColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      "NEXT PERIOD",
-                      style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: BlushyColors.secondaryText, letterSpacing: 0.8),
-                    ),
-                    Text(
-                      nextPeriodDaysText,
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "CYCLE CONFIDENCE: 98%",
-                      style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w800, color: BlushyColors.primary, letterSpacing: 0.5),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            // 2. HORIZONTAL TIMELINE
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(phases.length, (idx) {
-                final item = phases[idx];
-                final isActive = idx == activeIndex;
-                return Expanded(
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 2,
-                              color: idx == 0
-                                  ? Colors.transparent
-                                  : (idx <= activeIndex
-                                      ? BlushyColors.primary
-                                      : BlushyColors.border),
-                            ),
-                          ),
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isActive
-                                  ? BlushyColors.primary
-                                  : BlushyColors.primary.withOpacity(0.06),
-                              border: Border.all(
-                                color: isActive
-                                    ? BlushyColors.primary
-                                    : BlushyColors.border,
-                                width: 2,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                item['icon']!,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: isActive ? Colors.white : null,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              height: 2,
-                              color: idx == phases.length - 1
-                                  ? Colors.transparent
-                                  : (idx < activeIndex
-                                      ? BlushyColors.primary
-                                      : BlushyColors.border),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        item['name']!,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-                          color: isActive ? BlushyColors.primary : BlushyColors.secondaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 24),
-            
-            // 3. PHASE OVERVIEW & INSIGHTS
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: BlushyColors.primary.withOpacity(0.04),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Phase Overview",
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: BlushyColors.text,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    explanation,
-                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
-                  ),
-                  const Divider(height: 24, color: BlushyColors.border),
-                  _buildDetailRow("Today's Body", bodyChanges),
-                  const SizedBox(height: 12),
-                  _buildDetailRow("Today's Mood", emotionalChanges),
-                  const SizedBox(height: 12),
-                  _buildDetailRow("Today's Focus", wellnessSug),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 4. AI PREDICTIONS PANEL
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.primary.withOpacity(0.12)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.insights_rounded, color: BlushyColors.primary, size: 18),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          predictionMsg,
-                          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          trendMessage,
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // 5. CYCLE HISTORY PANEL
-            Text(
-              "CYCLE HISTORY",
-              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: BlushyColors.secondaryText, letterSpacing: 0.8),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF6F0),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BlushyColors.border),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildHistoryStat("Average Cycle", "29 days"),
-                  _buildHistoryStat("Last Period", "June 28"),
-                  _buildHistoryStat("Last Cycle", "30 days"),
-                  _buildHistoryStat("Cycles Logged", "18"),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    String title = "Health Tracking";
-    String subtitle = "";
-    int value = 0;
-    String label = "";
-
-    if (isPregnancy) {
-      title = "Pregnancy Progress";
-      subtitle = "Weeks completed";
-      value = 14;
-      label = "40 weeks total";
-    } else if (isPostpartum) {
-      title = "Postpartum Recovery";
-      subtitle = "Healing phase log status";
-      value = 24;
-      label = "Day 24 postpartum";
-    } else {
-      title = "Cycle Tracker";
-      subtitle = "Days since last period";
-      value = pc.cycleDay ?? 8;
-      label = "Expected: ${pc.cycleLength ?? 28} days total";
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: BlushyColors.border),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title.toUpperCase(),
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w800, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "$value Days",
-                style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.bold, color: BlushyColors.text),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
-              ),
-            ],
-          ),
-          const Icon(Icons.circle_outlined, color: BlushyColors.primary, size: 48),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: GoogleFonts.poppins(
-            fontSize: 9,
-            fontWeight: FontWeight.w800,
-            color: BlushyColors.primary,
-            letterSpacing: 0.8,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            color: BlushyColors.secondaryText,
-            height: 1.35,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHistoryStat(String label, String val) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: GoogleFonts.poppins(
-            fontSize: 8,
-            fontWeight: FontWeight.w800,
-            color: BlushyColors.secondaryText,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          val,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: BlushyColors.text,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // --- 5. DAILY CHECKLIST WIDGET ---
-  Widget _buildDailyChecklistWidget(bool isPregnancy, bool hasPCOS, bool isPostpartum, bool trackingDisabled) {
-    final List<String> tasks = [];
-    if (isPregnancy) {
-      tasks.addAll(['Prenatal vitamin supplement', 'Drink 8 glasses of water', '15 min pelvic stretching']);
-    } else if (hasPCOS) {
-      tasks.addAll(['Protein-rich breakfast', 'Spearmint wellness tea', 'Daily physical walk']);
-    } else if (isPostpartum) {
-      tasks.addAll(['Feed log update', 'Pelvic floor physical recovery', 'Nursing fluid tracking']);
-    } else {
-      tasks.addAll(['Log body signs', 'Fluid intake check-in', 'Evening screen-free session']);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "DAILY CHECKLIST",
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: BlushyColors.secondaryText,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: BlushyColors.border),
-            ),
-            child: Column(
-              children: tasks.map((task) {
-                final isDone = _completedDailyTasks[task] ?? false;
-                return CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  activeColor: BlushyColors.primary,
-                  title: Text(
-                    task,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: isDone ? BlushyColors.secondaryText : BlushyColors.text,
-                      decoration: isDone ? TextDecoration.lineThrough : null,
-                    ),
-                  ),
-                  value: isDone,
-                  onChanged: (val) {
-                    setState(() {
-                      _completedDailyTasks[task] = val ?? false;
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // --- 6. RECOMMENDATIONS WIDGET ---
-  Widget _buildRecommendationsWidget(bool isPregnancy, bool hasPCOS, bool isMenopause, bool trackingDisabled, PersonalContext pc) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "SIA'S RECOMMENDED ACTIONS",
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: BlushyColors.secondaryText,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...dummyRecommendations.map((rec) {
-          IconData categoryIcon;
-          Color categoryColor;
-          final cat = rec.category.toLowerCase();
-          if (cat == 'energy') {
-            categoryIcon = Icons.bolt_rounded;
-            categoryColor = const Color(0xFFFF4A00);
-          } else if (cat == 'nutrition') {
-            categoryIcon = Icons.restaurant_rounded;
-            categoryColor = const Color(0xFF8FAE8A);
-          } else if (cat == 'sleep') {
-            categoryIcon = Icons.bedtime_rounded;
-            categoryColor = const Color(0xFF6F42F5);
-          } else if (cat == 'mind') {
-            categoryIcon = Icons.spa_rounded;
-            categoryColor = const Color(0xFFFF9B9E);
-          } else {
-            categoryIcon = Icons.star_rounded;
-            categoryColor = BlushyColors.primary;
-          }
-
-          final isHigh = rec.priority.toLowerCase() == 'high';
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: BlushyColors.border),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x012E2623),
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  )
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(categoryIcon, size: 14, color: categoryColor),
-                          const SizedBox(width: 6),
-                          Text(
-                            rec.category.toUpperCase(),
-                            style: GoogleFonts.poppins(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: categoryColor,
-                              letterSpacing: 1.1,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isHigh ? const Color(0xFFFFEAE6) : BlushyColors.taupe,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          "${rec.priority.toUpperCase()} PRIORITY",
-                          style: GoogleFonts.poppins(
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                            color: isHigh ? const Color(0xFFDD0D22) : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    rec.title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: BlushyColors.text,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    rec.description,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: BlushyColors.text.withOpacity(0.9),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Reason: ${rec.reason}",
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: BlushyColors.secondaryText,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Starting: ${rec.title}')),
-                          );
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: BlushyColors.primary,
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(0, 0),
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              rec.actionLabel,
-                              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.arrow_forward_rounded, size: 12),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.bookmark_border_rounded, size: 18, color: BlushyColors.secondaryText),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ],
-    );
-  }
-
-  // --- 7. QUICK ACTIONS WIDGET ---
-  Widget _buildQuickActionsWidget(bool isPregnancy, bool isPostpartum, bool hasEndo, bool trackingDisabled, PersonalContext pc) {
-    final String stageStr = _onboardingData['lifeStage'] ?? '';
-    final bool isLivingWithCycle = stageStr == 'reproductiveYears';
-
-    if (isLivingWithCycle) {
-      final cData = _getPersonalizedBranchCData(pc);
-      return _buildAskSiaPromptSection(cData);
-    }
-
-    final List<Map<String, dynamic>> actions = [];
-
-    if (isPregnancy) {
-      actions.addAll([
-        {'label': 'Log Kick Count', 'icon': Icons.child_care_outlined},
-        {'label': 'Doctor Appointment', 'icon': Icons.calendar_today_outlined},
-        {'label': 'Water Intake', 'icon': Icons.local_drink_outlined},
-        {'label': 'Sia Chat', 'icon': Icons.chat_bubble_outline},
-      ]);
-    } else if (isPostpartum) {
-      actions.addAll([
-        {'label': 'Feed Log', 'icon': Icons.restaurant_outlined},
-        {'label': 'Log Sleep', 'icon': Icons.hotel_outlined},
-        {'label': 'Mood Check-in', 'icon': Icons.sentiment_satisfied_alt_outlined},
-        {'label': 'Sia Chat', 'icon': Icons.chat_bubble_outline},
-      ]);
-    } else if (hasEndo) {
-      actions.addAll([
-        {'label': 'Log Pain Level', 'icon': Icons.healing_outlined},
-        {'label': 'Log Symptoms', 'icon': Icons.add_box_outlined},
-        {'label': 'Medication Log', 'icon': Icons.alarm_outlined},
-        {'label': 'Sia Chat', 'icon': Icons.chat_bubble_outline},
-      ]);
-    } else {
-      actions.addAll([
-        {'label': 'Log Cycle', 'icon': Icons.calendar_today_outlined},
-        {'label': 'Log Symptoms', 'icon': Icons.add_box_outlined},
-        {'label': 'Mood Check-in', 'icon': Icons.sentiment_satisfied_alt_outlined},
-        {'label': 'Sia Chat', 'icon': Icons.chat_bubble_outline},
-      ]);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "QUICK ACTIONS",
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: BlushyColors.secondaryText,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 4,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 2.3,
-          ),
-          itemBuilder: (context, idx) {
-            final action = actions[idx];
-            return GestureDetector(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Logging action: ${action['label']}')),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: BlushyColors.border),
-                ),
-                child: Row(
-                  children: [
-                    Icon(action['icon'] as IconData, color: BlushyColors.primary, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        action['label'] as String,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: BlushyColors.text,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  // --- 8. HEALTH TIMELINE WIDGET ---
-  Widget _buildHealthTimelineWidget(PersonalContext pc, BlushyOSState state) {
-    final String stageStr = _onboardingData['lifeStage'] ?? '';
-    final bool isLivingWithCycle = stageStr == 'reproductiveYears';
-
-    if (isLivingWithCycle) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: BlushyColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x022E2623),
-              blurRadius: 16,
-              offset: Offset(0, 4),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "QUICK CHECK-IN",
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: BlushyColors.primary,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "How is your body feeling today?",
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: BlushyColors.text,
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Mood Selector
-            Text("MOOD", style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: BlushyColors.secondaryText, letterSpacing: 0.8)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: ['Calm', 'Happy', 'Focused', 'Tired', 'Sensitive'].map((m) {
-                final isSel = _selectedFeeling == m;
-                return ChoiceChip(
-                  label: Text(m),
-                  selected: isSel,
-                  onSelected: (val) {
-                    setState(() { _selectedFeeling = val ? m : null; });
-                  },
-                  backgroundColor: Colors.transparent,
-                  selectedColor: BlushyColors.primary.withOpacity(0.12),
-                  labelStyle: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
-                    color: isSel ? BlushyColors.primary : BlushyColors.text,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: isSel ? BlushyColors.primary : BlushyColors.border),
-                  ),
-                  showCheckmark: false,
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 18),
-
-            // Energy Selector
-            Text("ENERGY LEVEL", style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: BlushyColors.secondaryText, letterSpacing: 0.8)),
-            const SizedBox(height: 8),
-            Row(
-              children: ['Low', 'Medium', 'High'].map((lvl) {
-                final isSel = _selectedEnergy == lvl;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(lvl),
-                    selected: isSel,
-                    onSelected: (val) {
-                      setState(() { _selectedEnergy = val ? lvl : null; });
-                    },
-                    backgroundColor: Colors.transparent,
-                    selectedColor: BlushyColors.primary.withOpacity(0.12),
-                    labelStyle: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
-                      color: isSel ? BlushyColors.primary : BlushyColors.text,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: isSel ? BlushyColors.primary : BlushyColors.border),
-                    ),
-                    showCheckmark: false,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 18),
-
-            // Symptoms Selector
-            Text("SYMPTOMS", style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: BlushyColors.secondaryText, letterSpacing: 0.8)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: ['None', 'Cramps', 'Headache', 'Bloating', 'Acne', 'Appetite shifts'].map((s) {
-                final isSel = _selectedSymptoms.contains(s);
-                return FilterChip(
-                  label: Text(s),
-                  selected: isSel,
-                  onSelected: (val) {
-                    setState(() {
-                      if (val) {
-                        _selectedSymptoms.add(s);
-                      } else {
-                        _selectedSymptoms.remove(s);
-                      }
-                    });
-                  },
-                  backgroundColor: Colors.transparent,
-                  selectedColor: BlushyColors.primary.withOpacity(0.12),
-                  labelStyle: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
-                    color: isSel ? BlushyColors.primary : BlushyColors.text,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: isSel ? BlushyColors.primary : BlushyColors.border),
-                  ),
-                  showCheckmark: false,
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 18),
-
-            // Stress Selector
-            Text("STRESS", style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: BlushyColors.secondaryText, letterSpacing: 0.8)),
-            const SizedBox(height: 8),
-            Row(
-              children: ['Low', 'Moderate', 'High'].map((lvl) {
-                final isSel = _selectedStress == lvl;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(lvl),
-                    selected: isSel,
-                    onSelected: (val) {
-                      setState(() { _selectedStress = val ? lvl : null; });
-                    },
-                    backgroundColor: Colors.transparent,
-                    selectedColor: BlushyColors.primary.withOpacity(0.12),
-                    labelStyle: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
-                      color: isSel ? BlushyColors.primary : BlushyColors.text,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: isSel ? BlushyColors.primary : BlushyColors.border),
-                    ),
-                    showCheckmark: false,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 18),
-
-            // Sleep & Water
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("SLEEP QUALITY", style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: BlushyColors.secondaryText, letterSpacing: 0.8)),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: _selectedSleepQuality,
-                        decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: BlushyColors.border)),
-                        ),
-                        items: ['Restful', 'Interrupted', 'Short'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: GoogleFonts.poppins(fontSize: 12)))).toList(),
-                        onChanged: (val) {
-                          setState(() { _selectedSleepQuality = val; });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("WATER INTAKE", style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w800, color: BlushyColors.secondaryText, letterSpacing: 0.8)),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: _selectedWaterIntake,
-                        decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: BlushyColors.border)),
-                        ),
-                        items: ['1 Litre', '2 Litres', '3 Litres'].map((w) => DropdownMenuItem(value: w, child: Text(w, style: GoogleFonts.poppins(fontSize: 12)))).toList(),
-                        onChanged: (val) {
-                          setState(() { _selectedWaterIntake = val; });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Quick check-in saved. Open M Studio for full journaling.')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BlushyColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: Text(
-                  "Save Entry",
-                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final List<Map<String, String>> events = [
-      {'title': 'Supplements Configuration', 'subtitle': 'Custom supplements log created', 'time': 'Yesterday'},
-    ];
-
-    if (state.wellbeingState.symptoms.isNotEmpty) {
-      events.add({
-        'title': 'Symptoms Checked',
-        'subtitle': 'Recorded: ${state.wellbeingState.symptoms.join(', ')}',
-        'time': 'Today'
-      });
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "HEALTH TIMELINE",
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: BlushyColors.secondaryText,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border),
-          ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: events.length,
-            separatorBuilder: (_, __) => const Divider(color: BlushyColors.border, height: 24),
-            itemBuilder: (context, idx) {
-              final ev = events[idx];
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4.0),
-                    child: Icon(Icons.check_circle_outline, color: BlushyColors.primary, size: 16),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(ev['title']!, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
-                        const SizedBox(height: 2),
-                        Text(ev['subtitle']!, style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
-                      ],
-                    ),
-                  ),
-                  Text(ev['time']!, style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText)),
-                ],
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  // --- FEATURE COACH MARKS OVERLAY ---
-  Widget _buildCoachMarksOverlay() {
-    final steps = [
-      {
-        'title': 'Meet Sia',
-        'desc': 'Tap here anytime to ask Sia a question.',
-        'icon': Icons.auto_awesome,
-      },
-      {
-        'title': 'M Studio',
-        'desc': 'M Studio helps Sia understand your patterns over time.',
-        'icon': Icons.book_outlined,
-      },
-      {
-        'title': 'Insights',
-        'desc': 'These recommendations become smarter as Blushy learns.',
-        'icon': Icons.insights_outlined,
-      },
-      {
-        'title': 'Community',
-        'desc': 'Connect with women experiencing similar journeys.',
-        'icon': Icons.people_outline,
-      },
-    ];
-
-    final step = steps[_coachMarkStep];
-
-    return Positioned.fill(
-      child: Material(
-        color: Colors.black.withOpacity(0.7),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28.0),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360),
-              child: Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFAF6F0),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(0, 4)),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Icon(step['icon'] as IconData, color: BlushyColors.primary, size: 48),
-                    const SizedBox(height: 20),
-                    Text(
-                      step['title'] as String,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(fontSize: 30, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      step['desc'] as String,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText, height: 1.5),
-                    ),
-                    const SizedBox(height: 28),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _showCoachMarks = false;
-                            });
-                          },
-                          child: Text(
-                            "Skip",
-                            style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              if (_coachMarkStep < steps.length - 1) {
-                                _coachMarkStep++;
-                              } else {
-                                _showCoachMarks = false;
-                              }
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: BlushyColors.primary,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: Text(
-                            _coachMarkStep == steps.length - 1 ? "Done" : "Next",
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFirstPeriodMilestoneTransition(BlushyOSState state) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 540),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    "",
-                    style: TextStyle(fontSize: 72),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    " Congratulations!",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: BlushyColors.text,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    "You started your first period.",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: BlushyColors.primary,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Container(
-                    padding: const EdgeInsets.all(28.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: BlushyColors.border, width: 1.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: BlushyColors.dark.withOpacity(0.02),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          "\"This is a special milestone.\n\nFrom today, Blushy will help you understand your own unique cycle.\n\nWe'll learn together, one step at a time.\"",
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontStyle: FontStyle.italic,
-                            color: BlushyColors.text,
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          "— Sia",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            fontStyle: FontStyle.italic,
-                            color: BlushyColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  ElevatedButton(
-                    onPressed: () {
-                      try {
-                        final currentData = BlushyStorage.read('user_profile.json');
-                        if (currentData.isNotEmpty) {
-                          final profile = currentData['profile'] ?? {};
-                          profile['lifeStage'] = 'firstPeriodStarted';
-                          currentData['profile'] = profile;
-                          BlushyStorage.write('user_profile.json', currentData);
-                        }
-                      } catch (_) {}
-                      setState(() {
-                        _showFirstPeriodTransition = false;
-                        _loadOnboardingData();
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Welcome to the next chapter of your journey!")),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      "Continue My Journey",
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGrowingTogetherSection(Map<String, dynamic> data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.people_outline_rounded, color: BlushyColors.primary, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              "GROWING TOGETHER",
-              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "Involve a Trusted Adult",
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "We want you to feel supported. Here are gentle, safe ways to start conversations with people you trust. Personal journals and chats stay private.",
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: BlushyColors.secondaryText,
-            height: 1.45,
-          ),
-        ),
-        const SizedBox(height: 20),
-        ...[
-          {"title": "How do I tell my mum?", "desc": "\"Hey mum, I think my body is changing and I want to talk about periods.\""},
-          {"title": "How do I tell my dad?", "desc": "\"Dad, could we talk about some puberty changes? I might need some help picking out pads.\""},
-          {"title": "How do I tell my guardian?", "desc": "\"I feel like I'm growing up and would love to prepare together for my first period.\""},
-        ].map((starter) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: BlushyColors.border, width: 0.8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  starter['title']!,
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  starter['desc']!,
-                  style: GoogleFonts.poppins(fontSize: 12, fontStyle: FontStyle.italic, color: BlushyColors.secondaryText),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFDFBFA),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFF3EDE9), width: 0.8),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.shopping_bag_outlined, color: BlushyColors.primary, size: 24),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "First Period Shopping Checklist",
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "Pick out soft pads, comforting heat packs, and underwear together.",
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("Shopping Checklist"),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildSimpleCheckItem("Soft pads (regular/overnight)"),
-                          _buildSimpleCheckItem("Spare cotton underwear"),
-                          _buildSimpleCheckItem("Cycle carry pouch"),
-                          _buildSimpleCheckItem("Comforting heat bottle or pad"),
-                          _buildSimpleCheckItem("Gentle body wipes"),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Done")),
-                      ],
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: BlushyColors.secondaryText),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFDFBFA),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFF3EDE9), width: 0.8),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.share_outlined, color: BlushyColors.primary, size: 24),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Share Preparing Together Guide",
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "Send a reassuring puberty overview to a trusted adult.",
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Preparing together guide shared (simulated). Personal notes were kept completely private.")),
-                  );
-                },
-                icon: const Icon(Icons.send_rounded, size: 14, color: BlushyColors.secondaryText),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
-
-  Widget _buildYourGrowingJourneySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.map_outlined, color: BlushyColors.primary, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              "YOUR GROWING JOURNEY",
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.primary, letterSpacing: 1.2),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "Confidence & Learning",
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: BlushyColors.text,
-            height: 1.3,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "Every step builds confidence in listening to your body. Here is how far we've come together:",
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: BlushyColors.secondaryText,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildJourneyStep("Logged First Period", true),
-              _buildJourneyStep("Completed First Cycle", true),
-              _buildJourneyStep("Logged First Symptoms", false),
-              _buildJourneyStep("Learnt About Cycle Phases", false),
-              _buildJourneyStep("Recognised First Pattern", false),
-              _buildJourneyStep("Built Your Cycle Rhythm", false),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
-
-  Widget _buildJourneyStep(String title, bool isCompleted) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(
-            isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-            color: isCompleted ? BlushyColors.success : BlushyColors.disabled.withOpacity(0.5),
-            size: 18,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
-              color: isCompleted ? BlushyColors.text : BlushyColors.secondaryText,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTodayCheckInComponent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.favorite_outline_rounded, color: BlushyColors.primary, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              "TODAY'S CHECK-IN",
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.primary, letterSpacing: 1.2),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "How am I feeling today?",
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: BlushyColors.text,
-            height: 1.3,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "Every update helps me understand your unique cycle a little better.",
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: BlushyColors.secondaryText,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Flow
-              Text(
-                "FLOW",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ["No Period", "Spotting", "Light", "Medium", "Heavy"].map((flow) {
-                  final isSelected = _checkInFlow == flow;
-                  return ChoiceChip(
-                    label: Text(flow),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _checkInFlow = flow;
-                        });
-                      }
-                    },
-                    selectedColor: BlushyColors.primary.withOpacity(0.12),
-                    backgroundColor: const Color(0xFFF9F6F0),
-                    labelStyle: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? BlushyColors.primary : BlushyColors.text,
-                    ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                    showCheckmark: false,
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-
-              // 2. Symptoms
-              Text(
-                "SYMPTOMS",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ["Cramps", "Headache", "Acne", "Bloating", "Breast Tenderness", "Back Pain"].map((symptom) {
-                  final isSelected = _checkInSymptoms.contains(symptom);
-                  return FilterChip(
-                    label: Text(symptom),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _checkInSymptoms.add(symptom);
-                        } else {
-                          _checkInSymptoms.remove(symptom);
-                        }
-                      });
-                    },
-                    selectedColor: BlushyColors.primary.withOpacity(0.12),
-                    backgroundColor: const Color(0xFFF9F6F0),
-                    labelStyle: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? BlushyColors.primary : BlushyColors.text,
-                    ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                    showCheckmark: false,
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-
-              // 3. Mood
-              Text(
-                "MOOD",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ["Calm", "Happy", "Emotional", "Irritated", "Anxious", "Tired"].map((mood) {
-                  final isSelected = _checkInMood == mood;
-                  return ChoiceChip(
-                    label: Text(mood),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _checkInMood = mood;
-                        });
-                      }
-                    },
-                    selectedColor: BlushyColors.primary.withOpacity(0.12),
-                    backgroundColor: const Color(0xFFF9F6F0),
-                    labelStyle: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? BlushyColors.primary : BlushyColors.text,
-                    ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                    showCheckmark: false,
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-
-              // 4. Energy
-              Text(
-                "ENERGY",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ["Very Low", "Low", "Balanced", "High", "Very High"].map((energy) {
-                  final isSelected = _checkInEnergy == energy;
-                  return ChoiceChip(
-                    label: Text(energy),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _checkInEnergy = energy;
-                        });
-                      }
-                    },
-                    selectedColor: BlushyColors.primary.withOpacity(0.12),
-                    backgroundColor: const Color(0xFFF9F6F0),
-                    labelStyle: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? BlushyColors.primary : BlushyColors.text,
-                    ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
-                    showCheckmark: false,
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 28),
-
-              // Save CTA
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BlushyColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 0,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _checkInSaved = true;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Today's check-in saved securely!")),
-                    );
-                  },
-                  child: Text(
-                    "Save Today's Check-in",
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-
-              if (_checkInSaved) ...[
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: BlushyColors.success.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: BlushyColors.success.withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.favorite_rounded, color: BlushyColors.success, size: 16),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "Thanks for checking in today. Every update helps me understand your unique cycle a little better.",
-                          style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, height: 1.4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
-
-  Widget _buildSimpleCheckItem(String text) {
-    bool checked = false;
-    return StatefulBuilder(
-      builder: (context, setLocalState) {
-        return CheckboxListTile(
-          value: checked,
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: BlushyColors.primary,
-          title: Text(text, style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text)),
-          onChanged: (val) {
-            setLocalState(() {
-              checked = val ?? false;
-            });
-          },
-        );
-      }
-    );
-  }
-
-  Widget _buildCommunityAndMStudioMergedSection(Map<String, dynamic> data) {
-    final List<dynamic> posts = data['communityPosts'] ?? [];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.spa_rounded, color: BlushyColors.primary, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              "COMMUNITY & M STUDIO",
-              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "Our Shared Circle",
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "Reflect on your day or read reassurance stories from other girls growing up.",
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: BlushyColors.secondaryText,
-            height: 1.45,
-          ),
-        ),
-        const SizedBox(height: 20),
-        if (posts.isNotEmpty) ...[
-          Text(
-            "COMMUNITY WISDOM",
-            style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 0.5),
-          ),
-          const SizedBox(height: 8),
-          ...posts.map((post) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFBFA),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFF3EDE9), width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    post['text'] ?? "",
-                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, height: 1.35),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "— ${post['user'] ?? 'Anonymous'}",
-                    style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-          const SizedBox(height: 16),
-        ],
-        Text(
-          "MY DAILY REFLECTION",
-          style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 0.5),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "How are you feeling today?",
-          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            {'label': ' Happy', 'color': BlushyColors.warning},
-            {'label': ' Curious', 'color': BlushyColors.info},
-            {'label': ' Nervous', 'color': BlushyColors.secondary},
-            {'label': ' Excited', 'color': BlushyColors.info},
-          ].map((f) {
-            final isSelected = _selectedFeeling == f['label'];
-            final col = f['color'] as Color;
-            return InkWell(
-              onTap: () {
-                setState(() {
-                  _selectedFeeling = f['label'] as String;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? col.withOpacity(0.08) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isSelected ? col : BlushyColors.border),
-                ),
-                child: Text(
-                  f['label'] as String,
-                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: BlushyColors.text),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
-          decoration: InputDecoration(
-            hintText: "Jot down a quick thought or creative sketch...",
-            hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withOpacity(0.5), fontSize: 12),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: BlushyColors.border)),
-          ),
-          onChanged: (val) {
-            _journalSentence = val.trim();
-          },
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            OutlinedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _isDrawingMode = !_isDrawingMode;
-                });
-              },
-              icon: Icon(Icons.gesture_rounded, size: 14, color: _isDrawingMode ? BlushyColors.primary : BlushyColors.secondaryText),
-              label: Text("Sketch", style: GoogleFonts.poppins(fontSize: 11, color: _isDrawingMode ? BlushyColors.primary : BlushyColors.secondaryText)),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: _isDrawingMode ? BlushyColors.primary : BlushyColors.border),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(
-              onPressed: () {
-                VoiceNoteBottomSheet.show(context);
-              },
-              icon: const Icon(Icons.mic_none_outlined, size: 14, color: BlushyColors.secondaryText),
-              label: Text("Voice Note", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText)),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: BlushyColors.border),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const Spacer(),
-            ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Quick reflection saved to M Studio.")),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: BlushyColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: Text("Save", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-        if (_isDrawingMode) ...[
-          const SizedBox(height: 12),
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: BlushyColors.primary.withOpacity(0.5)),
-            ),
-            child: const Center(
-              child: Text(
-                "Drawing Canvas (Interactive)",
-                style: TextStyle(color: BlushyColors.secondaryText, fontSize: 11, fontStyle: FontStyle.italic),
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(height: 16),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
-
-  Widget _buildFirstPeriodWelcomeOnboardingCard(BlushyOSState state) {
-    return Container(
-      padding: const EdgeInsets.all(28.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: BlushyColors.border, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: BlushyColors.dark.withOpacity(0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.favorite_rounded, size: 22, color: BlushyColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  "Let's Start Tracking Together",
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: BlushyColors.text,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "\"Every body is different.\n\nTell me when your period started and I'll help you understand your own cycle.\n\nIf you're not sure, that's completely okay.\"",
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontStyle: FontStyle.italic,
-              color: BlushyColors.secondaryText,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: () async {
-                  final pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime.now().subtract(const Duration(days: 90)),
-                    lastDate: DateTime.now(),
-                  );
-                  if (pickedDate != null) {
-                    state.updatePersonalContext(
-                      PersonalContext(
-                        userName: state.personalContext.userName,
-                        dateOfBirth: state.personalContext.dateOfBirth,
-                        trackingPreference: state.personalContext.trackingPreference,
-                        cyclePattern: state.personalContext.cyclePattern,
-                        confidence: state.personalContext.confidence,
-                        lifeContexts: state.personalContext.lifeContexts,
-                        userGoals: state.personalContext.userGoals,
-                        medicalConditions: state.personalContext.medicalConditions,
-                        preferences: state.personalContext.preferences,
-                        cycleLength: state.personalContext.cycleLength,
-                        cycleDay: state.personalContext.cycleDay,
-                        cyclePhase: state.personalContext.cyclePhase,
-                        lastPeriodStart: pickedDate,
-                        medications: state.personalContext.medications,
-                      ),
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("First period logged successfully!")),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BlushyColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  "Log My First Period",
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(width: 12),
-              OutlinedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("Not sure of the date?"),
-                      content: const Text(
-                        "No worries! We can start tracking from today, or you can skip for now and set it later in settings.",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            state.updatePersonalContext(
-                              PersonalContext(
-                                userName: state.personalContext.userName,
-                                dateOfBirth: state.personalContext.dateOfBirth,
-                                trackingPreference: state.personalContext.trackingPreference,
-                                cyclePattern: state.personalContext.cyclePattern,
-                                confidence: state.personalContext.confidence,
-                                lifeContexts: state.personalContext.lifeContexts,
-                                userGoals: state.personalContext.userGoals,
-                                medicalConditions: state.personalContext.medicalConditions,
-                                preferences: state.personalContext.preferences,
-                                cycleLength: state.personalContext.cycleLength,
-                                cycleDay: state.personalContext.cycleDay,
-                                cyclePhase: state.personalContext.cyclePhase,
-                                lastPeriodStart: DateTime.now(),
-                                medications: state.personalContext.medications,
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Cycle started from today.")),
-                            );
-                          },
-                          child: const Text("Start Today"),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            state.updatePersonalContext(
-                              PersonalContext(
-                                userName: state.personalContext.userName,
-                                dateOfBirth: state.personalContext.dateOfBirth,
-                                trackingPreference: state.personalContext.trackingPreference,
-                                cyclePattern: state.personalContext.cyclePattern,
-                                confidence: state.personalContext.confidence,
-                                lifeContexts: state.personalContext.lifeContexts,
-                                userGoals: state.personalContext.userGoals,
-                                medicalConditions: state.personalContext.medicalConditions,
-                                preferences: state.personalContext.preferences,
-                                cycleLength: state.personalContext.cycleLength,
-                                cycleDay: state.personalContext.cycleDay,
-                                cyclePhase: state.personalContext.cyclePhase,
-                                lastPeriodStart: DateTime.now().subtract(const Duration(days: 7)),
-                                medications: state.personalContext.medications,
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Skip layout. Setting approximate default starting date.")),
-                            );
-                          },
-                          child: const Text("Skip for now"),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: BlushyColors.border),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  "I'm Not Sure",
-                  style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTalkToSiaSection(Map<String, dynamic> data, BlushyOSState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.chat_bubble_outline_rounded, color: BlushyColors.primary, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              "TALK TO SIA",
-              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "Talk to Sia",
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "Ask Sia a question about growing up, write reflections, mood check-ins, quick notes, or creative prompts.",
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: BlushyColors.secondaryText,
-            height: 1.45,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-            boxShadow: [
-              BoxShadow(
-                color: BlushyColors.dark.withOpacity(0.02),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Quick Prompts for Sia:",
-                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  "Why do I feel this way today?",
-                  "Explain my cycle.",
-                  "Is this symptom normal?",
-                  "What should I expect next?",
-                ].map((promptText) {
-                  return InkWell(
-                    onTap: () {
-                      setState(() {
-                        _selectedFeeling = promptText;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Sia: \"Let's talk about: $promptText\"")),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: BlushyColors.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.help_outline_rounded, size: 14, color: BlushyColors.primary),
-                          const SizedBox(width: 6),
-                          Text(
-                            promptText,
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
-                decoration: InputDecoration(
-                  hintText: "Ask Sia anything, or write a quick journal reflection...",
-                  hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withOpacity(0.5), fontSize: 12),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  filled: true,
-                  fillColor: const Color(0xFFFDFBFA),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: BlushyColors.border)),
-                ),
-                onChanged: (val) {
-                  _journalSentence = val.trim();
-                },
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _isDrawingMode = !_isDrawingMode;
-                      });
-                    },
-                    icon: Icon(Icons.gesture_rounded, size: 14, color: _isDrawingMode ? BlushyColors.primary : BlushyColors.secondaryText),
-                    label: Text("Sketch", style: GoogleFonts.poppins(fontSize: 11, color: _isDrawingMode ? BlushyColors.primary : BlushyColors.secondaryText)),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: _isDrawingMode ? BlushyColors.primary : BlushyColors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      VoiceNoteBottomSheet.show(context);
-                    },
-                    icon: const Icon(Icons.mic_none_outlined, size: 14, color: BlushyColors.secondaryText),
-                    label: Text("Voice Note", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: BlushyColors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Quick Note saved to M Studio space.")),
-                      );
-                    },
-                    icon: const Icon(Icons.edit_note_rounded, size: 14, color: BlushyColors.secondaryText),
-                    label: Text("Quick Note", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: BlushyColors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Creative Prompt: 'Describe three things that make you feel comfy today.'")),
-                      );
-                    },
-                    icon: const Icon(Icons.lightbulb_outline_rounded, size: 14, color: BlushyColors.secondaryText),
-                    label: Text("Creative Prompts", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: BlushyColors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_journalSentence.isEmpty) return;
-                    final isQuestion = _journalSentence.endsWith('?') || _journalSentence.toLowerCase().contains('why') || _journalSentence.toLowerCase().contains('how');
-                    if (isQuestion) {
-                      state.setViewIndex(3);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Navigating to Talk to Sia...")),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Reflection saved to M Studio.")),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BlushyColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text("Send / Save", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold)),
-                ),
-              ),
-              if (_isDrawingMode) ...[
-                const SizedBox(height: 12),
-                Container(
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: BlushyColors.primary.withOpacity(0.5)),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      "Drawing Canvas (Interactive)",
-                      style: TextStyle(color: BlushyColors.secondaryText, fontSize: 11, fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
-
-  Widget _buildYourPatternsSection(PersonalContext pc) {
-    final state = BlushyOSProvider.of(context);
-    final symptoms = state.wellbeingState.symptoms;
-
-    List<String> reflections = [];
-    if (symptoms.contains('pain')) {
-      reflections.add("• Your cramps usually peak on Day 2.");
-    }
-    if (symptoms.contains('low energy') || symptoms.contains('fatigue')) {
-      reflections.add("• Your energy is usually highest during the follicular phase.");
-    }
-    if (symptoms.contains('poor sleep')) {
-      reflections.add("• You tend to sleep less before your period.");
-    }
-
-    final hasData = reflections.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.analytics_outlined, color: BlushyColors.primary, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              "YOUR PATTERNS",
-              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.2),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          "Personalised reflections",
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "Understand how your body's rhythm influences your daily wellbeing.",
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: BlushyColors.secondaryText,
-            height: 1.45,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!hasData) ...[
-                Text(
-                  "We're still gathering details to spot your patterns.",
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Symptom logs help Sia understand your body's rhythm. Once you log symptoms (like fatigue or cramps) in the developer panel, personalised reflections will appear here!",
-                  style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
-                ),
-              ] else ...[
-                Text(
-                  "Based on your recent logs:",
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                ),
-                const SizedBox(height: 12),
-                ...reflections.map((ref) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Text(
-                    ref,
-                    style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text, height: 1.4),
-                  ),
-                )),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Divider(color: Color(0x1F2E2623), thickness: 1),
-      ],
-    );
-  }
 }

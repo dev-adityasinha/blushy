@@ -8,12 +8,13 @@ import { db } from '../src/utils/db.js';
 test('Comprehensive Canonical Period Prediction & Reliability Suite', async (t) => {
   const testUserA = `test_canonical_a_${Date.now()}`;
   const testUserB = `test_canonical_b_${Date.now()}`;
+  const testUserC = `test_canonical_c_${Date.now()}`;
   const collectionName = 'user_period_logs_woman';
 
   t.after(async () => {
     try {
-      await db.collection(collectionName).deleteMany({ user_id: { $in: [testUserA, testUserB] } });
-      await db.collection('users_woman').deleteMany({ user_id: { $in: [testUserA, testUserB] } });
+      await db.collection(collectionName).deleteMany({ user_id: { $in: [testUserA, testUserB, testUserC] } });
+      await db.collection('users_woman').deleteMany({ user_id: { $in: [testUserA, testUserB, testUserC] } });
     } catch (_) {}
   });
 
@@ -30,6 +31,14 @@ test('Comprehensive Canonical Period Prediction & Reliability Suite', async (t) 
       role: 'woman',
       timezone: 'Asia/Kolkata',
       onboarding_answers: { timezone: 'Asia/Kolkata' },
+    },
+    {
+      user_id: testUserC,
+      role: 'woman',
+      timezone: 'Asia/Kolkata',
+      // States a 4-day period at onboarding, so a 'logged' result below can
+      // only have come from the logged end dates.
+      onboarding_answers: { timezone: 'Asia/Kolkata', period_duration_days: 4 },
     },
   ]);
 
@@ -235,6 +244,69 @@ test('Comprehensive Canonical Period Prediction & Reliability Suite', async (t) 
     assert.equal(resultB.trackingState, 'no_data');
     assert.equal(resultB.currentCycle.currentCycleDay, null);
     assert.equal(resultB.currentCycle.phase, 'Not Logged');
+  });
+
+  const resetUserC = async () => {
+    await db.collection(collectionName).deleteMany({ user_id: testUserC });
+  };
+
+  await t.test('14. Logged end dates set period duration, outranking the stated answer', async () => {
+    await resetUserC();
+    // Two full periods of seven days each.
+    await createOrUpdatePeriodEntry(testUserC, { periodStartDate: '2026-06-01', periodEndDate: '2026-06-07' });
+    await createOrUpdatePeriodEntry(testUserC, { periodStartDate: '2026-07-01', periodEndDate: '2026-07-07' });
+
+    const result = await calculatePeriodPredictions(testUserC, { referenceDate: '2026-07-06' });
+
+    assert.equal(result.currentCycle.periodDurationDays, 7, 'duration must come from the logged dates, not the stated 4');
+    assert.equal(result.currentCycle.periodDurationSource, 'logged');
+    assert.equal(result.currentCycle.periodDurationObservations, 2);
+
+    // The point of the change: on day 6 this user is still bleeding. With the
+    // stated 4-day answer the app called this the follicular phase.
+    assert.equal(result.currentCycle.currentCycleDay, 6);
+    assert.equal(result.currentCycle.isCurrentPeriod, true);
+    assert.equal(result.currentCycle.periodDay, 6);
+    assert.match(result.currentCycle.phase, /Menstrual Phase \(Day 6 of 7\)/);
+  });
+
+  await t.test('15. One logged end date is not enough, so the stated answer still stands', async () => {
+    await resetUserC();
+    await createOrUpdatePeriodEntry(testUserC, { periodStartDate: '2026-06-01' });
+    await createOrUpdatePeriodEntry(testUserC, { periodStartDate: '2026-07-01', periodEndDate: '2026-07-07' });
+
+    const result = await calculatePeriodPredictions(testUserC, { referenceDate: '2026-07-06' });
+
+    assert.equal(result.currentCycle.periodDurationObservations, 1);
+    assert.equal(result.currentCycle.periodDurationSource, 'stated');
+    assert.equal(result.currentCycle.periodDurationDays, 4);
+    // And the weaker evidence does not get promoted into a claim.
+    assert.equal(result.currentCycle.isCurrentPeriod, false);
+  });
+
+  await t.test('16. An out-of-range end date is discarded rather than clamped', async () => {
+    await resetUserC();
+    // 21 days is beyond maxPeriodDurationDays, so it is dropped entirely --
+    // clamping it to 10 would invent a period length the user never logged.
+    await createOrUpdatePeriodEntry(testUserC, { periodStartDate: '2026-06-01', periodEndDate: '2026-06-21' });
+    await createOrUpdatePeriodEntry(testUserC, { periodStartDate: '2026-07-01', periodEndDate: '2026-07-06' });
+
+    const result = await calculatePeriodPredictions(testUserC, { referenceDate: '2026-07-06' });
+
+    assert.equal(result.currentCycle.periodDurationObservations, 1, 'the 21-day entry must not count');
+    assert.equal(result.currentCycle.periodDurationSource, 'stated');
+    assert.notEqual(result.currentCycle.periodDurationDays, periodPredictionConfig.maxPeriodDurationDays);
+  });
+
+  await t.test('17. With no logged end dates and no stated answer, the default is labelled as such', async () => {
+    await resetUserC();
+    await createOrUpdatePeriodEntry(testUserA, { periodStartDate: '2026-07-01' });
+
+    const result = await calculatePeriodPredictions(testUserA, { referenceDate: '2026-07-06' });
+
+    assert.equal(result.currentCycle.periodDurationSource, 'default');
+    assert.equal(result.currentCycle.periodDurationDays, periodPredictionConfig.defaultPeriodDurationDays);
+    assert.equal(result.currentCycle.periodDurationObservations, 0);
   });
 
   setTimeout(() => {

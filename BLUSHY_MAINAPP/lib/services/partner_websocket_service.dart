@@ -93,16 +93,32 @@ class PartnerWebSocketService {
       final redactedUri = '${wsUri.scheme}://${wsUri.host}${wsUri.hasPort ? ':${wsUri.port}' : ''}${wsUri.path}?token=[REDACTED]';
       debugPrint('PartnerWS: Connecting to $redactedUri');
 
-      _channel = WebSocketChannel.connect(wsUri);
-      _reconnectAttempts = 0;
+      final channel = WebSocketChannel.connect(wsUri);
+      _channel = channel;
 
-      _channelSubscription = _channel!.stream.listen(
+      // `connect` is lazy: it returns a channel before the socket exists, and
+      // reports failure on `ready` as well as on the stream. Nothing awaited
+      // `ready`, so a refused connection became an unhandled exception on
+      // every retry -- the error the logs were full of.
+      unawaited(channel.ready.then((_) {
+        // Only a real connection clears the backoff. Resetting right after
+        // `connect` meant every failure started from zero, so the delay never
+        // grew past two seconds and the retry ran forever at that rate.
+        _reconnectAttempts = 0;
+        debugPrint('PartnerWS: Connected.');
+      }).catchError((Object error) {
+        debugPrint('PartnerWS: Connect failed: $error');
+        _scheduleReconnect();
+      }));
+
+      _channelSubscription = channel.stream.listen(
         (message) {
           _handleIncomingMessage(message);
         },
         onError: (error) {
+          // `ready` already reports the failure that ends a connection attempt;
+          // scheduling from both paths would double the retry rate.
           debugPrint('PartnerWS: Stream error: $error');
-          _scheduleReconnect();
         },
         onDone: () {
           debugPrint('PartnerWS: Connection closed.');
@@ -150,6 +166,10 @@ class PartnerWebSocketService {
     _isConnecting = false;
 
     if (_isDisposed) return;
+
+    // A single attempt can fail on `ready` and then again on `onDone`; without
+    // this the two paths would stack timers and retry twice as fast.
+    if (_reconnectTimer?.isActive ?? false) return;
 
     _reconnectTimer?.cancel();
     _reconnectAttempts++;

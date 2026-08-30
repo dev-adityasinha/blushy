@@ -4,7 +4,6 @@ import '../../../shared/header.dart';
 import '../../../core/theme.dart' hide BlushyColors;
 import '../../partner/presentation/partner_home.dart';
 import '../../partner/presentation/partner_community.dart';
-import '../../partner/presentation/partner_sia.dart';
 import '../../partner/presentation/partner_learn.dart';
 import '../../partner/partner_screen.dart';
 
@@ -38,7 +37,7 @@ class _PartnerShellState extends State<PartnerShell> {
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(color: BlushyColors.border.withOpacity(0.5), width: 1),
+            top: BorderSide(color: BlushyColors.border.withValues(alpha: 0.5), width: 1),
           ),
         ),
         child: Padding(

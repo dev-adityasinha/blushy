@@ -54,7 +54,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, py: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: BlushyColors.lutealSoft,
                   borderRadius: BorderRadius.circular(8),
@@ -88,7 +88,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
               border: Border.all(color: BlushyColors.border, width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: BlushyColors.textDark.withOpacity(0.02),
+                  color: BlushyColors.text.withOpacity(0.02),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -111,7 +111,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                     Text(
                       'Sia\'s Daily Edit',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: BlushyColors.textDark,
+                        color: BlushyColors.text,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -124,7 +124,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                     fontFamily: 'Georgia',
                     fontSize: 16,
                     height: 1.6,
-                    color: BlushyColors.textDark.withOpacity(0.9),
+                    color: BlushyColors.text.withOpacity(0.9),
                   ),
                 ),
               ],
@@ -171,8 +171,8 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                             ? TextDecoration.lineThrough 
                             : null,
                           color: state.recommendedActionCompleted 
-                            ? BlushyColors.textLight 
-                            : BlushyColors.textDark,
+                            ? BlushyColors.secondaryText 
+                            : BlushyColors.text,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -191,7 +191,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                     ? null 
                     : () => state.completeRecommendedAction(),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, py: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: state.recommendedActionCompleted 
                         ? Colors.transparent 
@@ -207,7 +207,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: state.recommendedActionCompleted 
-                          ? BlushyColors.textMuted 
+                          ? BlushyColors.secondaryText 
                           : Colors.white,
                       ),
                     ),
@@ -241,7 +241,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: BlushyColors.textDark,
+                    color: BlushyColors.text,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -249,10 +249,10 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                   controller: _journalInputController,
                   focusNode: _journalFocus,
                   maxLines: 3,
-                  style: const TextStyle(fontSize: 14, color: BlushyColors.textDark),
+                  style: const TextStyle(fontSize: 14, color: BlushyColors.text),
                   decoration: InputDecoration(
                     hintText: "Reflect here... (e.g. 'I am feeling super tired today')",
-                    hintStyle: const TextStyle(fontSize: 14, color: BlushyColors.textLight),
+                    hintStyle: const TextStyle(fontSize: 14, color: BlushyColors.secondaryText),
                     filled: true,
                     fillColor: BlushyColors.background.withOpacity(0.5),
                     contentPadding: const EdgeInsets.all(16),
@@ -298,9 +298,9 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                         }
                       },
                       style: TextButton.styleFrom(
-                        backgroundColor: BlushyColors.textDark,
+                        backgroundColor: BlushyColors.text,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, py: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),

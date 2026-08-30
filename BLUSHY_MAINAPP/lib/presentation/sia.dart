@@ -18,7 +18,6 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
 
   HtmlAudioRecorder? _audioRecorder;
   bool _isListeningVoice = false;
-  bool _isTranscribing = false;
 
   @override
   void dispose() {
@@ -32,7 +31,6 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
     if (_isListeningVoice && _audioRecorder != null) {
       setState(() {
         _isListeningVoice = false;
-        _isTranscribing = true;
       });
 
       try {
@@ -46,7 +44,6 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
 
           if (mounted) {
             setState(() {
-              _isTranscribing = false;
             });
             if (transcribedText.trim().isNotEmpty) {
               _chatController.text = transcribedText.trim();
@@ -62,14 +59,12 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
         } else {
           if (mounted) {
             setState(() {
-              _isTranscribing = false;
             });
           }
         }
       } catch (e) {
         if (mounted) {
           setState(() {
-            _isTranscribing = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Voice recording error: $e")),

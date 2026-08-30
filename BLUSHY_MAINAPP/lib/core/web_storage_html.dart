@@ -1,15 +1,20 @@
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
+
+/// Browser-side storage. Selected by the conditional import in `storage.dart`;
+/// the stub is used everywhere else.
+///
+/// Every call is guarded: a browser can refuse storage outright (private
+/// browsing, blocked site data), and that must degrade rather than throw.
 
 void saveWebStorage(String key, String value) {
   try {
-    html.window.localStorage[key] = value;
+    web.window.localStorage.setItem(key, value);
   } catch (_) {}
 }
 
 String? readWebStorage(String key) {
   try {
-    return html.window.localStorage[key];
+    return web.window.localStorage.getItem(key);
   } catch (_) {
     return null;
   }
@@ -17,9 +22,7 @@ String? readWebStorage(String key) {
 
 void removeWebStorage(String key) {
   try {
-    html.window.localStorage.remove(key);
-    html.window.sessionStorage.remove(key);
+    web.window.localStorage.removeItem(key);
+    web.window.sessionStorage.removeItem(key);
   } catch (_) {}
 }
-
-

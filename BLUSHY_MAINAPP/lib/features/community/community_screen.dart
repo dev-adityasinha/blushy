@@ -10,6 +10,7 @@ import 'post_detail_screen.dart';
 import 'user_profile_sheet.dart';
 import '../../services/html_audio_helper.dart';
 import '../../services/api_sia_service.dart';
+import 'moderation_widgets.dart';
 
 class BlushyCommunityScreen extends StatefulWidget {
   const BlushyCommunityScreen({super.key});
@@ -324,7 +325,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                 style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
                 decoration: InputDecoration(
                   hintText: 'Search title, text, tags, or username/email...',
-                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withOpacity(0.6)),
+                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.6)),
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -416,7 +417,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                color: active ? BlushyColors.text : BlushyColors.secondaryText.withOpacity(0.7),
+                color: active ? BlushyColors.text : BlushyColors.secondaryText.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 4),
@@ -474,7 +475,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                 'No matching people found.',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: BlushyColors.secondaryText.withOpacity(0.6),
+                  color: BlushyColors.secondaryText.withValues(alpha: 0.6),
                 ),
               ),
             )
@@ -497,7 +498,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: BlushyColors.border.withOpacity(0.6),
+                          color: BlushyColors.border.withValues(alpha: 0.6),
                           width: 0.8,
                         ),
                       ),
@@ -541,7 +542,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                                     user.email,
                                     style: GoogleFonts.poppins(
                                       fontSize: 9.5,
-                                      color: BlushyColors.secondaryText.withOpacity(0.7),
+                                      color: BlushyColors.secondaryText.withValues(alpha: 0.7),
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -612,7 +613,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: BlushyColors.border.withOpacity(0.6), width: 0.8),
+          border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6), width: 0.8),
           boxShadow: const [
             BoxShadow(
               color: Color(0x042E2623),
@@ -667,11 +668,22 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                         '•  ${_timeAgo(post.createdAt)}',
                         style: GoogleFonts.poppins(
                           fontSize: 10.5,
-                          color: BlushyColors.secondaryText.withOpacity(0.7),
+                          color: BlushyColors.secondaryText.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
                   ),
+                ),
+                // Report and block. Visibility itself is enforced server side;
+                // these are the actions available to the reader.
+                PostModerationMenu(
+                  postId: post.postId,
+                  authorId: post.authorId,
+                  onBlocked: () {
+                    setState(() {
+                      _allPosts.removeWhere((p) => p.authorId == post.authorId);
+                    });
+                  },
                 ),
               ],
             ),
@@ -695,11 +707,12 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
                   fontSize: 13.5,
-                  color: BlushyColors.text.withOpacity(0.8),
+                  color: BlushyColors.text.withValues(alpha: 0.8),
                   height: 1.5,
                 ),
               ),
             ],
+            ModerationNotice(notice: post.moderationNotice),
             const SizedBox(height: 14),
 
             // Tags
@@ -750,7 +763,10 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${post.score > 0 ? post.score : (post.userVote == 1 ? 1 : 0)}',
+                          // The server's score is the count. Clamped only so a
+                          // net-negative post does not show a negative number
+                          // beside a heart.
+                          '${post.score < 0 ? 0 : post.score}',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
@@ -802,7 +818,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${post.score > 0 ? (post.score ~/ 3).clamp(1, 99) : 4}',
+                          '${post.commentCount}',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

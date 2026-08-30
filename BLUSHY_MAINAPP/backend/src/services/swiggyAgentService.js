@@ -159,8 +159,8 @@ async function callSwiggyMcpTool(toolName, args, swiggyToken) {
 
 export class SwiggyAgentService {
   static async runAgent({ messages, swiggyToken }) {
-    if (!env.grokApiKey) {
-      throw createHttpError(503, 'Grok/OpenRouter API key is not configured in backend.');
+    if (!env.aiChatApiKey) {
+      throw createHttpError(503, 'The AI provider key (GROK_API_KEY) is not configured on this server.');
     }
 
     if (!swiggyToken) {
@@ -191,16 +191,15 @@ Common errors you should handle and explain to the user:
     while (loopCount < maxLoops) {
       loopCount++;
       
-      const response = await fetch(env.grokApiUrl, {
+      const response = await fetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${env.grokApiKey}`,
+          Authorization: `Bearer ${env.aiChatApiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://blushy.app',
           'X-Title': 'Swiggy Instamart AI Copilot',
         },
         body: JSON.stringify({
-          model: env.grokModel,
+          model: env.aiChatModel,
           messages: chatHistory,
           tools: INSTAMART_TOOLS,
           tool_choice: 'auto',

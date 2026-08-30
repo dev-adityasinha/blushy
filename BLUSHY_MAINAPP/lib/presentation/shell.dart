@@ -39,10 +39,10 @@ class BlushyOSShell extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, py: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: BlushyColors.lutealSoft,
-                  border: Border.all(color: BlushyColors.secondary.withOpacity(0.3), width: 1),
+                  border: Border.all(color: BlushyColors.secondary.withValues(alpha: 0.3), width: 1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -86,7 +86,7 @@ class BlushyOSShell extends StatelessWidget {
             border: Border.all(color: BlushyColors.border, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: BlushyColors.textDark.withOpacity(0.04),
+                color: BlushyColors.textDark.withValues(alpha: 0.04),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),

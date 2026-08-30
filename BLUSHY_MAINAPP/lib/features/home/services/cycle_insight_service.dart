@@ -239,7 +239,7 @@ class CycleInsightService {
             observation: "Logged bloating in onboarding; consistent 2L daily water intake & potassium-rich foods reduce luteal fluid retention.",
             evidence: "Mapped from your onboarding wellness targets.",
             confidenceLevel: "Medium",
-            timestamp: "Updated 2 days ago",
+            timestamp: "Updated today",
           ),
         );
       }
@@ -253,7 +253,7 @@ class CycleInsightService {
             observation: "Goal set: Cycle Syncing. High-intensity tasks fit week 2 (Follicular peak), while restorative organization fits week 4 (Luteal).",
             evidence: "Synthesized from your onboarding goal choices.",
             confidenceLevel: "High",
-            timestamp: "Updated 3 days ago",
+            timestamp: "Updated today",
           ),
         );
       }

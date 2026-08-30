@@ -58,7 +58,6 @@ class StageConfig {
   final String supportFocus;
   final String partnerSubLabel;
   final String gardenQuote;
-  final List<Map<String, dynamic>> partnerTimelineEvents;
 
   StageConfig({
     required this.stageKey,
@@ -70,7 +69,6 @@ class StageConfig {
     required this.supportFocus,
     required this.partnerSubLabel,
     required this.gardenQuote,
-    required this.partnerTimelineEvents,
   });
 
   String formatPartnerSubLabel(dynamic connectedDate) {
@@ -95,11 +93,7 @@ class StageConfig {
           supportFocus: 'Puberty Support',
           partnerSubLabel: 'Puberty Support',
           gardenQuote: '“Tending to your relationship garden builds healthy, open conversations about growing up.”',
-          partnerTimelineEvents: [
-            {'title': 'Understanding Puberty Guide', 'time': 'Read together to learn about body shifts', 'icon': Icons.book_rounded, 'color': const Color(0xFFFDF2F2)},
-            {'title': 'Open Conversation Starter', 'time': 'Shared puberty FAQ with partner', 'icon': Icons.chat_bubble_outline_rounded, 'color': const Color(0xFFF3FAF6)},
-          ],
-        );
+          );
 
       case 'firstPeriodStarted':
         return StageConfig(
@@ -116,11 +110,7 @@ class StageConfig {
           supportFocus: 'Cycle Support',
           partnerSubLabel: 'Cycle Support',
           gardenQuote: '“Open conversations and mutual understanding tend the cycle support garden.”',
-          partnerTimelineEvents: [
-            {'title': 'First Cycle Synced', 'time': 'Successfully shared cycle log with partner', 'icon': Icons.sync_rounded, 'color': const Color(0xFFF3FAF6)},
-            {'title': 'Cycle Self-Care Tips', 'time': 'Cramps relief guide shared by Partner', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFFDF2F2)},
-          ],
-        );
+          );
 
       case 'reproductiveYears':
       case 'livingWithMyCycle':
@@ -138,13 +128,7 @@ class StageConfig {
           supportFocus: 'Living Steady',
           partnerSubLabel: 'Living Steady',
           gardenQuote: '“Partner completed his check-in. Tending to your relationship garden builds healthy mutual rhythms.”',
-          partnerTimelineEvents: [
-            {'title': 'Anniversary Coming Up', 'time': 'August 14 • 14 days left', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFFDF2F2)},
-            {'title': 'Shared Activity Completed', 'time': 'Gratitude Checklist completed by Partner', 'icon': Icons.task_alt_rounded, 'color': const Color(0xFFF3FAF6)},
-            {'title': 'Garden Grew', 'time': 'A new flower bloomed in Season 1', 'icon': Icons.local_florist_rounded, 'color': const Color(0xFFF3FAF6)},
-            {'title': 'New Letter Added', 'time': '1 letter sealed in time capsule', 'icon': Icons.mail_outline_rounded, 'color': const Color(0xFFFFF9F2)},
-          ],
-        );
+          );
 
       case 'hormonalHealth':
         return StageConfig(
@@ -161,11 +145,7 @@ class StageConfig {
           supportFocus: 'Hormonal Support',
           partnerSubLabel: 'Hormonal Support',
           gardenQuote: '“Navigating hormonal shifts together keeps the relationship garden strong and supportive.”',
-          partnerTimelineEvents: [
-            {'title': 'Shared Symptom Logged', 'time': 'Trigger logs reviewed with Partner', 'icon': Icons.sync_rounded, 'color': const Color(0xFFF3FAF6)},
-            {'title': 'Hormone Health Discussion', 'time': 'Shared thyroid doctor recommendations', 'icon': Icons.medical_services_outlined, 'color': const Color(0xFFFFF9F2)},
-          ],
-        );
+          );
 
       case 'tryingToConceive':
         return StageConfig(
@@ -182,11 +162,7 @@ class StageConfig {
           supportFocus: 'Fertility Focus',
           partnerSubLabel: 'Fertility Focus',
           gardenQuote: '“Tending to your relationship garden during fertility tracking builds collaborative support.”',
-          partnerTimelineEvents: [
-            {'title': 'Ovulation Window Synced', 'time': 'Fertility window updates shared explicitly', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFFDF2F2)},
-            {'title': 'Shared Checklist Updated', 'time': 'TTC checklist updated by Partner', 'icon': Icons.task_alt_rounded, 'color': const Color(0xFFF3FAF6)},
-          ],
-        );
+          );
 
       case 'pregnancy':
         return StageConfig(
@@ -203,11 +179,7 @@ class StageConfig {
           supportFocus: 'Prenatal Support',
           partnerSubLabel: 'Prenatal Support',
           gardenQuote: '“Tending to your pregnancy garden together builds strong prenatal connection.”',
-          partnerTimelineEvents: [
-            {'title': 'Trimester Checklist Completed', 'time': 'Baby prep list completed by Partner', 'icon': Icons.task_alt_rounded, 'color': const Color(0xFFF3FAF6)},
-            {'title': 'Shared Milestone Reached', 'time': 'Week 24 milestone reflections saved', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFFDF2F2)},
-          ],
-        );
+          );
 
       case 'postpartum':
         return StageConfig(
@@ -224,11 +196,7 @@ class StageConfig {
           supportFocus: 'Postpartum Recovery',
           partnerSubLabel: 'Postpartum Recovery',
           gardenQuote: '“Caring for each other during postpartum recovery tends your relationship garden.”',
-          partnerTimelineEvents: [
-            {'title': 'Shared Recovery Checklist', 'time': 'Postpartum recovery log synced', 'icon': Icons.sync_rounded, 'color': const Color(0xFFF3FAF6)},
-            {'title': 'Newborn Milestones Logged', 'time': 'Baby sleep patterns logged by Partner', 'icon': Icons.nightlight_round, 'color': const Color(0xFFFFF9F2)},
-          ],
-        );
+          );
 
       case 'perimenopause':
         return StageConfig(
@@ -245,11 +213,7 @@ class StageConfig {
           supportFocus: 'Perimenopause Shift',
           partnerSubLabel: 'Perimenopause Shift',
           gardenQuote: '“Navigating perimenopause shifts together builds deep relationship strength.”',
-          partnerTimelineEvents: [
-            {'title': 'Anniversary Coming Up', 'time': 'August 14 • 14 days left', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFFDF2F2)},
-            {'title': 'Night Sweats Relief Guide', 'time': 'Bedroom cooling suggestions checked by Partner', 'icon': Icons.ac_unit_rounded, 'color': const Color(0xFFF3FAF6)},
-          ],
-        );
+          );
 
       case 'menopause':
         return StageConfig(
@@ -266,11 +230,7 @@ class StageConfig {
           supportFocus: 'Menopause Support',
           partnerSubLabel: 'Menopause Support',
           gardenQuote: '“Tending to your relationship garden during menopause shifts builds healthy mutual rhythms.”',
-          partnerTimelineEvents: [
-            {'title': 'Symptom Log Shared', 'time': 'Menopause symptom changes viewed', 'icon': Icons.task_alt_rounded, 'color': const Color(0xFFF3FAF6)},
-            {'title': 'Anniversary Coming Up', 'time': 'August 14 • 14 days left', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFFDF2F2)},
-          ],
-        );
+          );
 
       case 'partner':
         return StageConfig(
@@ -288,11 +248,7 @@ class StageConfig {
           supportFocus: 'Partner Mode',
           partnerSubLabel: 'Partner Mode',
           gardenQuote: '“Tending to your relationship garden in Partner Mode builds healthy mutual rhythms.”',
-          partnerTimelineEvents: [
-            {'title': 'Shared Checklist Updated', 'time': 'Support checklist viewed by partner', 'icon': Icons.task_alt_rounded, 'color': const Color(0xFFF3FAF6)},
-            {'title': 'Anniversary Coming Up', 'time': 'August 14 • 14 days left', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFFDF2F2)},
-          ],
-        );
+          );
 
       default:
         return StageConfig(
@@ -309,11 +265,7 @@ class StageConfig {
           supportFocus: 'Everyday Wellness',
           partnerSubLabel: 'Everyday Wellness',
           gardenQuote: '“Tending to your wellness garden together builds daily healthy habits.”',
-          partnerTimelineEvents: [
-            {'title': 'Anniversary Coming Up', 'time': 'August 14 • 14 days left', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFFDF2F2)},
-            {'title': 'Shared Activity Completed', 'time': 'Gratitude Checklist completed by Partner', 'icon': Icons.task_alt_rounded, 'color': const Color(0xFFF3FAF6)},
-          ],
-        );
+          );
     }
   }
 }

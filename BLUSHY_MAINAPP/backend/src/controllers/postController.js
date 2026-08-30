@@ -5,6 +5,13 @@ import { profileRepository } from '../repositories/profileRepository.js';
 import { userRepository } from '../repositories/userRepository.js';
 import { personalizedCommunityService } from '../services/personalizedCommunityService.js';
 import { createHttpError } from '../utils/httpError.js';
+import {
+  moderateNewPost,
+  moderateAfterReport,
+  filterForViewer,
+  moderateNewComment,
+  filterCommentsForViewer,
+} from '../services/moderationService.js';
 
 async function requireAuthUserAsync(req) {
   const userId = req.user?.userId;
@@ -40,7 +47,23 @@ export async function createPost(req, res, next) {
       privacy: privacy === 'private' ? 'private' : 'public',
     });
 
-    res.status(201).json({ post });
+    // Sets the audience and anonymity defaults and runs the moderation rules
+    // before the post can appear in any feed (spec §12).
+    const moderation = await moderateNewPost(post.postId ?? post.post_id, {
+      title,
+      text,
+      role: auth.role ?? req.user?.role,
+    });
+
+    res.status(201).json({
+      post,
+      moderation: {
+        state: moderation.state,
+        notice: moderation.notice,
+        requiresHumanReview: moderation.requiresHumanReview,
+        sensitiveTopics: moderation.sensitiveTopics,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -93,7 +116,17 @@ export async function reportPost(req, res, next) {
     const { reason } = req.body;
 
     const success = await postRepository.reportPost(postId, auth.userId, reason);
-    res.status(200).json({ success });
+
+    // Reports raise the stakes but never remove a post on their own; this
+    // may route it to a human queue (spec §12).
+    const moderation = success ? await moderateAfterReport(postId) : null;
+
+    res.status(200).json({
+      success,
+      moderation: moderation
+        ? { state: moderation.moderationState, requiresHumanReview: moderation.requiresHumanReview }
+        : null,
+    });
   } catch (error) {
     next(error);
   }
@@ -104,7 +137,15 @@ export async function listFeed(req, res, next) {
     const auth = await requireAuthUserAsync(req);
     const { type } = req.query; // latest, trending, following, home
     const posts = await postRepository.listFeed(auth.userId, type || 'home');
-    res.status(200).json({ posts });
+
+    // Audience separation, blocks and moderation state are enforced here, not
+    // by the client hiding things (spec §28).
+    const visible = await filterForViewer(posts, {
+      viewerUserId: auth.userId,
+      viewerRole: auth.role ?? req.user?.role,
+    });
+
+    res.status(200).json({ posts: visible });
   } catch (error) {
     next(error);
   }
@@ -118,7 +159,11 @@ export async function listComments(req, res, next) {
     const { sort } = req.query; // top, new, controversial
 
     const comments = await commentRepository.listComments(postId, auth.userId, sort || 'top');
-    res.status(200).json({ comments });
+
+    // Held and blocked comments are filtered server side (spec §28).
+    const visible = await filterCommentsForViewer(comments, { viewerUserId: auth.userId });
+
+    res.status(200).json({ comments: visible });
   } catch (error) {
     next(error);
   }
@@ -141,7 +186,19 @@ export async function createComment(req, res, next) {
       text: text.trim(),
     });
 
-    res.status(201).json({ comment });
+    // A treatment claim is no safer in a reply, so comments go through the
+    // same rules as posts (spec §12).
+    const moderation = await moderateNewComment(comment.commentId, { text: text.trim() });
+
+    res.status(201).json({
+      comment,
+      moderation: {
+        state: moderation.state,
+        notice: moderation.notice,
+        requiresHumanReview: moderation.requiresHumanReview,
+        sensitiveTopics: moderation.sensitiveTopics,
+      },
+    });
   } catch (error) {
     next(error);
   }

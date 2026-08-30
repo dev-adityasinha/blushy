@@ -6,7 +6,7 @@ const MAX_MESSAGES = 12;
 
 class AIChatService {
   async createReply({ messages, role = 'woman', user = null, languageCode = 'en', aiContext = {} }) {
-    if (!env.grokApiKey) {
+    if (!env.aiChatApiKey) {
       throw createHttpError(503, 'Sia is not configured yet. Add GROK_API_KEY in the backend .env file.');
     }
 
@@ -42,16 +42,14 @@ class AIChatService {
 
     let response;
     try {
-      response = await fetch(env.grokApiUrl, {
+      response = await fetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${env.grokApiKey}`,
+          Authorization: `Bearer ${env.aiChatApiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://blushy.app',
-          'X-Title': 'Sia',
         },
         body: JSON.stringify({
-          model: env.grokModel,
+          model: env.aiChatModel,
           messages: [
             {
               role: 'system',
@@ -90,24 +88,22 @@ class AIChatService {
 
     return {
       message: reply,
-      model: payload.model ?? env.grokModel,
+      model: payload.model ?? env.aiChatModel,
     };
   }
 
   async generatePartnerMoodSuggestion(partnerMood) {
-    if (!env.grokApiKey) return null;
+    if (!env.aiChatApiKey) return null;
 
     try {
-      const response = await fetch(env.grokApiUrl, {
+      const response = await fetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${env.grokApiKey}`,
+          Authorization: `Bearer ${env.aiChatApiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://blushy.app',
-          'X-Title': 'Sia',
         },
         body: JSON.stringify({
-          model: env.grokModel,
+          model: env.aiChatModel,
           messages: [
             {
               role: 'system',
@@ -127,7 +123,7 @@ class AIChatService {
   }
 
   async generatePartnerChatSuggestions(chatMessages, viewerRole, connectionId, mode = 'default') {
-    if (!env.grokApiKey) return [];
+    if (!env.aiChatApiKey) return [];
     if (!Array.isArray(chatMessages) || chatMessages.length === 0) return [];
 
     const lastMessage = chatMessages[chatMessages.length - 1];
@@ -164,16 +160,14 @@ class AIChatService {
     }
 
     try {
-      const response = await fetch(env.grokApiUrl, {
+      const response = await fetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${env.grokApiKey}`,
+          Authorization: `Bearer ${env.aiChatApiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://blushy.app',
-          'X-Title': 'Sia',
         },
         body: JSON.stringify({
-          model: env.grokModel,
+          model: env.aiChatModel,
           messages: [
             {
               role: 'system',
@@ -223,11 +217,9 @@ ${messagesText}`,
   }
 
   async createSiaVoiceSession({ user, mode = 'default', languageCode = 'en', aiContext = {} }) {
-    if (!env.grokApiKey) {
+    if (!env.aiChatApiKey) {
       throw createHttpError(503, 'Voice is not configured');
     }
-
-    const isOpenRouter = Boolean(env.grokApiKey && (env.grokApiKey.startsWith('sk-or-') || (env.grokApiUrl && env.grokApiUrl.includes('openrouter.ai'))));
 
     const basePrompt = buildSystemPrompt({ role: 'woman', user, languageCode, aiContext });
 
@@ -237,13 +229,12 @@ ${messagesText}`,
 
     return {
       success: true,
-      wsUrl: isOpenRouter ? null : (env.grokVoiceWsUrl || null),
-      model: env.grokVoiceModel || "grok-voice-think-fast-1.0",
-      voice: mode === 'erotic' ? "carina" : "luna",
+      transport: 'backend_proxy',
+      transcriptionEndpoint: '/ai/transcribe',
+      voice: mode === 'erotic' ? 'carina' : 'luna',
       instructions: voicePrompt,
       temperature: mode === 'erotic' ? 0.92 : 0.82,
       max_response_length: 700,
-      apiKey: env.grokApiKey,
     };
   }
 }

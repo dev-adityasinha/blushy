@@ -152,7 +152,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: BlushyColors.secondaryText.withOpacity(0.4),
+                    color: BlushyColors.secondaryText.withValues(alpha: 0.4),
                   ),
                   border: InputBorder.none,
                 ),
@@ -173,7 +173,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   hintText: 'Share your thoughts, experiences, or questions...',
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 14.5,
-                    color: BlushyColors.secondaryText.withOpacity(0.4),
+                    color: BlushyColors.secondaryText.withValues(alpha: 0.4),
                   ),
                   border: InputBorder.none,
                 ),
@@ -207,7 +207,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           hintText: 'e.g., Luteal, MoodSwings, SleepTips',
                           hintStyle: GoogleFonts.poppins(
                             fontSize: 12.5, 
-                            color: BlushyColors.secondaryText.withOpacity(0.5),
+                            color: BlushyColors.secondaryText.withValues(alpha: 0.5),
                           ),
                           border: InputBorder.none,
                           isDense: true,

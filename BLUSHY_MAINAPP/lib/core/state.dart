@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
 import '../services/auth_storage.dart';
 import '../services/api_auth_service.dart';
@@ -756,16 +757,26 @@ class BlushyOSState extends ChangeNotifier {
             final List<dynamic>? symList = dm['symptoms'] as List<dynamic>?;
 
             int? moodScore = dm['score'] is int ? dm['score'] as int : _wellbeingState.mood;
-            if (moodStr == 'great') moodScore = 9;
-            else if (moodStr == 'calm') moodScore = 8;
-            else if (moodStr == 'okay') moodScore = 6;
-            else if (moodStr == 'low') moodScore = 3;
-            else if (moodStr == 'anxious' || moodStr == 'irritated') moodScore = 4;
+            if (moodStr == 'great') {
+              moodScore = 9;
+            } else if (moodStr == 'calm') {
+              moodScore = 8;
+            } else if (moodStr == 'okay') {
+              moodScore = 6;
+            } else if (moodStr == 'low') {
+              moodScore = 3;
+            } else if (moodStr == 'anxious' || moodStr == 'irritated') {
+              moodScore = 4;
+            }
 
             int? energyScore = _wellbeingState.energy;
-            if (energyStr == 'high') energyScore = 8;
-            else if (energyStr == 'medium') energyScore = 5;
-            else if (energyStr == 'low') energyScore = 3;
+            if (energyStr == 'high') {
+              energyScore = 8;
+            } else if (energyStr == 'medium') {
+              energyScore = 5;
+            } else if (energyStr == 'low') {
+              energyScore = 3;
+            }
 
             final List<String> currentSymptoms = symList != null
                 ? symList.map((e) => e.toString()).toList()
@@ -1124,8 +1135,38 @@ class BlushyOSState extends ChangeNotifier {
         'medical_conditions': newContext.medicalConditions.toList(),
         'medications': newContext.medications.map((m) => m.toJson()).toList(),
       };
-      ApiAuthService().saveOnboardingAnswers(payload).catchError((_) => <String, dynamic>{});
+      _syncProfileToBackend(payload);
     }
+  }
+
+  Timer? _profileSyncTimer;
+  String? _lastSyncedProfileJson;
+
+  /// Pushes the profile to the backend, coalescing bursts.
+  ///
+  /// One user action can touch the context from several widgets, and each call
+  /// used to fire its own PUT -- the same body went up three or four times in a
+  /// row. Identical consecutive payloads are dropped, and the rest are
+  /// debounced so a burst becomes one request.
+  void _syncProfileToBackend(Map<String, dynamic> payload) {
+    final encoded = jsonEncode(payload);
+    if (encoded == _lastSyncedProfileJson) return;
+    _lastSyncedProfileJson = encoded;
+
+    _profileSyncTimer?.cancel();
+    _profileSyncTimer = Timer(const Duration(milliseconds: 400), () {
+      ApiAuthService().saveOnboardingAnswers(payload).catchError((error) {
+        // Let an identical retry through: this body never reached the server.
+        _lastSyncedProfileJson = null;
+        return <String, dynamic>{};
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _profileSyncTimer?.cancel();
+    super.dispose();
   }
 
   void setActiveLifeStages(Set<String> stages) {

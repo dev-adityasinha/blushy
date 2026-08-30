@@ -12,6 +12,17 @@ class CommunityPost {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Attached by the server to any post touching a health topic, so a reader
+  /// is never left to infer that a community post carries clinical authority
+  /// (spec section 12).
+  final String? moderationNotice;
+
+  /// Community content is never clinically reviewed. Stated explicitly rather
+  /// than left implicit.
+  final bool isClinicallyReviewed;
+
+  final List<String> sensitiveTopics;
+
   CommunityPost({
     required this.postId,
     this.authorId = '',
@@ -20,6 +31,9 @@ class CommunityPost {
     required this.text,
     required this.tags,
     this.postType = 'discussion',
+    this.moderationNotice,
+    this.isClinicallyReviewed = false,
+    this.sensitiveTopics = const [],
     required this.score,
     this.commentCount = 0,
     required this.userVote,
@@ -45,6 +59,9 @@ class CommunityPost {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'])
           : DateTime.now(),
+      moderationNotice: json['moderationNotice'] as String?,
+      isClinicallyReviewed: json['isClinicallyReviewed'] == true,
+      sensitiveTopics: List<String>.from(json['sensitiveTopics'] ?? const []),
     );
   }
 
@@ -139,6 +156,12 @@ class CommunityComment {
   final int userVote; // 1, -1, 0
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Attached by the server when a comment touches a health topic, for the
+  /// same reason posts carry one (spec section 12).
+  final String? moderationNotice;
+  final bool isClinicallyReviewed;
+
   List<CommunityComment> replies;
 
   CommunityComment({
@@ -153,7 +176,9 @@ class CommunityComment {
     required this.createdAt,
     required this.updatedAt,
     this.replies = const [],
-  });
+      this.moderationNotice,
+    this.isClinicallyReviewed = false,
+});
 
   factory CommunityComment.fromJson(Map<String, dynamic> json) {
     return CommunityComment(
@@ -171,6 +196,8 @@ class CommunityComment {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'])
           : DateTime.now(),
+      moderationNotice: json['moderationNotice'] as String?,
+      isClinicallyReviewed: json['isClinicallyReviewed'] == true,
       replies: [],
     );
   }

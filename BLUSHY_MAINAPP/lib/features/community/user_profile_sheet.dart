@@ -177,7 +177,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                         width: 36,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: BlushyColors.border.withOpacity(0.6),
+                          color: BlushyColors.border.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -334,7 +334,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                         _profile!.bio.isNotEmpty ? _profile!.bio : 'No biography added yet.',
                         style: GoogleFonts.poppins(
                           fontSize: 13.5,
-                          color: BlushyColors.text.withOpacity(0.8),
+                          color: BlushyColors.text.withValues(alpha: 0.8),
                           height: 1.5,
                         ),
                       ),
@@ -381,7 +381,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
           label,
           style: GoogleFonts.poppins(
             fontSize: 11,
-            color: BlushyColors.secondaryText.withOpacity(0.7),
+            color: BlushyColors.secondaryText.withValues(alpha: 0.7),
           ),
         ),
       ],

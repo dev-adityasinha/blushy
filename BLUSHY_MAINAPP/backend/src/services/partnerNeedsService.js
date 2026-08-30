@@ -199,11 +199,11 @@ export async function getDynamicPartnerNeeds({ partnerUserId, partnerRole = 'wom
     }
 
     // Call LLM for empathetic and tailored synthesis
-    const grokApiKey = env.grokApiKey;
-    const grokApiUrl = env.grokApiUrl;
-    const grokModel = env.grokModel;
+    const aiChatApiKey = env.aiChatApiKey;
+    const aiChatApiUrl = env.aiChatApiUrl;
+    const aiChatModel = env.aiChatModel;
 
-    if (!grokApiKey) {
+    if (!aiChatApiKey) {
       return fallbackKeywordAnalysis({ chatText, journalText, moodText, isPartnerWoman, partnerName });
     }
 
@@ -254,16 +254,15 @@ Respond ONLY with valid JSON in this exact schema (no markdown outside the JSON,
   ]
 }`;
 
-    const response = await fetch(grokApiUrl, {
+    const response = await fetch(aiChatApiUrl, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${grokApiKey}`,
+        Authorization: `Bearer ${aiChatApiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://blushy.app',
         'X-Title': 'Sia Dynamic Needs',
       },
       body: JSON.stringify({
-        model: grokModel,
+        model: aiChatModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Analyze the partner entries and return the structured JSON.' }

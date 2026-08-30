@@ -50,3 +50,14 @@ recent_sia_chats.json
 mstudio_reflections.json
 user_recent_keywords.json
 
+
+# Release signing. Losing the keystore means never being able to update the
+# app on Play again, and committing it means anyone can ship as you.
+# Keep a backup of the .jks somewhere safe and offline.
+android/key.properties
+*.jks
+*.keystore
+
+# Secrets
+backend/.env
+backend/.env.*

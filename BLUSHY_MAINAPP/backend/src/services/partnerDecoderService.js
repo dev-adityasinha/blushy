@@ -3,6 +3,8 @@ import { dailyMoodRepository } from '../repositories/dailyMoodRepository.js';
 import { sleepRepository } from '../repositories/sleepRepository.js';
 import { partnerRepository } from '../repositories/partnerRepository.js';
 import { env } from '../utils/env.js';
+import { normalizePermissions, hasGrant } from '../domain/partnerPermissions.js';
+import { createHttpError } from '../utils/httpError.js';
 
 function parseJsonSafely(raw) {
   if (!raw || typeof raw !== 'string') return null;
@@ -76,12 +78,15 @@ function fallbackDecoder({ messageText, cyclePhase, mood, energyLevel, sleepHour
   const cycleContextParts = [];
   if (cyclePhase) cycleContextParts.push(`${cyclePhase}`);
   if (mood) cycleContextParts.push(`Logged mood: ${mood}`);
-  if (sleepHours !== null) cycleContextParts.push(`${sleepHours} hrs sleep`);
+  if (sleepHours !== null && sleepHours !== undefined) cycleContextParts.push(`${sleepHours} hrs sleep`);
 
   return {
     decodedMeaning,
     emotionalTone,
-    cycleMoodContext: cycleContextParts.length > 0 ? cycleContextParts.join(' • ') : 'Standard Wellness Rhythm',
+    // Empty when nothing was shared. This used to read "Standard Wellness
+    // Rhythm", which sounds like a reading taken from her data rather than the
+    // absence of any.
+    cycleMoodContext: cycleContextParts.join(' • '),
     recommendedReply,
     actionTip,
   };
@@ -95,7 +100,9 @@ export async function decodePartnerMessage({
 }) {
   const connection = await partnerRepository.getConnectionForUser(connectionId, viewerUserId);
   if (!connection) {
-    throw new Error('Connection not found or access denied.');
+    // A plain Error surfaced as a 500, which reads as a server fault rather
+    // than "you are not in this connection".
+    throw createHttpError(404, 'Connection not found.');
   }
 
   const effectivePartnerId = partnerUserId || connection.partnerUserId;
@@ -105,16 +112,31 @@ export async function decodePartnerMessage({
     sleepRepository.getSleepByDate(effectivePartnerId, new Date().toISOString().slice(0, 10)),
   ]);
 
-  const onboardingAnswers = partnerUser?.onboardingAnswers ?? {};
+  // Every signal below is gated on the permission that covers it, the same way
+  // getPartnerSuggestions gates them. This read used to be ungated: it fetched
+  // the partner's mood, sleep and cycle regardless of what they had agreed to
+  // share, then printed them back to the other person in cycleMoodContext.
+  // Normalised first: connections written under the v2 matrix store `mood`,
+  // `sleep` and `cycle_insights`, so reading the legacy `shareMood` names gave
+  // undefined and the decoder behaved as if nothing had ever been shared.
+  const permissions = normalizePermissions(connection.permissions);
+
+  const onboardingAnswers = hasGrant(permissions, 'insight.general')
+    ? (partnerUser?.onboardingAnswers ?? {})
+    : {};
   const partnerName = partnerUser?.display_name || partnerUser?.email?.split('@')[0] || 'She';
 
-  // Determine cycle phase
-  let cyclePhase = 'Follicular phase';
-  const cycleStart = partnerUser?.cycleStartDate ||
-    onboardingAnswers?.period_last_start_date ||
-    onboardingAnswers?.cycle_last_period_start ||
-    onboardingAnswers?.last_period ||
-    null;
+  // Null when unknown, never a guess. This defaulted to 'Follicular phase',
+  // which was then stated as fact to the partner and fed to the model as
+  // context -- producing confident advice built on a phase nobody reported.
+  let cyclePhase = null;
+  const cycleStart = hasGrant(permissions, 'cycle.phase')
+    ? (partnerUser?.cycleStartDate ||
+       onboardingAnswers?.period_last_start_date ||
+       onboardingAnswers?.cycle_last_period_start ||
+       onboardingAnswers?.last_period ||
+       null)
+    : null;
 
   if (cycleStart) {
     try {
@@ -128,22 +150,32 @@ export async function decodePartnerMessage({
     } catch (_) {}
   }
 
-  const mood = todayMood?.primaryMood || todayMood?.mood || null;
-  const energyLevel = todayMood?.energyLevel || todaySleep?.energyLevel || null;
-  const sleepHours = todaySleep?.durationMinutes ? (Number(todaySleep.durationMinutes) / 60).toFixed(1) : null;
+  const mood = hasGrant(permissions, 'log.mood')
+    ? (todayMood?.primaryMood || todayMood?.mood || null)
+    : null;
+  const energyLevel = hasGrant(permissions, 'log.mood')
+    ? (todayMood?.energyLevel || (hasGrant(permissions, 'log.sleep') ? todaySleep?.energyLevel : null) || null)
+    : null;
+  const sleepHours = hasGrant(permissions, 'log.sleep') && todaySleep?.durationMinutes
+    ? (Number(todaySleep.durationMinutes) / 60).toFixed(1)
+    : null;
 
   // Attempt Grok / Sia LLM call
-  if (env.grokApiKey && env.grokApiUrl) {
+  if (env.aiChatApiKey && env.aiChatApiUrl) {
     try {
       const prompt = `You are Sia, an expert relationship wellness and empathy AI inside Blushy.
 You are helping a man understand and decode what his romantic partner is communicating beneath the surface of her text message.
 
 Context about her:
 - Name: ${partnerName}
-- Biological/Cycle Phase: ${cyclePhase} (Note: Menstrual = cramping/low energy, Follicular = rising energy, Ovulation = high connection/creativity, Luteal = PMS/mood sensitivity/craving safety)
-- Today's Mood: ${mood || 'Not logged yet'}
-- Energy Level: ${energyLevel || 'Moderate'}
-- Recent Sleep: ${sleepHours ? `${sleepHours} hours` : 'Normal'}
+- Biological/Cycle Phase: ${cyclePhase ?? 'Not shared with him - do not refer to her cycle at all'}${cyclePhase ? ' (Note: Menstrual = cramping/low energy, Follicular = rising energy, Ovulation = high connection/creativity, Luteal = PMS/mood sensitivity/craving safety)' : ''}
+- Today's Mood: ${mood ?? 'Not shared - do not guess it'}
+- Energy Level: ${energyLevel ?? 'Not shared - do not guess it'}
+- Recent Sleep: ${sleepHours ? `${sleepHours} hours` : 'Not shared - do not guess it'}
+
+Only use the context above that was actually shared. Do not invent a cycle
+phase, mood, energy level or sleep figure that is not listed, and do not imply
+you know something about her that you were not told.
 
 Her Message to him:
 "${messageText}"
@@ -152,23 +184,22 @@ Please analyze this message with high emotional intelligence and provide a struc
 {
   "decodedMeaning": "A clear, empathetic 1-2 sentence explanation of what she is truly feeling and coming to tell him underneath her words.",
   "emotionalTone": "A 2-3 word summary of her emotional state (e.g., 'Overwhelmed & Tired', 'Seeking Affection', 'Quiet Reassurance')",
-  "cycleMoodContext": "A short summary combining her phase and state (e.g., '${cyclePhase} • Feeling ${mood || 'fatigued'}')",
+  "cycleMoodContext": "${cyclePhase || mood ? `A short summary of only the shared context (e.g., '${[cyclePhase, mood].filter(Boolean).join(' • ')}')` : 'Return an empty string, because nothing about her state was shared'}",
   "recommendedReply": "A warm, deeply supportive, natural reply he can send back to her.",
   "actionTip": "A practical 1-sentence tip on what thoughtful gesture or action he can do in real life right now."
 }
 
 Return ONLY raw valid JSON. Do not include markdown formatting or extra text.`;
 
-      const response = await fetch(env.grokApiUrl, {
+      const response = await fetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${env.grokApiKey}`,
+          Authorization: `Bearer ${env.aiChatApiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://blushy.app',
           'X-Title': 'Blushy Sia Message Decoder',
         },
         body: JSON.stringify({
-          model: env.grokModel || 'grok-beta',
+          model: env.aiChatModel || 'grok-beta',
           messages: [
             {
               role: 'system',
@@ -192,7 +223,9 @@ Return ONLY raw valid JSON. Do not include markdown formatting or extra text.`;
           return {
             decodedMeaning: parsed.decodedMeaning,
             emotionalTone: parsed.emotionalTone || 'Empathetic Connection',
-            cycleMoodContext: parsed.cycleMoodContext || `${cyclePhase}${mood ? ` • ${mood}` : ''}`,
+            // Falls back to the shared signals only; empty when none were.
+            cycleMoodContext: parsed.cycleMoodContext
+              || [cyclePhase, mood].filter(Boolean).join(' • '),
             recommendedReply: parsed.recommendedReply,
             actionTip: parsed.actionTip || 'Show patience and offer proactive comfort.',
           };

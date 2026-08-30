@@ -96,7 +96,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
                         child: ChoiceChip(
                           label: Text(_tabs[idx]),
                           selected: isActive,
-                          selectedColor: BlushyColors.primary.withOpacity(0.12),
+                          selectedColor: BlushyColors.primary.withValues(alpha: 0.12),
                           backgroundColor: Colors.white,
                           labelStyle: GoogleFonts.poppins(
                             fontSize: 12,
@@ -207,7 +207,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -250,7 +250,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -279,7 +279,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
               style: GoogleFonts.poppins(fontSize: 18, color: BlushyColors.text, fontStyle: FontStyle.italic, height: 1.3),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -325,7 +325,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

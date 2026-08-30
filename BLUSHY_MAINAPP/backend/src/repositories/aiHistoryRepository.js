@@ -27,6 +27,9 @@ function mapRow(row) {
     assistantMessage: assistantMsg || null,
     content: assistantMsg || userMsg || row.content || row.text || row.message || '',
     model: row.model || 'sia',
+    // Carried so the app can show which exchanges have been shared with a
+    // partner. Without it the share control resets on every launch.
+    sharedWithPartner: row.shared_with_partner === true,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
   };
 }
@@ -128,7 +131,53 @@ async function listUserKeysWithHistory() {
   return keys;
 }
 
+
+/**
+ * Marks one Sia exchange as shareable with a partner, or takes it back.
+ *
+ * Same rule as the journal: the `sia_conversations` permission says a partner
+ * may receive conversations, this flag says which ones. Sia is where people
+ * disclose the things they have not told anyone, so a blanket release would be
+ * the single worst default in the app.
+ */
+async function setConversationShared({ userId, conversationId, shared }) {
+  const cleanUserId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
+  const collName = await getColl(cleanUserId, 'ai_chat_history');
+
+  const result = await db.collection(collName).updateOne(
+    { id: conversationId, user_id: cleanUserId },
+    { $set: { shared_with_partner: shared === true, shared_at: shared === true ? new Date() : null } },
+  );
+
+  if (result.matchedCount === 0) return null;
+  return { conversationId, sharedWithPartner: shared === true };
+}
+
+/**
+ * Only the exchanges explicitly marked shared.
+ */
+async function listSharedConversations(userId, limit = 10) {
+  const cleanUserId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
+  const collName = await getColl(cleanUserId, 'ai_chat_history');
+
+  const docs = await db.collection(collName)
+    .find({ user_id: cleanUserId, shared_with_partner: true })
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map((doc) => ({
+    id: doc.id,
+    userMessage: doc.user_message ?? '',
+    assistantMessage: doc.assistant_message ?? '',
+    sharedAt: doc.shared_at ?? null,
+    createdAt: doc.created_at,
+  }));
+}
+
 export const aiHistoryRepository = {
+  setConversationShared,
+  listSharedConversations,
   appendConversation,
   listHistory,
   clearHistory,

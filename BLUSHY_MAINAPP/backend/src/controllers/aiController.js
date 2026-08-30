@@ -16,10 +16,14 @@ import { createHttpError } from '../utils/httpError.js';
 import { normalizeRole as normalizeRoleValue } from '../utils/role.js';
 import { buildPartnerCareSuggestions, buildCycleInfo } from '../services/partnerSuggestionService.js';
 import { partnerRepository } from '../repositories/partnerRepository.js';
+import { normalizePermissions, hasGrant } from '../domain/partnerPermissions.js';
+import { getPeriodEntries } from '../repositories/periodRepository.js';
 import { db } from '../utils/db.js';
 import { parseAndSaveMedicalReport } from '../services/medicalReportService.js';
+import { evaluateUserSafety, buildSafetyFlow, gateAiOutput } from '../services/safetyService.js';
 import fs from 'node:fs';
 import { env } from '../utils/env.js';
+import { aiChatSummaryRepository } from '../repositories/aiChatSummaryRepository.js';
 
 function getUserKey(req, _role = 'woman') {
   const userId = req.user?.userId;
@@ -242,12 +246,17 @@ function buildCaptureSummary({
     .join(' | ');
 }
 async function transcribeAudioFile(file) {
-  if (!env.grokApiKey) {
-    throw new Error('AI API key is not configured.');
+  // The speech key, not the chat key: chat runs on Grok (api.x.ai) and has no
+  // transcription endpoint, so this request goes to a different provider that
+  // will reject a Grok key outright.
+  if (!env.speechToTextApiKey) {
+    // A configuration gap on our side, not a bad request and not a crash.
+    // Returning 500 here made the app tell users their audio was unclear.
+    throw createHttpError(503, 'Speech-to-text is not configured on this server.', {
+      code: 'STT_NOT_CONFIGURED',
+    });
   }
 
-  const base64Data = fs.readFileSync(file.path, 'base64');
-  
   let format = 'webm';
   if (file.mimetype) {
     const match = file.mimetype.match(/audio\/(x-)?([a-z0-9]+)/i);
@@ -266,26 +275,20 @@ async function transcribeAudioFile(file) {
     format = 'webm';
   }
 
-  // Use Grok API & Whisper STT engine for ultra-fast, high-accuracy transcription
   try {
-    const transUrl = env.grokApiUrl.includes('/chat/completions')
-      ? env.grokApiUrl.replace('/chat/completions', '/audio/transcriptions')
-      : 'https://openrouter.ai/api/v1/audio/transcriptions';
+    const formData = new FormData();
+    formData.append('file', new Blob([fs.readFileSync(file.path)], {
+      type: file.mimetype || 'application/octet-stream',
+    }), path.basename(file.originalname || `audio.${format}`));
+    formData.append('model', env.speechToTextModel);
+    formData.append('prompt', 'Transcribe spoken English and regional Indian languages (Hindi, Tamil, Telugu, Kannada) accurately. Ignore background noise, hums, or silence.');
 
-    const response = await fetch(transUrl, {
+    const response = await fetch(env.speechToTextUrl, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${env.grokApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${env.speechToTextApiKey}`,
       },
-      body: JSON.stringify({
-        model: 'openai/whisper-large-v3-turbo',
-        input_audio: {
-          data: base64Data,
-          format: format,
-        },
-        prompt: "Transcribe spoken English and regional Indian languages (Hindi, Tamil, Telugu, Kannada) accurately. Ignore background noise, hums, or silence.",
-      }),
+      body: formData,
     });
 
     if (response.ok) {
@@ -294,21 +297,36 @@ async function transcribeAudioFile(file) {
 
       const lower = rawText.toLowerCase();
       if (lower.includes("i'm not sure") || lower.includes("i am not sure") || lower.includes("unclear audio") || lower.includes("thank you for watching")) {
-        console.log(`[INFO] Filtered out STT hallucination: "${rawText}"`);
+        console.log('[INFO] Filtered out STT hallucination');
         return '';
       }
 
       if (rawText.length > 0) {
-        console.log(`[INFO] Grok/Whisper STT transcription succeeded: "${rawText}"`);
+        console.log('[INFO] Grok/Whisper STT transcription succeeded');
         return rawText;
       }
     } else {
       const errText = await response.text().catch(() => '');
       console.warn(`[WARN] Grok/Whisper STT failed (Status ${response.status}): ${errText}`);
+      // A rejected key or a provider outage is not the user mumbling. Saying
+      // so lets the app show something they can act on.
+      throw createHttpError(502, 'The speech-to-text provider rejected the request.', {
+        code: response.status === 401 || response.status === 403
+          ? 'STT_CREDENTIAL_REJECTED'
+          : 'STT_PROVIDER_ERROR',
+        providerStatus: response.status,
+      });
     }
   } catch (err) {
+    if (err?.statusCode) throw err;
     console.error('[ERROR] Error in Grok/Whisper STT transcription:', err);
+    throw createHttpError(502, 'Could not reach the speech-to-text provider.', {
+      code: 'STT_UNREACHABLE',
+    });
   }
+
+  // Reached only when the provider succeeded and genuinely heard nothing, so
+  // "no speech recognised" is now an accurate thing for the app to say.
   return '';
 }
 
@@ -344,7 +362,7 @@ export async function createChatReply(req, res, next) {
         try {
           transcription = await transcribeAudioFile(req.file);
           if (transcription) {
-            console.log(`[INFO] Transcribed voice message "${req.file.originalname}": "${transcription}"`);
+            console.log('[INFO] Transcribed voice message');
             userMessage = transcription;
             if (Array.isArray(messages) && messages.length > 0) {
               for (let i = messages.length - 1; i >= 0; i--) {
@@ -363,6 +381,76 @@ export async function createChatReply(req, res, next) {
 
     if (userMessage.length === 0 && req.file) {
       userMessage = `Uploaded file: ${req.file.originalname}`;
+    }
+
+    // ---------------------------------------------------------------------
+    // Deterministic red flag evaluation, before any generation.
+    //
+    // Spec §22: AI cannot override deterministic safety rules, and red flag
+    // detection is not the AI's job. Spec §15: a red flag suppresses ordinary
+    // wellness recommendations and triggers the reviewed safety flow.
+    //
+    // When the flag is suppressing, the model is not called at all. The
+    // response is the clinically reviewed instruction attached to the rule, so
+    // there is no generation that could soften, delay or contradict it.
+    // ---------------------------------------------------------------------
+    let safetyEvaluation = null;
+    let safetyFlow = null;
+
+    if (userId && userMessage.length > 0) {
+      try {
+        safetyEvaluation = await evaluateUserSafety(userId, {
+          freeText: userMessage,
+          surface: 'sia_chat',
+        });
+        if (safetyEvaluation.triggered) {
+          const flow = await buildSafetyFlow(safetyEvaluation);
+          safetyFlow = flow.data;
+        }
+      } catch (safetyError) {
+        // A failure here must not silently drop the safety check. Log the
+        // failure without the user's words and continue; the post-generation
+        // gate below is the second line of defence.
+        console.error('[safety] evaluation failed for Sia chat:', safetyError.message);
+      }
+    }
+
+    if (safetyEvaluation?.suppressWellnessContent && safetyFlow?.steps?.length > 0) {
+      const step = safetyFlow.steps[0];
+      const safetyMessage = step.instruction;
+
+      if (userMessage.length > 0) {
+        await aiHistoryRepository.appendConversation({
+          userKey,
+          role: safeRole,
+          userMessage,
+          assistantMessage: safetyMessage,
+          model: 'safety-ruleset',
+        });
+      }
+
+      return res.status(200).json({
+        message: safetyMessage,
+        model: `safety-ruleset:${safetyEvaluation.rulesetVersion}`,
+        // The client shows the reviewed safety flow instead of a chat bubble.
+        safety: {
+          triggered: true,
+          level: safetyEvaluation.level,
+          suppressWellnessContent: true,
+          steps: safetyFlow.steps,
+          emergencyResources: safetyFlow.emergencyResources,
+          region: safetyFlow.region,
+        },
+        aiGenerated: false,
+        medicationCapture: null,
+        onboardingCapture: null,
+        sleepCapture: null,
+        cycleCapture: null,
+        moodCapture: null,
+        memoryCapture: null,
+        captureSummary: null,
+        medicalReport: null,
+      });
     }
 
     let userProfile = userId ? await userRepository.getUserById(userId) : null;
@@ -537,6 +625,7 @@ export async function createChatReply(req, res, next) {
 
     let healthInsightsSummary = '';
     if (req.user?.userId && predictionContext) {
+      const ownPeriodEntries = await getPeriodEntries(req.user.userId, 20).catch(() => []);
       const healthAnalysis = healthInsightsService.analyzeUserHealth({
         userId: req.user.userId,
         role: safeRole,
@@ -544,6 +633,7 @@ export async function createChatReply(req, res, next) {
         sleepLogs: predictionContext.sleepHistory || [],
         onboardingAnswers: userProfile?.onboardingAnswers || {},
         cycleStartDate: userProfile?.cycleStartDate,
+        periodEntries: ownPeriodEntries,
       });
 
       if (healthAnalysis.alerts.length > 0 || healthAnalysis.suggestions.length > 0) {
@@ -610,18 +700,37 @@ export async function createChatReply(req, res, next) {
       },
     });
 
-    if (userMessage.length > 0 && result.message.length > 0) {
+    // Second line of defence: nothing generated may stand in front of a live
+    // escalation, even if the pre-generation branch was bypassed.
+    const gated = gateAiOutput({ type: 'chat', body: result.message }, safetyEvaluation);
+    const finalMessage = gated.blocked ? gated.output.body : result.message;
+
+    if (userMessage.length > 0 && finalMessage.length > 0) {
       await aiHistoryRepository.appendConversation({
         userKey,
         role: safeRole,
         userMessage,
-        assistantMessage: result.message,
-        model: result.model,
+        assistantMessage: finalMessage,
+        model: gated.blocked ? 'safety-ruleset' : result.model,
       });
     }
 
     res.status(200).json({
       ...result,
+      message: finalMessage,
+      // Present whenever a rule fired, so a non-suppressing flag (contact your
+      // provider today) is shown alongside the reply rather than replacing it.
+      safety: safetyEvaluation?.triggered
+        ? {
+          triggered: true,
+          level: safetyEvaluation.level,
+          suppressWellnessContent: safetyEvaluation.suppressWellnessContent,
+          steps: safetyFlow?.steps ?? [],
+          emergencyResources: safetyFlow?.emergencyResources ?? null,
+          region: safetyFlow?.region ?? null,
+        }
+        : null,
+      aiGenerated: !gated.blocked,
       medicationCapture,
       onboardingCapture,
       sleepCapture,
@@ -665,7 +774,7 @@ export async function getPartnerSuggestions(req, res, next) {
       throw createHttpError(404, 'Partner user not found.');
     }
 
-    const permissions = connection.permissions ?? {};
+    const permissions = normalizePermissions(connection.permissions);
     const safeRole = normalizeRoleValue(partnerProfile?.role, 'woman');
 
     const predictionContext = await userPredictionContextService.buildUserPredictionContext({
@@ -674,10 +783,14 @@ export async function getPartnerSuggestions(req, res, next) {
       role: safeRole,
     });
 
-    const dailyMoods = permissions.shareMood ? (predictionContext.moodHistory || []) : [];
-    const sleepLogs = permissions.shareSleep ? (predictionContext.sleepHistory || []) : [];
-    const onboardingAnswers = permissions.shareOnboarding ? (predictionContext.onboardingAnswers || {}) : {};
-    const cycleStartDate = permissions.shareCycle ? (partnerProfile?.cycleStartDate ?? null) : null;
+    const dailyMoods = hasGrant(permissions, 'log.mood') ? (predictionContext.moodHistory || []) : [];
+    const sleepLogs = hasGrant(permissions, 'log.sleep') ? (predictionContext.sleepHistory || []) : [];
+    const onboardingAnswers = hasGrant(permissions, 'insight.general') ? (predictionContext.onboardingAnswers || {}) : {};
+    const cycleStartDate = hasGrant(permissions, 'cycle.phase') ? (partnerProfile?.cycleStartDate ?? null) : null;
+    // Same gate as cycleStartDate: only a derived period length is used.
+    const periodEntries = hasGrant(permissions, 'cycle.phase')
+      ? await getPeriodEntries(partnerUserId, 20).catch(() => [])
+      : [];
 
     const healthAnalysis = healthInsightsService.analyzeUserHealth({
       userId: partnerUserId,
@@ -686,11 +799,14 @@ export async function getPartnerSuggestions(req, res, next) {
       sleepLogs,
       onboardingAnswers,
       cycleStartDate,
+      periodEntries,
     });
 
     const latestMood = dailyMoods.length > 0 ? dailyMoods[dailyMoods.length - 1] : null;
     const latestSleep = sleepLogs.length > 0 ? sleepLogs[sleepLogs.length - 1] : null;
-    const cycleInfo = cycleStartDate ? buildCycleInfo(cycleStartDate, onboardingAnswers) : null;
+    const cycleInfo = cycleStartDate
+      ? buildCycleInfo(cycleStartDate, onboardingAnswers, new Date(), periodEntries)
+      : null;
 
     let personalizedSuggestions = [];
     if (latestMood || latestSleep || cycleInfo) {
@@ -709,8 +825,10 @@ export async function getPartnerSuggestions(req, res, next) {
     const viewerProfile = await userRepository.getUserById(req.user.userId);
     const viewerRole = normalizeRoleValue(viewerProfile?.role, 'woman');
     const isViewerAiSuggestionsEnabled = viewerRole === 'woman'
-      ? permissions.allowAiSuggestionsWoman
-      : permissions.allowAiSuggestionsMan;
+      // general_ai_insights carries the legacy allowAiSuggestions* flags, so
+      // this reads correctly on both old and new connections.
+      ? hasGrant(permissions, 'insight.general')
+      : hasGrant(permissions, 'insight.general');
 
     let aiChatSuggestions = [];
     if (isViewerAiSuggestionsEnabled) {
@@ -738,6 +856,190 @@ export async function getPartnerSuggestions(req, res, next) {
   }
 }
 
+/**
+ * Relationship advice grounded in what the partner has actually chosen to share.
+ *
+ * The Relationship AI tab was a single hardcoded sentence with no input and no
+ * request behind it, so there was nothing to work.
+ *
+ * Two rules shape this handler. Partner data is gated per permission, exactly
+ * as getPartnerSuggestions does, so advice never quotes something the partner
+ * did not agree to share. And the deterministic safety check runs on the
+ * question before generation and on the answer after it -- relationship
+ * questions are one of the likelier places for a disclosure of harm, and the
+ * ruleset must not be reachable only through the model (spec section 22).
+ */
+export async function getRelationshipAdvice(req, res, next) {
+  try {
+    if (!req.user?.userId) {
+      throw createHttpError(401, 'Authentication required for relationship advice.');
+    }
+
+    const viewerUserId = req.user.userId;
+    const connectionId = String(req.params?.connectionId ?? '').trim();
+    const question = String(req.body?.question ?? req.body?.message ?? '').trim();
+
+    if (!connectionId) {
+      throw createHttpError(400, 'Connection id is required.');
+    }
+    if (!question) {
+      throw createHttpError(400, 'Please write a question first.');
+    }
+    if (question.length > 1000) {
+      throw createHttpError(400, 'Please keep the question under 1000 characters.');
+    }
+
+    const connection = await partnerRepository.getConnectionForUser(connectionId, viewerUserId);
+    if (!connection) {
+      throw createHttpError(404, 'Connection not found.');
+    }
+
+    let safetyEvaluation = null;
+    try {
+      safetyEvaluation = await evaluateUserSafety(viewerUserId, {
+        freeText: question,
+        surface: 'relationship_ai',
+      });
+    } catch (safetyError) {
+      console.error('[safety] evaluation failed for relationship advice:', safetyError.message);
+    }
+
+    if (safetyEvaluation?.suppressWellnessContent) {
+      const flow = await buildSafetyFlow(safetyEvaluation);
+      const step = flow.data?.steps?.[0];
+      return res.status(200).json({
+        aiGenerated: false,
+        answer: step?.instruction ?? 'Please reach out to someone who can help you right now.',
+        safety: {
+          triggered: true,
+          level: safetyEvaluation.level,
+          emergencyResources: safetyEvaluation.emergencyResources ?? null,
+        },
+        usedPartnerData: false,
+      });
+    }
+
+    // Authorization is checked after the safety evaluation on purpose. A
+    // disclosure of harm gets the deterministic safety flow whoever sent it;
+    // answering that with "this feature is not for you" would be indefensible.
+    // Only the supporting partner can ask.
+    //
+    // Sharing runs one way: a connection has a single permission owner, and the
+    // matrix describes what she shares with him. Asked from her side, this
+    // gathered context about him while gating it on her own switches -- the
+    // wrong direction -- and he logs nothing anyway, since the partner shell
+    // has no Sia and no M Studio. There was never an answer to give.
+    if (connection.canManagePermissions) {
+      throw createHttpError(403, 'Relationship advice is for the partner supporting you.');
+    }
+
+    const viewerProfile = await userRepository.getUserById(viewerUserId);
+    const viewerRole = normalizeRoleValue(viewerProfile?.role, 'woman');
+    const permissions = normalizePermissions(connection.permissions);
+
+    // general_ai_insights carries the legacy allowAiSuggestions* flags, so this
+    // reads correctly on both old and new connections. The role no longer
+    // branches here: only the partner reaches this line at all.
+    const aiAllowed = hasGrant(permissions, 'insight.general');
+
+    const partnerProfile = await userRepository.getUserById(connection.partnerUserId);
+    const partnerName = partnerProfile?.displayName || 'your partner';
+
+    let context = null;
+    if (aiAllowed) {
+      const predictionContext = await userPredictionContextService.buildUserPredictionContext({
+        userId: connection.partnerUserId,
+        userKey: `user:${connection.partnerUserId}`,
+        role: normalizeRoleValue(partnerProfile?.role, 'woman'),
+      }).catch(() => null);
+
+      if (predictionContext) {
+        const moods = hasGrant(permissions, 'log.mood') ? (predictionContext.moodHistory || []) : [];
+        const sleep = hasGrant(permissions, 'log.sleep') ? (predictionContext.sleepHistory || []) : [];
+        const cycleStartDate = hasGrant(permissions, 'cycle.phase') ? (partnerProfile?.cycleStartDate ?? null) : null;
+        const onboardingAnswers = hasGrant(permissions, 'insight.general')
+          ? (predictionContext.onboardingAnswers || {})
+          : {};
+
+        const periodEntries = hasGrant(permissions, 'cycle.phase')
+          ? await getPeriodEntries(connection.partnerUserId, 20).catch(() => [])
+          : [];
+
+        const cycleInfo = cycleStartDate
+          ? buildCycleInfo(cycleStartDate, onboardingAnswers, new Date(), periodEntries)
+          : null;
+
+        context = {
+          latestMood: moods.length > 0 ? moods[moods.length - 1] : null,
+          latestSleep: sleep.length > 0 ? sleep[sleep.length - 1] : null,
+          cyclePhase: cycleInfo?.phase ?? null,
+          cycleDay: cycleInfo?.cycleDay ?? null,
+        };
+      }
+    }
+
+    const contextLines = [];
+    if (context?.latestMood) {
+      contextLines.push(`Their most recent logged mood: ${context.latestMood.mood ?? context.latestMood}.`);
+    }
+    if (context?.latestSleep) {
+      contextLines.push(`Their most recent logged sleep: ${context.latestSleep.durationHours ?? context.latestSleep} hours.`);
+    }
+    if (context?.cyclePhase) {
+      contextLines.push(`They are currently in the ${context.cyclePhase} phase (day ${context.cycleDay ?? '?'}).`);
+    }
+
+    const systemPrompt = [
+      `You are Sia, giving short, practical relationship guidance to someone about ${partnerName}.`,
+      'Answer in at most four sentences. Be concrete and kind, and suggest something they can actually do.',
+      'You are not a therapist and must not diagnose either person or their relationship.',
+      'Never speculate about information you were not given.',
+      contextLines.length > 0
+        ? `Context ${partnerName} has chosen to share:\n${contextLines.join('\n')}`
+        : `You have no shared data about ${partnerName}. Answer from the question alone and do not invent details about them.`,
+    ].join('\n');
+
+    let answer = '';
+    try {
+      answer = await aiChatService.createReply({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: question },
+        ],
+        role: viewerRole,
+        user: viewerProfile,
+      });
+    } catch (error) {
+      console.error('[relationship-ai] generation failed:', error.message);
+      throw createHttpError(503, 'Sia could not answer just now. Please try again shortly.', {
+        code: 'AI_UNAVAILABLE',
+      });
+    }
+
+    const replyText = typeof answer === 'string' ? answer : (answer?.message ?? answer?.content ?? '');
+    if (!replyText || replyText.trim().length === 0) {
+      throw createHttpError(503, 'Sia could not answer just now. Please try again shortly.', {
+        code: 'AI_UNAVAILABLE',
+      });
+    }
+
+    const gated = gateAiOutput(replyText, safetyEvaluation);
+
+    res.status(200).json({
+      aiGenerated: true,
+      answer: typeof gated === 'string' ? gated : (gated?.output ?? replyText),
+      usedPartnerData: contextLines.length > 0,
+      aiSuggestionsEnabled: Boolean(aiAllowed),
+      safety: {
+        triggered: Boolean(safetyEvaluation?.triggered),
+        level: safetyEvaluation?.level ?? 'none',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getHealthInsights(req, res, next) {
   try {
     if (!req.user?.userId) {
@@ -753,6 +1055,7 @@ export async function getHealthInsights(req, res, next) {
       role: safeRole,
     });
 
+    const ownPeriodEntries = await getPeriodEntries(req.user.userId, 20).catch(() => []);
     const healthAnalysis = healthInsightsService.analyzeUserHealth({
       userId: req.user.userId,
       role: safeRole,
@@ -760,6 +1063,7 @@ export async function getHealthInsights(req, res, next) {
       sleepLogs: predictionContext.sleepHistory || [],
       onboardingAnswers: userProfile?.onboardingAnswers || {},
       cycleStartDate: userProfile?.cycleStartDate,
+      periodEntries: ownPeriodEntries,
     });
 
     res.status(200).json({
@@ -893,7 +1197,7 @@ export async function decodePartnerMessage(req, res, next) {
       return res.status(200).json({ canDecode: false, message: 'Decoder is only available for the man.' });
     }
 
-    const permissions = connection.permissions ?? {};
+    const permissions = normalizePermissions(connection.permissions);
     if (!permissions.allowDecoderMan) {
       return res.status(200).json({ canDecode: false, message: 'Decoder is disabled in settings.' });
     }
@@ -917,8 +1221,18 @@ export async function decodePartnerMessage(req, res, next) {
     const latestMessage = chatMessages[chatMessages.length - 1];
 
     const cycleStartDate = partnerProfile.cycleStartDate ?? null;
-    const hasCycleShare = permissions.shareCycle;
-    const cycleInfo = (hasCycleShare && cycleStartDate) ? buildCycleInfo(cycleStartDate, latestMessage.createdAt) : null;
+    const hasCycleShare = hasGrant(permissions, 'cycle.phase');
+    const decoderPeriodEntries = hasCycleShare
+      ? await getPeriodEntries(partnerUserId, 20).catch(() => [])
+      : [];
+    const cycleInfo = (hasCycleShare && cycleStartDate)
+      ? buildCycleInfo(
+          cycleStartDate,
+          partnerProfile.onboardingAnswers ?? {},
+          new Date(latestMessage.createdAt),
+          decoderPeriodEntries,
+        )
+      : null;
     
     if (latestMessage.senderRole !== 'woman') {
       return res.status(200).json({ canDecode: false, reason: 'Latest message is not from partner.' });
@@ -950,22 +1264,23 @@ export async function decodePartnerMessage(req, res, next) {
       .join('\n');
 
     let decodedText = '';
-    const grokApiKey = process.env.GROK_API_KEY || '';
-    const grokApiUrl = process.env.GROK_API_URL || 'https://openrouter.ai/api/v1/chat/completions';
-    const grokModel = process.env.GROK_MODEL || 'x-ai/grok-4.3';
+    // Through env, so this uses the same provider as the rest of the app.
+    // These three call sites previously hardcoded an OpenRouter URL and an xAI
+    // model, so they sent the Groq key to the wrong host.
+    const aiChatApiKey = env.aiChatApiKey;
+    const aiChatApiUrl = env.aiChatApiUrl;
+    const aiChatModel = env.aiChatModel;
 
-    if (grokApiKey) {
+    if (aiChatApiKey) {
       try {
-        const response = await fetch(grokApiUrl, {
+        const response = await fetch(aiChatApiUrl, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${grokApiKey}`,
+            Authorization: `Bearer ${aiChatApiKey}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://blushy.app',
-            'X-Title': 'Sia',
           },
           body: JSON.stringify({
-            model: grokModel,
+            model: aiChatModel,
             messages: [
               {
                 role: 'system',
@@ -1042,6 +1357,48 @@ export async function transcribeAudio(req, res, next) {
   }
 }
 
+/**
+ * The signed-in user's own daily chat summaries (spec §20).
+ *
+ * These are generated nightly from real conversation history. Exposing them
+ * here is what lets M Studio show a genuine daily letter rather than composing
+ * one out of nothing.
+ */
+/**
+ * Writes today's reflection now, instead of waiting for the nightly job.
+ *
+ * Reflections could previously only be produced by the midnight IST run, so a
+ * conversation held during the day showed nothing at all in the AI Reflections
+ * tab -- which said letters would appear once you had talked with Sia.
+ */
+export async function generateMyDailySummary(req, res, next) {
+  try {
+    const userKey = getUserKey(req);
+    const { generateDailySummaryForUser } = await import('../services/dailyChatSummaryService.js');
+
+    const summary = await generateDailySummaryForUser(userKey);
+    if (!summary) {
+      // Not an error: there is genuinely nothing to reflect on yet.
+      return res.status(200).json({ generated: false, summary: null });
+    }
+
+    res.status(200).json({ generated: true, summary });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getMyDailySummaries(req, res, next) {
+  try {
+    const userKey = getUserKey(req);
+    const limit = Number(req.query.limit) || 7;
+    const summaries = await aiChatSummaryRepository.listDailySummaries(userKey, limit);
+    res.status(200).json({ summaries });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function createVoiceSession(req, res, next) {
   try {
     const { mode, languageCode } = req.body ?? {};
@@ -1071,6 +1428,7 @@ export async function createVoiceSession(req, res, next) {
         : '';
 
       if (predictionContext) {
+        const ownPeriodEntries = await getPeriodEntries(userId, 20).catch(() => []);
         const healthAnalysis = healthInsightsService.analyzeUserHealth({
           userId,
           role: safeRole,
@@ -1078,6 +1436,7 @@ export async function createVoiceSession(req, res, next) {
           sleepLogs: predictionContext.sleepHistory || [],
           onboardingAnswers: userProfile?.onboardingAnswers || {},
           cycleStartDate: userProfile?.cycleStartDate,
+          periodEntries: ownPeriodEntries,
         });
 
         const alertMessages = healthAnalysis.alerts
@@ -1225,11 +1584,14 @@ export async function getDailyDiscoverTopicsAndCards(req, res, next) {
     let featuredTopic = fallbackFeaturedTopic;
     let topicArticles = {};
 
-    const grokApiKey = process.env.GROK_API_KEY || '';
-    const grokApiUrl = process.env.GROK_API_URL || 'https://openrouter.ai/api/v1/chat/completions';
-    const grokModel = process.env.GROK_MODEL || 'x-ai/grok-4.3';
+    // Through env, so this uses the same provider as the rest of the app.
+    // These three call sites previously hardcoded an OpenRouter URL and an xAI
+    // model, so they sent the Groq key to the wrong host.
+    const aiChatApiKey = env.aiChatApiKey;
+    const aiChatApiUrl = env.aiChatApiUrl;
+    const aiChatModel = env.aiChatModel;
 
-    if (grokApiKey) {
+    if (aiChatApiKey) {
       try {
         const prompt = `You are Sia, an expert women's health and wellness AI guide for Blushy.
 Today is ${dateStr} (Day ${dayIndex} of rotation cycle).
@@ -1256,16 +1618,15 @@ Return ONLY a valid JSON object matching this exact structure:
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        const aiRes = await fetch(grokApiUrl, {
+        const aiRes = await fetch(aiChatApiUrl, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${grokApiKey}`,
+            Authorization: `Bearer ${aiChatApiKey}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://blushy.app',
             'X-Title': 'Blushy AI Discover',
           },
           body: JSON.stringify({
-            model: grokModel,
+            model: aiChatModel,
             messages: [{ role: 'system', content: prompt }],
             response_format: { type: 'json_object' },
             max_tokens: 1800,
@@ -1361,6 +1722,20 @@ Return ONLY a valid JSON object matching this exact structure:
   }
 }
 
+/**
+ * A reflection on what the user actually wrote in their journal.
+ *
+ * This used to be a fixed lookup table keyed only on life stage: it read no
+ * journal, yet the app displayed it as "AI Reflection". The default asserted
+ * "Estrogen is naturally rising. Your focus and mental clarity are at peak
+ * rhythm today." to anyone who opened the tab, and the menopause branch went
+ * further with "Your reflection logs indicate balanced energy" -- a claim to
+ * have read logs it never opened.
+ *
+ * Two rules now hold. It is derived from the entries themselves, and it says
+ * nothing about the body: spec 14 forbids displaying estimated hormone levels
+ * without validated lab or device data, which Blushy does not ingest.
+ */
 export async function getTodayMemorySummary(req, res, next) {
   try {
     if (!req.user?.userId) {
@@ -1376,27 +1751,30 @@ export async function getTodayMemorySummary(req, res, next) {
       userName = answers.preferred_name || userProfile?.name || 'there';
     } catch (_) {}
 
-    let reflection = "Estrogen is naturally rising. Your focus and mental clarity are at peak rhythm today.";
-    let emotion = "Peaceful 😊";
+    const { getJournalReflection } = await import('../services/journalReflectionService.js');
+    const reflection = await getJournalReflection(req.user.userId, { days: 7 });
 
-    if (lifeStage === 'pregnancy') {
-      reflection = "Your body is prioritizing rest and hydration today. Nurture your inner peace.";
-      emotion = "Nurtured 🌸";
-    } else if (lifeStage === 'postpartum') {
-      reflection = "Gentle recovery and small restful moments are building your autonomic balance today.";
-      emotion = "Calm 🌿";
-    } else if (lifeStage === 'menopause') {
-      reflection = "Vasomotor stability remains steady. Your reflection logs indicate balanced energy.";
-      emotion = "Serene ☀️";
-    } else if (lifeStage === 'hormonalHealth') {
-      reflection = "Cycle tracking builds baseline awareness. Stay hydrated and rested today.";
-      emotion = "Mindful 🍃";
+    // Nothing written is a real answer, not a cue to compose one.
+    if (!reflection) {
+      return res.status(200).json({
+        success: true,
+        hasJournal: false,
+        reflection: null,
+        themes: [],
+        lifeStage,
+        userName,
+      });
     }
 
     return res.status(200).json({
       success: true,
-      reflection,
-      emotion,
+      hasJournal: true,
+      reflection: reflection.reflection,
+      themes: reflection.themes,
+      wordCount: reflection.wordCount,
+      entryCount: reflection.entryCount,
+      dayCount: reflection.dayCount,
+      version: reflection.version,
       lifeStage,
       userName,
     });

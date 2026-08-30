@@ -3,9 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/theme.dart' hide BlushyColors;
 
 import '../../services/api_sia_service.dart';
+import '../../services/api_blushy_service.dart';
 import '../../services/html_audio_helper.dart';
 import '../../services/sia_dashboard_service.dart';
 import '../../services/auth_storage.dart';
@@ -14,6 +16,7 @@ import '../../core/state.dart';
 import '../../core/cycle_calculator.dart';
 import '../../core/stage_config.dart';
 import '../../services/api_auth_service.dart';
+import '../../services/journal_quick_entry.dart';
 import '../../services/api_period_service.dart';
 import '../../shared/voice_note_bottom_sheet.dart';
 import '../community/community_screen.dart';
@@ -56,6 +59,9 @@ class BlushySiaScreen extends StatefulWidget {
 
 class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderStateMixin {
   final List<Map<String, String>> _messages = [];
+
+  /// Exchanges whose share state is currently being written.
+  final Set<String> _sharingConversationIds = <String>{};
   final TextEditingController _chatController = TextEditingController();
   final ApiSiaService _siaService = ApiSiaService();
 
@@ -224,7 +230,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         stage = 'partner';
       } else {
         final profile = BlushyStorage.read('user_profile.json');
-        if (profile != null && profile['profile'] != null) {
+        if (profile['profile'] != null) {
           stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
         }
       }
@@ -288,16 +294,12 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
       final q = query.toLowerCase();
 
       int? newEnergy = wb.energy;
-      String? energyString;
       if (q.contains('high energy') || q.contains('lots of energy') || q.contains('very energetic') || q.contains('full of energy') || q.contains('great energy') || q.contains('energetic')) {
         newEnergy = 8;
-        energyString = 'High';
       } else if (q.contains('medium energy') || q.contains('moderate energy') || q.contains('normal energy') || q.contains('okay energy') || q.contains('balanced energy') || q.contains('average energy')) {
         newEnergy = 5;
-        energyString = 'Medium';
       } else if (q.contains('low energy') || q.contains('tired') || q.contains('exhausted') || q.contains('drained') || q.contains('fatigue') || q.contains('no energy') || q.contains('little energy') || q.contains('sluggish') || q.contains('wiped out')) {
         newEnergy = 3;
-        energyString = 'Low';
       }
 
       int? newMood = wb.mood;
@@ -400,7 +402,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         stage = 'partner';
       } else {
         final profile = BlushyStorage.read('user_profile.json');
-        if (profile != null && profile['profile'] != null) {
+        if (profile['profile'] != null) {
           stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
         }
       }
@@ -476,16 +478,26 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         final List<dynamic>? symList = chatResult.moodCapture!['symptoms'] as List<dynamic>?;
 
         int? moodScore = state.wellbeingState.mood;
-        if (moodStr == 'great') moodScore = 9;
-        else if (moodStr == 'calm') moodScore = 8;
-        else if (moodStr == 'okay') moodScore = 6;
-        else if (moodStr == 'low') moodScore = 3;
-        else if (moodStr == 'anxious' || moodStr == 'irritated') moodScore = 4;
+        if (moodStr == 'great') {
+          moodScore = 9;
+        } else if (moodStr == 'calm') {
+          moodScore = 8;
+        } else if (moodStr == 'okay') {
+          moodScore = 6;
+        } else if (moodStr == 'low') {
+          moodScore = 3;
+        } else if (moodStr == 'anxious' || moodStr == 'irritated') {
+          moodScore = 4;
+        }
 
         int? energyScore = state.wellbeingState.energy;
-        if (energyStr == 'high') energyScore = 8;
-        else if (energyStr == 'medium') energyScore = 5;
-        else if (energyStr == 'low') energyScore = 3;
+        if (energyStr == 'high') {
+          energyScore = 8;
+        } else if (energyStr == 'medium') {
+          energyScore = 5;
+        } else if (energyStr == 'low') {
+          energyScore = 3;
+        }
 
         final List<String> currentSymptoms = List<String>.from(state.wellbeingState.symptoms);
         if (symList != null) {
@@ -512,6 +524,33 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
 
       setState(() {
         _isThinking = false;
+
+        // A red flag rule fired on the server. When it suppresses ordinary
+        // content the message is the clinically reviewed instruction, not a
+        // generated reply, so it is rendered as safety guidance rather than as
+        // a chat bubble from Sia.
+        if (chatResult.hasSafety) {
+          final safety = chatResult.safety!;
+          final step = safety.steps.first;
+          _messages.add(<String, String>{
+            'sender': 'safety',
+            'text': step.instruction,
+            'title': step.title,
+            'level': safety.level ?? step.level,
+            if (step.source != null) 'source': step.source!,
+            if (safety.emergencyNumber != null) 'emergencyNumber': safety.emergencyNumber!,
+            'resources': safety.resources
+                .where((r) => r.contact != null && r.contact!.isNotEmpty)
+                .map((r) => '${r.name}: ${r.contact}')
+                .join('\n'),
+          });
+
+          // When wellness content is suppressed the reviewed guidance is the
+          // whole response, so no Sia bubble is appended after it. The notify
+          // call after this setState still runs.
+          if (chatResult.suppressesChat) return;
+        }
+
         final siaEntry = <String, String>{
           'sender': 'sia',
           'text': chatResult.message,
@@ -549,7 +588,9 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         if (audioBytes.isNotEmpty) {
           final transcribedText = await _siaService.transcribeAudioBytes(
             audioBytes,
-            'sia_voice_${DateTime.now().millisecondsSinceEpoch}.webm',
+            'sia_voice_${DateTime.now().millisecondsSinceEpoch}'
+                '.${_audioRecorder!.fileExtension}',
+            mimeType: _audioRecorder!.mimeType,
           );
 
           if (mounted) {
@@ -559,11 +600,11 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
             if (transcribedText.trim().isNotEmpty) {
               _chatController.text = transcribedText.trim();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Voice transcribed into text field. Review and tap send!")),
+                SnackBar(content: Text(AppLocalizations.of(context).siaVoiceTranscribed)),
               );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("No spoken audio could be recognized. Please try again.")),
+                SnackBar(content: Text(AppLocalizations.of(context).siaNoSpeechRecognised)),
               );
             }
           }
@@ -573,9 +614,19 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
               _isThinking = false;
             });
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("No audio recorded. Please verify microphone permissions.")),
+              SnackBar(content: Text(AppLocalizations.of(context).siaNoAudioRecorded)),
             );
           }
+        }
+      } on TranscriptionUnavailable catch (e) {
+        // The recording succeeded; the transcription service did not.
+        if (mounted) {
+          setState(() {
+            _isThinking = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${e.message} You can type your message instead.')),
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -640,7 +691,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                 )
               : null,
         title: Text(
-          "Ask Sia",
+          AppLocalizations.of(context).siaAsk,
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -840,7 +891,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                           );
                         }
 
-                        final normalizedStage = (state.personalContext.lifeStage ?? state.selectedRole ?? '').toString().toLowerCase().replaceAll('_', '').replaceAll(' ', '');
+                        final normalizedStage = (state.personalContext.lifeStage ?? state.selectedRole).toString().toLowerCase().replaceAll('_', '').replaceAll(' ', '');
                         final bool shouldHideSleep = normalizedStage.contains('notstarted') ||
                             normalizedStage.contains('firstperiod') ||
                             normalizedStage.contains('tryingtoconceive') ||
@@ -955,7 +1006,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                     // 5. Chat timeline or suggestions
                     if (_messages.isEmpty && !_isThinking) ...[
                       Text(
-                        'DYNAMIC CONVERSATION STARTERS',
+                        AppLocalizations.of(context).siaConversationStarters,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -1040,7 +1091,8 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                         }
 
                         // Dynamic 4: Community discussion text
-                        final String communityDesc = "4,281 women in the community are sharing ${stageConfig.displayName} & $activePhase experiences today. Tap to join the live discussion.";
+                        // The count here was invented too; nothing tallies community activity.
+                        final String communityDesc = "People are sharing their ${stageConfig.displayName} and $activePhase experiences. Tap to join the discussion.";
 
                         return Column(
                           children: [
@@ -1130,7 +1182,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                   const Text('😌', style: TextStyle(fontSize: 22)),
                   const SizedBox(width: 10),
                   Text(
-                    'How are you feeling today?',
+                    AppLocalizations.of(context).siaHowFeelingToday,
                     style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                   ),
                   const Spacer(),
@@ -1215,7 +1267,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                   const Icon(Icons.bolt_rounded, color: Color(0xFFF59E0B), size: 24),
                   const SizedBox(width: 10),
                   Text(
-                    'What is your energy level?',
+                    AppLocalizations.of(context).siaEnergyLevel,
                     style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                   ),
                   const Spacer(),
@@ -1304,7 +1356,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                   const Icon(Icons.bedtime_rounded, color: Color(0xFF6F42F5), size: 24),
                   const SizedBox(width: 10),
                   Text(
-                    'Log Sleep Duration',
+                    AppLocalizations.of(context).siaLogSleep,
                     style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                   ),
                   const Spacer(),
@@ -1340,7 +1392,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: BlushyColors.primary.withOpacity(0.3)),
+                        border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         '${hours}h',
@@ -1432,6 +1484,9 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                   ),
                   onPressed: () async {
                     final messenger = ScaffoldMessenger.of(context);
+                    // Resolved before the date picker awaits, for the same
+                    // reason messenger is: the context may be gone after.
+                    final recordedMessage = AppLocalizations.of(context).siaPeriodRecorded;
                     final nav = Navigator.of(ctx);
                     final picked = await showDatePicker(
                       context: ctx,
@@ -1443,7 +1498,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                       nav.pop();
                       state.updatePersonalContext(pc.copyWith(lastPeriodStart: picked));
                       try {
-                        final profileData = BlushyStorage.read('user_profile.json') ?? {};
+                        final profileData = BlushyStorage.read('user_profile.json');
                         final profileMap = Map<String, dynamic>.from(profileData['profile'] ?? profileData);
                         profileMap['period_last_start_date'] = picked.toIso8601String();
                         profileMap['last_period'] = picked.toIso8601String();
@@ -1452,13 +1507,13 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                       } catch (_) {}
                       if (mounted) {
                         messenger.showSnackBar(
-                          const SnackBar(content: Text('Period start date recorded.')),
+                          SnackBar(content: Text(recordedMessage)),
                         );
                       }
                     }
                   },
                   icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                  label: Text('Log Period Start Date', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold)),
+                  label: Text(AppLocalizations.of(context).siaLogPeriodStart, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1485,7 +1540,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
           border: Border.all(color: BlushyColors.border, width: 0.8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -1688,7 +1743,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                             style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                           ),
                           Text(
-                            "Live health signals from your MongoDB records",
+                            "Signals from what you have logged",
                             style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
                           ),
                         ],
@@ -1756,7 +1811,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
 
                       // 2. Logged Symptoms
                       Text(
-                        "LOGGED SYMPTOMS & SIGNALS",
+                        AppLocalizations.of(context).siaLoggedSymptoms,
                         style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText, letterSpacing: 1.2),
                       ),
                       const SizedBox(height: 10),
@@ -1841,7 +1896,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                             elevation: 0,
                           ),
                           child: Text(
-                            "Log Health Check-In",
+                            AppLocalizations.of(context).siaLogCheckIn,
                             style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ),
@@ -1885,7 +1940,6 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
   void _showJournalPromptSheet(BuildContext context, String prompt) {
     final textController = TextEditingController();
     String selectedMood = 'Reflective';
-    final state = BlushyOSProvider.of(context);
 
     showModalBottomSheet(
       context: context,
@@ -1938,7 +1992,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Daily Journal Reflection",
+                                AppLocalizations.of(context).siaDailyReflection,
                                 style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                               ),
                               Text(
@@ -2048,7 +2102,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                                     );
                                   },
                                   icon: const Icon(Icons.menu_book_rounded, size: 16),
-                                  label: Text("Open Journal", style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                                  label: Text(AppLocalizations.of(context).siaOpenJournal, style: GoogleFonts.poppins(fontSize: 12.5, fontWeight: FontWeight.w600)),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: BlushyColors.text,
                                     side: const BorderSide(color: BlushyColors.border),
@@ -2063,16 +2117,27 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                               child: SizedBox(
                                 height: 48,
                                 child: ElevatedButton.icon(
-                                  onPressed: () {
+                                  onPressed: () async {
                                     final text = textController.text.trim();
                                     if (text.isEmpty) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Please write your reflection before saving.')),
+                                        SnackBar(content: Text(AppLocalizations.of(context).siaWriteBeforeSaving)),
                                       );
                                       return;
                                     }
 
-                                    state.addJournal(text, selectedMood);
+                                    final messenger = ScaffoldMessenger.of(context);
+
+                                    // Into the journal store the journal screen
+                                    // reads. addJournal writes to a list whose
+                                    // only reader is dead code, so entries saved
+                                    // here never appeared anywhere.
+                                    final saved = await JournalQuickEntry.save(
+                                      text: text,
+                                      title: prompt.isNotEmpty ? prompt : 'Reflection',
+                                      moodKey: selectedMood,
+                                    );
+
                                     ApiAuthService().saveOnboardingAnswers({
                                       'last_journal_prompt': prompt,
                                       'last_journal_entry': text,
@@ -2080,8 +2145,17 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                                       'last_journal_timestamp': DateTime.now().toIso8601String(),
                                     }).catchError((_) => <String, dynamic>{});
 
-                                    Navigator.pop(modalCtx);
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    if (!saved) {
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Could not save your entry. Please try again.'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    if (modalCtx.mounted) Navigator.pop(modalCtx);
+                                    messenger.showSnackBar(
                                       const SnackBar(
                                         content: Text('✨ Your journal entry has been saved!'),
                                         backgroundColor: Color(0xFF10B981),
@@ -2096,7 +2170,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                                   ),
                                   icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
                                   label: Text(
-                                    "Save Entry",
+                                    AppLocalizations.of(context).siaSaveEntry,
                                     style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
                                 ),
@@ -2138,7 +2212,170 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
     );
   }
 
+  /// Reviewed safety guidance, shown instead of a chat bubble.
+  ///
+  /// This wording comes from the clinically reviewed red flag rule, not from
+  /// the model, so it is presented distinctly rather than as something Sia
+  /// said.
+  Widget _buildSafetyMessage(Map<String, String> msg) {
+    final bool urgent = msg['level'] == 'emergency';
+    final Color accent = urgent ? const Color(0xFFB3261E) : const Color(0xFFB26A00);
+    final resources = (msg['resources'] ?? '').split('\n').where((r) => r.trim().isNotEmpty).toList();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: accent.withValues(alpha: 0.4), width: 1.2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(urgent ? Icons.emergency_outlined : Icons.warning_amber_rounded,
+                    color: accent, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    msg['title'] ?? 'Please seek care',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              msg['text'] ?? '',
+              style: GoogleFonts.poppins(fontSize: 14, height: 1.5, color: const Color(0xFF2B2B2B)),
+            ),
+            if (msg['emergencyNumber'] != null) ...[
+              const SizedBox(height: 14),
+              Text(
+                'Emergency number: ${msg['emergencyNumber']}',
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: accent),
+              ),
+            ],
+            if (resources.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ...resources.map(
+                (r) => Padding(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  child: Text(
+                    r,
+                    style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF5A5A5A)),
+                  ),
+                ),
+              ),
+            ],
+            if (msg['source'] != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Source: ${msg['source']}',
+                style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF8A8A8A)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Shares one Sia exchange with a partner, or takes it back.
+  ///
+  /// Sia is where people say the things they have not told anyone, so this is
+  /// per exchange and never a blanket release. It also only reaches a partner
+  /// who holds the `sia_conversations` permission -- both gates must be open.
+  Widget _buildShareExchangeButton(Map<String, String> msg) {
+    final conversationId = msg['conversationId'] ?? '';
+    // A message that has not been persisted yet has no id to share.
+    if (conversationId.isEmpty) return const SizedBox.shrink();
+
+    final shared = msg['shared'] == '1';
+    final busy = _sharingConversationIds.contains(conversationId);
+
+    return InkWell(
+      onTap: busy ? null : () => _toggleExchangeShared(conversationId, !shared),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: busy
+            ? const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    shared ? Icons.people_alt_rounded : Icons.people_outline_rounded,
+                    size: 13,
+                    color: shared ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    shared ? 'Shared' : 'Share',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: shared ? FontWeight.w700 : FontWeight.w500,
+                      color: shared ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Future<void> _toggleExchangeShared(String conversationId, bool shared) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _sharingConversationIds.add(conversationId));
+
+    final ok = await ApiAuthService().setSiaConversationShared(
+      conversationId: conversationId,
+      shared: shared,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _sharingConversationIds.remove(conversationId);
+      if (ok) {
+        // Both halves of the exchange carry the same id, so both flip.
+        for (final message in _messages) {
+          if (message['conversationId'] == conversationId) {
+            message['shared'] = shared ? '1' : '0';
+          }
+        }
+      }
+    });
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          !ok
+              ? 'Could not change sharing for that message.'
+              : shared
+                  ? 'Shared. Your partner sees this only if you have turned on Sia conversation sharing for them.'
+                  : 'No longer shared.',
+        ),
+      ),
+    );
+  }
+
   Widget _buildMessageBubble(Map<String, String> msg) {
+    if (msg['sender'] == 'safety') {
+      return _buildSafetyMessage(msg);
+    }
+
     final text = msg['text']?.trim() ?? '';
     if (text.isEmpty && msg['rich'] == null) {
       return const SizedBox.shrink();
@@ -2157,7 +2394,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
             border: isSia ? Border.all(color: BlushyColors.border) : null,
             boxShadow: [
               BoxShadow(
-                color: BlushyColors.text.withOpacity(0.04),
+                color: BlushyColors.text.withValues(alpha: 0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -2166,13 +2403,22 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                isSia ? 'Sia Companion' : 'You',
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: isSia ? const Color(0xFF6F42F5) : BlushyColors.text,
-                ),
+              Row(
+                children: [
+                  Text(
+                    isSia ? 'Sia Companion' : 'You',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: isSia ? const Color(0xFF6F42F5) : BlushyColors.text,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Only on Sia's side of an exchange: the pair is one stored
+                  // conversation, so one control shares the whole exchange
+                  // rather than offering the same thing twice.
+                  if (isSia) _buildShareExchangeButton(msg),
+                ],
               ),
               if (msg['fileName'] != null) ...[
                 const SizedBox(height: 8),
@@ -2275,7 +2521,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         decoration: BoxDecoration(
           color: BlushyColors.background,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF6F42F5).withOpacity(0.15)),
+          border: Border.all(color: const Color(0xFF6F42F5).withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
@@ -2295,7 +2541,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                     style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF6F42F5)),
                   ),
                   Text(
-                    'Cycle-stabilizing parasympathetic booster • 5 min',
+                    'A slow breathing exercise • 5 min',
                     style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
                   ),
                 ],
@@ -2322,14 +2568,20 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                 const Icon(Icons.people_alt_outlined, color: BlushyColors.primary, size: 14),
                 const SizedBox(width: 8),
                 Text(
-                  'Community Insights: Fatigue',
+                  'Community',
                   style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.primary),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              '4,281 women reported similar symptoms in their late luteal cycles. 78% found relief by increasing iron-rich nutrition.',
+              // This read "4,281 women reported similar symptoms in their late
+              // luteal cycles. 78% found relief by increasing iron-rich
+              // nutrition." Both numbers were invented, and the second is an
+              // efficacy claim someone could act on. Nothing counted them and
+              // no study was behind them, so the card now points at the real
+              // community rather than quoting figures that do not exist.
+              'Other people are talking about how they feel at this point in their cycle. Tap to read the discussion.',
               style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, height: 1.4),
             ),
           ],
@@ -2388,7 +2640,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
               ),
               const SizedBox(width: 10),
               Text(
-                'Sia is thinking...',
+                AppLocalizations.of(context).siaThinking,
                 style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
               ),
             ],
@@ -2611,8 +2863,8 @@ class _SiaBreathingOrbState extends State<_SiaBreathingOrb> with SingleTickerPro
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(0xFF8B5CF6).withOpacity(opacity),
-                const Color(0xFFC084FC).withOpacity(0.0),
+                const Color(0xFF8B5CF6).withValues(alpha: opacity),
+                const Color(0xFFC084FC).withValues(alpha: 0.0),
               ],
             ),
           ),
@@ -2645,6 +2897,41 @@ class _MiniWeeklySleepBarChart extends StatefulWidget {
 }
 
 class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
+  /// Real sleep for the last seven days. Only today used to be real; the other
+  /// six were hardcoded to zero, so logged nights were shown as blank and the
+  /// average was divided by seven regardless.
+  Map<String, double> _hoursByDay = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWeek();
+  }
+
+  Future<void> _loadWeek() async {
+    final from = DateTime.now().subtract(const Duration(days: 6));
+    final result = await EventsApi.timeline(
+      eventTypes: const ['sleep_logged'],
+      from: DateTime(from.year, from.month, from.day),
+      limit: 50,
+    );
+    if (!mounted) return;
+
+    final byDay = <String, double>{};
+    for (final entry in result.data?.entries ?? const []) {
+      final hours = (entry.detail['durationHours'] ?? entry.detail['duration']) as num?;
+      if (hours == null) continue;
+      final key = '${entry.date.year}-${entry.date.month}-${entry.date.day}';
+      // Latest entry for a day wins, matching how a re-log replaces the value.
+      byDay.putIfAbsent(key, () => hours.toDouble());
+    }
+
+    setState(() => _hoursByDay = byDay);
+  }
+
+  double _hoursFor(DateTime day) =>
+      _hoursByDay['${day.year}-${day.month}-${day.day}'] ?? 0.0;
+
   int? _selectedBarIndex;
 
   @override
@@ -2654,26 +2941,41 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
         ? (double.tryParse(widget.sleepVal!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0)
         : 0.0;
 
+    // The last seven days ending today, each from what was actually logged.
+    const initials = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final today = DateTime.now();
     final List<Map<String, dynamic>> days = [
-      {'day': 'M', 'hours': 0.0, 'quality': 'Unlogged', 'isToday': false},
-      {'day': 'T', 'hours': 0.0, 'quality': 'Unlogged', 'isToday': false},
-      {'day': 'W', 'hours': 0.0, 'quality': 'Unlogged', 'isToday': false},
-      {'day': 'T', 'hours': 0.0, 'quality': 'Unlogged', 'isToday': false},
-      {'day': 'F', 'hours': 0.0, 'quality': 'Unlogged', 'isToday': false},
-      {'day': 'S', 'hours': 0.0, 'quality': 'Unlogged', 'isToday': false},
-      {'day': 'S', 'hours': loggedHours, 'quality': isLogged ? 'Recorded' : 'Unlogged', 'isToday': true},
+      for (var back = 6; back >= 0; back--)
+        () {
+          final day = today.subtract(Duration(days: back));
+          // Today prefers the value already on screen, so the chart agrees with
+          // the card above it even before the week finishes loading.
+          final hours = back == 0 && isLogged ? loggedHours : _hoursFor(day);
+          return {
+            'day': initials[day.weekday - 1],
+            'hours': hours,
+            'quality': hours > 0 ? 'Recorded' : 'Unlogged',
+            'isToday': back == 0,
+          };
+        }(),
     ];
 
-    double totalHours = 0;
-    for (var d in days) {
-      totalHours += (d['hours'] as num).toDouble();
-    }
-    final double avgHours = totalHours / days.length;
+    // Averaged over the nights that were logged, not over seven. Dividing by
+    // seven made a single good night look like a poor week.
+    final logged = days.where((d) => (d['hours'] as num) > 0).toList();
+    final double totalHours =
+        logged.fold(0.0, (sum, d) => sum + (d['hours'] as num).toDouble());
+    final double avgHours = logged.isEmpty ? 0.0 : totalHours / logged.length;
     const double targetHours = 8.0;
     const double maxScale = 10.0;
     const double chartBarAreaHeight = 28.0;
 
     return Container(
+      // This is rendered inside a FittedBox, which hands its child unbounded
+      // width. The Rows below use Flexible and Expanded, which cannot divide an
+      // infinite width -- without a definite width here the whole card fails to
+      // lay out. The sibling card does the same thing with its CustomPaint.
+      width: 160,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFFFDFBF7),
@@ -2729,7 +3031,7 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
                         child: Container(
                           height: 1,
                           color: (index % 2 == 0)
-                              ? const Color(0xFF6F42F5).withOpacity(0.4)
+                              ? const Color(0xFF6F42F5).withValues(alpha: 0.4)
                               : Colors.transparent,
                         ),
                       ),
@@ -2796,7 +3098,7 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
                                 boxShadow: isActiveToday || isSelected
                                     ? [
                                         BoxShadow(
-                                          color: BlushyColors.primary.withOpacity(0.3),
+                                          color: BlushyColors.primary.withValues(alpha: 0.3),
                                           blurRadius: 3,
                                           offset: const Offset(0, 1),
                                         )

@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/storage.dart';
@@ -10,6 +8,7 @@ import '../../../core/cycle_calculator.dart';
 import '../../../theme/colors.dart';
 import '../../../services/api_auth_service.dart';
 import '../../legal/legal_documents_screen.dart';
+import '../../../services/api_blushy_service.dart';
 
 // --- Onboarding Data Model ---
 enum LifeStage {
@@ -494,6 +493,13 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       return <String, dynamic>{};
     });
 
+    // Enter the life stage engine, not just the onboarding answers.
+    //
+    // Without this the engine has no branch context, so a user who gave a due
+    // date during onboarding still saw "add a due date" on the pregnancy
+    // module, which reads branchContext rather than onboarding answers.
+    _enterLifeStage(chosenStage);
+
     try {
       final stageInitialAnswers = {
         'goals': _profile.goals,
@@ -600,6 +606,42 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
     // Route to main page
     Navigator.of(context).pushReplacementNamed('/home');
+  }
+
+  /// Records the chosen branch with the life stage engine, carrying the
+  /// context that branch needs to render immediately.
+  ///
+  /// `confirmed: true` is correct here: this is the user's own explicit
+  /// selection during onboarding, which is exactly the confirmation the
+  /// sensitive transitions require (spec section 23).
+  Future<void> _enterLifeStage(String chosenStage) async {
+    final context = <String, dynamic>{
+      if (_profile.lastPeriod != null)
+        'last_period_start': _profile.lastPeriod!.toIso8601String().split('T').first,
+      if (_profile.dueDate != null)
+        'due_date': _profile.dueDate!.toIso8601String().split('T').first,
+      if (_profile.babyBirthDate != null)
+        'baby_birth_date': _profile.babyBirthDate!.toIso8601String().split('T').first,
+      if (_profile.conditions.isNotEmpty) 'diagnosed_conditions': _profile.conditions,
+    };
+
+    final result = await LifeStageApi.transition(
+      toStage: chosenStage,
+      confirmed: true,
+      context: context,
+    );
+
+    if (!result.isReady) {
+      // Non-fatal: the legacy profile answers still carry the stage, so Home
+      // renders. The branch context is what would be missing.
+      debugPrint('BlushyBackend: life stage transition failed: ${result.errorCode}');
+    }
+
+    // Conditions the user selected are theirs, explicitly reported - never
+    // inferred (spec section 14).
+    if (_profile.conditions.isNotEmpty) {
+      await BranchApi.saveConditions(_profile.conditions, diagnosedBy: 'self_reported');
+    }
   }
 
   @override
@@ -967,7 +1009,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                       children: [
                         Icon(
                           isDone ? Icons.check_circle : Icons.radio_button_off,
-                          color: isDone ? BlushyColors.primary : BlushyColors.secondaryText.withOpacity(0.4),
+                          color: isDone ? BlushyColors.primary : BlushyColors.secondaryText.withValues(alpha: 0.4),
                           size: 20,
                         ),
                         const SizedBox(width: 14),
@@ -975,7 +1017,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                           listItems[idx],
                           style: GoogleFonts.poppins(
                             fontSize: 13, 
-                            color: isDone ? BlushyColors.text : BlushyColors.secondaryText.withOpacity(0.6),
+                            color: isDone ? BlushyColors.text : BlushyColors.secondaryText.withValues(alpha: 0.6),
                             fontWeight: isDone ? FontWeight.w600 : FontWeight.normal
                           ),
                         ),
@@ -1229,7 +1271,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           style: GoogleFonts.poppins(fontSize: 18, color: BlushyColors.text),
           decoration: InputDecoration(
             hintText: "Your preferred name",
-            hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withOpacity(0.5)),
+            hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
             border: const UnderlineInputBorder(borderSide: BorderSide(color: BlushyColors.border)),
             focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: BlushyColors.primary, width: 2)),
           ),
@@ -1346,7 +1388,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
               _saveProgress();
             },
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -1962,7 +2004,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
               _saveProgress();
             },
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -2002,7 +2044,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
               _saveProgress();
             },
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -2042,7 +2084,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
               _saveProgress();
             },
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -2082,7 +2124,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
               _saveProgress();
             },
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -2207,12 +2249,12 @@ class _PremiumSelectionRowState extends State<PremiumSelectionRow> with SingleTi
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: widget.isSelected 
-                  ? BlushyColors.primary.withOpacity(0.04) 
-                  : (_isHovered ? Colors.white.withOpacity(0.4) : Colors.transparent),
+                  ? BlushyColors.primary.withValues(alpha: 0.04) 
+                  : (_isHovered ? Colors.white.withValues(alpha: 0.4) : Colors.transparent),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: widget.isSelected 
-                    ? BlushyColors.primary.withOpacity(0.3) 
+                    ? BlushyColors.primary.withValues(alpha: 0.3) 
                     : (_isHovered ? BlushyColors.border : Colors.transparent),
                 width: 1.0,
               ),

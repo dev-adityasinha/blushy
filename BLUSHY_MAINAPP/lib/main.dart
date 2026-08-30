@@ -4,6 +4,9 @@ import 'features/home/blushy_shell.dart';
 import 'features/home/presentation/partner_shell.dart';
 import 'core/state.dart';
 import 'core/storage.dart';
+import 'services/language_preference.dart';
+import 'features/admin/content_review_screen.dart';
+import 'l10n/app_localizations.dart';
 import 'features/auth/presentation/auth_screen.dart';
 import 'features/auth/presentation/onboarding_wizard.dart';
 import 'features/auth/presentation/partner_onboarding_wizard.dart';
@@ -11,7 +14,13 @@ import 'features/auth/presentation/choose_experience_screen.dart';
 import 'features/dev/developer_playground.dart';
 import 'services/auth_storage.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Resolves the writable directory before anything reads or writes. Without
+  // it every file write on Android fails against a read-only path.
+  await BlushyStorage.init();
+  // Restores the language Sia replies in before the first screen renders.
+  LanguagePreference.load();
   runApp(const BlushyApp());
 }
 
@@ -22,9 +31,17 @@ class BlushyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlushyOSProvider(
       notifier: BlushyOSState(),
-      child: MaterialApp(
+      // Rebuilds the whole app when the language changes, so the chrome
+      // switches immediately rather than on next launch.
+      child: ValueListenableBuilder<String>(
+        valueListenable: LanguagePreference.current,
+        builder: (context, languageCode, _) => MaterialApp(
         title: 'blushy.life',
         debugShowCheckedModeBanner: false,
+        locale: Locale(languageCode),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localeResolutionCallback: LanguagePreference.resolveLocale,
         theme: ThemeData(
           scaffoldBackgroundColor: BlushyColors.background,
           useMaterial3: true,
@@ -33,6 +50,9 @@ class BlushyApp extends StatelessWidget {
         routes: {
           '/login': (context) => const AppRouter(),
           '/dev': (context) => const DeveloperPlaygroundScreen(),
+          // Clinical reviewers approve health content here. The backend has
+          // had the whole review API from the start with nothing calling it.
+          '/admin/content-review': (context) => const ContentReviewScreen(),
           '/onboarding/choose': (context) => ChooseExperienceScreen(
                 onSelectForMe: () {
                   Navigator.of(context).pushReplacementNamed('/onboarding/women');
@@ -45,6 +65,7 @@ class BlushyApp extends StatelessWidget {
           '/onboarding/partner': (context) => const PartnerOnboardingWizard(),
           '/home': (context) => const AppRouter(),
         },
+        ),
       ),
     );
   }

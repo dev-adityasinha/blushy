@@ -30,11 +30,11 @@ class ApiCheckinService {
       final url = Uri.parse('${resolveApiBaseUrl()}/api/checkins');
       final payload = {
         'logDate': logDate,
-        if (mood != null) 'mood': mood,
-        if (energyLevel != null) 'energyLevel': energyLevel,
-        if (sleepHours != null) 'sleepHours': sleepHours,
-        if (symptoms != null) 'symptoms': symptoms,
-        if (notes != null) 'notes': notes,
+        'mood': ?mood,
+        'energyLevel': ?energyLevel,
+        'sleepHours': ?sleepHours,
+        'symptoms': ?symptoms,
+        'notes': ?notes,
         'source': source,
       };
 

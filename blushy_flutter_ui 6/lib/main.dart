@@ -1,9 +1,8 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'dart:js' as js;
-import 'dart:html' as html;
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'hero_redesign.dart';
@@ -11,14 +10,11 @@ import 'blushy_screens.dart';
 import 'blushy_design_system.dart';
 import 'platform_keynote_phone.dart';
 
-void _navigateToBeta() {
+void _navigateToBeta() async {
   const url = 'https://blushy.life/betaversion';
-  try {
-    html.window.location.href = url;
-  } catch (_) {
-    try {
-      js.context.callMethod('open', [url, '_self']);
-    } catch (_) {}
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 
@@ -1924,10 +1920,15 @@ class ContactSection extends StatelessWidget {
       Text(title, style: T.e(c: C.cream.withOpacity(0.55))),
       const SizedBox(height: 4),
       GestureDetector(
-        onTap: () {
+        onTap: () async {
           Clipboard.setData(ClipboardData(text: val));
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copied $val'), backgroundColor: C.red, duration: const Duration(seconds: 2)));
-          try { js.context.callMethod('open', [url, '_blank']); } catch (_) {}
+          try {
+            final uri = Uri.parse(url);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          } catch (_) {}
         },
         behavior: HitTestBehavior.opaque,
         child: Padding(

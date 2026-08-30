@@ -293,7 +293,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                 try {
                                   await _apiAuthService.verifyCode(email, code);
-                                  if (context.mounted) {
+                                  // `mounted` covers this.context, which the
+                                  // dialog's own context.mounted does not.
+                                  if (context.mounted && mounted) {
                                     Navigator.of(dialogContext).pop();
                                     final state = BlushyOSProvider.of(this.context);
                                     final onboardingCompleted = AuthStorage.isOnboardingCompleted();

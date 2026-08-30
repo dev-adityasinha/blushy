@@ -27,13 +27,11 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
   bool _isSweeping = false;
   bool _isInitialized = false;
   String _activePhaseName = 'Follicular Phase';
-  String _activeDayLabel = '14';
   String _activePeriodLabel = '14 days';
   String _activeExpectedPeriod = '';
   int _activeCycleLength = 28;
 
   Path? _cachedPath;
-  PathMetrics? _cachedMetrics;
 
   @override
   void initState() {
@@ -121,7 +119,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
     if (periodDate == null) {
       try {
         final profileData = BlushyStorage.read('user_profile.json');
-        final profile = (profileData is Map) ? (profileData['profile'] ?? profileData) : {};
+        final profile = profileData['profile'] ?? profileData;
         final rawPeriod = profile['lastPeriodStart'] ?? profile['last_period'] ?? profile['last_period_date'] ?? profile['period_last_start_date'];
         if (rawPeriod != null) {
           periodDate = BlushyOSState.parseFlexibleDate(rawPeriod);
@@ -143,7 +141,6 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
       final double computedProgress = (calc.currentCycleDay / calc.cycleLength).clamp(0.0, 1.0);
       _currentDayProgress = computedProgress;
       _activePhaseName = calc.currentPhase;
-      _activeDayLabel = calc.currentCycleDay.toString();
       _activeExpectedPeriod = calc.formattedNextPeriodDate;
       _activePeriodLabel = calc.daysUntilNextPeriod == 0
           ? 'Today'
@@ -151,7 +148,6 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
     } else {
       _currentDayProgress = 0.0;
       _activePhaseName = 'Not Logged';
-      _activeDayLabel = '--';
       _activeExpectedPeriod = '--';
       _activePeriodLabel = 'Log your period to see predictions';
     }
@@ -188,7 +184,6 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
     final ovulationDay = (length / 2).round();
 
     setState(() {
-      _activeDayLabel = day.toString();
       if (day <= 5) {
         _activePhaseName = 'Menstrual Phase';
         _activePeriodLabel = 'Active';
@@ -279,7 +274,6 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
     );
 
     _cachedPath = path;
-    _cachedMetrics = path.computeMetrics();
     return path;
   }
 

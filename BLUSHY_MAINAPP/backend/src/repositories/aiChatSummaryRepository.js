@@ -62,6 +62,24 @@ async function upsertDailySummary({
   return mapRow(row);
 }
 
+/**
+ * A user's own daily summaries, newest first.
+ *
+ * These are built each night from the chat the user actually had, so this is
+ * the only honest source for the daily letters the app shows them.
+ */
+async function listDailySummaries(userKey, limit = 7) {
+  const userId = String(userKey).replace('user:', '');
+  const rows = await db.collection(await getColl(userId, 'ai_chat_daily_summaries'))
+    .find({ user_key: userKey })
+    .sort({ summary_date_ist: -1 })
+    .limit(Math.min(Math.max(Number(limit) || 7, 1), 30))
+    .toArray();
+
+  return rows.map(mapRow);
+}
+
 export const aiChatSummaryRepository = {
   upsertDailySummary,
+  listDailySummaries,
 };

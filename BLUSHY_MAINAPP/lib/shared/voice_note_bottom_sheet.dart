@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../core/state.dart';
-import '../services/api_sia_service.dart';
+import '../services/api_sia_service.dart' show ApiSiaService, TranscriptionUnavailable;
 import '../services/html_audio_helper.dart';
+import '../services/journal_quick_entry.dart';
 import '../theme/colors.dart';
 
 class VoiceNoteBottomSheet extends StatefulWidget {
@@ -67,24 +66,13 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
 
   Future<void> _startRecording() async {
     try {
-      if (kIsWeb) {
-        _audioRecorder = HtmlAudioRecorder();
-        _audioRecorder!.onProgress = (sec) {
-          if (mounted) {
-            setState(() => _seconds = sec);
-          }
-        };
-        await _audioRecorder!.start();
-      } else {
-        // Fallback timer for native mobile when web helper is not applicable
-        _timer?.cancel();
-        _seconds = 0;
-        _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-          if (mounted) {
-            setState(() => _seconds++);
-          }
-        });
-      }
+      _audioRecorder = HtmlAudioRecorder();
+      _audioRecorder!.onProgress = (sec) {
+        if (mounted) {
+          setState(() => _seconds = sec);
+        }
+      };
+      await _audioRecorder!.start();
 
       if (mounted) {
         setState(() {
@@ -115,40 +103,49 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
     }
 
     try {
-      if (kIsWeb && _audioRecorder != null) {
+      if (_audioRecorder != null) {
         final result = await _audioRecorder!.stop();
         final bytes = result?.bytes ?? [];
         if (bytes.isNotEmpty) {
           final text = await _siaService.transcribeAudioBytes(
             bytes,
-            'voice_reflection_${DateTime.now().millisecondsSinceEpoch}.webm',
+            'voice_reflection_${DateTime.now().millisecondsSinceEpoch}'
+                '.${_audioRecorder!.fileExtension}',
+            mimeType: _audioRecorder!.mimeType,
           );
           if (mounted) {
             setState(() {
               _isTranscribing = false;
               if (text.trim().isNotEmpty) {
                 _noteController.text = text.trim();
-              } else {
-                _noteController.text = "Voice reflection recorded cleanly.";
               }
+              // Nothing recognised: the field is left for the user to write
+              // rather than filled with words they did not say.
             });
           }
           return;
         }
       }
+    } on TranscriptionUnavailable catch (e) {
+      // The recording was fine; the service was not. Say which, so the user
+      // does not think they were not heard.
+      if (mounted) {
+        setState(() => _isTranscribing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${e.message} You can type your reflection instead.')),
+        );
+      }
+      return;
     } catch (_) {}
 
     if (mounted) {
       setState(() {
         _isTranscribing = false;
-        if (_noteController.text.isEmpty) {
-          _noteController.text = "Voice reflection recorded (${_seconds}s). Feeling balanced and focused.";
-        }
       });
     }
   }
 
-  void _saveVoiceNote() {
+  Future<void> _saveVoiceNote() async {
     final text = _noteController.text.trim();
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -157,13 +154,34 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
       return;
     }
 
-    final state = BlushyOSProvider.of(context);
-    state.addJournal(text, "Voice Reflection");
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
 
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
+    // Saved into the journal store the journal screen reads. This used to call
+    // BlushyOSState.addJournal, whose only reader is in lib/presentation/ --
+    // code nothing imports -- so the reflection was written and then shown
+    // nowhere, which is indistinguishable from a save that failed.
+    final saved = await JournalQuickEntry.save(
+      text: text,
+      title: 'Voice Reflection',
+    );
+
+    if (!mounted) return;
+
+    if (!saved) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text("Could not save your reflection. Please try again."),
+          backgroundColor: BlushyColors.primary,
+        ),
+      );
+      return;
+    }
+
+    navigator.pop();
+    messenger.showSnackBar(
       const SnackBar(
-        content: Text("Voice note recorded & saved to reflections!"),
+        content: Text("Saved to your journal."),
         backgroundColor: BlushyColors.primary,
         duration: Duration(seconds: 2),
       ),
@@ -258,7 +276,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        color: BlushyColors.primary.withOpacity(0.12),
+                        color: BlushyColors.primary.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                         border: Border.all(color: BlushyColors.primary, width: 2),
                       ),

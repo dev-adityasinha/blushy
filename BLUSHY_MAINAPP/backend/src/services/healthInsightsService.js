@@ -1,3 +1,6 @@
+import { periodDurationBounds } from '../config/periodPredictionConfig.js';
+import { resolvePeriodDuration } from '../domain/periodDuration.js';
+
 /**
  * Health Insights Service
  * Analyzes user health data and identifies patterns, concerns, and suggestions
@@ -45,6 +48,7 @@ class HealthInsightsService {
     sleepLogs = [],
     onboardingAnswers = {},
     cycleStartDate = null,
+    periodEntries = [],
   }) {
     if (!userId) {
       return {
@@ -100,6 +104,7 @@ class HealthInsightsService {
         cycleStartDate,
         onboardingAnswers,
         moods,
+        periodEntries,
       );
       insights.push(...cycleAnalysis.insights);
       alerts.push(...cycleAnalysis.alerts);
@@ -351,7 +356,7 @@ class HealthInsightsService {
     return { insights, alerts, suggestions };
   }
 
-  _analyzeCycleHealth(cycleStartDate, onboardingAnswers, moods) {
+  _analyzeCycleHealth(cycleStartDate, onboardingAnswers, moods, periodEntries = []) {
     const insights = [];
     const alerts = [];
     const suggestions = [];
@@ -369,7 +374,9 @@ class HealthInsightsService {
     }
 
     const cycleLength = Number(onboardingAnswers?.cycle_length || onboardingAnswers?.period_cycle_length) || 28;
-    const periodDuration = Number(onboardingAnswers?.period_duration_days || onboardingAnswers?.cycle_last_period_duration_days) || 5;
+    // Same resolution the cycle card uses, so the two surfaces agree.
+    const { periodDurationDays: periodDuration } =
+      resolvePeriodDuration(periodEntries, onboardingAnswers, periodDurationBounds);
 
     const today = new Date();
     const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());

@@ -92,6 +92,42 @@ function buildSummaryText(historyRows) {
     .join(' ');
 }
 
+/**
+ * Writes today's reflection for one user from the conversation so far.
+ *
+ * The nightly job was the only way a reflection could ever appear, so a
+ * conversation held today produced nothing until after midnight IST -- while
+ * the tab told people their letters would appear "once you have talked with
+ * her". This is the on-demand path.
+ *
+ * It deliberately does NOT clear the history. Clearing belongs to the nightly
+ * job, which summarises and then rolls the day over; doing it here would
+ * delete the conversation the user is still having.
+ */
+export async function generateDailySummaryForUser(userKey, now = new Date()) {
+  const { dateKey } = getIstDateParts(now);
+  const history = await aiHistoryRepository.listHistory(userKey);
+
+  if (!Array.isArray(history) || history.length === 0) {
+    return null;
+  }
+
+  const summary = {
+    userKey,
+    role: history.at(-1)?.role ?? 'woman',
+    summaryDateIst: dateKey,
+    messageCount: history.length,
+    firstMessageAt: history[0]?.createdAt ?? null,
+    lastMessageAt: history.at(-1)?.createdAt ?? null,
+    summaryText: buildSummaryText(history),
+  };
+
+  // Keyed on (userKey, date), so asking twice in a day updates today's
+  // reflection rather than stacking duplicates.
+  await aiChatSummaryRepository.upsertDailySummary(summary);
+  return summary;
+}
+
 export async function runDailyChatSummaryOnce(now = new Date()) {
   const { dateKey } = getIstDateParts(now);
   const userKeys = await aiHistoryRepository.listUserKeysWithHistory();

@@ -159,7 +159,7 @@ class BlushyTheme {
         border: Border.all(color: BlushyColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: BlushyColors.text.withOpacity(0.03),
+            color: BlushyColors.text.withValues(alpha: 0.03),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),

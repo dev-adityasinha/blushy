@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Blushy uses your microphone to record voice notes and voice messages to Sia. Recordings are transcribed and the local copy is deleted.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Blushy needs access to your photos so you can attach medical reports and images to your health record.</string>
 </dict>
 </plist>

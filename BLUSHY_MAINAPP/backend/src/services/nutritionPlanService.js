@@ -11,7 +11,7 @@ class NutritionPlanService {
     cyclePhase = null,
     role = 'woman',
   }) {
-    if (!env.grokApiKey) {
+    if (!env.aiChatApiKey) {
       throw createHttpError(503, 'AI nutrition planning is not configured. Add GROK_API_KEY in backend .env');
     }
 
@@ -26,16 +26,15 @@ class NutritionPlanService {
 
     let response;
     try {
-      response = await fetch(env.grokApiUrl, {
+      response = await fetch(env.aiChatApiUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${env.grokApiKey}`,
+          Authorization: `Bearer ${env.aiChatApiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://blushy.app',
           'X-Title': 'Blushy Nutrition',
         },
         body: JSON.stringify({
-          model: env.grokModel,
+          model: env.aiChatModel,
           messages: [
             { role: 'system', content: 'Return ONLY valid JSON, no markdown.' },
             { role: 'user', content: prompt },

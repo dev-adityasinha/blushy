@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../features/auth/presentation/auth_service.dart';
 import 'api_base_url.dart';
 import 'auth_storage.dart';
+import 'offline_event_queue.dart';
 
 class ApiAuthService implements AuthService {
   late final Dio _dio;
@@ -153,11 +154,76 @@ class ApiAuthService implements AuthService {
     }
   }
 
+  /// Marks one day's journal as shared with a partner, or takes it back.
+  ///
+  /// The partner `journal` permission decides whether a partner may receive
+  /// journal entries at all; this decides which days actually go. Both have to
+  /// be on, so granting the category never releases a back catalogue.
+  Future<bool> setJournalShared({required String entryDate, required bool shared}) async {
+    final token = AuthStorage.getToken();
+    if (token == null || token.isEmpty) return false;
+
+    try {
+      await _dio.put(
+        '/auth/me/journal/$entryDate/share',
+        data: {'shared': shared},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return true;
+    } on DioException catch (e) {
+      debugPrint('BlushyBackend: Error sharing journal: ${_extractErrorMessage(e)}');
+      return false;
+    }
+  }
+
+  /// Same, for one Sia exchange.
+  Future<bool> setSiaConversationShared({
+    required String conversationId,
+    required bool shared,
+  }) async {
+    final token = AuthStorage.getToken();
+    if (token == null || token.isEmpty) return false;
+
+    try {
+      await _dio.put(
+        '/auth/me/sia-conversations/$conversationId/share',
+        data: {'shared': shared},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return true;
+    } on DioException catch (e) {
+      debugPrint('BlushyBackend: Error sharing conversation: ${_extractErrorMessage(e)}');
+      return false;
+    }
+  }
+
   @override
-  Future<bool> resetPassword(String email) async {
+  Future<bool> requestPasswordResetCode(String email) async {
+    try {
+      await _dio.post('/auth/send-password-reset-code', data: {'email': email});
+      return true;
+    } on DioException catch (e) {
+      throw Exception(_extractErrorMessage(e));
+    } catch (e) {
+      throw Exception('Could not send the reset code: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<bool> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+    required String confirmPassword,
+    String? phoneNumber,
+  }) async {
     try {
       await _dio.post('/auth/reset-password', data: {
         'email': email,
+        'code': code,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+        if (phoneNumber != null && phoneNumber.isNotEmpty) 'phoneNumber': phoneNumber,
       });
       return true;
     } on DioException catch (e) {
@@ -180,6 +246,9 @@ class ApiAuthService implements AuthService {
         debugPrint('BlushyAuth: Backend logout error (proceeding with local purge): $e');
       }
     }
+    // Cleared before the session goes, while the queue key can still be
+    // resolved: one account's unsent writes must never replay under another.
+    await OfflineEventQueue.instance.clear();
     AuthStorage.clearSession();
   }
 
@@ -224,6 +293,85 @@ class ApiAuthService implements AuthService {
       debugPrint('BlushyBackend: Error saving onboarding to backend: ${_extractErrorMessage(e)}');
       // If error occurs (e.g. offline backend), rethrow or report
       rethrow;
+    }
+  }
+
+  /// Exchanges the stored refresh token for a new access token.
+  ///
+  /// The refresh token was being saved at sign-in and never used, so once the
+  /// access token expired every request simply started failing. Returns false
+  /// when there is nothing to refresh with or the server rejects it, which is
+  /// the only case where signing in again is genuinely required.
+  Future<bool> refreshSession() async {
+    final refreshToken = AuthStorage.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+
+    try {
+      final response = await _dio.post(
+        '/auth/refresh',
+        data: {'refreshToken': refreshToken},
+      );
+      final data = response.data;
+      if (data is! Map || data['token'] is! String) return false;
+
+      AuthStorage.saveSession(
+        token: data['token'] as String,
+        refreshToken: data['refreshToken'] as String? ?? refreshToken,
+        userId: data['userId'] as String? ?? AuthStorage.getUserId(),
+        role: data['role'] as String?,
+        onboardingCompleted: AuthStorage.isOnboardingCompleted(),
+      );
+      return true;
+    } on DioException catch (e) {
+      debugPrint('BlushyBackend: Token refresh failed: ${_extractErrorMessage(e)}');
+      return false;
+    }
+  }
+
+  /// Pushes one day's journal entries: `PUT /auth/me/journal`.
+  ///
+  /// Journals were stored on the device only, so a reinstall or a move between
+  /// web and Android lost them. The server has held journal storage all along;
+  /// nothing was writing to it.
+  Future<bool> saveJournalForDate({
+    required String entryDate,
+    required List<Map<String, dynamic>> entries,
+    String summary = '',
+  }) async {
+    final token = AuthStorage.getToken();
+    if (token == null || token.isEmpty) return false;
+
+    try {
+      await _dio.put(
+        '/auth/me/journal',
+        data: {'entryDate': entryDate, 'entries': entries, 'summary': summary},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return true;
+    } on DioException catch (e) {
+      debugPrint('BlushyBackend: Error saving journal: ${_extractErrorMessage(e)}');
+      return false;
+    }
+  }
+
+  /// The user's stored journals, newest first: `GET /auth/me/journal`.
+  Future<List<Map<String, dynamic>>> getJournals({int limit = 100}) async {
+    final token = AuthStorage.getToken();
+    if (token == null || token.isEmpty) return const [];
+
+    try {
+      final response = await _dio.get(
+        '/auth/me/journal',
+        queryParameters: {'limit': limit},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final raw = response.data is Map
+          ? (response.data['journals'] as List? ?? const [])
+          : const [];
+      return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    } on DioException catch (e) {
+      debugPrint('BlushyBackend: Error loading journals: ${_extractErrorMessage(e)}');
+      return const [];
     }
   }
 

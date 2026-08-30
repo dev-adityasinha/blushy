@@ -98,7 +98,7 @@ class LifeStageSelectorCard extends StatelessWidget {
     }
     try {
       final data = BlushyStorage.read('user_profile.json');
-      final profile = data is Map ? (data['profile'] ?? data) : null;
+      final profile = (data['profile'] ?? data);
       if (profile is Map && profile['lifeStage'] != null && profile['lifeStage'].toString().isNotEmpty) {
         return profile['lifeStage'].toString();
       }
@@ -193,7 +193,7 @@ class LifeStageSelectorCard extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               padding: EdgeInsets.zero,
               itemCount: kAllLifeStages.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, thickness: 0.8, color: BlushyColors.border),
+              separatorBuilder: (_, _) => const Divider(height: 1, thickness: 0.8, color: BlushyColors.border),
               itemBuilder: (context, index) {
                 final stage = kAllLifeStages[index];
                 final bool isActive = activeStages.contains(stage.key);

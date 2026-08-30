@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../state/bouquet_state.dart';
 import '../widgets/falling_petals.dart';
-import 'about_screen.dart';
 import 'builder_screen.dart';
 import 'garden_screen.dart';
 import '../models/auth_models.dart';
@@ -14,10 +13,10 @@ class HomeScreen extends StatelessWidget {
   final List<PartnerConnection> activeConnections;
 
   const HomeScreen({
-    Key? key,
+    super.key,
     required this.session,
     required this.activeConnections,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -197,7 +196,7 @@ class HomeScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -223,31 +222,6 @@ class HomeScreen extends StatelessWidget {
   );
 }
 
-  Widget _buildProfileButton(BuildContext context, BouquetState state) {
-    final isLoggedIn = state.isLoggedIn;
-    final avatar = state.profile?.avatarEmoji ?? '';
-
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Theme.of(context).cardColor,
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
-      ),
-      child: IconButton(
-        icon: isLoggedIn
-            ? Text(
-                avatar,
-                style: const TextStyle(fontSize: 18),
-              )
-            : Icon(
-                Icons.person_outline,
-                color: Theme.of(context).iconTheme.color,
-              ),
-        onPressed: () => Navigator.pushNamed(context, '/profile'),
-        tooltip: isLoggedIn ? 'Profile: ${state.profile!.name}' : 'Sign In',
-      ),
-    );
-  }
 
 
 }

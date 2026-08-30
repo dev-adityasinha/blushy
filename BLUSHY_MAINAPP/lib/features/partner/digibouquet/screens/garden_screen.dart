@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../state/bouquet_state.dart';
 import '../models/bouquet.dart';
-import '../models/flower.dart';
 import '../widgets/bouquet_canvas.dart';
 import 'builder_screen.dart';
 import '../models/auth_models.dart';
@@ -13,7 +12,7 @@ class GardenScreen extends StatefulWidget {
   final AuthSession? session;
   final PartnerConnection? connection;
 
-  const GardenScreen({Key? key, this.session, this.connection}) : super(key: key);
+  const GardenScreen({super.key, this.session, this.connection});
 
   @override
   State<GardenScreen> createState() => _GardenScreenState();
@@ -102,8 +101,6 @@ class _GardenScreenState extends State<GardenScreen> {
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<BouquetState>(context);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     final hasSaved = state.savedBouquets.isNotEmpty;
 
@@ -349,10 +346,10 @@ class _GardenScreenState extends State<GardenScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

@@ -7,7 +7,7 @@ import 'auth_service.dart';
 import '../../../services/api_auth_service.dart';
 import '../../../services/auth_storage.dart';
 
-enum AuthMode { signupEmail, signupPassword, signupVerify, login, forgotPassword }
+enum AuthMode { signupEmail, signupPassword, signupVerify, login, forgotPassword, resetPassword }
 
 class EmailAuthFlow extends StatefulWidget {
   final AuthMode initialMode;
@@ -208,12 +208,64 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
     final email = _emailController.text.trim();
     if (!_validateEmail(email)) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _isLoading = true);
     try {
-      await _authService.resetPassword(email);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password reset instructions sent to your email.')),
+      await _authService.requestPasswordResetCode(email);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('If an account exists for that email, a code is on its way.')),
       );
+      for (final controller in _codeControllers) {
+        controller.clear();
+      }
+      _passwordController.clear();
+      _confirmPasswordController.clear();
+      setState(() {
+        _currentMode = AuthMode.resetPassword;
+      });
+    } catch (e) {
+      setState(() {
+        _generalError = ApiAuthService.cleanErrorMessage(e);
+      });
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleResetPasswordSubmit() async {
+    _clearErrors();
+    final email = _emailController.text.trim();
+    final code = _codeControllers.map((c) => c.text).join();
+    final password = _passwordController.text;
+    final confirm = _confirmPasswordController.text;
+
+    if (code.length != 6) {
+      setState(() => _codeError = 'Enter the 6-digit code from your email.');
+      return;
+    }
+    if (password.length < 8) {
+      setState(() => _passwordError = 'Password must be at least 8 characters.');
+      return;
+    }
+    if (password != confirm) {
+      setState(() => _confirmPasswordError = 'Passwords do not match.');
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isLoading = true);
+    try {
+      await _authService.resetPassword(
+        email: email,
+        code: code,
+        newPassword: password,
+        confirmPassword: confirm,
+      );
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Password updated. Please sign in.')),
+      );
+      _passwordController.clear();
+      _confirmPasswordController.clear();
       setState(() {
         _currentMode = AuthMode.login;
       });
@@ -227,11 +279,12 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
   }
 
   Future<void> _resendCode() async {
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _codeResending = true);
     try {
       // Mock code resend
       await Future.delayed(const Duration(seconds: 1));
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('A new code has been sent.')),
       );
     } catch (_) {}
@@ -254,6 +307,8 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
               setState(() => _currentMode = AuthMode.signupPassword);
             } else if (_currentMode == AuthMode.forgotPassword) {
               setState(() => _currentMode = AuthMode.login);
+            } else if (_currentMode == AuthMode.resetPassword) {
+              setState(() => _currentMode = AuthMode.forgotPassword);
             } else {
               widget.onBackToWelcome();
             }
@@ -367,6 +422,8 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         return _buildLoginScreen();
       case AuthMode.forgotPassword:
         return _buildForgotPasswordScreen();
+      case AuthMode.resetPassword:
+        return _buildResetPasswordScreen();
     }
   }
 
@@ -534,41 +591,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
           ),
         ),
         const SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(6, (index) {
-            return SizedBox(
-              width: 48,
-              height: 56,
-              child: TextField(
-                controller: _codeControllers[index],
-                focusNode: _codeFocusNodes[index],
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                maxLength: 1,
-                style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  counterText: "",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: BlushyColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: BlushyColors.primary, width: 2),
-                  ),
-                ),
-                onChanged: (value) {
-                  if (value.isNotEmpty && index < 5) {
-                    _codeFocusNodes[index + 1].requestFocus();
-                  } else if (value.isEmpty && index > 0) {
-                    _codeFocusNodes[index - 1].requestFocus();
-                  }
-                },
-              ),
-            );
-          }),
-        ),
+        _buildCodeBoxes(),
         if (_codeError != null) ...[
           const SizedBox(height: 16),
           Text(
@@ -717,6 +740,123 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
           label: 'Send Recovery Code',
           onPressed: _handleForgotPasswordSubmit,
           isLoading: _isLoading,
+        ),
+      ],
+    );
+  }
+
+  /// The six single-character boxes, shared by signup verification and the
+  /// password reset step so the two stay consistent.
+  Widget _buildCodeBoxes() {
+    return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(6, (index) {
+            return SizedBox(
+              width: 48,
+              height: 56,
+              child: TextField(
+                controller: _codeControllers[index],
+                focusNode: _codeFocusNodes[index],
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                maxLength: 1,
+                style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  counterText: "",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: BlushyColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: BlushyColors.primary, width: 2),
+                  ),
+                ),
+                onChanged: (value) {
+                  if (value.isNotEmpty && index < 5) {
+                    _codeFocusNodes[index + 1].requestFocus();
+                  } else if (value.isEmpty && index > 0) {
+                    _codeFocusNodes[index - 1].requestFocus();
+                  }
+                },
+              ),
+            );
+          }),
+    );
+  }
+
+  Widget _buildResetPasswordScreen() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          "Choose a New Password",
+          style: GoogleFonts.poppins(
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            color: BlushyColors.text,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "Enter the 6-digit code we emailed you, then pick a new password.",
+          style: GoogleFonts.poppins(
+            fontSize: 15,
+            color: BlushyColors.secondaryText,
+          ),
+        ),
+        const SizedBox(height: 32),
+        _buildCodeBoxes(),
+        if (_codeError != null) ...[
+          const SizedBox(height: 16),
+          Text(
+            _codeError!,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(color: BlushyColors.primary, fontSize: 14),
+          ),
+        ],
+        const SizedBox(height: 24),
+        _buildTextField(
+          controller: _passwordController,
+          labelText: 'New Password',
+          obscureText: !_isPasswordVisible,
+          errorText: _passwordError,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+              color: BlushyColors.secondaryText,
+            ),
+            onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _confirmPasswordController,
+          labelText: 'Confirm New Password',
+          obscureText: !_isConfirmPasswordVisible,
+          errorText: _confirmPasswordError,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+              color: BlushyColors.secondaryText,
+            ),
+            onPressed: () =>
+                setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+          ),
+        ),
+        const SizedBox(height: 32),
+        _buildButton(
+          label: 'Update Password',
+          onPressed: _handleResetPasswordSubmit,
+          isLoading: _isLoading,
+        ),
+        const SizedBox(height: 16),
+        TextButton(
+          onPressed: _isLoading ? null : _handleForgotPasswordSubmit,
+          child: Text(
+            'Send a new code',
+            style: GoogleFonts.poppins(color: BlushyColors.primary),
+          ),
         ),
       ],
     );
