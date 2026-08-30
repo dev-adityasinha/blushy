@@ -1,0 +1,71 @@
+# Render blueprint for the Blushy API.
+#
+# Must live at the repository root -- Render only looks for render.yaml here,
+# regardless of where the service's own code sits.
+#
+# Every secret is `sync: false`, which means Render prompts for it once and
+# never stores it in this file. Nothing here should ever hold a real value.
+services:
+  - type: web
+    name: blushy-api
+    runtime: node
+    plan: free
+    # The backend is not at the repo root; this is the path from it.
+    rootDir: BLUSHY_MAINAPP/backend
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/server.js
+    healthCheckPath: /health
+    envVars:
+      # package.json pins no engine, so without this Render picks its own
+      # default and the app is developed against Node 24.
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+
+      # Atlas. Network Access must allow 0.0.0.0/0 -- a free Render service
+      # has no fixed outbound IP, so an address allowlist will refuse it.
+      - key: MONGODB_URI
+        sync: false
+
+      # Leave DNS_SERVERS unset. It exists only for networks that refuse DNS
+      # SRV queries; Render resolves Atlas normally.
+
+      - key: JWT_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+
+      # Email. Brevo's HTTP API is tried before SMTP, which matters here:
+      # hosted platforms commonly block outbound SMTP ports.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: Blushy
+      # Belt and braces -- production already defaults this off. With it on, a
+      # failed send returns the verification code in the API response, which
+      # lets anyone register an address they do not control.
+      - key: EMAIL_DELIVERY_FALLBACK_ENABLED
+        value: "false"
+
+      - key: AI_CHAT_API_KEY
+        sync: false
+      - key: AI_CHAT_MODEL
+        sync: false
+      - key: AI_CHAT_API_URL
+        sync: false
+      - key: SPEECH_TO_TEXT_API_KEY
+        sync: false
+
+      # Must include the app's own origin once it is known.
+      - key: CORS_ORIGIN
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false
+
+      - key: GOOGLE_CLIENT_ID_ANDROID
+        sync: false
+      - key: GOOGLE_CLIENT_ID_WEB
+        sync: false
