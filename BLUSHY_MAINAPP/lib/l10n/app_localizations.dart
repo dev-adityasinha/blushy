@@ -123,7 +123,7 @@ abstract class AppLocalizations {
   /// No description provided for @navSia.
   ///
   /// In en, this message translates to:
-  /// **'Sia'**
+  /// **'Dr. Docsy'**
   String get navSia;
 
   /// No description provided for @navStudio.
@@ -261,13 +261,13 @@ abstract class AppLocalizations {
   /// No description provided for @languageSheetTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sia speaks'**
+  /// **'Dr. Docsy speaks'**
   String get languageSheetTitle;
 
   /// No description provided for @languageSheetExplainer.
   ///
   /// In en, this message translates to:
-  /// **'Changes the language Sia replies in. The rest of the app stays in English for now.'**
+  /// **'Changes the language Dr. Docsy replies in. The rest of the app stays in English for now.'**
   String get languageSheetExplainer;
 
   /// No description provided for @privacyTitle.
@@ -333,7 +333,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSiaAssistant.
   ///
   /// In en, this message translates to:
-  /// **'Sia AI Assistant'**
+  /// **'Dr. Docsy AI Assistant'**
   String get settingsSiaAssistant;
 
   /// No description provided for @settingsSiaAssistantSub.
@@ -429,13 +429,13 @@ abstract class AppLocalizations {
   /// No description provided for @siaAsk.
   ///
   /// In en, this message translates to:
-  /// **'Ask Sia'**
+  /// **'Ask Dr. Docsy'**
   String get siaAsk;
 
   /// No description provided for @siaThinking.
   ///
   /// In en, this message translates to:
-  /// **'Sia is thinking…'**
+  /// **'Dr. Docsy is thinking…'**
   String get siaThinking;
 
   /// No description provided for @siaVoiceTranscribed.
@@ -573,7 +573,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashSiaInsights.
   ///
   /// In en, this message translates to:
-  /// **'SIA INSIGHTS'**
+  /// **'DR. DOCSY INSIGHTS'**
   String get dashSiaInsights;
 
   /// No description provided for @dashHelpful.
@@ -693,7 +693,7 @@ abstract class AppLocalizations {
   /// No description provided for @journalNothingToReflect.
   ///
   /// In en, this message translates to:
-  /// **'Nothing to reflect on yet. Write an entry and Sia will read it back to you.'**
+  /// **'Nothing to reflect on yet. Write an entry and Dr. Docsy will read it back to you.'**
   String get journalNothingToReflect;
 
   /// No description provided for @journalNoMemoriesFound.
@@ -783,7 +783,7 @@ abstract class AppLocalizations {
   /// No description provided for @journalCloudAiSub.
   ///
   /// In en, this message translates to:
-  /// **'Allow cloud processing for Sia insights'**
+  /// **'Allow cloud processing for Dr. Docsy insights'**
   String get journalCloudAiSub;
 
   /// No description provided for @journalCloseMemoryBook.
@@ -885,7 +885,7 @@ abstract class AppLocalizations {
   /// No description provided for @partnerSiaDecoding.
   ///
   /// In en, this message translates to:
-  /// **'Sia is decoding…'**
+  /// **'Dr. Docsy is decoding…'**
   String get partnerSiaDecoding;
 
   /// No description provided for @partnerSuggestedReply.
@@ -945,13 +945,13 @@ abstract class AppLocalizations {
   /// No description provided for @partnerSiaAdviceTitle.
   ///
   /// In en, this message translates to:
-  /// **'SIA RELATIONSHIP ADVICE'**
+  /// **'DR. DOCSY RELATIONSHIP ADVICE'**
   String get partnerSiaAdviceTitle;
 
   /// No description provided for @partnerSiaAdviceExplainer.
   ///
   /// In en, this message translates to:
-  /// **'Ask about something that is on your mind. Sia only sees what your partner has chosen to share.'**
+  /// **'Ask about something that is on your mind. Dr. Docsy only sees what your partner has chosen to share.'**
   String get partnerSiaAdviceExplainer;
 
   /// No description provided for @partnerTryAgain.
@@ -959,6 +959,1194 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try again'**
   String get partnerTryAgain;
+
+  /// No description provided for @homeGreetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning, {name}'**
+  String homeGreetingMorning(String name);
+
+  /// No description provided for @homeGreetingAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon, {name}'**
+  String homeGreetingAfternoon(String name);
+
+  /// No description provided for @homeGreetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening, {name}'**
+  String homeGreetingEvening(String name);
+
+  /// No description provided for @homeGreetingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How are you feeling today?'**
+  String get homeGreetingSubtitle;
+
+  /// No description provided for @dashLogFirstCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Log your first check-in'**
+  String get dashLogFirstCheckIn;
+
+  /// No description provided for @dashAddCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a condition'**
+  String get dashAddCondition;
+
+  /// No description provided for @onbContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onbContinue;
+
+  /// No description provided for @onbBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get onbBack;
+
+  /// No description provided for @onbDontRemember.
+  ///
+  /// In en, this message translates to:
+  /// **'I don\'t remember'**
+  String get onbDontRemember;
+
+  /// No description provided for @onbLetsGetIntroduced.
+  ///
+  /// In en, this message translates to:
+  /// **'Let’s get introduced'**
+  String get onbLetsGetIntroduced;
+
+  /// No description provided for @onbCreatingSafeSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating your safe space'**
+  String get onbCreatingSafeSpace;
+
+  /// No description provided for @onbCuratingContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Curating wellness content'**
+  String get onbCuratingContent;
+
+  /// No description provided for @onbCreatingInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating your daily insights'**
+  String get onbCreatingInsights;
+
+  /// No description provided for @onbPreparingDocsy.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing Dr. Docsy'**
+  String get onbPreparingDocsy;
+
+  /// No description provided for @jrnCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get jrnCancel;
+
+  /// No description provided for @jrnShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get jrnShare;
+
+  /// No description provided for @jrnDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get jrnDelete;
+
+  /// No description provided for @jrnCouldNotTranscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not transcribe that recording.'**
+  String get jrnCouldNotTranscribe;
+
+  /// No description provided for @jrnNothingRecognised.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was recognised in that recording. You can type it instead.'**
+  String get jrnNothingRecognised;
+
+  /// No description provided for @jrnCouldNotChangeSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change sharing for that day.'**
+  String get jrnCouldNotChangeSharing;
+
+  /// No description provided for @jrnNoLongerShared.
+  ///
+  /// In en, this message translates to:
+  /// **'No longer shared.'**
+  String get jrnNoLongerShared;
+
+  /// No description provided for @jrnTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing reflection…'**
+  String get jrnTranscribing;
+
+  /// No description provided for @jrnRecordingVoiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording voice note…'**
+  String get jrnRecordingVoiceNote;
+
+  /// No description provided for @csoSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get csoSignOut;
+
+  /// No description provided for @csoCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get csoCancel;
+
+  /// No description provided for @crRecordedAgainstEverythingYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded against everything you approve.'**
+  String get crRecordedAgainstEverythingYou;
+
+  /// No description provided for @eafWhatSYourEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s your email?'**
+  String get eafWhatSYourEmail;
+
+  /// No description provided for @eafCreateYourPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your password'**
+  String get eafCreateYourPassword;
+
+  /// No description provided for @eafCheckYourEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email'**
+  String get eafCheckYourEmail;
+
+  /// No description provided for @eafChangeEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Change email'**
+  String get eafChangeEmail;
+
+  /// No description provided for @eafWelcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get eafWelcomeBack;
+
+  /// No description provided for @eafForgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get eafForgotPassword;
+
+  /// No description provided for @eafResetPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get eafResetPassword;
+
+  /// No description provided for @eafChooseANewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a New Password'**
+  String get eafChooseANewPassword;
+
+  /// No description provided for @oPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get oPrivacyPolicy;
+
+  /// No description provided for @oIAgreeToThe.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the '**
+  String get oIAgreeToThe;
+
+  /// No description provided for @oTermsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get oTermsOfService;
+
+  /// No description provided for @oWhenIsYourBirthday.
+  ///
+  /// In en, this message translates to:
+  /// **'When is your birthday?'**
+  String get oWhenIsYourBirthday;
+
+  /// No description provided for @oWhereAreYouToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Where are you today?'**
+  String get oWhereAreYouToday;
+
+  /// No description provided for @oWhenDidYourLast.
+  ///
+  /// In en, this message translates to:
+  /// **'When did your last period begin?'**
+  String get oWhenDidYourLast;
+
+  /// No description provided for @oWhatSYourDue.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s your due date?'**
+  String get oWhatSYourDue;
+
+  /// No description provided for @oWhenWasYourBaby.
+  ///
+  /// In en, this message translates to:
+  /// **'When was your baby born?'**
+  String get oWhenWasYourBaby;
+
+  /// No description provided for @oYourPreferredName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your preferred name'**
+  String get oYourPreferredName;
+
+  /// No description provided for @oWhatWouldYouLike.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like to learn first?'**
+  String get oWhatWouldYouLike;
+
+  /// No description provided for @oWhenDidYourFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'When did your first period start?'**
+  String get oWhenDidYourFirst;
+
+  /// No description provided for @oWhatWouldYouLike2.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like help with?'**
+  String get oWhatWouldYouLike2;
+
+  /// No description provided for @oHowWouldYouDescribe.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you describe your cycle?'**
+  String get oHowWouldYouDescribe;
+
+  /// No description provided for @oWhatWouldYouLike3.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like Blushy to help with?'**
+  String get oWhatWouldYouLike3;
+
+  /// No description provided for @oAreYouCurrentlyUsing.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you currently using hormonal contraception?'**
+  String get oAreYouCurrentlyUsing;
+
+  /// No description provided for @oWhichConditionBestMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Which condition best matches your situation?'**
+  String get oWhichConditionBestMatches;
+
+  /// No description provided for @oWhichSymptomsAffectYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Which symptoms affect you most?'**
+  String get oWhichSymptomsAffectYou;
+
+  /// No description provided for @oAreYouCurrentlyReceiving.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you currently receiving treatment?'**
+  String get oAreYouCurrentlyReceiving;
+
+  /// No description provided for @oHowLongHaveYou.
+  ///
+  /// In en, this message translates to:
+  /// **'How long have you been trying?'**
+  String get oHowLongHaveYou;
+
+  /// No description provided for @oHowAreYouTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'How are you tracking fertility?'**
+  String get oHowAreYouTracking;
+
+  /// No description provided for @oAreYouCurrentlyReceiving2.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you currently receiving fertility treatment?'**
+  String get oAreYouCurrentlyReceiving2;
+
+  /// No description provided for @oIsThisYourFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Is this your first pregnancy?'**
+  String get oIsThisYourFirst;
+
+  /// No description provided for @oWhatSupportWouldYou.
+  ///
+  /// In en, this message translates to:
+  /// **'What support would you like?'**
+  String get oWhatSupportWouldYou;
+
+  /// No description provided for @oHowAreYouFeeding.
+  ///
+  /// In en, this message translates to:
+  /// **'How are you feeding your baby?'**
+  String get oHowAreYouFeeding;
+
+  /// No description provided for @oHowHaveYourPeriods.
+  ///
+  /// In en, this message translates to:
+  /// **'How have your periods changed?'**
+  String get oHowHaveYourPeriods;
+
+  /// No description provided for @oWhatWouldYouMost.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you most like to improve?'**
+  String get oWhatWouldYouMost;
+
+  /// No description provided for @oHowLongHasIt.
+  ///
+  /// In en, this message translates to:
+  /// **'How long has it been since your last period?'**
+  String get oHowLongHasIt;
+
+  /// No description provided for @oWhichSymptomsAffectYour.
+  ///
+  /// In en, this message translates to:
+  /// **'Which symptoms affect your daily life?'**
+  String get oWhichSymptomsAffectYour;
+
+  /// No description provided for @oWhatWouldYouLike4.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like Blushy to focus on?'**
+  String get oWhatWouldYouLike4;
+
+  /// No description provided for @poYourPreferredName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your preferred name'**
+  String get poYourPreferredName;
+
+  /// No description provided for @sGoToSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to sign in'**
+  String get sGoToSignIn;
+
+  /// No description provided for @sVerifyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Code'**
+  String get sVerifyCode;
+
+  /// No description provided for @sForgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get sForgotPassword;
+
+  /// No description provided for @sIAgreeToThe.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the '**
+  String get sIAgreeToThe;
+
+  /// No description provided for @sTermsConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Conditions'**
+  String get sTermsConditions;
+
+  /// No description provided for @sTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms'**
+  String get sTerms;
+
+  /// No description provided for @sPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get sPrivacyPolicy;
+
+  /// No description provided for @cPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get cPeople;
+
+  /// No description provided for @cSearchTitleTextTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Search title, text, tags, or username/email...'**
+  String get cSearchTitleTextTags;
+
+  /// No description provided for @cpPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get cpPublish;
+
+  /// No description provided for @cpAnInterestingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'An interesting title...'**
+  String get cpAnInterestingTitle;
+
+  /// No description provided for @cpShareYourThoughtsExperiences.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your thoughts, experiences, or questions...'**
+  String get cpShareYourThoughtsExperiences;
+
+  /// No description provided for @cpEGLutealMoodswings.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Luteal, MoodSwings, SleepTips'**
+  String get cpEGLutealMoodswings;
+
+  /// No description provided for @pdDeleteComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Comment'**
+  String get pdDeleteComment;
+
+  /// No description provided for @pdAreYouSureYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this comment?'**
+  String get pdAreYouSureYou;
+
+  /// No description provided for @pdCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get pdCancel;
+
+  /// No description provided for @pdDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get pdDelete;
+
+  /// No description provided for @pdDeletePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Post'**
+  String get pdDeletePost;
+
+  /// No description provided for @pdAreYouSureYou2.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this post?'**
+  String get pdAreYouSureYou2;
+
+  /// No description provided for @pdComments.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get pdComments;
+
+  /// No description provided for @upFailedToLoadProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load profile details.'**
+  String get upFailedToLoadProfile;
+
+  /// No description provided for @upCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get upCancel;
+
+  /// No description provided for @upSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get upSave;
+
+  /// No description provided for @hDrDocsy.
+  ///
+  /// In en, this message translates to:
+  /// **'Dr. Docsy'**
+  String get hDrDocsy;
+
+  /// No description provided for @hClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get hClose;
+
+  /// No description provided for @dsQuestionsToAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions to ask'**
+  String get dsQuestionsToAsk;
+
+  /// No description provided for @umsdDailyUnifiedCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Unified Check-in'**
+  String get umsdDailyUnifiedCheckIn;
+
+  /// No description provided for @umsdCheckInSavedAnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in saved and synced to your live MongoDB profile! ✨'**
+  String get umsdCheckInSavedAnd;
+
+  /// No description provided for @cYourCycleLengthIs.
+  ///
+  /// In en, this message translates to:
+  /// **'Your cycle length is varying. Log your symptoms daily so Dr. Docsy can adjust predictions.'**
+  String get cYourCycleLengthIs;
+
+  /// No description provided for @cTrackingIsDisabledFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking is disabled. Focus on your daily energy, mood, and sleep.'**
+  String get cTrackingIsDisabledFocus;
+
+  /// No description provided for @cYourRecommendationsAreAdapted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recommendations are adapted to your current life stage.'**
+  String get cYourRecommendationsAreAdapted;
+
+  /// No description provided for @paTodaySNextStep.
+  ///
+  /// In en, this message translates to:
+  /// **'TODAY\\\'S NEXT STEP'**
+  String get paTodaySNextStep;
+
+  /// No description provided for @smClearDrDocsyMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Dr. Docsy Memory'**
+  String get smClearDrDocsyMemory;
+
+  /// No description provided for @scClinicalAlignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical Alignment'**
+  String get scClinicalAlignment;
+
+  /// No description provided for @scCurrentTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'CURRENT TRACK'**
+  String get scCurrentTrack;
+
+  /// No description provided for @scNewTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW TRACK'**
+  String get scNewTrack;
+
+  /// No description provided for @scKeepCurrentTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Current Track'**
+  String get scKeepCurrentTrack;
+
+  /// No description provided for @scSwitchTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Track'**
+  String get scSwitchTrack;
+
+  /// No description provided for @sqWhatWouldYouLike.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like to learn first?'**
+  String get sqWhatWouldYouLike;
+
+  /// No description provided for @sqWhenDidYourFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'When did your first period start?'**
+  String get sqWhenDidYourFirst;
+
+  /// No description provided for @sqWhatWouldYouLike2.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like support with?'**
+  String get sqWhatWouldYouLike2;
+
+  /// No description provided for @sqHowWouldYouDescribe.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you describe your cycle?'**
+  String get sqHowWouldYouDescribe;
+
+  /// No description provided for @sqWhenDidYourLast.
+  ///
+  /// In en, this message translates to:
+  /// **'When did your last period start?'**
+  String get sqWhenDidYourLast;
+
+  /// No description provided for @sqWhatAreYourPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'What are your primary wellness goals?'**
+  String get sqWhatAreYourPrimary;
+
+  /// No description provided for @sqAreYouUsingHormonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you using hormonal contraception?'**
+  String get sqAreYouUsingHormonal;
+
+  /// No description provided for @sqWhichHormonalConditionS.
+  ///
+  /// In en, this message translates to:
+  /// **'Which hormonal condition(s) apply to you?'**
+  String get sqWhichHormonalConditionS;
+
+  /// No description provided for @sqWhichSymptomsAffectYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Which symptoms affect you most?'**
+  String get sqWhichSymptomsAffectYou;
+
+  /// No description provided for @sqAreYouCurrentlyReceiving.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you currently receiving treatment?'**
+  String get sqAreYouCurrentlyReceiving;
+
+  /// No description provided for @sqHowLongHaveYou.
+  ///
+  /// In en, this message translates to:
+  /// **'How long have you been trying to conceive?'**
+  String get sqHowLongHaveYou;
+
+  /// No description provided for @sqHowAreYouTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'How are you tracking fertility?'**
+  String get sqHowAreYouTracking;
+
+  /// No description provided for @sqAreYouUndergoingFertility.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you undergoing fertility assistance?'**
+  String get sqAreYouUndergoingFertility;
+
+  /// No description provided for @sqWhatIsYourEstimated.
+  ///
+  /// In en, this message translates to:
+  /// **'What is your estimated due date?'**
+  String get sqWhatIsYourEstimated;
+
+  /// No description provided for @sqIsThisYourFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Is this your first pregnancy?'**
+  String get sqIsThisYourFirst;
+
+  /// No description provided for @sqWhatSupportWouldYou.
+  ///
+  /// In en, this message translates to:
+  /// **'What support would you like during pregnancy?'**
+  String get sqWhatSupportWouldYou;
+
+  /// No description provided for @sqWhenWasYourBaby.
+  ///
+  /// In en, this message translates to:
+  /// **'When was your baby born?'**
+  String get sqWhenWasYourBaby;
+
+  /// No description provided for @sqHowAreYouFeeding.
+  ///
+  /// In en, this message translates to:
+  /// **'How are you feeding your baby?'**
+  String get sqHowAreYouFeeding;
+
+  /// No description provided for @sqWhatAreasWouldYou.
+  ///
+  /// In en, this message translates to:
+  /// **'What areas would you like help with?'**
+  String get sqWhatAreasWouldYou;
+
+  /// No description provided for @sqHowHaveYourPeriods.
+  ///
+  /// In en, this message translates to:
+  /// **'How have your periods changed?'**
+  String get sqHowHaveYourPeriods;
+
+  /// No description provided for @sqWhatWouldYouMost.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you most like to focus on?'**
+  String get sqWhatWouldYouMost;
+
+  /// No description provided for @sqHowLongHasIt.
+  ///
+  /// In en, this message translates to:
+  /// **'How long has it been since your last period?'**
+  String get sqHowLongHasIt;
+
+  /// No description provided for @sqWhichSymptomsAffectYour.
+  ///
+  /// In en, this message translates to:
+  /// **'Which symptoms affect your daily life?'**
+  String get sqWhichSymptomsAffectYour;
+
+  /// No description provided for @sqWhatAreYourTop.
+  ///
+  /// In en, this message translates to:
+  /// **'What are your top health goals?'**
+  String get sqWhatAreYourTop;
+
+  /// No description provided for @sjaRegenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get sjaRegenerate;
+
+  /// No description provided for @jcQuickPreviewQuietMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Preview: \"Quiet morning walks and warm tea with friends.\"'**
+  String get jcQuickPreviewQuietMorning;
+
+  /// No description provided for @stUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get stUndo;
+
+  /// No description provided for @stRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get stRedo;
+
+  /// No description provided for @stBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get stBack;
+
+  /// No description provided for @stCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get stCopy;
+
+  /// No description provided for @stDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get stDelete;
+
+  /// No description provided for @ldPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get ldPrivacyPolicy;
+
+  /// No description provided for @ldTermsConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Conditions'**
+  String get ldTermsConditions;
+
+  /// No description provided for @ldPrivacyPolicy2.
+  ///
+  /// In en, this message translates to:
+  /// **'📜 Privacy Policy'**
+  String get ldPrivacyPolicy2;
+
+  /// No description provided for @ldRightToErasureDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Right to Erasure (Delete Account)'**
+  String get ldRightToErasureDelete;
+
+  /// No description provided for @ldEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get ldEmail;
+
+  /// No description provided for @ldWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get ldWebsite;
+
+  /// No description provided for @ldTermsAndConditionsTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'⚖️ Terms and Conditions (Terms of Service)'**
+  String get ldTermsAndConditionsTerms;
+
+  /// No description provided for @ldUnauthorizedUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthorized Use'**
+  String get ldUnauthorizedUse;
+
+  /// No description provided for @msNewTimeCapsule.
+  ///
+  /// In en, this message translates to:
+  /// **'New Time Capsule'**
+  String get msNewTimeCapsule;
+
+  /// No description provided for @msAmIst.
+  ///
+  /// In en, this message translates to:
+  /// **'8:00 AM IST'**
+  String get msAmIst;
+
+  /// No description provided for @msSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get msSave;
+
+  /// No description provided for @rspThatIsTheWhole.
+  ///
+  /// In en, this message translates to:
+  /// **'That is the whole session. Take a moment before you get up.'**
+  String get rspThatIsTheWhole;
+
+  /// No description provided for @pPreparingHerEmergencySchool.
+  ///
+  /// In en, this message translates to:
+  /// **'PREPARING HER EMERGENCY SCHOOL KIT'**
+  String get pPreparingHerEmergencySchool;
+
+  /// No description provided for @pConversationStarters.
+  ///
+  /// In en, this message translates to:
+  /// **' CONVERSATION STARTERS'**
+  String get pConversationStarters;
+
+  /// No description provided for @pParentFrequentQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'PARENT FREQUENT QUESTIONS'**
+  String get pParentFrequentQuestions;
+
+  /// No description provided for @gBouquet.
+  ///
+  /// In en, this message translates to:
+  /// **'Bouquet'**
+  String get gBouquet;
+
+  /// No description provided for @gCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'🌸 Ideas'**
+  String get gCommunity;
+
+  /// No description provided for @hBuildABouquet.
+  ///
+  /// In en, this message translates to:
+  /// **'Build a Bouquet'**
+  String get hBuildABouquet;
+
+  /// No description provided for @hBuildItInBlack.
+  ///
+  /// In en, this message translates to:
+  /// **'Build it in Black & White'**
+  String get hBuildItInBlack;
+
+  /// No description provided for @pHereAreGeneralWays.
+  ///
+  /// In en, this message translates to:
+  /// **'Here are general ways to support your partner today:'**
+  String get pHereAreGeneralWays;
+
+  /// No description provided for @pGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get pGotIt;
+
+  /// No description provided for @pTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips'**
+  String get pTips;
+
+  /// No description provided for @pSavePermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Permissions'**
+  String get pSavePermissions;
+
+  /// No description provided for @pReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get pReject;
+
+  /// No description provided for @pPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pPending;
+
+  /// No description provided for @pShareThisInvitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this invitation'**
+  String get pShareThisInvitation;
+
+  /// No description provided for @pConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get pConnect;
+
+  /// No description provided for @pLiveSynchronized.
+  ///
+  /// In en, this message translates to:
+  /// **'Live synchronized'**
+  String get pLiveSynchronized;
+
+  /// No description provided for @pCompleteCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Check-in'**
+  String get pCompleteCheckIn;
+
+  /// No description provided for @pDigitalFlowerGift.
+  ///
+  /// In en, this message translates to:
+  /// **'Digital Flower Gift'**
+  String get pDigitalFlowerGift;
+
+  /// No description provided for @pAiCommunicationHub.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Communication Hub'**
+  String get pAiCommunicationHub;
+
+  /// No description provided for @pYourPartnerHasChosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Your partner has chosen not to share personal insights right now.'**
+  String get pYourPartnerHasChosen;
+
+  /// No description provided for @pWhatWouldYouLike.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like help with?'**
+  String get pWhatWouldYouLike;
+
+  /// No description provided for @phHereAreGeneralWays.
+  ///
+  /// In en, this message translates to:
+  /// **'Here are general ways to support your partner today:'**
+  String get phHereAreGeneralWays;
+
+  /// No description provided for @phGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get phGotIt;
+
+  /// No description provided for @phSeeHowICan.
+  ///
+  /// In en, this message translates to:
+  /// **'See how I can help'**
+  String get phSeeHowICan;
+
+  /// No description provided for @phAllTodaySActions.
+  ///
+  /// In en, this message translates to:
+  /// **'All Today\'s Actions Completed! 🌸'**
+  String get phAllTodaySActions;
+
+  /// No description provided for @phDrDocsy.
+  ///
+  /// In en, this message translates to:
+  /// **'Dr. Docsy'**
+  String get phDrDocsy;
+
+  /// No description provided for @phNotSharedWithYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Not shared with you'**
+  String get phNotSharedWithYou;
+
+  /// No description provided for @phConnectionEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection ended'**
+  String get phConnectionEnded;
+
+  /// No description provided for @phNothingSharedRightNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing shared right now'**
+  String get phNothingSharedRightNow;
+
+  /// No description provided for @plConnectWithPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect with Partner'**
+  String get plConnectWithPartner;
+
+  /// No description provided for @plPairingWithYourPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing with your partner enables live AI insights, phase tracking, and support advice on the Learn page.'**
+  String get plPairingWithYourPartner;
+
+  /// No description provided for @plSendInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Invite'**
+  String get plSendInvite;
+
+  /// No description provided for @plLearnDiscover.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn & Discover'**
+  String get plLearnDiscover;
+
+  /// No description provided for @plConnectWithYourPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect with your partner to unlock personalized Dr. Docsy AI insights.'**
+  String get plConnectWithYourPartner;
+
+  /// No description provided for @plUnderstandingEnergyFatigueShifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Understanding Energy & Fatigue Shifts'**
+  String get plUnderstandingEnergyFatigueShifts;
+
+  /// No description provided for @plMindfulCommunicationPrinciples.
+  ///
+  /// In en, this message translates to:
+  /// **'Mindful Communication Principles'**
+  String get plMindfulCommunicationPrinciples;
+
+  /// No description provided for @plDailyHydrationMetabolicBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Hydration & Metabolic Balance'**
+  String get plDailyHydrationMetabolicBalance;
+
+  /// No description provided for @plManagingStressDailyResilience.
+  ///
+  /// In en, this message translates to:
+  /// **'Managing Stress & Daily Resilience'**
+  String get plManagingStressDailyResilience;
+
+  /// No description provided for @plBuildingHealthySleepArchitecture.
+  ///
+  /// In en, this message translates to:
+  /// **'Building Healthy Sleep Architecture'**
+  String get plBuildingHealthySleepArchitecture;
+
+  /// No description provided for @psAskAboutHerActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about her active stage...'**
+  String get psAskAboutHerActive;
+
+  /// No description provided for @puHowSharingWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'How Sharing Works'**
+  String get puHowSharingWorks;
+
+  /// No description provided for @puUnderstand.
+  ///
+  /// In en, this message translates to:
+  /// **'Understand'**
+  String get puUnderstand;
+
+  /// No description provided for @sSavesDirectlyToYour.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves directly to your journal and MongoDB'**
+  String get sSavesDirectlyToYour;
+
+  /// No description provided for @sLutealRecoveryActionChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Luteal Recovery Action Checklist'**
+  String get sLutealRecoveryActionChecklist;
+
+  /// No description provided for @sMedicalReportPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Report / PDF'**
+  String get sMedicalReportPdf;
+
+  /// No description provided for @sSleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep'**
+  String get sSleep;
+
+  /// No description provided for @sEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'Energy'**
+  String get sEnergy;
+
+  /// No description provided for @sMood.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood'**
+  String get sMood;
+
+  /// No description provided for @sWriteYourThoughtsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your thoughts, body sensations, or reflections here...'**
+  String get sWriteYourThoughtsBody;
+
+  /// No description provided for @vnbVoiceReflection.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Reflection'**
+  String get vnbVoiceReflection;
+
+  /// No description provided for @vnbYourVoiceTranscriptWill.
+  ///
+  /// In en, this message translates to:
+  /// **'Your voice transcript will appear here...'**
+  String get vnbYourVoiceTranscriptWill;
+
+  /// No description provided for @gIdeasSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready-made bouquets to start from.'**
+  String get gIdeasSubtitle;
+
+  /// No description provided for @jrnCouldNotAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'That photo could not be added. Try another one.'**
+  String get jrnCouldNotAddPhoto;
 }
 
 class _AppLocalizationsDelegate

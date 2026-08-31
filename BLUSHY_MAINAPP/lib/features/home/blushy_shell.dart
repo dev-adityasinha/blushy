@@ -21,7 +21,7 @@ class BlushyOSShell extends StatefulWidget {
 class _BlushyOSShellState extends State<BlushyOSShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
-  // Order matches BlushyBottomNavigation, with Sia in the middle slot.
+  // Order matches BlushyBottomNavigation, with Dr. Docsy in the middle slot.
   final List<Widget> _screens = [
     const BlushyHomeScreen(),
     const BlushyCommunityScreen(),

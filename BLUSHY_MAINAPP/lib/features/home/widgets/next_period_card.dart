@@ -23,7 +23,7 @@ class BlushyNextPeriodCard extends StatelessWidget {
     if (pc.lifeContexts.contains(LifeContext.pregnancy)) {
       header = 'PREGNANCY WELLBEING';
       title = 'Focus on your changing body & nutrition';
-      description = 'Your regular cycle tracking is paused. Sia is adapting insights for your pregnancy.';
+      description = 'Your regular cycle tracking is paused. Dr. Docsy is adapting insights for your pregnancy.';
       buttonText = 'Manage Pregnancy Info';
     } else if (pc.lifeContexts.contains(LifeContext.postpartum)) {
       header = 'POSTPARTUM RECOVERY';

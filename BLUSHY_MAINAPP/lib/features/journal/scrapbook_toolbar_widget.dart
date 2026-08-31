@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../l10n/app_localizations.dart';
 
 class ScrapbookToolbarWidget extends StatelessWidget {
   final VoidCallback onBringToFront;
@@ -47,13 +48,13 @@ class ScrapbookToolbarWidget extends StatelessWidget {
             IconButton(
               icon: Icon(Icons.undo_rounded, color: canUndo ? Colors.white : Colors.white30, size: 18),
               onPressed: canUndo ? onUndo : null,
-              tooltip: 'Undo',
+              tooltip: AppLocalizations.of(context).stUndo,
             ),
           if (onRedo != null)
             IconButton(
               icon: Icon(Icons.redo_rounded, color: canRedo ? Colors.white : Colors.white30, size: 18),
               onPressed: canRedo ? onRedo : null,
-              tooltip: 'Redo',
+              tooltip: AppLocalizations.of(context).stRedo,
             ),
           if (onUndo != null || onRedo != null)
             const VerticalDivider(color: Colors.white24, width: 12, indent: 6, endIndent: 6),
@@ -64,22 +65,22 @@ class ScrapbookToolbarWidget extends StatelessWidget {
           ),
           _buildToolButton(
             icon: Icons.flip_to_back_rounded,
-            label: 'Back',
+            label: AppLocalizations.of(context).stBack,
             onTap: onSendToBack,
           ),
           _buildToolButton(
-            icon: Icons.palette_outlined,
+            icon: Icons.palette_rounded,
             label: itemType == 'text' ? 'Style' : 'Color',
             onTap: onColorEdit,
           ),
           _buildToolButton(
             icon: Icons.copy_rounded,
-            label: 'Copy',
+            label: AppLocalizations.of(context).stCopy,
             onTap: onDuplicate,
           ),
           _buildToolButton(
             icon: Icons.delete_outline_rounded,
-            label: 'Delete',
+            label: AppLocalizations.of(context).stDelete,
             color: const Color(0xFFF43F5E),
             onTap: onDelete,
           ),

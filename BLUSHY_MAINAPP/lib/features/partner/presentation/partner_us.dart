@@ -4,6 +4,7 @@ import '../../../core/state.dart';
 import '../../../core/storage.dart';
 import '../../../theme/colors.dart';
 import '../../../core/stage_config.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PartnerUsScreen extends StatefulWidget {
   const PartnerUsScreen({super.key});
@@ -19,7 +20,7 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text("How Sharing Works", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context).puHowSharingWorks, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Text(
           "Blushy respects individual privacy. Your partner holds granular control over their information. They can toggled permissions for cycle updates, appointments, care requests, and fertility windows at any time in their Partner Mode settings panel.",
           style: GoogleFonts.poppins(fontSize: 13, height: 1.5, color: BlushyColors.text),
@@ -27,7 +28,7 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Understand", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+            child: Text(AppLocalizations.of(context).puUnderstand, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
           ),
         ],
       ),

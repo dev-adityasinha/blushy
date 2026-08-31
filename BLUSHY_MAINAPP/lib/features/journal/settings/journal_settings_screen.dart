@@ -102,7 +102,7 @@ class _JournalSettingsScreenState extends State<JournalSettingsScreen> {
           // screen that fails to load.
           if (AuthStorage.getRole() == 'admin')
             ListTile(
-              leading: const Icon(Icons.fact_check_outlined, color: Color(0xFFD97706)),
+              leading: const Icon(Icons.fact_check_rounded, color: Color(0xFFD97706)),
               title: Text('Content review',
                   style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
               subtitle: Text('Read and approve health content before it is served',

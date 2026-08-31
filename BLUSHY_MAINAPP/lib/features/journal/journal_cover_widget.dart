@@ -158,7 +158,7 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
       case 'none':
         return const SizedBox.shrink();
       default:
-        return const Icon(Icons.auto_awesome, color: Color(0xFFD4AF37), size: 28);
+        return const Icon(Icons.auto_awesome_rounded, color: Color(0xFFD4AF37), size: 28);
     }
   }
 

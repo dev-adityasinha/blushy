@@ -1,4 +1,5 @@
 import { db } from '../utils/db.js';
+import { joinedAfterReportingMonth } from '../utils/monthWindow.js';
 import { getDailyLogsForRange } from '../repositories/dailyLogRepository.js';
 import { getPeriodEntries } from '../repositories/periodRepository.js';
 import { getUserById } from '../repositories/userRepository.js';
@@ -64,6 +65,7 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+
 export async function calculateMonthlyInsights(userId, options = {}) {
   const cleanUserId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
   const user = await getUserById(cleanUserId);
@@ -119,6 +121,24 @@ export async function calculateMonthlyInsights(userId, options = {}) {
   // 1. Query daily logs in M-1 range
   const dailyLogs = await getDailyLogsForRange(cleanUserId, startDate, endDate);
 
+  // 1b. Check-ins recorded as health events, which is what the app writes.
+  const checkinEvents = await db.collection('health_events')
+    .find({
+      user_id: cleanUserId,
+      deleted_at: null,
+      event_type: {
+        $in: ['mood_logged', 'energy_logged', 'sleep_logged', 'stress_logged',
+              'pain_logged', 'hydration_logged', 'symptom_logged', 'flow_logged',
+              'activity_logged'],
+      },
+      timestamp: {
+        $gte: new Date(`${startDate}T00:00:00.000Z`),
+        $lte: new Date(`${endDate}T23:59:59.999Z`),
+      },
+    })
+    .project({ timestamp: 1 })
+    .toArray();
+
   // 2. Query period entries in M-1 range
   const isMan = await db.collection('users_man').findOne({ user_id: cleanUserId });
   const periodColl = isMan ? 'user_period_logs_man' : 'user_period_logs_woman';
@@ -130,7 +150,7 @@ export async function calculateMonthlyInsights(userId, options = {}) {
     .sort({ period_start_date: 1 })
     .toArray();
 
-  // 3. Query authenticated Sia chat history in M-1 range
+  // 3. Query authenticated Dr. Docsy chat history in M-1 range
   const chatColl = isMan ? 'ai_chat_history_man' : 'ai_chat_history_woman';
   const chatDocs = await db.collection(chatColl)
     .find({
@@ -158,7 +178,25 @@ export async function calculateMonthlyInsights(userId, options = {}) {
   const siaConversationsCount = Object.values(chatDatesMap).filter((c) => c >= 2).length;
 
   // Calculate Metrics
+  // A check-in counts wherever it was recorded.
+  //
+  // This counted `user_daily_logs_*` only, and the app does not write there:
+  // it records check-ins as health events, and `ApiCheckinService` -- the one
+  // client that would have hit the daily-log route -- is not called from
+  // anywhere. So the monthly reflection reported "0 check-ins" no matter how
+  // diligently someone logged. Verified by driving 637 events through the
+  // pipeline and watching this come back 0.
+  //
+  // Both sources are counted, by distinct date, so a day logged in both is
+  // still one day.
   const distinctCheckinDates = new Set(dailyLogs.map((l) => l.logDate));
+  for (const event of checkinEvents) {
+    const iso = event.timestamp instanceof Date
+      ? event.timestamp.toISOString()
+      : String(event.timestamp ?? '');
+    const day = iso.slice(0, 10);
+    if (day >= startDate && day <= endDate) distinctCheckinDates.add(day);
+  }
   const checkinCount = distinctCheckinDates.size;
   const checkinConsistencyPercentage = totalDays > 0
     ? Math.round((checkinCount / totalDays) * 1000) / 10
@@ -177,9 +215,26 @@ export async function calculateMonthlyInsights(userId, options = {}) {
   const periodDaysInMonth = periodLogs.length;
   const completedCyclesInMonth = periodLogs.length >= 2 ? periodLogs.length - 1 : (periodLogs.length === 1 ? 1 : 0);
 
+  // A month that ended before this account existed is not a month she failed
+  // to log -- she was not here. Reporting "no check-ins were recorded for
+  // July" to someone who installed the app in August describes the app, not
+  // her, and it is the first thing she sees on the home page.
+  const joinedAfterMonth = joinedAfterReportingMonth(
+    user?.createdAt ?? user?.created_at,
+    endDate,
+  );
+
   // Determine Data State
   let dataState = 'sufficient_data';
-  if (checkinCount === 0 && periodDaysInMonth === 0) {
+  if (joinedAfterMonth) {
+    dataState = 'not_yet_joined';
+  } else if (checkinCount === 0 && periodDaysInMonth === 0) {
+    dataState = 'no_data';
+  } else if (checkinCount === 0) {
+    // A month with a period logged and nothing else is not a rhythm being
+    // built. It previously fell through to `learning_state`, whose summary
+    // reads "you began building your daily wellness rhythm with 0 logged
+    // check-ins" -- congratulating her for having logged nothing.
     dataState = 'no_data';
   } else if (checkinCount < 5) {
     dataState = 'learning_state';
@@ -227,9 +282,9 @@ export async function calculateMonthlyInsights(userId, options = {}) {
     },
     {
       id: 'milestone_sia_engagement',
-      title: 'Sia Wellness Conversations',
+      title: 'Dr. Docsy Wellness Conversations',
       description: siaConversationsCount > 0
-        ? `Engaged in ${siaConversationsCount} Sia wellness sessions in ${monthName}.`
+        ? `Engaged in ${siaConversationsCount} Dr. Docsy wellness sessions in ${monthName}.`
         : `No wellness conversations logged in ${monthName}.`,
       sourceField: 'ai_chat_history_woman (distinct dates with >= 2 exchanges)',
       completionRule: 'siaConversationsCount >= 3',
@@ -243,7 +298,9 @@ export async function calculateMonthlyInsights(userId, options = {}) {
   let headline = `${monthName} Monthly Reflection`;
   let summaryText = '';
 
-  if (dataState === 'no_data') {
+  if (dataState === 'not_yet_joined') {
+    summaryText = `Your account is newer than ${monthName}, so there is nothing to report for it. Your first monthly reflection arrives once this month completes.`;
+  } else if (dataState === 'no_data') {
     summaryText = `No check-ins or cycle events were recorded for ${monthName}. Daily check-ins this month will appear in your next monthly summary.`;
   } else if (dataState === 'learning_state') {
     summaryText = `In ${monthName}, you began building your daily wellness rhythm with ${checkinCount} logged check-in${checkinCount === 1 ? '' : 's'}. Log 5+ check-ins to unlock detailed pattern summaries.`;
@@ -273,7 +330,7 @@ export async function calculateMonthlyInsights(userId, options = {}) {
     reflection: {
       headline,
       summaryText,
-      isPersonalized: dataState !== 'no_data',
+      isPersonalized: dataState !== 'no_data' && dataState !== 'not_yet_joined',
       sampleSize: checkinCount,
     },
     disclaimer: 'Monthly insights are descriptive summaries of your recorded inputs and are not intended for medical diagnosis or clinical evaluation.',

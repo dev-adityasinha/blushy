@@ -168,7 +168,7 @@ class JourneyScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 30),
               alignment: Alignment.center,
               child: const Text(
-                'No journals logged yet. Speak to Sia or write on the Today screen.',
+                'No journals logged yet. Speak to Dr. Docsy or write on the Today screen.',
                 style: TextStyle(color: BlushyColors.textMuted, fontSize: 13),
               ),
             )

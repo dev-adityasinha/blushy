@@ -117,7 +117,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
               ),
               const SizedBox(height: 6),
               Text(
-                "Sia will read, analyze, and explain your medical reports, lab results, and health scans with doctor-level clarity.",
+                "Dr. Docsy will read, analyze, and explain your medical reports, lab results, and health scans with doctor-level clarity.",
                 style: GoogleFonts.poppins(fontSize: 11.5, color: BlushyColors.secondaryText, height: 1.4),
               ),
               const SizedBox(height: 20),
@@ -127,7 +127,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                     child: _buildAttachmentOptionTile(
                       ctx,
                       icon: Icons.picture_as_pdf_rounded,
-                      title: "Medical Report / PDF",
+                      title: AppLocalizations.of(context).sMedicalReportPdf,
                       subtitle: "Lab tests, blood work, prescriptions",
                       color: const Color(0xFFDC2626),
                       accept: '.pdf,application/pdf',
@@ -172,7 +172,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Attached: ${file.name} (${file.formattedSize}). Ask Sia a question or press Send!'),
+              content: Text('Attached: ${file.name} (${file.formattedSize}). Ask Dr. Docsy a question or press Send!'),
               backgroundColor: const Color(0xFF6F42F5),
             ),
           );
@@ -528,7 +528,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         // A red flag rule fired on the server. When it suppresses ordinary
         // content the message is the clinically reviewed instruction, not a
         // generated reply, so it is rendered as safety guidance rather than as
-        // a chat bubble from Sia.
+        // a chat bubble from Dr. Docsy.
         if (chatResult.hasSafety) {
           final safety = chatResult.safety!;
           final step = safety.steps.first;
@@ -546,7 +546,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
           });
 
           // When wellness content is suppressed the reviewed guidance is the
-          // whole response, so no Sia bubble is appended after it. The notify
+          // whole response, so no Dr. Docsy bubble is appended after it. The notify
           // call after this setState still runs.
           if (chatResult.suppressesChat) return;
         }
@@ -779,19 +779,51 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                             ? "${wb.sleepQuality}h logged" 
                             : "Not Logged";
 
-                        final String energyText = (wb.energy != null && wb.energy! > 0) 
-                            ? "Level ${wb.energy}/10" 
-                            : "Not Logged";
+                        // Show what she picked, not the number it was scored as.
+                        //
+                        // The check-in offers words -- High/Medium/Low, and
+                        // Happy/Okay/Cramps/Tired/Irritable -- and stores the
+                        // label alongside a score used for charting. This card
+                        // read only the score, so choosing "High" came back as
+                        // "Level 2/10": a number she was never shown, against a
+                        // scale she was never given. The home page already
+                        // prefers the label; this now matches it.
+                        final checkin = BlushyStorage.read('daily_checkin.json');
+                        final String savedEnergy =
+                            checkin['energy']?.toString().trim() ?? '';
+                        final String savedMood =
+                            (checkin['feeling'] ?? checkin['mood'])
+                                    ?.toString()
+                                    .trim() ??
+                                '';
 
-                        final String moodText = (wb.mood != null && wb.mood! > 0) 
-                            ? "Level ${wb.mood}/10" 
-                            : (wb.symptoms.isNotEmpty ? wb.symptoms.first : "Not Logged");
+                        final String energyText = savedEnergy.isNotEmpty
+                            ? savedEnergy
+                            : (wb.energy != null && wb.energy! > 0)
+                                ? "Level ${wb.energy}/10"
+                                : "Not Logged";
 
+                        final String moodText = savedMood.isNotEmpty
+                            ? savedMood
+                            : (wb.mood != null && wb.mood! > 0)
+                                ? "Level ${wb.mood}/10"
+                                : (wb.symptoms.isNotEmpty
+                                    ? wb.symptoms.first
+                                    : "Not Logged");
+
+                        // Matched against the labels the picker actually
+                        // offers. While this card showed "Level 4/10" none of
+                        // these could ever match, so every mood drew the same
+                        // face.
+                        final String moodKey = moodText.toLowerCase();
                         String moodEmoji = "😌";
-                        if (moodText.toLowerCase().contains("tired")) moodEmoji = "🥱";
-                        if (moodText.toLowerCase().contains("anxious")) moodEmoji = "😰";
-                        if (moodText.toLowerCase().contains("sleep")) moodEmoji = "😴";
-                        if (moodText.toLowerCase().contains("irrit")) moodEmoji = "😤";
+                        if (moodKey.contains("happy")) moodEmoji = "😊";
+                        if (moodKey.contains("okay")) moodEmoji = "🙂";
+                        if (moodKey.contains("cramp")) moodEmoji = "😖";
+                        if (moodKey.contains("tired")) moodEmoji = "🥱";
+                        if (moodKey.contains("anxious")) moodEmoji = "😰";
+                        if (moodKey.contains("sleep")) moodEmoji = "😴";
+                        if (moodKey.contains("irrit")) moodEmoji = "😤";
                         if (moodText == "Not Logged") moodEmoji = "📋";
 
                         String stageStr = 'everydayWellness';
@@ -923,7 +955,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                           // 2. Sleep Card (Only shown if sleep is required for this stage)
                           if (!shouldHideSleep)
                             _buildEditorialContextCard(
-                              title: "Sleep",
+                              title: AppLocalizations.of(context).sSleep,
                               body: _MiniWeeklySleepBarChart(sleepVal: sleepText),
                               value: sleepText,
                               onTap: () {
@@ -937,7 +969,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
 
                           // 3. Energy Card with Redirection
                           _buildEditorialContextCard(
-                            title: "Energy",
+                            title: AppLocalizations.of(context).sEnergy,
                             body: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -961,7 +993,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
 
                           // 4. Mood Card with Redirection
                           _buildEditorialContextCard(
-                            title: "Mood",
+                            title: AppLocalizations.of(context).sMood,
                             body: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -1044,7 +1076,6 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                     Builder(
                       builder: (context) {
                         final pc = state.personalContext;
-                        final wb = state.wellbeingState;
                         final stageKey = pc.lifeStage ?? state.selectedRole;
                         final stageConfig = StageConfig.forStage(stageKey);
 
@@ -1066,29 +1097,6 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                         );
                         final String activePhase = calc.hasData ? calc.currentPhase : stageConfig.displayName;
 
-                        // Dynamic 1: Pattern text
-                        String patternDesc;
-                        if (wb.symptoms.isNotEmpty) {
-                          patternDesc = "You recorded ${wb.symptoms.take(2).join(' and ')} during your $activePhase rhythm. Tap to view your real-time pattern analytics and symptom correlations from MongoDB.";
-                        } else if (wb.mood != null) {
-                          patternDesc = "Your emotional rhythm has been steady during this $activePhase phase. Tap to analyze your full cycle health trends and history.";
-                        } else {
-                          patternDesc = "Your daily signals are continuously analyzed with MongoDB to identify personalized cycle patterns. Tap to view your live health metrics.";
-                        }
-
-                        // Dynamic 2: Journal prompt text
-                        String journalPromptDesc;
-                        if (activePhase.toLowerCase().contains('menstrual')) {
-                          journalPromptDesc = "How is your body feeling during Day ${calc.currentCycleDay} of your period? Reflect on your rest and comfort today.";
-                        } else if (activePhase.toLowerCase().contains('follicular')) {
-                          journalPromptDesc = "What fresh creative intentions or physical energy shifts are you noticing as your estrogen rises today?";
-                        } else if (activePhase.toLowerCase().contains('ovulation')) {
-                          journalPromptDesc = "How are your confidence, mood, and vitality feeling around this peak ovulation window?";
-                        } else if (activePhase.toLowerCase().contains('luteal')) {
-                          journalPromptDesc = "What gentle boundaries, nutritious meals, or soothing routines does your body need during luteal transition?";
-                        } else {
-                          journalPromptDesc = "How does your body and emotional state feel today compared to yesterday? Tap to write and save your reflection.";
-                        }
 
                         // Dynamic 4: Community discussion text
                         // The count here was invented too; nothing tallies community activity.
@@ -1096,27 +1104,6 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
 
                         return Column(
                           children: [
-                            _buildJournalContinuousSection(
-                              "Pattern You've Been Building",
-                              patternDesc,
-                              Icons.trending_up_rounded,
-                              onTap: () => _showPatternsAnalyticsModal(context, state, calc, stageConfig.displayName),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildJournalContinuousSection(
-                              "Journal Prompt",
-                              journalPromptDesc,
-                              Icons.edit_note_rounded,
-                              onTap: () => _showJournalPromptSheet(context, journalPromptDesc),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildJournalContinuousSection(
-                              "Voice Reflection",
-                              "Record a 1-minute voice snapshot of your thoughts to allow Sia to transcribe and track emotional trends.",
-                              Icons.mic_none_rounded,
-                              onTap: () => VoiceNoteBottomSheet.show(context),
-                            ),
-                            const SizedBox(height: 16),
                             _buildJournalContinuousSection(
                               "Community Discussion",
                               communityDesc,
@@ -1487,6 +1474,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                     // Resolved before the date picker awaits, for the same
                     // reason messenger is: the context may be gone after.
                     final recordedMessage = AppLocalizations.of(context).siaPeriodRecorded;
+                    final couldNotSaveMessage = AppLocalizations.of(context).stateCouldNotSave;
                     final nav = Navigator.of(ctx);
                     final picked = await showDatePicker(
                       context: ctx,
@@ -1497,17 +1485,44 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                     if (picked != null) {
                       nav.pop();
                       state.updatePersonalContext(pc.copyWith(lastPeriodStart: picked));
+
+                      var saved = false;
                       try {
                         final profileData = BlushyStorage.read('user_profile.json');
                         final profileMap = Map<String, dynamic>.from(profileData['profile'] ?? profileData);
                         profileMap['period_last_start_date'] = picked.toIso8601String();
                         profileMap['last_period'] = picked.toIso8601String();
                         BlushyStorage.write('user_profile.json', {'profile': profileMap});
-                        await ApiPeriodService().logPeriodEntry(periodStartDate: picked, source: 'sia_drawer');
-                      } catch (_) {}
+                        // The result decides. This awaited the call and then
+                        // set saved = true regardless, so a refused write --
+                        // which returns null rather than throwing -- still
+                        // told her the date had been recorded, while the
+                        // server kept predicting from the old one.
+                        final entry = await ApiPeriodService()
+                            .logPeriodEntry(periodStartDate: picked, source: 'sia_drawer');
+                        saved = entry != null;
+                      } catch (_) {
+                        // Falls through to the failure message below. This used
+                        // to be swallowed silently, so a failed write still
+                        // told her the date had been recorded.
+                      }
+
+                      if (saved) {
+                        // The dashboard keeps its own copy of the cycle, fetched
+                        // from the server, and updating PersonalContext does not
+                        // invalidate it. Without this the chart kept showing the
+                        // old cycle until something else happened to reload it.
+                        //
+                        // Home refreshes when Sia is closed, but only when Sia
+                        // was pushed as a route from the home FAB -- reaching it
+                        // from the bottom navigation is a tab switch, which pops
+                        // nothing and so refreshed nothing.
+                        SiaDashboardService().markDashboardDirty();
+                      }
+
                       if (mounted) {
                         messenger.showSnackBar(
-                          SnackBar(content: Text(recordedMessage)),
+                          SnackBar(content: Text(saved ? recordedMessage : couldNotSaveMessage)),
                         );
                       }
                     }
@@ -1675,268 +1690,6 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
     );
   }
 
-  void _showPatternsAnalyticsModal(
-    BuildContext context,
-    BlushyOSState state,
-    CycleCalculation calc,
-    String stageTitle,
-  ) {
-    final wb = state.wellbeingState;
-    final pc = state.personalContext;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final List<String> currentSymptoms = List<String>.from(wb.symptoms);
-        if (currentSymptoms.isEmpty && pc.userSymptoms.isNotEmpty) {
-          currentSymptoms.addAll(pc.userSymptoms);
-        }
-
-        final int energyScore = wb.energy ?? 6;
-        final int moodScore = wb.mood ?? 7;
-        final int sleepHours = wb.sleepQuality ?? 8;
-
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-            maxWidth: 640,
-          ),
-          decoration: const BoxDecoration(
-            color: Color(0xFFFAF6F0),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: BlushyColors.border,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6F42F5).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(Icons.trending_up_rounded, color: Color(0xFF6F42F5), size: 24),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Pattern & Health Analytics",
-                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                          ),
-                          Text(
-                            "Signals from what you have logged",
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, color: BlushyColors.secondaryText),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 1. Active Cycle Status
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: BlushyColors.border),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    stageTitle.toUpperCase(),
-                                    style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary, letterSpacing: 1.0),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    calc.hasData ? "${calc.currentPhase} • Day ${calc.currentCycleDay}" : "Cycle Tracking Active",
-                                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    calc.hasData ? "Next period estimated in ${calc.daysUntilNextPeriod} days (${calc.formattedNextPeriodDate})" : "Log your period start date for real-time predictions.",
-                                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: BlushyColors.primary.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.calendar_today_rounded, color: BlushyColors.primary, size: 20),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // 2. Logged Symptoms
-                      Text(
-                        AppLocalizations.of(context).siaLoggedSymptoms,
-                        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText, letterSpacing: 1.2),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: BlushyColors.border),
-                        ),
-                        child: currentSymptoms.isNotEmpty
-                            ? Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: currentSymptoms.map((s) {
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF3EFEA),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: BlushyColors.border),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.check_circle_rounded, size: 14, color: BlushyColors.primary),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          s,
-                                          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                              )
-                            : Text(
-                                "No severe symptoms recorded today. Log symptoms in your check-in card to build predictive patterns.",
-                                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
-                              ),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // 3. Vital Balance Meters
-                      Text(
-                        "VITALITY & WELLBEING METERS",
-                        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText, letterSpacing: 1.2),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: BlushyColors.border),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildAnalyticsMeterRow("Energy Level", "$energyScore/10", energyScore / 10.0, const Color(0xFFF59E0B)),
-                            const Divider(height: 24),
-                            _buildAnalyticsMeterRow("Mood Balance", "$moodScore/10", moodScore / 10.0, const Color(0xFFEC4899)),
-                            const Divider(height: 24),
-                            _buildAnalyticsMeterRow("Sleep Duration", "$sleepHours hrs", (sleepHours / 10.0).clamp(0.0, 1.0), const Color(0xFF3B82F6)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // 4. Action Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _showMoodCheckInModal(context, state);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: BlushyColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            AppLocalizations.of(context).siaLogCheckIn,
-                            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAnalyticsMeterRow(String title, String val, double progress, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text)),
-            Text(val, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: LinearProgressIndicator(
-            value: progress.clamp(0.0, 1.0),
-            minHeight: 8,
-            backgroundColor: color.withValues(alpha: 0.15),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
-        ),
-      ],
-    );
-  }
-
   void _showJournalPromptSheet(BuildContext context, String prompt) {
     final textController = TextEditingController();
     String selectedMood = 'Reflective';
@@ -1996,7 +1749,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                                 style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                               ),
                               Text(
-                                "Saves directly to your journal and MongoDB",
+                                AppLocalizations.of(context).sSavesDirectlyToYour,
                                 style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
                               ),
                             ],
@@ -2079,7 +1832,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                             maxLines: 5,
                             style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
                             decoration: InputDecoration(
-                              hintText: "Write your thoughts, body sensations, or reflections here...",
+                              hintText: AppLocalizations.of(context).sWriteYourThoughtsBody,
                               hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.6)),
                               border: InputBorder.none,
                             ),
@@ -2215,7 +1968,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
   /// Reviewed safety guidance, shown instead of a chat bubble.
   ///
   /// This wording comes from the clinically reviewed red flag rule, not from
-  /// the model, so it is presented distinctly rather than as something Sia
+  /// the model, so it is presented distinctly rather than as something Dr. Docsy
   /// said.
   Widget _buildSafetyMessage(Map<String, String> msg) {
     final bool urgent = msg['level'] == 'emergency';
@@ -2289,9 +2042,9 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
     );
   }
 
-  /// Shares one Sia exchange with a partner, or takes it back.
+  /// Shares one Dr. Docsy exchange with a partner, or takes it back.
   ///
-  /// Sia is where people say the things they have not told anyone, so this is
+  /// Dr. Docsy is where people say the things they have not told anyone, so this is
   /// per exchange and never a blanket release. It also only reaches a partner
   /// who holds the `sia_conversations` permission -- both gates must be open.
   Widget _buildShareExchangeButton(Map<String, String> msg) {
@@ -2364,7 +2117,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
           !ok
               ? 'Could not change sharing for that message.'
               : shared
-                  ? 'Shared. Your partner sees this only if you have turned on Sia conversation sharing for them.'
+                  ? 'Shared. Your partner sees this only if you have turned on Dr. Docsy conversation sharing for them.'
                   : 'No longer shared.',
         ),
       ),
@@ -2406,7 +2159,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
               Row(
                 children: [
                   Text(
-                    isSia ? 'Sia Companion' : 'You',
+                    isSia ? 'Dr. Docsy Companion' : 'You',
                     style: GoogleFonts.poppins(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -2414,7 +2167,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                     ),
                   ),
                   const Spacer(),
-                  // Only on Sia's side of an exchange: the pair is one stored
+                  // Only on Dr. Docsy's side of an exchange: the pair is one stored
                   // conversation, so one control shares the whole exchange
                   // rather than offering the same thing twice.
                   if (isSia) _buildShareExchangeButton(msg),
@@ -2503,7 +2256,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Luteal Recovery Action Checklist',
+              AppLocalizations.of(context).sLutealRecoveryActionChecklist,
               style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 10),
@@ -2726,7 +2479,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          "${_attachedFile!.formattedSize} • Ready for Sia review",
+                          "${_attachedFile!.formattedSize} • Ready for Dr. Docsy review",
                           style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
                         ),
                       ],
@@ -2778,7 +2531,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                     style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
                     decoration: InputDecoration(
                       hintText: _attachedFile != null
-                          ? "Ask Sia about ${_attachedFile!.name}..."
+                          ? "Ask Dr. Docsy about ${_attachedFile!.name}..."
                           : _placeholders[_placeholderIndex],
                       hintStyle: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
                       border: InputBorder.none,

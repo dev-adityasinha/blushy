@@ -59,7 +59,7 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
               Row(
                 children: [
                   // Language Selector
-                  // Sets the language Sia replies in. This chip used to be a
+                  // Sets the language Dr. Docsy replies in. This chip used to be a
                   // no-op showing a fixed "EN".
                   ValueListenableBuilder<String>(
                     valueListenable: LanguagePreference.current,
@@ -130,7 +130,7 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(64.0);
 }
 
-/// Lets someone choose the language Sia replies in.
+/// Lets someone choose the language Dr. Docsy replies in.
 ///
 /// Only the languages the server actually has strings for are offered; adding
 /// more would silently fall back to English and look broken.
@@ -149,7 +149,7 @@ void _showLanguagePicker(BuildContext context) {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
             child: Text(
-              'Sia speaks',
+              'Dr. Docsy speaks',
               style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
@@ -158,7 +158,7 @@ void _showLanguagePicker(BuildContext context) {
             child: Text(
               // Says exactly what changes, so nobody expects the whole app to
               // switch language.
-              'Changes the language Sia replies in. The rest of the app stays in English for now.',
+              'Changes the language Dr. Docsy replies in. The rest of the app stays in English for now.',
               style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
             ),
           ),

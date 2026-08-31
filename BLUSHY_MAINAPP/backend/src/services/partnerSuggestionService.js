@@ -44,11 +44,34 @@ export function buildCycleInfo(
   }
 
   dates.sort((a, b) => b.getTime() - a.getTime());
-  const start = dates[0];
+
+  // A logged period start outranks the onboarding answers, whatever the
+  // calendar says.
+  //
+  // This used to take the most recent of every source. The onboarding answers
+  // are a one-time seed that is never updated, so a stale one sitting later in
+  // the calendar than a period she had just logged silently replaced it: with
+  // an answer of Aug 31 on file, logging Aug 24 still reported Day 1, and it
+  // looked like the date had not been accepted. Logging is a deliberate,
+  // later statement about her own cycle; a signup answer is not.
+  const loggedStart = (() => {
+    if (!cycleStartDate) return null;
+    const d = new Date(cycleStartDate);
+    return Number.isNaN(d.getTime()) ? null : d;
+  })();
+
+  const start = loggedStart ?? dates[0];
 
   let cycleLength = Number(onboardingAnswers?.cycle_length || onboardingAnswers?.period_cycle_length) || 28;
-  if (dates.length >= 2) {
-    const diffDays = Math.round((dates[0].getTime() - dates[1].getTime()) / 86400000);
+
+  // Length comes from the gap between consecutive starts, so only dates at or
+  // before the anchor count. A later seed would otherwise produce a negative
+  // or nonsensical gap against the start actually being used.
+  const priorDates = dates.filter((d) => d.getTime() <= start.getTime());
+  if (priorDates.length >= 2) {
+    const diffDays = Math.round(
+      (priorDates[0].getTime() - priorDates[1].getTime()) / 86400000,
+    );
     if (diffDays >= 18 && diffDays <= 60) {
       cycleLength = diffDays;
     }
@@ -79,7 +102,13 @@ export function buildCycleInfo(
     currentCycleStart = new Date(startNormalized.getTime() + cyclesElapsed * cycleLength * 86400000);
   }
 
-  const currentCycleDay = Math.floor((todayNormalized.getTime() - currentCycleStart.getTime()) / 86400000) + 1;
+  // Clamped at 1. A start date in the future -- a mistyped year, a picker set
+  // ahead -- otherwise produced a negative day, and that number goes straight
+  // into Dr Docsy's prompt as "on Day -9 of her menstrual cycle". The client
+  // calculator has always clamped; this did not.
+  const rawCycleDay =
+    Math.floor((todayNormalized.getTime() - currentCycleStart.getTime()) / 86400000) + 1;
+  const currentCycleDay = rawCycleDay < 1 ? 1 : rawCycleDay;
   const nextPeriodStart = new Date(currentCycleStart.getTime() + cycleLength * 86400000);
 
   let phase = 'Safe phase';

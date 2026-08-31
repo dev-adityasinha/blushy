@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +13,7 @@ import '../../core/storage.dart';
 import '../../services/journal_storage.dart';
 import '../../services/api_auth_service.dart';
 import '../../services/html_audio_helper.dart';
+import '../../services/html_file_helper.dart';
 import '../../services/api_sia_service.dart';
 import 'journal_cover_widget.dart';
 import 'desk_environment_widget.dart';
@@ -39,6 +42,15 @@ import 'controller/journal_controller.dart';
 import '../../services/api_blushy_service.dart';
 import '../../services/api_contract_client.dart';
 import '../../services/offline_event_queue.dart';
+import 'journal_templates.dart';
+
+/// Wide enough to fill a phone screen, small enough that a page of photos
+/// does not make the entry too large to sync.
+const int _journalPhotoMaxWidth = 1280;
+
+/// Vertical gap between a template's prompts. Enough to write an answer
+/// under each without the next question landing on top of it.
+const double _promptSpacing = 96;
 
 class ScrapbookItem {
   final String id;
@@ -135,6 +147,10 @@ Map<String, dynamic> scrapbookItemToJson(ScrapbookItem item) {
     contentJson = {
       'name': stickerMap['name'],
       'iconCodePoint': (stickerMap['icon'] as IconData).codePoint,
+      // Present once a sticker is backed by artwork rather than a Material
+      // glyph. Stored per item so an entry keeps the sticker it was made with
+      // even if the set is later changed.
+      if (stickerMap['asset'] != null) 'asset': stickerMap['asset'],
       'colorValue': (stickerMap['color'] as Color).toARGB32(),
     };
   } else if (item.type == 'tape') {
@@ -177,7 +193,11 @@ ScrapbookItem scrapbookItemFromJson(Map<String, dynamic> json) {
     }
     content = {
       'name': name,
+      // Resolved by name rather than from the stored code point on purpose:
+      // Flutter's icon tree-shaking requires IconData to be constant, and
+      // rebuilding one from a saved integer defeats it.
       'icon': resolveIcon(name),
+      'asset': stickerMap['asset'],
       'color': Color(colorValue),
     };
   } else if (type == 'tape') {
@@ -380,17 +400,29 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
 
   final List<String> _fonts = ['Elegant Serif', 'Handwriting', 'Modern Sans', 'Brush Script', 'Notebook'];
 
+  /// The sticker set.
+  ///
+  /// Names carry no emoji. Eight of the ten used to open with one and two did
+  /// not, which was inconsistent — and since the complaint is that the
+  /// stickers read as emoji, putting emoji in their names worked against the
+  /// intent.
+  ///
+  /// Add `'asset': 'assets/stickers/flower.png'` to any entry to back it with
+  /// artwork; the renderer prefers the image and falls back to the glyph if
+  /// the file is missing. Saved entries keep whichever they were made with.
+  /// The name is also how a saved sticker is resolved on load, so renaming one
+  /// changes what old entries show — check `resolveIcon` before you do.
   final List<Map<String, dynamic>> _stickersList = [
     {'name': 'Flower', 'icon': Icons.local_florist_rounded, 'color': const Color(0xFFF472B6)},
-    {'name': '🦋 Butterfly', 'icon': Icons.flutter_dash_rounded, 'color': const Color(0xFFC084FC)},
-    {'name': '🌙 Moon', 'icon': Icons.dark_mode_rounded, 'color': const Color(0xFFFCD34D)},
-    {'name': '⭐ Star', 'icon': Icons.star_rounded, 'color': const Color(0xFFFBBF24)},
-    {'name': '☕ Coffee', 'icon': Icons.coffee_rounded, 'color': const Color(0xFFB45309)},
-    {'name': '📚 Books', 'icon': Icons.menu_book_rounded, 'color': const Color(0xFF3B82F6)},
-    {'name': '🍃 Leaf', 'icon': Icons.eco_rounded, 'color': const Color(0xFF10B981)},
-    {'name': '❤️ Heart', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFEF4444)},
+    {'name': 'Butterfly', 'icon': Icons.flutter_dash_rounded, 'color': const Color(0xFFC084FC)},
+    {'name': 'Moon', 'icon': Icons.dark_mode_rounded, 'color': const Color(0xFFFCD34D)},
+    {'name': 'Star', 'icon': Icons.star_rounded, 'color': const Color(0xFFFBBF24)},
+    {'name': 'Coffee', 'icon': Icons.coffee_rounded, 'color': const Color(0xFFB45309)},
+    {'name': 'Books', 'icon': Icons.menu_book_rounded, 'color': const Color(0xFF3B82F6)},
+    {'name': 'Leaf', 'icon': Icons.eco_rounded, 'color': const Color(0xFF10B981)},
+    {'name': 'Heart', 'icon': Icons.favorite_rounded, 'color': const Color(0xFFEF4444)},
     {'name': 'Sparkles', 'icon': Icons.auto_awesome_rounded, 'color': const Color(0xFFEAB308)},
-    {'name': '🍵 Tea', 'icon': Icons.emoji_food_beverage_rounded, 'color': const Color(0xFF059669)},
+    {'name': 'Tea', 'icon': Icons.emoji_food_beverage_rounded, 'color': const Color(0xFF059669)},
   ];
 
   final List<Map<String, String>> _moodEmojis = const [
@@ -812,6 +844,80 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     return 'Journal entry logged on ${entry.dateTime.month}/${entry.dateTime.day}';
   }
 
+  /// Adds a photo from the device gallery to the page.
+  ///
+  /// The "Photo Frames" tray used to insert a text item reading
+  /// "[Polaroid Memory]" -- a placeholder standing in for a picture. The model
+  /// has carried a 'photo' item type all along and the journal counts photos
+  /// for its statistics, but nothing ever created one.
+  ///
+  /// The image is embedded as a data URI, the same way voice notes are, so it
+  /// travels with the entry through the existing JSON persistence. That is why
+  /// it is downscaled first: a phone photo is several megabytes and base64
+  /// adds a third again, which would bloat every entry and its sync.
+  Future<void> _addPhotoFromGallery() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final couldNotAdd = AppLocalizations.of(context).jrnCouldNotAddPhoto;
+
+    PickedBlushyFile? picked;
+    try {
+      picked = await pickFileFromDevice(accept: 'image/*');
+    } catch (_) {
+      picked = null;
+    }
+    if (picked == null) return; // cancelled
+
+    Uint8List bytes;
+    try {
+      bytes = await _downscaleForJournal(Uint8List.fromList(picked.bytes));
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(couldNotAdd)));
+      return;
+    }
+
+    if (!mounted) return;
+    final dataUri = 'data:image/png;base64,${base64Encode(bytes)}';
+    _addItem(
+      'photo_${DateTime.now().millisecondsSinceEpoch}',
+      'photo',
+      {'url': dataUri, 'name': picked.name},
+      const Offset(60, 100),
+    );
+  }
+
+  /// Shrinks to at most [_journalPhotoMaxWidth] across, leaving smaller images
+  /// alone rather than upscaling them into a bigger file.
+  static Future<Uint8List> _downscaleForJournal(Uint8List original) async {
+    final probe = await ui.instantiateImageCodec(original);
+    final frame = await probe.getNextFrame();
+    final width = frame.image.width;
+    frame.image.dispose();
+
+    if (width <= _journalPhotoMaxWidth) {
+      final encoded = await _encodePng(original);
+      return encoded ?? original;
+    }
+
+    final codec = await ui.instantiateImageCodec(
+      original,
+      targetWidth: _journalPhotoMaxWidth,
+    );
+    final resized = await codec.getNextFrame();
+    final data = await resized.image.toByteData(format: ui.ImageByteFormat.png);
+    resized.image.dispose();
+    if (data == null) return original;
+    return data.buffer.asUint8List();
+  }
+
+  static Future<Uint8List?> _encodePng(Uint8List original) async {
+    final codec = await ui.instantiateImageCodec(original);
+    final frame = await codec.getNextFrame();
+    final data = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+    frame.image.dispose();
+    return data?.buffer.asUint8List();
+  }
+
   void _addItem(String id, String type, dynamic content, Offset position) {
     setState(() {
       _items.add(ScrapbookItem(
@@ -918,9 +1024,23 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
 
   void _createNewEntry({String title = 'Self Reflection', String? templateName}) {
     final String newId = 'entry_${DateTime.now().millisecondsSinceEpoch}';
+
+    // The template decides what the page opens with. It used to decide nothing:
+    // every entry got the same blank "Tap to start writing your reflection...",
+    // whichever template had been chosen, so the choice was cosmetic.
+    final prompts = JournalTemplates.promptsFor(templateName);
+
     final List<ScrapbookItem> initialItems = [
       ScrapbookItem(id: 'tape_$newId', type: 'tape', content: const Color(0xFFFBCFE8), position: const Offset(20, 16)),
-      ScrapbookItem(id: 'text_$newId', type: 'text', content: 'Tap to start writing your reflection...', position: const Offset(20, 70)),
+      // Spaced down the page so they read as separate questions rather than a
+      // paragraph, and so there is room to answer under each one.
+      for (var i = 0; i < prompts.length; i++)
+        ScrapbookItem(
+          id: 'text_${newId}_$i',
+          type: 'text',
+          content: prompts[i],
+          position: Offset(20, 70 + (i * _promptSpacing)),
+        ),
     ];
 
     final newEntry = JournalEntryItem(
@@ -964,6 +1084,10 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   }
 
   Future<void> _stopRecordingAndTranscribe() async {
+    // Resolved up front: this method stops the recorder and then calls the
+    // transcription service, and the context may be gone by the time either
+    // returns.
+    final couldNotTranscribe = AppLocalizations.of(context).jrnCouldNotTranscribe;
     _recordingTimer?.cancel();
     setState(() {
       _isRecording = false;
@@ -1001,7 +1125,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         transcriptionProblem = e.message;
       } catch (e) {
         debugPrint("Transcription API call error: $e");
-        transcriptionProblem = 'Could not transcribe that recording.';
+        transcriptionProblem = couldNotTranscribe;
       }
     }
 
@@ -1035,7 +1159,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           SnackBar(
             content: Text(
               transcriptionProblem == null
-                  ? 'Nothing was recognised in that recording. You can type it instead.'
+                  ? AppLocalizations.of(context).jrnNothingRecognised
                   : '$transcriptionProblem You can type it instead.',
             ),
           ),
@@ -1087,7 +1211,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.edit_outlined, color: Colors.white, size: 20),
+                    const Icon(Icons.edit_rounded, color: Colors.white, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       AppLocalizations.of(context).journalNewMemory,
@@ -1366,7 +1490,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.auto_awesome, color: Color(0xFFDB2777), size: 24),
+                    const Icon(Icons.auto_awesome_rounded, color: Color(0xFFDB2777), size: 24),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -1653,7 +1777,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    shared ? 'Shared' : 'Share',
+                    shared ? 'Shared' : AppLocalizations.of(context).jrnShare,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: shared ? FontWeight.w600 : FontWeight.w400,
@@ -1691,10 +1815,10 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
       SnackBar(
         content: Text(
           !ok
-              ? 'Could not change sharing for that day.'
+              ? AppLocalizations.of(context).jrnCouldNotChangeSharing
               : shared
                   ? 'Shared. Your partner sees this day only if you have turned on journal sharing for them.'
-                  : 'No longer shared.',
+                  : AppLocalizations.of(context).jrnNoLongerShared,
         ),
       ),
     );
@@ -1813,7 +1937,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   _buildOptionTile(
                     icon: Icons.mic_none_rounded,
                     title: 'Record & Transcribe',
-                    subtitle: 'Speak and let Sia transcribe into your journal',
+                    subtitle: 'Speak and let Dr. Docsy transcribe into your journal',
                     onTap: () {
                       Navigator.pop(context);
                       setState(() {
@@ -2055,7 +2179,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     onPressed: _showAiPrivacySettingsModal,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.color_lens_outlined, color: BlushyColors.primary),
+                    icon: const Icon(Icons.color_lens_rounded, color: BlushyColors.primary),
                     onPressed: () => _showThemeFontPicker(),
                   ),
                   IconButton(
@@ -2203,7 +2327,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     shape: BoxShape.circle,
                     boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
                   ),
-                  child: const Icon(Icons.close, size: 14, color: Colors.white),
+                  child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
                 ),
               ),
             ),
@@ -2220,7 +2344,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     shape: BoxShape.circle,
                     boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
                   ),
-                  child: const Icon(Icons.copy, size: 12, color: Colors.white),
+                  child: const Icon(Icons.copy_rounded, size: 12, color: Colors.white),
                 ),
               ),
             ),
@@ -2288,6 +2412,28 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     } else if (item.type == 'sticker') {
       final stickerMap = item.content as Map<String, dynamic>;
       final stkColor = item.customColor ?? (stickerMap['color'] as Color);
+
+      // Artwork wins where a sticker has it. Material glyphs are flat
+      // single-colour shapes by design, which is why the current set reads as
+      // emoji -- no amount of styling makes one look painted. This is the seam
+      // an illustrated set drops into: add 'asset' to the sticker definition
+      // and nothing else changes, here or in already-saved entries.
+      final asset = stickerMap['asset'] as String?;
+      if (asset != null && asset.isNotEmpty) {
+        return Image.asset(
+          asset,
+          width: 56,
+          height: 56,
+          fit: BoxFit.contain,
+          // A missing file should cost a sticker, not the whole page.
+          errorBuilder: (_, _, _) => Icon(
+            stickerMap['icon'] as IconData,
+            color: stkColor,
+            size: 44,
+          ),
+        );
+      }
+
       return Icon(
         stickerMap['icon'] as IconData,
         color: stkColor,
@@ -2349,6 +2495,36 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           ],
         ),
       );
+    } else if (item.type == 'photo') {
+      final photo = (item.content is Map)
+          ? Map<String, dynamic>.from(item.content as Map)
+          : <String, dynamic>{};
+      final uri = photo['url']?.toString() ?? '';
+      final base64Part = uri.contains(',') ? uri.split(',').last : '';
+      if (base64Part.isEmpty) return const SizedBox.shrink();
+
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          // The polaroid border the tray used to only pretend to add.
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4),
+          boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 6, offset: Offset(0, 2))],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: Image.memory(
+            base64Decode(base64Part),
+            width: 160,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const SizedBox(
+              width: 160,
+              height: 120,
+              child: Icon(Icons.broken_image_rounded, color: BlushyColors.secondaryText),
+            ),
+          ),
+        ),
+      );
     } else if (item.type == 'voice') {
       final cardColor = item.customColor ?? const Color(0xFFFFF0F5);
       final isThisPlaying = _playingVoiceItemId == item.id;
@@ -2390,7 +2566,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               child: CircleAvatar(
                 radius: 14,
                 backgroundColor: BlushyColors.primary,
-                child: Icon(isThisPlaying ? Icons.pause : Icons.play_arrow, size: 16, color: Colors.white),
+                child: Icon(isThisPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 16, color: Colors.white),
               ),
             ),
             const SizedBox(width: 8),
@@ -2418,9 +2594,9 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           children: [
             Row(
               children: [
-                const Icon(Icons.auto_awesome, size: 14, color: BlushyColors.primary),
+                const Icon(Icons.auto_awesome_rounded, size: 14, color: BlushyColors.primary),
                 const SizedBox(width: 4),
-                Text('SIA INSIGHTS', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
+                Text('DR. DOCSY INSIGHTS', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
               ],
             ),
             const SizedBox(height: 6),
@@ -2487,7 +2663,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 16),
-                tooltip: 'Delete',
+                tooltip: AppLocalizations.of(context).jrnDelete,
                 onPressed: () => _deleteItem(item.id),
               ),
               IconButton(
@@ -2543,7 +2719,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   _buildToolbarTabButton('Text Box', Icons.text_fields_rounded),
                   _buildToolbarTabButton('Voice Note', Icons.graphic_eq_rounded),
                   _buildToolbarTabButton('Dictate (STT)', Icons.mic_rounded),
-                  _buildToolbarTabButton('Sia Insights', Icons.auto_awesome_rounded),
+                  _buildToolbarTabButton('Dr. Docsy Insights', Icons.auto_awesome_rounded),
                 ],
               ),
             ),
@@ -2657,7 +2833,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         children: [
           GestureDetector(
-            onTap: () => _addItem('photo_${DateTime.now().millisecondsSinceEpoch}', 'text', '📸 [Polaroid Memory]', const Offset(60, 100)),
+            onTap: _addPhotoFromGallery,
             child: Container(
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -2749,7 +2925,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           ),
         ),
       );
-    } else if (_activeToolbarTab == 'Sia Insights') {
+    } else if (_activeToolbarTab == 'Dr. Docsy Insights') {
       final prompt = _promptService.getPrompts().first;
       final localEntries = _entries.map((e) => LocalJournalEntry(id: e.id, date: e.dateTime.toString(), title: e.title, body: '', moodKey: e.moodKey)).toList();
       final reflection = _reflectionService.generateSummary(localEntries, ReflectionPeriod.weekly);
@@ -2762,7 +2938,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         child: Row(
           children: [
             ElevatedButton.icon(
-              onPressed: () => _addItem('ai_${DateTime.now().millisecondsSinceEpoch}', 'ai_insight', 'Sia Reflection: ${reflection.summaryText}', const Offset(30, 180)),
+              onPressed: () => _addItem('ai_${DateTime.now().millisecondsSinceEpoch}', 'ai_insight', 'Dr. Docsy Reflection: ${reflection.summaryText}', const Offset(30, 180)),
               icon: const Icon(Icons.auto_awesome_rounded, size: 16),
               label: const Text('Add Reflection Summary'),
               style: ElevatedButton.styleFrom(backgroundColor: BlushyColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0),
@@ -2819,7 +2995,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 children: [
                   const Icon(Icons.auto_awesome_rounded, color: Color(0xFFD97706), size: 20),
                   const SizedBox(width: 8),
-                  Text('Sia Title Suggestions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Dr. Docsy Title Suggestions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 6),
@@ -3130,7 +3306,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _isTranscribing ? 'Transcribing Reflection...' : 'Recording Voice Note...',
+                  _isTranscribing ? AppLocalizations.of(context).jrnTranscribing : AppLocalizations.of(context).jrnRecordingVoiceNote,
                   style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text),
                 ),
                 const SizedBox(height: 20),
@@ -3142,7 +3318,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     child: const CircleAvatar(
                       radius: 36,
                       backgroundColor: BlushyColors.primary,
-                      child: Icon(Icons.mic, color: Colors.white, size: 36),
+                      child: Icon(Icons.mic_rounded, color: Colors.white, size: 36),
                     ),
                   ),
                 const SizedBox(height: 16),
@@ -3426,7 +3602,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                         ),
                         boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 3)],
                       ),
-                      child: isSelected ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
+                      child: isSelected ? const Icon(Icons.check_rounded, size: 14, color: Colors.white) : null,
                     ),
                   );
                 }).toList(),
@@ -3438,7 +3614,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('Cancel', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: BlushyColors.secondaryText)),
+                    child: Text(AppLocalizations.of(context).jrnCancel, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: BlushyColors.secondaryText)),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(

@@ -126,7 +126,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Sia Companion',
+                'Dr. Docsy Companion',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontSize: 22,
                   fontWeight: FontWeight.w600,
@@ -135,7 +135,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Sia adapts based on your cycle logs, sleep duration, and journal reflections.',
+                'Dr. Docsy adapts based on your cycle logs, sleep duration, and journal reflections.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontSize: 12,
                 ),
@@ -176,7 +176,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                     style: const TextStyle(fontSize: 14, color: BlushyColors.textDark),
                     onSubmitted: (_) => _sendMessage(state),
                     decoration: const InputDecoration(
-                      hintText: "Reflect or query Sia...",
+                      hintText: "Reflect or query Dr. Docsy...",
                       hintStyle: TextStyle(color: BlushyColors.secondaryText, fontSize: 14),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),

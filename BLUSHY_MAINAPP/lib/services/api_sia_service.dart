@@ -6,7 +6,7 @@ import 'api_base_url.dart';
 import 'language_preference.dart';
 import 'auth_storage.dart';
 
-/// One night's summary of the user's real conversation with Sia, generated
+/// One night's summary of the user's real conversation with Dr. Docsy, generated
 /// server-side from actual chat history.
 class DailyChatSummary {
   const DailyChatSummary({
@@ -71,7 +71,24 @@ class ApiSiaService {
     return Options(headers: headers);
   }
 
-  /// Sends a user chat message to Sia AI Companion: `POST /ai/chat`
+  /// Options for the endpoints that wait on a model.
+  ///
+  /// The server aborts its own AI call at `AI_REQUEST_TIMEOUT_MS` (30s by
+  /// default) and then still has to write the response, while this client gave
+  /// up at 25s. So a slow-but-successful generation was reported to the user as
+  /// a request timeout, having actually worked -- which is what "Dr. Docsy
+  /// insights" and "cycle patterns" were showing.
+  ///
+  /// Kept to the AI routes: nothing else should be allowed to hang this long.
+  Options _aiOptions() {
+    final base = _authOptions();
+    return base.copyWith(receiveTimeout: _aiReceiveTimeout);
+  }
+
+  /// Comfortably past the server's own abort, with room for the response.
+  static const Duration _aiReceiveTimeout = Duration(seconds: 50);
+
+  /// Sends a user chat message to Dr. Docsy AI Companion: `POST /ai/chat`
   Future<String> sendMessage(String userMessage, {Map<String, dynamic>? healthContext}) async {
     final result = await sendMessageDetailed(userMessage, healthContext: healthContext);
     return result.message;
@@ -93,7 +110,7 @@ class ApiSiaService {
       final response = await _dio.post(
         '/ai/chat',
         data: payload,
-        options: _authOptions(),
+        options: _aiOptions(),
       );
 
       debugPrint('BlushySia: Chat response: ${response.data}');
@@ -123,7 +140,7 @@ class ApiSiaService {
     }
   }
 
-  /// Sends a document or image file with a prompt to Sia AI: `POST /ai/chat` (multipart/form-data)
+  /// Sends a document or image file with a prompt to Dr. Docsy AI: `POST /ai/chat` (multipart/form-data)
   Future<SiaChatResult> uploadDocumentAndChat({
     required List<int> fileBytes,
     required String fileName,
@@ -181,7 +198,7 @@ class ApiSiaService {
     }
   }
 
-  /// Fetches saved Sia conversation history: `GET /ai/history`
+  /// Fetches saved Dr. Docsy conversation history: `GET /ai/history`
   Future<List<Map<String, String>>> getChatHistory() async {
     try {
       final response = await _dio.get(
@@ -240,7 +257,7 @@ class ApiSiaService {
     }
   }
 
-  /// Clears saved Sia chat history: `DELETE /ai/history`
+  /// Clears saved Dr. Docsy chat history: `DELETE /ai/history`
   Future<bool> clearChatHistory() async {
     try {
       await _dio.delete('/ai/history', options: _authOptions());
@@ -256,7 +273,7 @@ class ApiSiaService {
     try {
       final response = await _dio.get(
         '/ai/health-insights',
-        options: _authOptions(),
+        options: _aiOptions(),
       );
       if (response.data is Map<String, dynamic>) {
         return response.data as Map<String, dynamic>;
@@ -309,7 +326,7 @@ class ApiSiaService {
       final response = await _dio.post(
         '/ai/transcribe',
         data: formData,
-        options: _authOptions(),
+        options: _aiOptions(),
       );
 
       if (response.data is Map<String, dynamic>) {
@@ -359,7 +376,7 @@ class ApiSiaService {
     try {
       final response = await _dio.post(
         '/ai/daily-summaries/generate',
-        options: _authOptions(),
+        options: _aiOptions(),
       );
       final data = response.data;
       return data is Map && data['generated'] == true;
@@ -393,7 +410,7 @@ class ApiSiaService {
     try {
       final response = await _dio.get(
         '/ai/medical-reports',
-        options: _authOptions(),
+        options: _aiOptions(),
       );
       if (response.data is Map<String, dynamic> && response.data['reports'] is List) {
         final List reports = response.data['reports'];
@@ -411,7 +428,7 @@ class ApiSiaService {
     try {
       final response = await _dio.get(
         '/ai/memory-summary',
-        options: _authOptions(),
+        options: _aiOptions(),
       );
       if (response.data is Map<String, dynamic>) {
         return response.data as Map<String, dynamic>;

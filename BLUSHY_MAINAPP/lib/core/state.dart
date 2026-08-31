@@ -9,6 +9,7 @@ import '../services/api_period_service.dart';
 import '../services/api_partner_service.dart';
 import 'cycle_calculator.dart';
 import 'storage.dart';
+import 'onboarding_answers.dart';
 
 enum AppEntryState {
   unauthenticated,
@@ -277,7 +278,7 @@ class AdaptiveActionRanker {
     List<CandidateAction> actions = [
       CandidateAction(id: 'a1', label: 'Log Symptoms', icon: Icons.health_and_safety, priority: 5, destination: 'log'),
       CandidateAction(id: 'a2', label: 'Breathing Exercise', icon: Icons.air, priority: 4, destination: 'breathe'),
-      CandidateAction(id: 'a3', label: 'Sia Chat', icon: Icons.chat_bubble_outline, priority: 3, destination: 'chat'),
+      CandidateAction(id: 'a3', label: 'Dr. Docsy Chat', icon: Icons.chat_bubble_outline, priority: 3, destination: 'chat'),
       CandidateAction(id: 'a4', label: 'Hydration', icon: Icons.water_drop_outlined, priority: 2, destination: 'water'),
       CandidateAction(id: 'a5', label: 'Cycle Insights', icon: Icons.auto_graph, priority: 1, destination: 'insights'),
     ];
@@ -610,6 +611,7 @@ class BlushyOSState extends ChangeNotifier {
         String? lifeStage = _personalContext.lifeStage;
         DateTime? dueDate = _personalContext.dueDate;
         DateTime? babyBirthDate = _personalContext.babyBirthDate;
+        UserPreferences preferences = _personalContext.preferences;
         Set<String> userSymptoms = Set.from(_personalContext.userSymptoms);
         Set<String> userGoals = Set.from(_personalContext.userGoals);
         Set<String> medicalConditions = Set.from(_personalContext.medicalConditions);
@@ -635,41 +637,28 @@ class BlushyOSState extends ChangeNotifier {
             if (parsed != null) babyBirthDate = parsed;
           }
 
-          if (answers['symptoms'] != null) {
-            final sVal = answers['symptoms'];
-            if (sVal is List) {
-              userSymptoms.addAll(sVal.map((e) => e.toString()));
-            } else if (sVal is String) {
-              try {
-                final List decoded = jsonDecode(sVal);
-                userSymptoms.addAll(decoded.map((e) => e.toString()));
-              } catch (_) {}
-            }
+          // Read through OnboardingAnswers rather than one key each. More than
+          // one onboarding flow has written this map and they disagree on key
+          // names -- 21 women in the live data have `goals`, 32 have
+          // `selected_goals` plus `goal_*` booleans -- so reading only the
+          // first shape silently discarded the larger group's answers.
+          final storedMemoryPref = answers['sia_memory_enabled'];
+          if (storedMemoryPref != null) {
+            final enabled = storedMemoryPref.toString().toLowerCase() != 'false';
+            preferences = UserPreferences(
+              wantsCycleTracking: preferences.wantsCycleTracking,
+              wantsVoiceFeatures: preferences.wantsVoiceFeatures,
+              wantsPersonalizedRecommendations:
+                  preferences.wantsPersonalizedRecommendations,
+              wantsSiaMemory: enabled,
+              wantsNotifications: preferences.wantsNotifications,
+            );
           }
 
-          if (answers['goals'] != null) {
-            final gVal = answers['goals'];
-            if (gVal is List) {
-              userGoals.addAll(gVal.map((e) => e.toString()));
-            } else if (gVal is String) {
-              try {
-                final List decoded = jsonDecode(gVal);
-                userGoals.addAll(decoded.map((e) => e.toString()));
-              } catch (_) {}
-            }
-          }
+          userSymptoms.addAll(OnboardingAnswers.symptoms(answers));
+          userGoals.addAll(OnboardingAnswers.goals(answers));
 
-          if (answers['conditions'] != null || answers['medical_conditions'] != null) {
-            final cVal = answers['conditions'] ?? answers['medical_conditions'];
-            if (cVal is List) {
-              medicalConditions.addAll(cVal.map((e) => e.toString()));
-            } else if (cVal is String) {
-              try {
-                final List decoded = jsonDecode(cVal);
-                medicalConditions.addAll(decoded.map((e) => e.toString()));
-              } catch (_) {}
-            }
-          }
+          medicalConditions.addAll(OnboardingAnswers.conditions(answers));
 
           if (lifeStage == 'pregnancy') lifeContexts.add(LifeContext.pregnancy);
           if (lifeStage == 'postpartum') lifeContexts.add(LifeContext.postpartum);
@@ -690,10 +679,29 @@ class BlushyOSState extends ChangeNotifier {
             }
           }
 
-          final rawPeriod = answers['last_period_date'] ?? answers['last_period'] ?? answers['cycle_start_date'] ?? answers['cycle_last_period_start'] ?? answers['last_period_start'] ?? answers['period_start'];
-          if (rawPeriod != null) {
-            final parsed = parseFlexibleDate(rawPeriod);
-            if (parsed != null) lastPeriodStart = parsed;
+          // The onboarding answers fill this in, they do not overrule it.
+          //
+          // They are a one-time seed that is never updated, and they were
+          // applied over the canonical date from the profile. A seed sitting
+          // later in the calendar than the period she had actually logged then
+          // replaced it, so logging a start before today reported Day 1 and
+          // read as the date not having been accepted.
+          //
+          // The backend's own prediction service already treats them this way
+          // -- as a fallback used only when there are no logged entries -- and
+          // the prediction overrides this a few steps below in any case. This
+          // matters when that call fails, which on a sleeping instance it does.
+          if (lastPeriodStart == null) {
+            final rawPeriod = answers['last_period_date'] ??
+                answers['last_period'] ??
+                answers['cycle_start_date'] ??
+                answers['cycle_last_period_start'] ??
+                answers['last_period_start'] ??
+                answers['period_start'];
+            if (rawPeriod != null) {
+              final parsed = parseFlexibleDate(rawPeriod);
+              if (parsed != null) lastPeriodStart = parsed;
+            }
           }
 
           final rawLength = answers['cycle_length'] ?? answers['cycleLength'] ?? answers['period_cycle_length'] ?? answers['cycle_usual_length_days'] ?? answers['cycle_frequency_days'];
@@ -759,7 +767,11 @@ class BlushyOSState extends ChangeNotifier {
           userGoals: userGoals,
           userSymptoms: userSymptoms,
           medicalConditions: medicalConditions,
-          preferences: _personalContext.preferences,
+          // The local, which the block above may have replaced from the
+          // server. Reading the field straight back would have discarded the
+          // synced choice -- set and dropped, which is the exact shape of
+          // several bugs already fixed in this file.
+          preferences: preferences,
           cycleLength: cycleCalc.cycleLength,
           cycleDay: lastPeriodStart != null ? cycleCalc.currentCycleDay : null,
           cyclePhase: lastPeriodStart != null ? cycleCalc.currentPhase : null,
@@ -859,10 +871,11 @@ class BlushyOSState extends ChangeNotifier {
           } else {
             final entries = await ApiPeriodService().getPeriodEntries();
             if (entries.isNotEmpty) {
-              final latest = entries.first.periodStartDate;
-              if (lastPeriodStart == null || latest.isAfter(lastPeriodStart)) {
-                lastPeriodStart = latest;
-              }
+              // The most recent logged entry, used whatever its date. It was
+              // taken only when it fell *later* than what was already held,
+              // so a stale onboarding seed dated ahead of it won -- which is
+              // the same fault as above, one branch further down.
+              lastPeriodStart = entries.first.periodStartDate;
             }
           }
         } catch (_) {}
@@ -1180,6 +1193,23 @@ class BlushyOSState extends ChangeNotifier {
           'last_period_date': newContext.lastPeriodStart!.toIso8601String().split('T').first,
         'life_contexts': newContext.lifeContexts.map((e) => e.name).toList(),
         'medical_conditions': newContext.medicalConditions.toList(),
+        // Symptoms and goals were missing from this payload.
+        //
+        // The health settings page edits three checkbox groups -- conditions,
+        // goals and symptoms -- through the same save, and only conditions was
+        // ever sent. The other two changed local state, showed the "saved"
+        // tick, and were wiped by the next sync, which rebuilds the context
+        // from what the server holds. They are also exactly what the home page
+        // gates its cards on, so ticking a symptom appeared to work, changed
+        // the cards, and then quietly undid both.
+        'symptoms': newContext.userSymptoms.toList(),
+        'goals': newContext.userGoals.toList(),
+        // "Allow Dr. Docsy to learn from your interactions over time" lived on
+        // the device only. It survived a restart and reached nothing else, so
+        // the server kept learning after she turned it off, and the choice did
+        // not follow her to another device. A privacy control has to be known
+        // where the data is actually processed.
+        'sia_memory_enabled': newContext.preferences.wantsSiaMemory,
         'medications': newContext.medications.map((m) => m.toJson()).toList(),
       };
       _syncProfileToBackend(payload);
@@ -1458,16 +1488,16 @@ class BlushyOSState extends ChangeNotifier {
       return "$name, your period is active. Focus on rest and hydration today.";
     }
     if (_personalContext.lifeContexts.contains(LifeContext.pregnancy)) {
-      return "Hello $name, taking care of your changing body is key right now. Sia is adapting to your pregnancy context.";
+      return "Hello $name, taking care of your changing body is key right now. Dr. Docsy is adapting to your pregnancy context.";
     }
     if (_personalContext.cyclePhase == 'Luteal Phase' && _wellbeingState.symptoms.contains('fatigue')) {
-      return "$name, Sia noticed your logged fatigue matches Luteal Phase changes. Prioritizing rest and setting boundaries could help today.";
+      return "$name, Dr. Docsy noticed your logged fatigue matches Luteal Phase changes. Prioritizing rest and setting boundaries could help today.";
     }
     if (_wellbeingState.symptoms.isNotEmpty) {
       final symptom = _wellbeingState.symptoms.join(', ');
-      return "Sia noticed you logged $symptom. Focus on gentle movement and recovery today.";
+      return "Dr. Docsy noticed you logged $symptom. Focus on gentle movement and recovery today.";
     }
-    return "Hello $name, Sia is here and ready to support you. Let's look at what matters to you today.";
+    return "Hello $name, Dr. Docsy is here and ready to support you. Let's look at what matters to you today.";
   }
 
   void updateDynamicAiBriefing(String briefing) {
@@ -1606,7 +1636,7 @@ class BlushyOSState extends ChangeNotifier {
   int get cycleDay => _personalContext.cycleDay ?? 0;
   
   // Active navigation view state
-  int currentViewIndex = 0; // 0: Today, 1: Journey, 2: Explore, 3: Sia
+  int currentViewIndex = 0; // 0: Today, 1: Journey, 2: Explore, 3: Dr. Docsy
 
   void updateWellbeing({int? energy, int? mood, int? sleepQuality, List<String>? symptoms, bool? periodActive}) {
     _wellbeingState = CurrentWellbeingState(

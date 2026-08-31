@@ -25,7 +25,7 @@ class BlushySiaCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Headline: Sia noticed something
+          // Headline: Dr. Docsy noticed something
           Row(
             children: [
               Container(
@@ -38,7 +38,7 @@ class BlushySiaCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Sia noticed increased fatigue',
+                'Dr. Docsy noticed increased fatigue',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -80,7 +80,7 @@ class BlushySiaCard extends StatelessWidget {
               const SizedBox(width: 8),
               _buildSmallActionButton(context, 'Recovery Plan', () {}, isPrimary: true),
               const SizedBox(width: 8),
-              _buildSmallActionButton(context, 'Talk to Sia', () {}),
+              _buildSmallActionButton(context, 'Talk to Dr. Docsy', () {}),
             ],
           ),
         ],

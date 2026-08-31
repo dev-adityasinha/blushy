@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 class BlushyPrimaryActionCard extends StatelessWidget {
   const BlushyPrimaryActionCard({super.key});
@@ -30,7 +31,7 @@ class BlushyPrimaryActionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'TODAY\'S NEXT STEP',
+                  AppLocalizations.of(context).paTodaySNextStep,
                   style: GoogleFonts.poppins(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,

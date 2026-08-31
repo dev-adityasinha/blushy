@@ -19,14 +19,25 @@ const FEED_FETCH_LIMIT = 200;
  */
 function buildPostView(row, { userVote = 0, author = null, commentCount = 0 } = {}) {
   if (!row) return null;
-  const display_name = author?.onboarding_answers?.preferred_name ?? 'Anonymous';
+
+  // An anonymous post carries no author out of this function.
+  //
+  // The flag was returned to clients while `authorId` and `authorName` were
+  // sent alongside it regardless, so anything marked anonymous would still have
+  // shipped the poster's name and account id to every reader. Nothing sets the
+  // flag today -- the app offers no such toggle -- which is exactly why this is
+  // worth closing now: the day someone adds one, the leak is already written.
+  const anonymous = row.anonymous === true;
+  const display_name = anonymous
+    ? 'Anonymous'
+    : (author?.onboarding_answers?.preferred_name ?? 'Anonymous');
 
   return {
     postId: row.post_id,
-    authorId: row.author_id,
+    authorId: anonymous ? null : row.author_id,
     authorName: display_name,
     audience: row.audience ?? 'female_user',
-    anonymous: row.anonymous === true,
+    anonymous,
     moderationState: row.moderation_state ?? 'visible',
     moderationNotice: row.moderation_notice ?? null,
     sensitiveTopics: row.sensitive_topics ?? [],
@@ -139,13 +150,15 @@ async function votePost(postId, userId, value) {
     throw new Error('Invalid vote value');
   }
 
-  const post = await db.collection('posts').findOne({ post_id: postId });
+  // The post lookup and the existing-vote lookup do not depend on each other,
+  // so they go out together. The post is still checked before anything is
+  // written: voting on a deleted post would otherwise leave an orphan row in
+  // post_votes that nothing ever cleans up.
+  const [post, existingVote] = await Promise.all([
+    db.collection('posts').findOne({ post_id: postId }, { projection: { _id: 1 } }),
+    db.collection('post_votes').findOne({ user_id: userId, target_id: postId }),
+  ]);
   if (!post) return null;
-
-  const existingVote = await db.collection('post_votes').findOne({
-    user_id: userId,
-    target_id: postId,
-  });
 
   let scoreDiff = 0;
   if (existingVote) {
@@ -173,14 +186,17 @@ async function votePost(postId, userId, value) {
     scoreDiff += voteVal;
   }
 
-  if (scoreDiff !== 0) {
-    await db.collection('posts').updateOne(
-      { post_id: postId },
-      { $inc: { score: scoreDiff } }
-    );
-  }
+  // One round trip for the increment and the read-back, rather than an
+  // updateOne followed by a findOne of the row just written.
+  const updated = scoreDiff !== 0
+    ? await db.collection('posts').findOneAndUpdate(
+        { post_id: postId },
+        { $inc: { score: scoreDiff } },
+        { returnDocument: 'after' },
+      )
+    : await db.collection('posts').findOne({ post_id: postId });
 
-  const updated = await db.collection('posts').findOne({ post_id: postId });
+  if (!updated) return null;
   return mapPostRow(updated, userId);
 }
 

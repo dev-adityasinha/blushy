@@ -411,7 +411,7 @@ export async function createChatReply(req, res, next) {
         // A failure here must not silently drop the safety check. Log the
         // failure without the user's words and continue; the post-generation
         // gate below is the second line of defence.
-        console.error('[safety] evaluation failed for Sia chat:', safetyError.message);
+        console.error('[safety] evaluation failed for Dr. Docsy chat:', safetyError.message);
       }
     }
 
@@ -925,7 +925,7 @@ export async function getRelationshipAdvice(req, res, next) {
     // matrix describes what she shares with him. Asked from her side, this
     // gathered context about him while gating it on her own switches -- the
     // wrong direction -- and he logs nothing anyway, since the partner shell
-    // has no Sia and no M Studio. There was never an answer to give.
+    // has no Dr. Docsy and no M Studio. There was never an answer to give.
     if (connection.canManagePermissions) {
       throw createHttpError(403, 'Relationship advice is for the partner supporting you.');
     }
@@ -987,7 +987,7 @@ export async function getRelationshipAdvice(req, res, next) {
     }
 
     const systemPrompt = [
-      `You are Sia, giving short, practical relationship guidance to someone about ${partnerName}.`,
+      `You are Dr. Docsy, giving short, practical relationship guidance to someone about ${partnerName}.`,
       'Answer in at most four sentences. Be concrete and kind, and suggest something they can actually do.',
       'You are not a therapist and must not diagnose either person or their relationship.',
       'Never speculate about information you were not given.',
@@ -1008,14 +1008,14 @@ export async function getRelationshipAdvice(req, res, next) {
       });
     } catch (error) {
       console.error('[relationship-ai] generation failed:', error.message);
-      throw createHttpError(503, 'Sia could not answer just now. Please try again shortly.', {
+      throw createHttpError(503, 'Dr. Docsy could not answer just now. Please try again shortly.', {
         code: 'AI_UNAVAILABLE',
       });
     }
 
     const replyText = typeof answer === 'string' ? answer : (answer?.message ?? answer?.content ?? '');
     if (!replyText || replyText.trim().length === 0) {
-      throw createHttpError(503, 'Sia could not answer just now. Please try again shortly.', {
+      throw createHttpError(503, 'Dr. Docsy could not answer just now. Please try again shortly.', {
         code: 'AI_UNAVAILABLE',
       });
     }
@@ -1139,6 +1139,24 @@ export async function extractAndStoreProfileMemory(req, res, next) {
     const userId = req.user?.userId;
     if (!userId) {
       throw createHttpError(401, 'Authentication required to store profile memory.');
+    }
+
+    // "Allow Dr. Docsy to learn from your interactions over time" is a real
+    // control, not a local display toggle. It lived on the device only, so the
+    // server kept storing what it learned after she turned it off. Nothing is
+    // written when it is off, and the caller is told why rather than being led
+    // to believe it was stored.
+    const memoryUser = await userRepository.getUserById(userId);
+    const memoryAnswers = memoryUser?.onboardingAnswers
+      ?? memoryUser?.onboarding_answers
+      ?? {};
+    if (String(memoryAnswers.sia_memory_enabled ?? 'true').toLowerCase() === 'false') {
+      res.status(200).json({
+        store: false,
+        reason: 'memory_disabled_by_user',
+        profile_data: null,
+      });
+      return;
     }
 
     const persisted = await profileMemoryRepository.upsertProfileMemory({
@@ -1281,7 +1299,7 @@ export async function decodePartnerMessage(req, res, next) {
             messages: [
               {
                 role: 'system',
-                content: `You are Sia, acting as a close, casual, and supportive "third wheel" friend to the male user ("bro"). Explain his girlfriend's message subtext in a very human, conversational way (not like a clinical AI), and give a direct tip on how he should reply.
+                content: `You are Dr. Docsy, acting as a close, casual, and supportive "third wheel" friend to the male user ("bro"). Explain his girlfriend's message subtext in a very human, conversational way (not like a clinical AI), and give a direct tip on how he should reply.
 Analyze the recent conversation style/tone (e.g. flirting, playful roasting, bantering, serious, funny) and ensure your tone and suggestions match this style (e.g., if they are roasting, keep the tip roasting/playful; if they are flirting, keep the tip romantic/playful).
 The girlfriend is currently ${cycleDesc}.
 Keep it short, simple, cool, and conversational.
@@ -1290,7 +1308,7 @@ Recent Chat History:
 ${messagesText}
 
 Format exactly like this (two lines):
-Sia: [casual friendly explanation matching the conversation tone, e.g. "Chill bro, she's just playfully teasing you."]
+Dr. Docsy: [casual friendly explanation matching the conversation tone, e.g. "Chill bro, she's just playfully teasing you."]
 Tip: [casual, actionable reply advice matching the conversation tone, e.g. "Laugh it off and suggest buying a toy car instead."]
 
 Latest Partner Message to Decode: "${latestMessage.message}"`,
@@ -1366,7 +1384,7 @@ export async function transcribeAudio(req, res, next) {
  *
  * Reflections could previously only be produced by the midnight IST run, so a
  * conversation held during the day showed nothing at all in the AI Reflections
- * tab -- which said letters would appear once you had talked with Sia.
+ * tab -- which said letters would appear once you had talked with Dr. Docsy.
  */
 export async function generateMyDailySummary(req, res, next) {
   try {
@@ -1590,7 +1608,7 @@ export async function getDailyDiscoverTopicsAndCards(req, res, next) {
 
     if (aiChatApiKey) {
       try {
-        const prompt = `You are Sia, an expert women's health and wellness AI guide for Blushy.
+        const prompt = `You are Dr. Docsy, an expert women's health and wellness AI guide for Blushy.
 Today is ${dateStr} (Day ${dayIndex} of rotation cycle).
 ${userContext ? `User Research Context: ${userContext}` : `No specific user data available yet (Cold Start). Default 24h featured topic: "${fallbackFeaturedTopic}".`}
 ${seenPromptContext}

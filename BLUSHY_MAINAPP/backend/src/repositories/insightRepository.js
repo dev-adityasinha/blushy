@@ -4,7 +4,7 @@ import { INSIGHT_STATUS, isInsightExpired } from '../domain/patterns.js';
 
 /**
  * Structured insight store (spec §7, §8 "PATTERNS & INSIGHTS -- FUNCTIONAL, NOT
- * STATIC", §9 "SIA NOTE / AI CARDS").
+ * STATIC", §9 "DR. DOCSY NOTE / AI CARDS").
  *
  * Each insight persists its source event IDs, time window, confidence, status,
  * generation time and model/engine version so it can be traced, expired and

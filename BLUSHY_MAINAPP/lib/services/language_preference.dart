@@ -2,13 +2,13 @@ import 'package:flutter/widgets.dart';
 
 import '../core/storage.dart';
 
-/// The language Sia replies in.
+/// The language Dr. Docsy replies in.
 ///
 /// The header's "EN" chip was `onTap: () {}` -- a control that could not be
 /// changed. The backend has always accepted a `languageCode` on chat and has
 /// reviewed strings for each language below, so this makes the chip real.
 ///
-/// Deliberately scoped to Sia rather than the whole interface: the app's own
+/// Deliberately scoped to Dr. Docsy rather than the whole interface: the app's own
 /// copy has no translations, and switching the chrome to Hindi while every
 /// label stayed English would be worse than leaving it alone.
 class LanguagePreference {

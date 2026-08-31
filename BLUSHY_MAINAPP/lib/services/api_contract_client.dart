@@ -134,6 +134,20 @@ class ApiContractClient {
 
   static const Duration _timeout = Duration(seconds: 20);
 
+  /// A timed-out request is retried once, with longer to answer.
+  ///
+  /// The API is deployed on an instance that spins down when idle, so the
+  /// first request after a quiet spell waits on a cold start. Measured against
+  /// the live host: a first call hung past 90s and the next answered in 18.3s,
+  /// while a warm one comes back in about 1s. Every screen that happened to
+  /// make that first call reported a request timeout -- on the home page, that
+  /// is Dr. Docsy insights and cycle patterns.
+  ///
+  /// The retry is what actually fixes it: the failed attempt is what wakes the
+  /// instance, so the second usually succeeds. A raised timeout alone would
+  /// only mean waiting longer before showing the same error.
+  static const Duration _wakeTimeout = Duration(seconds: 45);
+
   static String get _base => '${resolveApiBaseUrl()}/api/v1';
 
   static Map<String, String> _headers({String? idempotencyKey}) {
@@ -166,7 +180,13 @@ class ApiContractClient {
     T Function(dynamic data)? parse,
   ) async {
     try {
-      var response = await request().timeout(_timeout);
+      http.Response response;
+      try {
+        response = await request().timeout(_timeout);
+      } on TimeoutException {
+        // Second attempt, against an instance the first one has now woken.
+        response = await request().timeout(_wakeTimeout);
+      }
 
       // An expired access token is recoverable: the refresh token was being
       // stored and never used, so a session that lapsed mid-use turned every

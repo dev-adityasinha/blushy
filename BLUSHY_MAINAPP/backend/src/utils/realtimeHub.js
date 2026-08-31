@@ -7,6 +7,10 @@ import { env } from './env.js';
 import { logger } from './logger.js';
 
 const clientsByUser = new Map();
+
+// Comfortably under the ~60s idle timeout that proxies apply.
+const HEARTBEAT_INTERVAL_MS = 25_000;
+let heartbeatTimer = null;
 let websocketServer = null;
 
 function addClient(userId, socket) {
@@ -81,6 +85,13 @@ export function initRealtimeHub(server) {
     }
 
     socket.userId = userId;
+    socket.isAlive = true;
+    // Answering a ping is what keeps the connection from being culled below,
+    // and what proves the peer is still there rather than merely still open.
+    socket.on('pong', () => {
+      socket.isAlive = true;
+    });
+
     addClient(userId, socket);
     safeSend(socket, { event: 'realtime.connected', userId, ts: new Date().toISOString() });
 
@@ -93,8 +104,44 @@ export function initRealtimeHub(server) {
     });
   });
 
+  // There was no keepalive at all. Proxies and load balancers -- Render's
+  // included -- close connections that have been idle for around a minute, and
+  // a partner chat is idle most of the time. So the socket was dropped from
+  // underneath a conversation that was still open, which is what "partner
+  // disconnected suddenly" looks like.
+  //
+  // The ping is also how a half-open connection is noticed: a socket whose peer
+  // has gone away stays readable indefinitely and would otherwise be counted as
+  // online for ever, so `isUserOnline` would lie and messages would be sent to
+  // nobody.
+  heartbeatTimer = setInterval(() => {
+    for (const socket of websocketServer.clients) {
+      if (socket.isAlive === false) {
+        // It did not answer the previous ping.
+        socket.terminate();
+        continue;
+      }
+      socket.isAlive = false;
+      try {
+        socket.ping();
+      } catch {
+        socket.terminate();
+      }
+    }
+  }, HEARTBEAT_INTERVAL_MS);
+  // Node keeps the process alive for a pending timer; this one should not.
+  heartbeatTimer.unref?.();
+
   logger.info('Realtime WebSocket hub ready at /ws');
   return websocketServer;
+}
+
+/// Stops the keepalive. Used by the test harness and graceful shutdown.
+export function stopRealtimeHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
 }
 
 export function isUserOnline(userId) {

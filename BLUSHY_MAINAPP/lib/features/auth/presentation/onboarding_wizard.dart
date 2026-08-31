@@ -9,6 +9,7 @@ import '../../../theme/colors.dart';
 import '../../../services/api_auth_service.dart';
 import '../../legal/legal_documents_screen.dart';
 import '../../../services/api_blushy_service.dart';
+import '../../../l10n/app_localizations.dart';
 
 // --- Onboarding Data Model ---
 enum LifeStage {
@@ -266,7 +267,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           _buildReproductiveStep4(),
           _buildReproductiveStep5(),
           _buildReproductiveStep6(),
-          _buildReproductiveStep7()
+          _buildReproductiveStep7(),
+          _buildReproductiveStep8()
         ]);
         break;
       case LifeStage.hormonalHealth:
@@ -280,7 +282,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
         steps.addAll([
           _buildTtcStep4(),
           _buildTtcStep5(),
-          _buildTtcStep6()
+          _buildTtcStep6(),
+          _buildTtcStep7()
         ]);
         break;
       case LifeStage.pregnancy:
@@ -294,7 +297,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
         steps.addAll([
           _buildPostpartumStep4(),
           _buildPostpartumStep5(),
-          _buildPostpartumStep6()
+          _buildPostpartumStep6(),
+          _buildPostpartumStep7()
         ]);
         break;
       case LifeStage.perimenopause:
@@ -338,6 +342,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       if (branchStep == 1) return _profile.lastPeriod != null || _profile.answers['last_period_unknown'] == true;
       if (branchStep == 2) return _profile.goals.isNotEmpty;
       if (branchStep == 3) return _profile.answers['contraception_choice'] != null;
+      if (branchStep == 4) return _profile.symptoms.isNotEmpty;
     }
     if (stage == LifeStage.hormonalHealth) {
       if (branchStep == 0) return _profile.conditions.isNotEmpty;
@@ -348,6 +353,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       if (branchStep == 0) return _profile.answers['ttc_duration'] != null;
       if (branchStep == 1) return _profile.answers['ttc_tracking_method'] != null;
       if (branchStep == 2) return _profile.answers['ttc_treatment'] != null;
+      if (branchStep == 3) return _profile.symptoms.isNotEmpty;
     }
     if (stage == LifeStage.pregnancy) {
       if (branchStep == 0) return _profile.dueDate != null;
@@ -358,6 +364,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       if (branchStep == 0) return _profile.babyBirthDate != null;
       if (branchStep == 1) return _profile.answers['postpartum_feeding'] != null;
       if (branchStep == 2) return _profile.goals.isNotEmpty;
+      if (branchStep == 3) return _profile.symptoms.isNotEmpty;
     }
     if (stage == LifeStage.perimenopause) {
       if (branchStep == 0) return _profile.answers['perimenopause_cycle_change'] != null;
@@ -702,11 +709,11 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                   CheckboxListTile(
                     title: Row(
                       children: [
-                        Text("I agree to the ", style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                        Text(AppLocalizations.of(context).oIAgreeToThe, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
                         GestureDetector(
                           onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.privacyPolicy),
                           child: Text(
-                            "Privacy Policy",
+                            AppLocalizations.of(context).oPrivacyPolicy,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -728,11 +735,11 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                   CheckboxListTile(
                     title: Row(
                       children: [
-                        Text("I agree to the ", style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                        Text(AppLocalizations.of(context).oIAgreeToThe, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
                         GestureDetector(
                           onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
                           child: Text(
-                            "Terms of Service",
+                            AppLocalizations.of(context).oTermsOfService,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -868,7 +875,12 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       chapterText = "CHAPTER III • CUSTOMIZING INSIGHTS";
     }
 
-    final String stepLabel = "$chapterText • 0${_currentStepIndex + 1} / 0$total";
+    // Padded rather than prefixed with a literal "0": the branches vary in
+    // length and adding a step to one is routine, so a hardcoded zero would
+    // read "010" the first time a branch reached ten.
+    final String stepLabel = '$chapterText • '
+        '${'${_currentStepIndex + 1}'.padLeft(2, '0')}'
+        ' / ${'$total'.padLeft(2, '0')}';
 
     // Dynamic header and content interceptor to convert flat lists to centered compositions
     Widget processedView = currentView;
@@ -949,7 +961,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                         TextButton(
                           onPressed: _backQuestion,
                           child: Text(
-                            "Back",
+                            AppLocalizations.of(context).onbBack,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -976,10 +988,10 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     final listItems = [
       "Understanding your health journey",
       "Personalizing your dashboard",
-      "Preparing Sia",
-      "Creating your daily insights",
-      "Curating wellness content",
-      "Creating your safe space"
+      AppLocalizations.of(context).onbPreparingDocsy,
+      AppLocalizations.of(context).onbCreatingInsights,
+      AppLocalizations.of(context).onbCuratingContent,
+      AppLocalizations.of(context).onbCreatingSafeSpace
     ];
 
     return Scaffold(
@@ -1051,7 +1063,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     );
   }
 
-  // --- 4. SIA WELCOME SCREEN ---
+  // --- 4. DR. DOCSY WELCOME SCREEN ---
   Widget _buildSiaWelcomeScreen() {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF6F0),
@@ -1071,7 +1083,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                   ),
                   const SizedBox(height: 36),
                   Text(
-                    "Hi, ${_profile.preferredName}.\nI'm Sia.",
+                    "Hi, ${_profile.preferredName}.\nI'm Dr. Docsy.",
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(fontSize: 42, fontWeight: FontWeight.w300, color: BlushyColors.text, height: 1.1),
                   ),
@@ -1202,7 +1214,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     String explanation = "This information helps customize your daily insights and companion interactions.";
     
     if (_currentStepIndex == 0) {
-      explanation = "Your preferred name is used by Sia to personalize letters, notes, and wellness greetings.";
+      explanation = "Your preferred name is used by Dr. Docsy to personalize letters, notes, and wellness greetings.";
     } else if (_currentStepIndex == 1) {
       explanation = "Your age dictates key physiological milestones, health warnings, and maturity checkins.";
     } else if (_currentStepIndex == 2) {
@@ -1256,12 +1268,12 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Let's get introduced",
+          AppLocalizations.of(context).onbLetsGetIntroduced,
           style: GoogleFonts.poppins(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
-          "What name would you like Sia to call you?",
+          "What name would you like Dr. Docsy to call you?",
           style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 32),
@@ -1270,7 +1282,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           autofocus: true,
           style: GoogleFonts.poppins(fontSize: 18, color: BlushyColors.text),
           decoration: InputDecoration(
-            hintText: "Your preferred name",
+            hintText: AppLocalizations.of(context).oYourPreferredName,
             hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
             border: const UnderlineInputBorder(borderSide: BorderSide(color: BlushyColors.border)),
             focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: BlushyColors.primary, width: 2)),
@@ -1286,7 +1298,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "When is your birthday?",
+          AppLocalizations.of(context).oWhenIsYourBirthday,
           style: GoogleFonts.poppins(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
@@ -1366,7 +1378,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Where are you today?",
+          AppLocalizations.of(context).oWhereAreYouToday,
           style: GoogleFonts.poppins(fontSize: 38, fontWeight: FontWeight.w400, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
@@ -1403,10 +1415,110 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "School & sports"
     ];
     return _buildSingleSelectBranchStep(
-      title: "What would you like to learn first?",
+      title: AppLocalizations.of(context).oWhatWouldYouLike,
       subtitle: "We'll build custom guides to help you feel ready.",
       options: options,
       storageKey: "not_started_learn",
+    );
+  }
+
+  /// What she actually notices, for the branch most women take.
+  ///
+  /// The hormonal health, perimenopause and menopause branches each asked about
+  /// symptoms; reproductive years — the most common route — asked about cycle
+  /// type, last period, goals and contraception, and never about symptoms at
+  /// all. So the dashboard had nothing to work with and fell back to a fixed
+  /// set of cards for most people.
+  ///
+  /// Every option here maps to a card the dashboard can already show. Before
+  /// this, 67 of its 100 keywords were unreachable from onboarding: the
+  /// personalisation was built and could not be switched on.
+  /// What she is noticing while trying to conceive.
+  ///
+  /// Only the reproductive-years branch asked this, so anyone who came through
+  /// TTC or postpartum finished onboarding with an empty symptom list and got a
+  /// home page with every symptom-keyed card switched off -- not because she
+  /// tracks nothing, but because she was never asked.
+  ///
+  /// Deliberately about symptoms, not method: step 5 already asks how she
+  /// tracks.
+  Widget _buildTtcStep7() {
+    final options = [
+      "Cramps",
+      "Bloating",
+      "Spotting",
+      "Discharge",
+      "Fatigue",
+      "Mood swings",
+      "Headache",
+      "Acne",
+      "Back pain",
+      "Pelvic pain",
+      "Anxiety",
+      "Insomnia",
+    ];
+    return _buildMultiSelectSymptomsStep(
+      title: "Which of these do you notice?",
+      subtitle: "Pick as many as you like. Your home page shows what you track.",
+      options: options,
+    );
+  }
+
+  /// What she is noticing while recovering.
+  ///
+  /// The branch asked how she feeds and what she wants help with, and never
+  /// what her body is actually doing -- so recovery was the one thing the
+  /// postpartum onboarding could not hear about.
+  ///
+  /// The clinical words are paired with plain ones ("Bleeding (lochia)")
+  /// because she may know either. These ask what she notices; they do not tell
+  /// her what any of it means, which stays with the reviewed content.
+  Widget _buildPostpartumStep7() {
+    final options = [
+      "Bleeding (lochia)",
+      "Perineal soreness",
+      "C-section incision",
+      "Stitches",
+      "Pelvic floor",
+      "Swelling",
+      "Back pain",
+      "Fatigue",
+      "Insomnia",
+      "Mood swings",
+      "Anxiety",
+      "Night sweats",
+    ];
+    return _buildMultiSelectSymptomsStep(
+      title: "How is your body doing?",
+      subtitle: "Pick as many as you like. Your home page shows what you track.",
+      options: options,
+    );
+  }
+
+  Widget _buildReproductiveStep8() {
+    final options = [
+      "Cramps",
+      "Bloating",
+      "Headache",
+      "Mood swings",
+      "Fatigue",
+      "Acne",
+      "Heavy period",
+      "Spotting",
+      "Discharge",
+      "Digestion",
+      "Anxiety",
+      "Insomnia",
+      "Back pain",
+      // Breast tenderness was here and removed: the dashboard has no card
+      // keyed to it, so selecting it changed nothing. Asking a question whose
+      // answer is discarded is how this feature got into trouble in the first
+      // place. Worth adding back alongside a card that responds to it.
+    ];
+    return _buildMultiSelectSymptomsStep(
+      title: "Which of these do you notice?",
+      subtitle: "Pick as many as you like. Your home page shows what you track.",
+      options: options,
     );
   }
 
@@ -1418,7 +1530,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "More than 6 months ago"
     ];
     return _buildSingleSelectBranchStep(
-      title: "When did your first period start?",
+      title: AppLocalizations.of(context).oWhenDidYourFirst,
       subtitle: "This sets cycle prediction baseline metrics.",
       options: options,
       storageKey: "first_period_start_time",
@@ -1435,7 +1547,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "School & sports"
     ];
     return _buildMultiSelectGoalsStep(
-      title: "What would you like help with?",
+      title: AppLocalizations.of(context).oWhatWouldYouLike2,
       subtitle: "Select all parameters that apply to you.",
       options: options,
     );
@@ -1451,7 +1563,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "I don't know"
     ];
     return _buildSingleSelectBranchStep(
-      title: "How would you describe your cycle?",
+      title: AppLocalizations.of(context).oHowWouldYouDescribe,
       subtitle: "Cycles fluctuate dynamically based on hormonal states.",
       options: options,
       storageKey: "reproductive_cycle_type",
@@ -1463,7 +1575,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "When did your last period begin?",
+          AppLocalizations.of(context).oWhenDidYourLast,
           style: GoogleFonts.poppins(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
@@ -1512,7 +1624,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
         ),
         const SizedBox(height: 20),
         CheckboxListTile(
-          title: Text("I don't remember", style: GoogleFonts.poppins(fontSize: 14)),
+          title: Text(AppLocalizations.of(context).onbDontRemember, style: GoogleFonts.poppins(fontSize: 14)),
           value: _profile.answers['last_period_unknown'] == true,
           activeColor: BlushyColors.primary,
           onChanged: (val) {
@@ -1536,7 +1648,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           ),
           const SizedBox(height: 4),
           Text(
-            "Helps Sia calculate your exact cycle length and pattern right away.",
+            "Helps Dr. Docsy calculate your exact cycle length and pattern right away.",
             style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
           ),
           const SizedBox(height: 12),
@@ -1606,10 +1718,15 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Acne",
       "Ovulation",
       "Fitness",
-      "Nutrition"
+      "Nutrition",
+      "Walking",
+      "Yoga",
+      "Strength",
+      "Stress",
+      "Medication reminders"
     ];
     return _buildMultiSelectGoalsStep(
-      title: "What would you like Blushy to help with?",
+      title: AppLocalizations.of(context).oWhatWouldYouLike3,
       subtitle: "Customize your companion track.",
       options: options,
     );
@@ -1618,7 +1735,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   Widget _buildReproductiveStep7() {
     final options = ["Yes", "No", "Prefer not to say"];
     return _buildSingleSelectBranchStep(
-      title: "Are you currently using hormonal contraception?",
+      title: AppLocalizations.of(context).oAreYouCurrentlyUsing,
       subtitle: "This shifts cycle predictability and calculations.",
       options: options,
       storageKey: "contraception_choice",
@@ -1637,7 +1754,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "I'm not diagnosed yet"
     ];
     return _buildMultiSelectConditionsStep(
-      title: "Which condition best matches your situation?",
+      title: AppLocalizations.of(context).oWhichConditionBestMatches,
       subtitle: "Helps reorder custom home layout trackers.",
       options: options,
     );
@@ -1653,11 +1770,16 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Weight gain",
       "Fatigue",
       "Mood",
-      "Sleep"
+      "Sleep",
+      "Bloating",
+      "Headache",
+      "Digestion",
+      "Anxiety",
+      "Heavy period"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "Which symptoms affect you most?",
-      subtitle: "Sia adapts tracking cards to prioritize these.",
+      title: AppLocalizations.of(context).oWhichSymptomsAffectYou,
+      subtitle: "Dr. Docsy adapts tracking cards to prioritize these.",
       options: options,
     );
   }
@@ -1665,7 +1787,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   Widget _buildHormonalStep6() {
     final options = ["Yes", "No", "In progress"];
     return _buildSingleSelectBranchStep(
-      title: "Are you currently receiving treatment?",
+      title: AppLocalizations.of(context).oAreYouCurrentlyReceiving,
       subtitle: "We prioritize wellness metrics rather than diagnosis.",
       options: options,
       storageKey: "hormonal_treatment",
@@ -1681,7 +1803,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "More than 12 months"
     ];
     return _buildSingleSelectBranchStep(
-      title: "How long have you been trying?",
+      title: AppLocalizations.of(context).oHowLongHaveYou,
       subtitle: "Provides tracking and testing timeline metrics.",
       options: options,
       storageKey: "ttc_duration",
@@ -1697,7 +1819,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "I'm not tracking yet"
     ];
     return _buildSingleSelectBranchStep(
-      title: "How are you tracking fertility?",
+      title: AppLocalizations.of(context).oHowAreYouTracking,
       subtitle: "Select the method you use most frequently.",
       options: options,
       storageKey: "ttc_tracking_method",
@@ -1707,7 +1829,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   Widget _buildTtcStep6() {
     final options = ["No", "IUI", "IVF", "Other"];
     return _buildSingleSelectBranchStep(
-      title: "Are you currently receiving fertility treatment?",
+      title: AppLocalizations.of(context).oAreYouCurrentlyReceiving2,
       subtitle: "Tailors recommendations around your cycles.",
       options: options,
       storageKey: "ttc_treatment",
@@ -1720,7 +1842,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "What's your due date?",
+          AppLocalizations.of(context).oWhatSYourDue,
           style: GoogleFonts.poppins(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
@@ -1773,7 +1895,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   Widget _buildPregnancyStep5() {
     final options = ["Yes", "No"];
     return _buildSingleSelectBranchStep(
-      title: "Is this your first pregnancy?",
+      title: AppLocalizations.of(context).oIsThisYourFirst,
       subtitle: "Personalizes education content pacing.",
       options: options,
       storageKey: "pregnancy_first",
@@ -1788,10 +1910,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Exercise",
       "Sleep",
       "Mental wellbeing",
-      "Appointments"
+      "Appointments",
+      "Fetal movement",
+      "Contractions",
+      "Swelling",
+      "Walking"
     ];
     return _buildMultiSelectGoalsStep(
-      title: "What support would you like?",
+      title: AppLocalizations.of(context).oWhatSupportWouldYou,
       subtitle: "Customize your pregnancy journey preferences.",
       options: options,
     );
@@ -1803,7 +1929,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "When was your baby born?",
+          AppLocalizations.of(context).oWhenWasYourBaby,
           style: GoogleFonts.poppins(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
@@ -1856,7 +1982,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   Widget _buildPostpartumStep5() {
     final options = ["Breastfeeding", "Formula", "Combination"];
     return _buildSingleSelectBranchStep(
-      title: "How are you feeding your baby?",
+      title: AppLocalizations.of(context).oHowAreYouFeeding,
       subtitle: "Dynamically tracks hydration recommendations.",
       options: options,
       storageKey: "postpartum_feeding",
@@ -1870,10 +1996,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Sleep",
       "Mental health",
       "Exercise",
-      "Nutrition"
+      "Nutrition",
+      "Pelvic floor",
+      "Healing",
+      "Pumping",
+      "Walking"
     ];
     return _buildMultiSelectGoalsStep(
-      title: "What would you like help with?",
+      title: AppLocalizations.of(context).oWhatWouldYouLike2,
       subtitle: "Tailor postpartum workspace settings.",
       options: options,
     );
@@ -1888,7 +2018,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Stopped recently"
     ];
     return _buildSingleSelectBranchStep(
-      title: "How have your periods changed?",
+      title: AppLocalizations.of(context).oHowHaveYourPeriods,
       subtitle: "Tracks fluctuations in menstrual metrics.",
       options: options,
       storageKey: "perimenopause_cycle_change",
@@ -1902,11 +2032,16 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Mood",
       "Sleep",
       "Joint pain",
-      "Weight changes"
+      "Weight changes",
+      "Night sweats",
+      "Irregular periods",
+      "Anxiety",
+      "Memory",
+      "Headache"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "Which symptoms affect you most?",
-      subtitle: "Sia adapts tracking cards to prioritize these.",
+      title: AppLocalizations.of(context).oWhichSymptomsAffectYou,
+      subtitle: "Dr. Docsy adapts tracking cards to prioritize these.",
       options: options,
     );
   }
@@ -1920,7 +2055,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Mood"
     ];
     return _buildMultiSelectGoalsStep(
-      title: "What would you most like to improve?",
+      title: AppLocalizations.of(context).oWhatWouldYouMost,
       subtitle: "Saves priorities for home insights.",
       options: options,
     );
@@ -1934,7 +2069,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "I'm not sure"
     ];
     return _buildSingleSelectBranchStep(
-      title: "How long has it been since your last period?",
+      title: AppLocalizations.of(context).oHowLongHasIt,
       subtitle: "Identifies transition status indicators.",
       options: options,
       storageKey: "menopause_duration",
@@ -1948,10 +2083,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Sleep",
       "Mood",
       "Vaginal dryness",
-      "Bone health"
+      "Bone health",
+      "Joint stiffness",
+      "Memory",
+      "Anxiety",
+      "Heart health"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "Which symptoms affect your daily life?",
+      title: AppLocalizations.of(context).oWhichSymptomsAffectYour,
       subtitle: "Select all that apply to you.",
       options: options,
     );
@@ -1967,7 +2106,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Mental wellbeing"
     ];
     return _buildMultiSelectGoalsStep(
-      title: "What would you like Blushy to focus on?",
+      title: AppLocalizations.of(context).oWhatWouldYouLike4,
       subtitle: "Tailors long-term healthy wellness priorities.",
       options: options,
     );
@@ -2189,7 +2328,7 @@ class _ContinueButtonState extends State<_ContinueButton> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
-            "Continue",
+            AppLocalizations.of(context).onbContinue,
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.bold,

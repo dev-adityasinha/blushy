@@ -6,6 +6,7 @@ import '../../../theme/colors.dart';
 import '../../../core/stage_config.dart';
 import '../../../services/api_base_url.dart';
 import '../../../services/auth_storage.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PartnerSiaScreen extends StatefulWidget {
   const PartnerSiaScreen({super.key});
@@ -61,7 +62,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
       } else if (lower.contains("tired") || lower.contains("fatigue") || lower.contains("sleep")) {
         reply = "When she feels fatigued, simple practical help makes the biggest difference: ask 'Can I take care of dinner tonight?' and make sure she has quiet space to decompress.";
       } else {
-        reply = "As her partner companion, Sia recommends open communication. You can ask: 'Would you like some quiet time to relax, a listening ear, or some practical help right now?'";
+        reply = "As her partner companion, Dr. Docsy recommends open communication. You can ask: 'Would you like some quiet time to relax, a listening ear, or some practical help right now?'";
       }
     }
 
@@ -103,7 +104,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
               )
             : null,
         title: Text(
-          "Ask Sia",
+          "Ask Dr. Docsy",
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -126,7 +127,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                           const Icon(Icons.auto_awesome, color: BlushyColors.primary, size: 48),
                           const SizedBox(height: 16),
                           Text(
-                            "Ask Sia about supporting her",
+                            "Ask Dr. Docsy about supporting her",
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                           ),
@@ -210,7 +211,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                       controller: _queryController,
                       style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
                       decoration: InputDecoration(
-                        hintText: "Ask about her active stage...",
+                        hintText: AppLocalizations.of(context).psAskAboutHerActive,
                         hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
                         border: InputBorder.none,
                       ),

@@ -141,6 +141,17 @@ export async function initDatabase() {
     await db.collection('post_votes').createIndex({ user_id: 1, target_id: 1 });
     await db.collection('post_votes').createIndex({ target_id: 1 });
 
+    // Partner invite rate limiting. The check counts recent events for a key,
+    // and the collection had no index at all -- so every invite scanned it.
+    await db.collection('partner_rate_limit_events').createIndex({ key: 1, created_at: -1 });
+    // And nothing ever deleted the rows: events from weeks ago were still
+    // being scanned to answer a question about the last ten minutes. The
+    // longest window in use is 600s; an hour leaves ample margin.
+    await db.collection('partner_rate_limit_events').createIndex(
+      { created_at: 1 },
+      { expireAfterSeconds: 3600 },
+    );
+
     console.log('MongoDB database indexes initialized successfully!');
   } catch (error) {
     console.error('Error initializing MongoDB database indexes:', error);

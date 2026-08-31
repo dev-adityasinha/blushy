@@ -6,6 +6,7 @@ import '../../../core/cycle_calculator.dart';
 import '../../../theme/colors.dart';
 import '../widgets/life_stage_selector_card.dart';
 import '../../../services/api_auth_service.dart';
+import '../../../l10n/app_localizations.dart';
 
 class UnifiedMultiStageDashboard extends StatefulWidget {
   final Set<String> activeStages;
@@ -220,7 +221,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                   ),
                   const SizedBox(height: 20),
 
-                  // 4. Combined Sia AI Intelligence Briefing
+                  // 4. Combined Dr. Docsy AI Intelligence Briefing
                   _buildSiaCombinedInsightCard(pc),
                   const SizedBox(height: 20),
 
@@ -512,7 +513,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
               ),
               const SizedBox(width: 12),
               Text(
-                "Sia's Cross-Topic Synthesis",
+                "Dr. Docsy's Cross-Topic Synthesis",
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -544,7 +545,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
       return "Cycle & Endocrine Balance: During this cycle phase, supporting insulin sensitivity and reducing inflammation with magnesium and restorative movement helps optimize energy.";
     }
     if (stages.contains('tryingToConceive') && stages.contains('hormonalHealth')) {
-      return "Fertility & Hormone Sync: Tracking ovulation biomarkers alongside hormonal health markers gives Sia high precision for identifying your optimal conception window.";
+      return "Fertility & Hormone Sync: Tracking ovulation biomarkers alongside hormonal health markers gives Dr. Docsy high precision for identifying your optimal conception window.";
     }
     if (stages.contains('perimenopause') && stages.contains('hormonalHealth')) {
       return "Transition & Endocrine Care: Cross-referencing cycle rhythm shifts with hormonal symptom logs helps manage hot flashes, mood transitions, and sleep vitality.";
@@ -558,7 +559,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
     if (stages.contains('postpartum') && stages.contains('reproductiveYears')) {
       return "Postpartum Cycle Return: Logging early postpartum cycle patterns alongside newborn care and restorative maternal recovery.";
     }
-    return "All active modules are synchronized with your personal MongoDB health logs. Your daily metrics dynamically power Sia's guidance.";
+    return "All active modules are synchronized with your personal MongoDB health logs. Your daily metrics dynamically power Dr. Docsy's guidance.";
   }
 
   Widget _buildDailyWellbeingLogger(BlushyOSState state) {
@@ -586,7 +587,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Daily Unified Check-in",
+                AppLocalizations.of(context).umsdDailyUnifiedCheckIn,
                 style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text),
               ),
               if (_symptomLoggedToday)
@@ -711,7 +712,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      "Check-in saved and synced to your live MongoDB profile! ✨",
+                      AppLocalizations.of(context).umsdCheckInSavedAnd,
                       style: GoogleFonts.poppins(),
                     ),
                     backgroundColor: BlushyColors.primary,

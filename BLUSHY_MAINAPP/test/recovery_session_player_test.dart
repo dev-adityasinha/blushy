@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blushy_life_app/features/m_studio/recovery_session_player.dart';
+import 'package:blushy_life_app/l10n/app_localizations.dart';
 
 /// The Recovery tab advertised sessions with durations and both cards were
 /// `onTap: () {}`. Now that a session actually runs, the pacing is what has to
@@ -14,15 +15,21 @@ void main() {
   ];
 
   Future<void> pump(WidgetTester tester) async {
+    // The player reads its labels from AppLocalizations now, so the harness has
+    // to supply the delegates the real app does. Without them the lookup
+    // returns null and the widget throws while building.
     await tester.pumpWidget(
-      const MaterialApp(
-        home: RecoverySessionPlayer(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const RecoverySessionPlayer(
           sessionId: 'rs_test',
           title: 'Test session',
           steps: steps,
         ),
       ),
     );
+    await tester.pumpAndSettle();
   }
 
   group('RecoverySessionPlayer', () {

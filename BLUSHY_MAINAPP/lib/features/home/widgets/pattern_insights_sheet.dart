@@ -41,7 +41,7 @@ class BlushyPatternInsightsSheet extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Based on your data, Sia has observed the following patterns:',
+                'Based on your data, Dr. Docsy has observed the following patterns:',
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   color: BlushyColors.secondaryText,

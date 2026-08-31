@@ -247,14 +247,24 @@ class ApiPeriodService {
         if (decoded['data'] != null) {
           return PeriodEntry.fromJson(decoded['data']);
         }
+        debugPrint('[period] logPeriodEntry: ${res.statusCode} but no data '
+            'in body: ${res.body}');
+        return null;
       }
+
+      // A refused write returned null silently, and the caller reported it as
+      // recorded anyway. The status is what says why.
+      debugPrint('[period] logPeriodEntry FAILED ${res.statusCode} '
+          'for $startStr -> ${res.body}');
     } catch (e) {
-      debugPrint('ApiPeriodService logPeriodEntry error: $e');
+      debugPrint('[period] logPeriodEntry error: $e');
     }
     return null;
   }
 
   Future<List<PeriodEntry>> getPeriodEntries() async {
+    // Traced: the prediction is built from these, so when it reports a date
+    // she did not enter, this says whether her entry ever arrived.
     try {
       final url = Uri.parse('$_baseUrl/period/entries');
       final res = await http.get(url, headers: await _headers());
@@ -263,11 +273,18 @@ class ApiPeriodService {
         final decoded = jsonDecode(res.body);
         final list = decoded['data']?['entries'];
         if (list is List) {
-          return list.map((item) => PeriodEntry.fromJson(item)).toList();
+          final entries =
+              list.map((item) => PeriodEntry.fromJson(item)).toList();
+          debugPrint('[period] entries on server: ${entries.length} -> '
+              '${entries.map((e) => e.periodStartDate.toIso8601String().split('T').first).toList()}');
+          return entries;
         }
+        debugPrint('[period] entries: 200 but no list in body: ${res.body}');
+        return [];
       }
+      debugPrint('[period] getPeriodEntries FAILED ${res.statusCode} -> ${res.body}');
     } catch (e) {
-      debugPrint('ApiPeriodService getPeriodEntries error: $e');
+      debugPrint('[period] getPeriodEntries error: $e');
     }
     return [];
   }

@@ -1,4 +1,5 @@
 import { getPeriodEntries } from '../repositories/periodRepository.js';
+import { getBranchCapabilities, normalizeLifeStage } from '../domain/lifeStages.js';
 import { getUserById } from '../repositories/userRepository.js';
 import { periodPredictionConfig, periodDurationBounds } from '../config/periodPredictionConfig.js';
 import { resolvePeriodDuration } from '../domain/periodDuration.js';
@@ -96,8 +97,37 @@ export async function calculatePeriodPredictions(userId, options = {}) {
 
   const today = options.referenceDate ? parseDateOnly(options.referenceDate) : getTodayInTimezone(userTimezone);
 
-  // Check lifecycle suppression
-  if (['pregnancy', 'postpartum', 'menopause', 'firstPeriodNotStarted'].includes(lifeStage)) {
+  // Cycle tracking is suppressed where the branch does not do it.
+  //
+  // This was a hardcoded list compared against the raw stage string, and it
+  // disagreed with `BRANCH_CAPABILITIES` in two directions. `everyday_wellness`
+  // and `exploring` both declare `cycleTracking: false`, and both were given a
+  // full countdown -- someone who opted out of cycle tracking was told "Day 29,
+  // Late / Overdue Cycle". And because the comparison was on the raw string,
+  // an account stored as `firstPeriodNotStarted` was suppressed while the same
+  // stage stored canonically as `first_period` was not.
+  //
+  // The capability table is the declaration, and it normalises both spellings.
+  //
+  // "Periods not started" is kept as a separate check: the aliases fold it and
+  // `firstPeriodStarted` into one stage, so the capability alone cannot tell
+  // them apart, and a countdown for someone who has not had a period yet would
+  // be meaningless.
+  // Only a *recognised* stage can suppress. `getBranchCapabilities` falls back
+  // to everyday_wellness for anything it does not know, and everyday_wellness
+  // declares `cycleTracking: false` -- so deriving straight from it would
+  // silently suppress every account with no stage set, or a stage spelled in a
+  // way the aliases miss. Absent is not the same as opted out.
+  const normalizedStage = normalizeLifeStage(lifeStage, null);
+  const suppressedByBranch = normalizedStage !== null &&
+    !getBranchCapabilities(normalizedStage).cycleTracking;
+
+  const rawStage = typeof lifeStage === 'string'
+    ? lifeStage.toLowerCase().replace(/[\s_-]+/g, '')
+    : '';
+  const periodsNotStarted = rawStage === 'firstperiodnotstarted';
+
+  if (suppressedByBranch || periodsNotStarted) {
     return {
       hasData: false,
       trackingState: 'suppressed',

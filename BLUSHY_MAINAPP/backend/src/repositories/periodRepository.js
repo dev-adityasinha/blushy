@@ -1,5 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { db } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
+import { periodPredictionConfig } from '../config/periodPredictionConfig.js';
 
 async function getColl(userId, baseName = 'user_period_logs') {
   const cleanUserId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
@@ -129,6 +131,41 @@ export async function createOrUpdatePeriodEntry(userId, data) {
       created_at: now,
     },
   };
+
+  // Logging a start *corrects* the current cycle; it does not add another one.
+  //
+  // The upsert matched an exact date only, so every correction appended a new
+  // row. Someone fixing their start date built up a cluster -- 24th, 25th,
+  // 26th, 27th, 28th, 31st -- and since the current cycle start is the most
+  // recent of them, an earlier correction could never take effect. It looked
+  // like the date was being rejected; in fact all six were stored, and the one
+  // she was trying to replace still won.
+  //
+  // Starts closer together than a cycle can be are the same period, which the
+  // interval maths already assumes. So a new start supersedes any existing one
+  // inside that window, and anything older is a genuinely different cycle and
+  // is left alone.
+  const windowDays = periodPredictionConfig.minCycleLengthDays;
+  const supersededFrom = new Date(`${startDateStr}T00:00:00.000Z`);
+  supersededFrom.setUTCDate(supersededFrom.getUTCDate() - windowDays + 1);
+  const supersededTo = new Date(`${startDateStr}T00:00:00.000Z`);
+  supersededTo.setUTCDate(supersededTo.getUTCDate() + windowDays - 1);
+
+  const superseded = await db.collection(collName).deleteMany({
+    user_id: cleanUserId,
+    period_start_date: {
+      $ne: startDateStr,
+      $gte: formatDateOnly(supersededFrom),
+      $lte: formatDateOnly(supersededTo),
+    },
+  });
+
+  if (superseded?.deletedCount) {
+    logger.info(
+      `Period start ${startDateStr} superseded ${superseded.deletedCount} ` +
+      `entry/entries within ${windowDays} days for ${cleanUserId}.`,
+    );
+  }
 
   const result = await db.collection(collName).findOneAndUpdate(
     { user_id: cleanUserId, period_start_date: startDateStr },

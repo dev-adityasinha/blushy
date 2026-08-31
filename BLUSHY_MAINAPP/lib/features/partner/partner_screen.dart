@@ -38,7 +38,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // Category navigation tabs
   final List<String> _tabs = [
     'Overview',
-    'Boutique',
+    'Bouquet',
     'Messenger',
     'Activities',
     'Letters',
@@ -218,7 +218,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       SnackBar(
         content: Text(
           _isMessageDecoderActive
-              ? '✨ Message Decoder enabled. Sia will analyze her messages in Messenger.'
+              ? '✨ Message Decoder enabled. Dr. Docsy will analyze her messages in Messenger.'
               : 'Message Decoder disabled.',
         ),
       ),
@@ -256,7 +256,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         // A failed decode used to just stop the spinner, which is
         // indistinguishable from a button that is not wired up.
         setState(() => _decodingMessageIds.remove(msgId));
-        _showComposerNotice('Sia could not read that message just now.');
+        _showComposerNotice('Dr. Docsy could not read that message just now.');
       }
     } catch (e) {
       if (mounted) {
@@ -629,7 +629,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     switch (_tabs[_selectedTabIndex]) {
       case 'Overview':
         return 'Grow Garden';
-      case 'Boutique':
+      case 'Bouquet':
         return 'Create Bouquet';
       case 'Messenger':
         return 'Send Msg';
@@ -640,7 +640,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       case 'Memory Book':
         return 'Add Scrapbook';
       case 'Relationship AI':
-        return 'Ask Sia';
+        return 'Ask Dr. Docsy';
       case 'Gifts':
         return 'Send Surprise';
       default:
@@ -652,7 +652,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     switch (_tabs[_selectedTabIndex]) {
       case 'Overview':
         return Icons.local_florist_rounded;
-      case 'Boutique':
+      case 'Bouquet':
         return Icons.card_giftcard_rounded;
       case 'Messenger':
         return Icons.send_rounded;
@@ -839,53 +839,53 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 ? [
                     {
                       "label": "He needs appreciation & validation",
-                      "tip": "Sia recommends: Acknowledge his effort, say thank you for something specific, or let him know how much you value him."
+                      "tip": "Dr. Docsy recommends: Acknowledge his effort, say thank you for something specific, or let him know how much you value him."
                     },
                     {
                       "label": "He needs quiet space to decompress",
-                      "tip": "Sia recommends: Give him some uninterrupted downtime to unwind after a stressful day without pressure."
+                      "tip": "Dr. Docsy recommends: Give him some uninterrupted downtime to unwind after a stressful day without pressure."
                     },
                     {
                       "label": "He needs words of encouragement",
-                      "tip": "Sia recommends: Remind him that you believe in him and that you're right by his side through current pressures."
+                      "tip": "Dr. Docsy recommends: Remind him that you believe in him and that you're right by his side through current pressures."
                     },
                     {
                       "label": "He wants comfort & physical affection",
-                      "tip": "Sia recommends: Offer a warm hug, a gentle massage, or a quiet moment relaxing together."
+                      "tip": "Dr. Docsy recommends: Offer a warm hug, a gentle massage, or a quiet moment relaxing together."
                     },
                     {
                       "label": "He wants fun & quality time",
-                      "tip": "Sia recommends: Suggest a casual game, watch a movie, share a favorite snack, or go for an easy walk together."
+                      "tip": "Dr. Docsy recommends: Suggest a casual game, watch a movie, share a favorite snack, or go for an easy walk together."
                     },
                     {
                       "label": "I don't know what he needs",
-                      "tip": "Sia recommends: Ask gently: 'Are you looking for encouragement, quiet downtime, or just want to hang out?'"
+                      "tip": "Dr. Docsy recommends: Ask gently: 'Are you looking for encouragement, quiet downtime, or just want to hang out?'"
                     },
                   ]
                 : [
                     {
                       "label": "She needs rest",
-                      "tip": "Sia recommends: Cancel non-essential tasks, dim the lights, and handle dinner tonight."
+                      "tip": "Dr. Docsy recommends: Cancel non-essential tasks, dim the lights, and handle dinner tonight."
                     },
                     {
                       "label": "She needs comfort",
-                      "tip": "Sia recommends: Bring a warm heat pack, brew her favorite herbal tea, or offer a back rub."
+                      "tip": "Dr. Docsy recommends: Bring a warm heat pack, brew her favorite herbal tea, or offer a back rub."
                     },
                     {
                       "label": "She needs practical help",
-                      "tip": "Sia recommends: Check the laundry, wash dishes, or ask: 'Which chore can I take off your plate right now?'"
+                      "tip": "Dr. Docsy recommends: Check the laundry, wash dishes, or ask: 'Which chore can I take off your plate right now?'"
                     },
                     {
                       "label": "She wants company",
-                      "tip": "Sia recommends: Put away phones, suggest a relaxed walk, or watch a movie together."
+                      "tip": "Dr. Docsy recommends: Put away phones, suggest a relaxed walk, or watch a movie together."
                     },
                     {
                       "label": "She wants space",
-                      "tip": "Sia recommends: Give her quiet time. Say: 'I am right here in the other room if you need anything.'"
+                      "tip": "Dr. Docsy recommends: Give her quiet time. Say: 'I am right here in the other room if you need anything.'"
                     },
                     {
                       "label": "I don't know what she needs",
-                      "tip": "Sia recommends: Ask gently: 'Are you looking for comfort, help, or quiet space right now?'"
+                      "tip": "Dr. Docsy recommends: Ask gently: 'Are you looking for comfort, help, or quiet space right now?'"
                     },
                   ];
 
@@ -959,7 +959,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           itemBuilder: (context, index) {
                             final item = customNeedsList[index];
                             final String label = (item is Map ? item['label'] : null) ?? item.toString();
-                            final String tip = (item is Map ? item['tip'] : null) ?? "Sia recommends: Show love and patience.";
+                            final String tip = (item is Map ? item['tip'] : null) ?? "Dr. Docsy recommends: Show love and patience.";
                             final String? category = (item is Map ? item['category'] : null);
                             final String? source = (item is Map ? item['source'] : null);
 
@@ -1096,7 +1096,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                   Expanded(
                                     child: Text(
                                       dynamicNeeds['tip']?.toString() ??
-                                          "Sia recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
+                                          "Dr. Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         height: 1.4,
@@ -1120,13 +1120,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
-                          "Got it",
+                          AppLocalizations.of(context).pGotIt,
                           style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ] else ...[
                       Text(
-                        "Here are general ways to support your partner today:",
+                        AppLocalizations.of(context).pHereAreGeneralWays,
                         style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
                       ),
                       const SizedBox(height: 8),
@@ -1168,7 +1168,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Got it", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+            child: Text(AppLocalizations.of(context).pGotIt, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
           ),
         ],
       ),
@@ -1259,8 +1259,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     switch (_tabs[_selectedTabIndex]) {
       case 'Overview':
         return _buildOverviewTab(state);
-      case 'Boutique':
-        return _buildBoutiqueTab();
+      case 'Bouquet':
+        return _buildBouquetTab();
       case 'Messenger':
         return _buildMessengerTab(state);
       case 'Activities':
@@ -1562,7 +1562,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       ),
                       onPressed: () => _showHelpOptionsDialog(context),
                       child: Text(
-                        'Tips',
+                        AppLocalizations.of(context).pTips,
                         style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -1580,7 +1580,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   onPressed: _showPartnerConnectionsModal,
                   icon: const Icon(Icons.person_add_rounded, size: 14, color: Colors.white),
                   label: Text(
-                    'Connect',
+                    AppLocalizations.of(context).pConnect,
                     style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -1755,7 +1755,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        "Decoder is ON. Sia will translate what she is coming to tell based on her live cycle phase, mood, and sleep levels in Messenger.",
+                        "Decoder is ON. Dr. Docsy will translate what she is coming to tell based on her live cycle phase, mood, and sleep levels in Messenger.",
                         style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF5A31D8), height: 1.4),
                       ),
                     ),
@@ -1779,7 +1779,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   ///
   /// Relationship advice is built for the supporting side: it explains what she
   /// is telling him, grounded in what she chose to share. Asked from her side
-  /// there is nothing to ground it in -- the partner shell has no Sia and no
+  /// there is nothing to ground it in -- the partner shell has no Dr. Docsy and no
   /// M Studio, so he logs nothing -- and the server refuses it outright.
   bool get _isSupportingPartner {
     final active = _connections.firstWhere(
@@ -1879,7 +1879,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         Tab(
                           text: _incomingInvitations.isNotEmpty
                               ? 'Pending (${_incomingInvitations.length})'
-                              : 'Pending',
+                              : AppLocalizations.of(context).pPending,
                         ),
                         const Tab(text: 'Invite'),
                       ],
@@ -2129,7 +2129,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             );
                           }
                         },
-                        child: Text('Save Permissions', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
+                        child: Text(AppLocalizations.of(context).pSavePermissions, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
                       ),
                     ),
                 ],
@@ -2223,7 +2223,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             setModalState(() {});
                           }
                         },
-                        child: Text('Reject', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
+                        child: Text(AppLocalizations.of(context).pReject, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
@@ -2298,7 +2298,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Pending',
+                      AppLocalizations.of(context).pPending,
                       style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amber[800]),
                     ),
                   ),
@@ -2552,7 +2552,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Share this invitation',
+              AppLocalizations.of(context).pShareThisInvitation,
               style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
@@ -2685,7 +2685,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     ),
                     onPressed: submit,
-                    child: Text('Connect', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                    child: Text(AppLocalizations.of(context).pConnect, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -2698,7 +2698,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   Widget _buildQuickActionsRow() {
     final actions = [
-      {'label': 'Boutique', 'icon': Icons.local_florist_rounded, 'tab': 1},
+      {'label': 'Bouquet', 'icon': Icons.local_florist_rounded, 'tab': 1},
       {'label': 'Message', 'icon': Icons.chat_bubble_outline_rounded, 'tab': 2},
       {'label': 'Shared Activity', 'icon': Icons.task_alt_rounded, 'tab': 3},
       {'label': 'Send Letter', 'icon': Icons.mail_outline_rounded, 'tab': 4},
@@ -2991,7 +2991,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // --- TAB 2: MESSENGER (INSTAGRAM-QUALITY REDESIGN) ---
   Widget _buildMessengerTab(BlushyOSState state) {
     final messages = state.argumentModeActive
-        ? _chatMessages.where((msg) => msg['sender'] != 'Sia' || msg['isCard'] == false).toList()
+        ? _chatMessages.where((msg) => msg['sender'] != 'Dr. Docsy' || msg['isCard'] == false).toList()
         : _chatMessages;
 
     final currentUserId = AuthStorage.getUserId();
@@ -3032,7 +3032,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700),
                     ),
                     Text(
-                      'Live synchronized',
+                      AppLocalizations.of(context).pLiveSynchronized,
                       style: GoogleFonts.poppins(fontSize: 9, color: BlushyColors.success, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -3248,7 +3248,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
-              child: Text('Complete Check-in', style: GoogleFonts.poppins(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700)),
+              child: Text(AppLocalizations.of(context).pCompleteCheckIn, style: GoogleFonts.poppins(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -3312,7 +3312,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
                         ),
                         Text(
-                          'Digital Flower Gift',
+                          AppLocalizations.of(context).pDigitalFlowerGift,
                           style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFFE8A0B4), fontWeight: FontWeight.w600),
                         ),
                       ],
@@ -3343,7 +3343,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    _selectedTabIndex = 1; // Open Boutique / Garden
+                    _selectedTabIndex = 1; // Open Bouquet / Garden
                   });
                 },
                 child: Container(
@@ -3360,7 +3360,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       const Icon(Icons.local_florist_rounded, size: 16, color: Colors.white),
                       const SizedBox(width: 6),
                       Text(
-                        'Open Boutique & Garden',
+                        'Open Bouquet & Garden',
                         style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ],
@@ -3552,7 +3552,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             const Icon(Icons.auto_awesome_rounded, size: 12, color: Color(0xFF6F42F5)),
                             const SizedBox(width: 4),
                             Text(
-                              "✨ Decode with Sia",
+                              "✨ Decode with Dr. Docsy",
                               style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF6F42F5)),
                             ),
                           ],
@@ -3586,7 +3586,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6F42F5), size: 14),
                           const SizedBox(width: 6),
                           Text(
-                            "Sia Decoded Meaning",
+                            "Dr. Docsy Decoded Meaning",
                             style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF6F42F5)),
                           ),
                           const Spacer(),
@@ -3713,7 +3713,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'AI Communication Hub',
+                AppLocalizations.of(context).pAiCommunicationHub,
                 style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
@@ -4842,7 +4842,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // --- TAB 6: RELATIONSHIP AI ---
   //
   // This tab used to be one hardcoded sentence with no input and no request
-  // behind it, so there was nothing here that could work. It now asks Sia,
+  // behind it, so there was nothing here that could work. It now asks Dr. Docsy,
   // grounded server-side in whatever the partner has agreed to share.
   Widget _buildRelationshipAITab(BlushyOSState state) {
     final connectionId = _activeConnectionId;
@@ -4872,12 +4872,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const SizedBox(height: 10),
               if (connectionId == null)
                 Text(
-                  'Connect with your partner first, and Sia can help you think things through together.',
+                  'Connect with your partner first, and Dr. Docsy can help you think things through together.',
                   style: GoogleFonts.poppins(fontSize: 12, height: 1.45),
                 )
               else if (state.argumentModeActive)
                 Text(
-                  'Your partner has chosen not to share personal insights right now.',
+                  AppLocalizations.of(context).pYourPartnerHasChosen,
                   style: GoogleFonts.poppins(fontSize: 12, height: 1.45),
                 )
               else
@@ -4913,7 +4913,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           // Saying which is the difference between advice that
                           // knows something and advice that is guessing.
                           ? 'Based on what your partner shares with you.'
-                          : 'Your partner has not shared data Sia could use here.',
+                          : 'Your partner has not shared data Dr. Docsy could use here.',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
                         color: BlushyColors.secondaryText,
@@ -4939,7 +4939,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             maxLength: 1000,
             style: GoogleFonts.poppins(fontSize: 13),
             decoration: InputDecoration(
-              hintText: 'What would you like help with?',
+              hintText: AppLocalizations.of(context).pWhatWouldYouLike,
               hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
               filled: true,
               fillColor: Colors.white,
@@ -4967,7 +4967,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     )
                   : const Icon(Icons.psychology_alt_rounded, size: 16),
               label: Text(
-                _relationshipLoading ? 'Thinking…' : 'Ask Sia',
+                _relationshipLoading ? 'Thinking…' : 'Ask Dr. Docsy',
                 style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
               ),
             ),
@@ -5018,7 +5018,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         GestureDetector(
           onTap: () {
             setState(() {
-              _selectedTabIndex = 1; // Open Boutique tab
+              _selectedTabIndex = 1; // Open Bouquet tab
             });
           },
           child: _buildOverviewItem('Send Digital Flowers', 'Send a sweet postcard and customizable flower bloom', Icons.local_florist_rounded),
@@ -5027,8 +5027,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     );
   }
 
-  // --- TAB BOUTIQUE ---
-  Widget _buildBoutiqueTab() {
+  // --- TAB BOUQUET ---
+  Widget _buildBouquetTab() {
     final state = BlushyOSProvider.of(context);
     final userId = AuthStorage.getUserId() ?? 'user';
     final token = AuthStorage.getToken() ?? '';

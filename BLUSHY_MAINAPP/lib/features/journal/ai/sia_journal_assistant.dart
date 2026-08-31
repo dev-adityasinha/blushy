@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../l10n/app_localizations.dart';
 
 enum SiaSuggestionType { continueWriting, expand, rewrite, makePositive, makeShorter }
 
@@ -88,7 +89,7 @@ class _SiaJournalAssistantState extends State<SiaJournalAssistant> {
               const Icon(Icons.auto_awesome_rounded, size: 16, color: Color(0xFFD97706)),
               const SizedBox(width: 6),
               Text(
-                'Sia Companion Suggestion',
+                'Dr. Docsy Companion Suggestion',
                 style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF92400E)),
               ),
               const Spacer(),
@@ -148,7 +149,7 @@ class _SiaJournalAssistantState extends State<SiaJournalAssistant> {
               children: [
                 TextButton(
                   onPressed: () => _generateSuggestion(_activeType),
-                  child: Text('Regenerate', style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFFB45309))),
+                  child: Text(AppLocalizations.of(context).sjaRegenerate, style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFFB45309))),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(

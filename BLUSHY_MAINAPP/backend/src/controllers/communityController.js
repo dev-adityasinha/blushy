@@ -9,6 +9,14 @@ async function requireAuthUserAsync(req) {
     throw createHttpError(401, 'Authentication required.');
   }
 
+  // The auth middleware already read this record and checked it, and it put
+  // the database role on req.user. Reading it again here meant every
+  // authenticated request paid for the same lookup twice.
+  if (req.user?.verifiedAgainstDb) {
+    return { userId, role: normalizeRoleValue(req.user.role, 'woman') };
+  }
+
+  // No middleware vouched for the request, so verify it here.
   const user = await userRepository.getUserById(userId);
   if (!user) {
     throw createHttpError(404, 'User not found.');

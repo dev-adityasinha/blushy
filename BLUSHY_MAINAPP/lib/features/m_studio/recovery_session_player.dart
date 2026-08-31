@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/api_blushy_service.dart';
 import '../../theme/colors.dart';
+import '../../l10n/app_localizations.dart';
 
 /// One step of a guided session.
 class RecoveryStep {
@@ -174,7 +175,7 @@ class _RecoverySessionPlayerState extends State<RecoverySessionPlayer> {
               ),
               if (_finished)
                 Text(
-                  'That is the whole session. Take a moment before you get up.',
+                  AppLocalizations.of(context).rspThatIsTheWhole,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 12,

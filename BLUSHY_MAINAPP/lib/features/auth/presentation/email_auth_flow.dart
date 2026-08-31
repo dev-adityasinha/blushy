@@ -6,6 +6,7 @@ import '../../../theme/spacing.dart';
 import 'auth_service.dart';
 import '../../../services/api_auth_service.dart';
 import '../../../services/auth_storage.dart';
+import '../../../l10n/app_localizations.dart';
 
 enum AuthMode { signupEmail, signupPassword, signupVerify, login, forgotPassword, resetPassword }
 
@@ -432,7 +433,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "What's your email?",
+          AppLocalizations.of(context).eafWhatSYourEmail,
           style: GoogleFonts.poppins(
             fontSize: 32,
             fontWeight: FontWeight.w700,
@@ -507,7 +508,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Create your password",
+          AppLocalizations.of(context).eafCreateYourPassword,
           style: GoogleFonts.poppins(
             fontSize: 32,
             fontWeight: FontWeight.w700,
@@ -575,7 +576,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Check your email",
+          AppLocalizations.of(context).eafCheckYourEmail,
           style: GoogleFonts.poppins(
             fontSize: 32,
             fontWeight: FontWeight.w700,
@@ -631,7 +632,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
                 });
               },
               child: Text(
-                'Change email',
+                AppLocalizations.of(context).eafChangeEmail,
                 style: GoogleFonts.poppins(color: BlushyColors.secondaryText),
               ),
             ),
@@ -646,7 +647,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Welcome back",
+          AppLocalizations.of(context).eafWelcomeBack,
           style: GoogleFonts.poppins(
             fontSize: 32,
             fontWeight: FontWeight.w700,
@@ -693,7 +694,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
               });
             },
             child: Text(
-              'Forgot password?',
+              AppLocalizations.of(context).eafForgotPassword,
               style: GoogleFonts.poppins(color: BlushyColors.secondaryText),
             ),
           ),
@@ -713,7 +714,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Reset Password",
+          AppLocalizations.of(context).eafResetPassword,
           style: GoogleFonts.poppins(
             fontSize: 32,
             fontWeight: FontWeight.w700,
@@ -790,7 +791,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          "Choose a New Password",
+          AppLocalizations.of(context).eafChooseANewPassword,
           style: GoogleFonts.poppins(
             fontSize: 32,
             fontWeight: FontWeight.w700,

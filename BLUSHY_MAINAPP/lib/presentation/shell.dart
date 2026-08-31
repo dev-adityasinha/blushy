@@ -58,7 +58,7 @@ class BlushyOSShell extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Sia Online',
+                      'Dr. Docsy Online',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontSize: 10,
                         color: BlushyColors.textDark,
@@ -98,7 +98,7 @@ class BlushyOSShell extends StatelessWidget {
               _buildNavItem(context, state, 0, 'Today'),
               _buildNavItem(context, state, 1, 'Journey'),
               _buildNavItem(context, state, 2, 'Explore'),
-              _buildNavItem(context, state, 3, 'Sia'),
+              _buildNavItem(context, state, 3, 'Dr. Docsy'),
             ],
           ),
         ),

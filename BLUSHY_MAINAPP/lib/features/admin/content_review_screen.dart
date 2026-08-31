@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/api_blushy_service.dart';
 import '../../theme/colors.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Where a clinical reviewer reads and approves health content.
 ///
@@ -232,7 +233,7 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       labelText: 'Your name and credentials',
-                      helperText: 'Recorded against everything you approve.',
+                      helperText: AppLocalizations.of(context).crRecordedAgainstEverythingYou,
                       helperMaxLines: 2,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),

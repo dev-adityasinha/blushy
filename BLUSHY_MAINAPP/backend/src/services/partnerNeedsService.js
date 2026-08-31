@@ -40,7 +40,7 @@ function fallbackKeywordAnalysis({ chatText, journalText, moodText, isPartnerWom
   if (/cramp|period|bleed|pms|bloat|uterus|ovary|pelvic/.test(allText)) {
     needs.push({
       label: `${pronoun} needs physical comfort & pain relief`,
-      tip: `Sia recommends: Bring a warm heat pack, brew ${possessive} favorite hot herbal tea, and don't let ${possessive} strain today.`,
+      tip: `Dr. Docsy recommends: Bring a warm heat pack, brew ${possessive} favorite hot herbal tea, and don't let ${possessive} strain today.`,
       category: 'Comfort',
       urgency: 'high',
       source: 'Based on recent cycle & health notes',
@@ -50,7 +50,7 @@ function fallbackKeywordAnalysis({ chatText, journalText, moodText, isPartnerWom
   if (/tired|exhaust|sleepy|drained|fatigue|burnout|no energy|heavy head|sleep/.test(allText)) {
     needs.push({
       label: `${pronoun} needs deep rest & downtime`,
-      tip: `Sia recommends: Take care of dinner and household tasks tonight so ${pronoun.toLowerCase()} can wind down and rest early.`,
+      tip: `Dr. Docsy recommends: Take care of dinner and household tasks tonight so ${pronoun.toLowerCase()} can wind down and rest early.`,
       category: 'Rest',
       urgency: 'normal',
       source: 'Based on recent logs',
@@ -60,7 +60,7 @@ function fallbackKeywordAnalysis({ chatText, journalText, moodText, isPartnerWom
   if (/stress|overwhelm|pressure|deadline|boss|workload|anxious|anxiety|panic|crying|sad|down|alone|lonely/.test(allText)) {
     needs.push({
       label: `${pronoun} needs gentle emotional support & reassurance`,
-      tip: `Sia recommends: Listen without trying to fix everything immediately. Acknowledge ${possessive} feelings and remind ${possessive} that you're in this together.`,
+      tip: `Dr. Docsy recommends: Listen without trying to fix everything immediately. Acknowledge ${possessive} feelings and remind ${possessive} that you're in this together.`,
       category: 'Emotional Support',
       urgency: 'high',
       source: 'Based on recent reflections',
@@ -70,7 +70,7 @@ function fallbackKeywordAnalysis({ chatText, journalText, moodText, isPartnerWom
   if (/chore|errand|clean|cook|dishes|laundry|grocer|busy|hectic/.test(allText)) {
     needs.push({
       label: `${pronoun} needs practical help with daily chores`,
-      tip: `Sia recommends: Proactively handle a chore (like dishes or laundry) before being asked. It takes a huge mental load off.`,
+      tip: `Dr. Docsy recommends: Proactively handle a chore (like dishes or laundry) before being asked. It takes a huge mental load off.`,
       category: 'Practical Help',
       urgency: 'normal',
       source: 'Based on recent logs',
@@ -80,7 +80,7 @@ function fallbackKeywordAnalysis({ chatText, journalText, moodText, isPartnerWom
   if (/space|quiet|alone|overstimulat|headache|migraine/.test(allText)) {
     needs.push({
       label: `${pronoun} needs quiet space to recharge`,
-      tip: `Sia recommends: Give ${possessive} uninterrupted downtime without pressure. Say: 'I am here in the other room whenever you need me.'`,
+      tip: `Dr. Docsy recommends: Give ${possessive} uninterrupted downtime without pressure. Say: 'I am here in the other room whenever you need me.'`,
       category: 'Space',
       urgency: 'normal',
       source: 'Based on recent chat',
@@ -90,7 +90,7 @@ function fallbackKeywordAnalysis({ chatText, journalText, moodText, isPartnerWom
   if (/craving|sweet|chocolate|snack|hungry|treat|dessert/.test(allText)) {
     needs.push({
       label: `${pronoun} is craving comfort food or snacks`,
-      tip: `Sia recommends: Surprise ${possessive} with a favorite comforting treat, chocolate, or a warm meal.`,
+      tip: `Dr. Docsy recommends: Surprise ${possessive} with a favorite comforting treat, chocolate, or a warm meal.`,
       category: 'Nutrition',
       urgency: 'normal',
       source: 'Based on recent reflections',
@@ -103,7 +103,7 @@ function fallbackKeywordAnalysis({ chatText, journalText, moodText, isPartnerWom
       partnerName,
       title: isPartnerWoman ? "What she needs today" : "What he needs today",
       message: `Based on ${possessive} recent check-ins:`,
-      tip: `Sia recommends: Check the cards below to see how to support ${partnerName} today.`,
+      tip: `Dr. Docsy recommends: Check the cards below to see how to support ${partnerName} today.`,
       needs: needs.slice(0, 4),
       analyzedAt: new Date().toISOString(),
     };
@@ -114,7 +114,7 @@ function fallbackKeywordAnalysis({ chatText, journalText, moodText, isPartnerWom
     partnerName,
     title: isPartnerWoman ? "She doesn't need anything right now" : "He doesn't need anything right now",
     message: "Everything seems peaceful! No discomfort or specific requests logged recently.",
-    tip: "Sia recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
+    tip: "Dr. Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
     needs: [],
     analyzedAt: new Date().toISOString(),
   };
@@ -128,7 +128,7 @@ export async function getDynamicPartnerNeeds({ partnerUserId, partnerRole = 'wom
   try {
     const cleanUserId = typeof partnerUserId === 'string' ? partnerUserId.replace('user:', '') : partnerUserId;
 
-    // 1. Fetch recent Sia chat history (last 48 hours)
+    // 1. Fetch recent Dr. Docsy chat history (last 48 hours)
     let chatHistory = [];
     try {
       chatHistory = await aiHistoryRepository.listHistory(cleanUserId);
@@ -192,7 +192,7 @@ export async function getDynamicPartnerNeeds({ partnerUserId, partnerRole = 'wom
         partnerName,
         title: isPartnerWoman ? "She doesn't need anything right now" : "He doesn't need anything right now",
         message: `Everything is peaceful! ${partnerName} hasn't logged any distress or asked for specific help recently.`,
-        tip: "Sia recommends: A warm check-in or sweet text is always wonderful just to remind her you care.",
+        tip: "Dr. Docsy recommends: A warm check-in or sweet text is always wonderful just to remind her you care.",
         needs: [],
         analyzedAt: new Date().toISOString(),
       };
@@ -211,14 +211,14 @@ export async function getDynamicPartnerNeeds({ partnerUserId, partnerRole = 'wom
       ? `Day ${cycleInfo.currentCycleDay || '?'} of cycle (${cycleInfo.phase} phase)`
       : `General phase`;
 
-    const systemPrompt = `You are Sia, an empathetic, intuitive AI relationship companion.
+    const systemPrompt = `You are Dr. Docsy, an empathetic, intuitive AI relationship companion.
 Your role is to analyze a woman's (or partner's) recent personal shares and identify what her partner can do to help her today.
 
 Context of ${partnerName} (${pronoun}):
 - Role: ${partnerRole}
 - Cycle / Health Stage: ${cycleDesc}
 
-Recent Sia Chats (last 48h):
+Recent Dr. Docsy Chats (last 48h):
 ${chatText || 'None'}
 
 Recent Journal Reflections (last 48h):
@@ -232,24 +232,24 @@ CRITICAL INSTRUCTIONS:
 2. If she has NO negative feelings or specific requests (e.g. she is feeling great, relaxed, happy, or only chatting about casual neutral things), return "hasNeeds": false with a positive message.
 3. If she DOES have needs, extract 1 to 4 clear, thoughtful need cards for her partner.
    - "label": Short clear sentence e.g. "She needs rest after a tiring workday", "She needs soothing comfort for period cramps", "She needs reassurance with work stress".
-   - "tip": Concrete, actionable tip starting with "Sia recommends: ...".
+   - "tip": Concrete, actionable tip starting with "Dr. Docsy recommends: ...".
    - "category": Choose one of ["Rest", "Comfort", "Practical Help", "Emotional Support", "Space", "Nutrition", "Affection"].
    - "urgency": "high" or "normal".
-   - "source": e.g. "From recent Sia chat", "From journal reflection", "From mood log".
+   - "source": e.g. "From recent Dr. Docsy chat", "From journal reflection", "From mood log".
 
 Respond ONLY with valid JSON in this exact schema (no markdown outside the JSON, no extra text):
 {
   "hasNeeds": true,
   "title": "What she needs today",
   "message": "Based on what she shared recently:",
-  "tip": "Sia recommends: ...",
+  "tip": "Dr. Docsy recommends: ...",
   "needs": [
     {
       "label": "She needs ...",
-      "tip": "Sia recommends: ...",
+      "tip": "Dr. Docsy recommends: ...",
       "category": "Rest",
       "urgency": "normal",
-      "source": "From recent Sia chat"
+      "source": "From recent Dr. Docsy chat"
     }
   ]
 }`;
@@ -259,7 +259,7 @@ Respond ONLY with valid JSON in this exact schema (no markdown outside the JSON,
       headers: {
         Authorization: `Bearer ${aiChatApiKey}`,
         'Content-Type': 'application/json',
-        'X-Title': 'Sia Dynamic Needs',
+        'X-Title': 'Dr. Docsy Dynamic Needs',
       },
       body: JSON.stringify({
         model: aiChatModel,
@@ -284,7 +284,7 @@ Respond ONLY with valid JSON in this exact schema (no markdown outside the JSON,
           partnerName,
           title: parsed.title || (hasNeeds ? (isPartnerWoman ? "What she needs today" : "What he needs today") : (isPartnerWoman ? "She doesn't need anything right now" : "He doesn't need anything right now")),
           message: parsed.message || (hasNeeds ? `Based on ${possessive} recent check-ins:` : `Everything is peaceful! ${partnerName} hasn't logged any distress recently.`),
-          tip: parsed.tip || "Sia recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
+          tip: parsed.tip || "Dr. Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
           needs: Array.isArray(parsed.needs) ? parsed.needs : [],
           analyzedAt: new Date().toISOString(),
         };

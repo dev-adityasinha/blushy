@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/state.dart';
 import '../../../core/storage.dart';
 import '../../../theme/colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 class StageQuestionnaireDialog extends StatefulWidget {
   final String stageKey;
@@ -312,7 +313,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       case 'firstPeriodNotStarted':
         _steps = [
           () => _buildSingleSelectStep(
-                title: "What would you like to learn first?",
+                title: AppLocalizations.of(context).sqWhatWouldYouLike,
                 subtitle: "We'll tailor helpful guidance to prepare you with confidence.",
                 storageKey: "not_started_learn",
                 options: [
@@ -329,7 +330,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       case 'firstPeriodStarted':
         _steps = [
           () => _buildSingleSelectStep(
-                title: "When did your first period start?",
+                title: AppLocalizations.of(context).sqWhenDidYourFirst,
                 subtitle: "This sets baseline predictions and cycle health insights.",
                 storageKey: "first_period_start_time",
                 options: [
@@ -339,7 +340,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildMultiSelectStep(
-                title: "What would you like support with?",
+                title: AppLocalizations.of(context).sqWhatWouldYouLike2,
                 subtitle: "Select all that apply to personalize your dashboard.",
                 selectedSet: _selectedGoals,
                 options: [
@@ -357,7 +358,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       case 'reproductiveYears':
         _steps = [
           () => _buildSingleSelectStep(
-                title: "How would you describe your cycle?",
+                title: AppLocalizations.of(context).sqHowWouldYouDescribe,
                 subtitle: "Helps predict ovulation and fertile phases accurately.",
                 storageKey: "reproductive_cycle_type",
                 options: [
@@ -369,12 +370,12 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildDatePickerStep(
-                title: "When did your last period start?",
+                title: AppLocalizations.of(context).sqWhenDidYourLast,
                 subtitle: "Used to forecast your cycle phase and upcoming period.",
                 storageKey: "last_period",
               ),
           () => _buildMultiSelectStep(
-                title: "What are your primary wellness goals?",
+                title: AppLocalizations.of(context).sqWhatAreYourPrimary,
                 subtitle: "Customize your tracking feed and daily recommendations.",
                 selectedSet: _selectedGoals,
                 options: [
@@ -389,7 +390,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildSingleSelectStep(
-                title: "Are you using hormonal contraception?",
+                title: AppLocalizations.of(context).sqAreYouUsingHormonal,
                 subtitle: "Contraception influences cycle symptoms and bleeding patterns.",
                 storageKey: "contraception_choice",
                 options: [
@@ -400,13 +401,33 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                   "Prefer not to say",
                 ],
               ),
+          () => _buildMultiSelectStep(
+                title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
+                subtitle: "Your home page shows the cards for what you track.",
+                selectedSet: _selectedSymptoms,
+                options: [
+                  "Cramps & period pain",
+                  "Bloating",
+                  "Headaches / migraines",
+                  "Mood swings & PMS",
+                  "Fatigue",
+                  "Hormonal acne",
+                  "Heavy bleeding",
+                  "Spotting between periods",
+                  "Unusual discharge",
+                  "Digestion issues",
+                  "Anxiety",
+                  "Sleep disruption / insomnia",
+                  "Back pain",
+                ],
+              ),
         ];
         break;
 
       case 'hormonalHealth':
         _steps = [
           () => _buildMultiSelectStep(
-                title: "Which hormonal condition(s) apply to you?",
+                title: AppLocalizations.of(context).sqWhichHormonalConditionS,
                 subtitle: "Enables specialized trackers and clinical insights.",
                 selectedSet: _selectedConditions,
                 options: [
@@ -420,8 +441,8 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildMultiSelectStep(
-                title: "Which symptoms affect you most?",
-                subtitle: "Sia adapts tracking cards to prioritize these.",
+                title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
+                subtitle: "Dr. Docsy adapts tracking cards to prioritize these.",
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Pelvic pain / Cramps",
@@ -437,7 +458,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildSingleSelectStep(
-                title: "Are you currently receiving treatment?",
+                title: AppLocalizations.of(context).sqAreYouCurrentlyReceiving,
                 subtitle: "Helps tailor medication and protocol logs.",
                 storageKey: "hormonal_treatment",
                 options: [
@@ -453,7 +474,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       case 'tryingToConceive':
         _steps = [
           () => _buildSingleSelectStep(
-                title: "How long have you been trying to conceive?",
+                title: AppLocalizations.of(context).sqHowLongHaveYou,
                 subtitle: "Adapts fertility timelines and proactive guidance.",
                 storageKey: "ttc_duration",
                 options: [
@@ -464,7 +485,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildSingleSelectStep(
-                title: "How are you tracking fertility?",
+                title: AppLocalizations.of(context).sqHowAreYouTracking,
                 subtitle: "Select the primary biomarker you track.",
                 storageKey: "ttc_tracking_method",
                 options: [
@@ -477,7 +498,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildSingleSelectStep(
-                title: "Are you undergoing fertility assistance?",
+                title: AppLocalizations.of(context).sqAreYouUndergoingFertility,
                 subtitle: "Personalizes protocols and hormone support tracking.",
                 storageKey: "ttc_treatment",
                 options: [
@@ -488,19 +509,37 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                   "Natural supplements & acupuncture",
                 ],
               ),
+          () => _buildMultiSelectStep(
+                title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
+                subtitle: "Your home page shows the cards for what you track.",
+                selectedSet: _selectedSymptoms,
+                options: [
+                  "Cramps & pelvic pain",
+                  "Bloating",
+                  "Spotting between periods",
+                  "Cervical mucus changes",
+                  "Fatigue",
+                  "Mood swings",
+                  "Headaches",
+                  "Hormonal acne",
+                  "Back pain",
+                  "Anxiety",
+                  "Sleep disruption / insomnia",
+                ],
+              ),
         ];
         break;
 
       case 'pregnancy':
         _steps = [
           () => _buildDatePickerStep(
-                title: "What is your estimated due date?",
+                title: AppLocalizations.of(context).sqWhatIsYourEstimated,
                 subtitle: "Calculates weekly gestational age and baby milestones.",
                 storageKey: "due_date",
                 isFutureDate: true,
               ),
           () => _buildSingleSelectStep(
-                title: "Is this your first pregnancy?",
+                title: AppLocalizations.of(context).sqIsThisYourFirst,
                 subtitle: "Customizes educational pacing and milestone insights.",
                 storageKey: "pregnancy_first",
                 options: [
@@ -509,7 +548,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildMultiSelectStep(
-                title: "What support would you like during pregnancy?",
+                title: AppLocalizations.of(context).sqWhatSupportWouldYou,
                 subtitle: "Prioritize baby development, nutrition, and wellness.",
                 selectedSet: _selectedGoals,
                 options: [
@@ -528,12 +567,12 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       case 'postpartum':
         _steps = [
           () => _buildDatePickerStep(
-                title: "When was your baby born?",
+                title: AppLocalizations.of(context).sqWhenWasYourBaby,
                 subtitle: "Drives maternal healing recovery and infant milestones.",
                 storageKey: "baby_birth_date",
               ),
           () => _buildSingleSelectStep(
-                title: "How are you feeding your baby?",
+                title: AppLocalizations.of(context).sqHowAreYouFeeding,
                 subtitle: "Adapts hydration targets and feeding logs.",
                 storageKey: "postpartum_feeding",
                 options: [
@@ -544,7 +583,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildMultiSelectStep(
-                title: "What areas would you like help with?",
+                title: AppLocalizations.of(context).sqWhatAreasWouldYou,
                 subtitle: "Customize maternal postpartum recovery support.",
                 selectedSet: _selectedGoals,
                 options: [
@@ -556,13 +595,31 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                   "Healing nutrition & lactation snacks",
                 ],
               ),
+          () => _buildMultiSelectStep(
+                title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
+                subtitle: "Recovery included. Your home page shows what you track.",
+                selectedSet: _selectedSymptoms,
+                options: [
+                  "Bleeding / lochia",
+                  "Perineal soreness or stitches",
+                  "C-section incision healing",
+                  "Pelvic floor weakness",
+                  "Swelling",
+                  "Back pain",
+                  "Fatigue & exhaustion",
+                  "Night sweats",
+                  "Mood swings / low mood",
+                  "Anxiety",
+                  "Sleep disruption / insomnia",
+                ],
+              ),
         ];
         break;
 
       case 'perimenopause':
         _steps = [
           () => _buildSingleSelectStep(
-                title: "How have your periods changed?",
+                title: AppLocalizations.of(context).sqHowHaveYourPeriods,
                 subtitle: "Tracks fluctuations in menstrual rhythms.",
                 storageKey: "perimenopause_cycle_change",
                 options: [
@@ -574,8 +631,8 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildMultiSelectStep(
-                title: "Which symptoms affect you most?",
-                subtitle: "Sia adapts tracking cards to prioritize these.",
+                title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
+                subtitle: "Dr. Docsy adapts tracking cards to prioritize these.",
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Hot flashes & temperature shifts",
@@ -589,7 +646,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildMultiSelectStep(
-                title: "What would you most like to focus on?",
+                title: AppLocalizations.of(context).sqWhatWouldYouMost,
                 subtitle: "Saves priorities for proactive daily insights.",
                 selectedSet: _selectedGoals,
                 options: [
@@ -607,7 +664,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       case 'menopause':
         _steps = [
           () => _buildSingleSelectStep(
-                title: "How long has it been since your last period?",
+                title: AppLocalizations.of(context).sqHowLongHasIt,
                 subtitle: "Determines postmenopausal health focus areas.",
                 storageKey: "menopause_duration",
                 options: [
@@ -619,7 +676,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildMultiSelectStep(
-                title: "Which symptoms affect your daily life?",
+                title: AppLocalizations.of(context).sqWhichSymptomsAffectYour,
                 subtitle: "Select all that apply to personalize your care.",
                 selectedSet: _selectedSymptoms,
                 options: [
@@ -633,7 +690,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildMultiSelectStep(
-                title: "What are your top health goals?",
+                title: AppLocalizations.of(context).sqWhatAreYourTop,
                 subtitle: "Tailor your healthy ageing companion feed.",
                 selectedSet: _selectedGoals,
                 options: [
@@ -681,6 +738,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       if (_currentStep == 1) return _selectedDate != null || _answers['last_period_unknown'] == true;
       if (_currentStep == 2) return _selectedGoals.isNotEmpty;
       if (_currentStep == 3) return _answers['contraception_choice'] != null;
+      if (_currentStep == 4) return _selectedSymptoms.isNotEmpty;
     }
     if (stage == 'hormonalHealth') {
       if (_currentStep == 0) return _selectedConditions.isNotEmpty;
@@ -691,6 +749,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       if (_currentStep == 0) return _answers['ttc_duration'] != null;
       if (_currentStep == 1) return _answers['ttc_tracking_method'] != null;
       if (_currentStep == 2) return _answers['ttc_treatment'] != null;
+      if (_currentStep == 3) return _selectedSymptoms.isNotEmpty;
     }
     if (stage == 'pregnancy') {
       if (_currentStep == 0) return _selectedDate != null;
@@ -701,6 +760,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       if (_currentStep == 0) return _selectedDate != null;
       if (_currentStep == 1) return _answers['postpartum_feeding'] != null;
       if (_currentStep == 2) return _selectedGoals.isNotEmpty;
+      if (_currentStep == 3) return _selectedSymptoms.isNotEmpty;
     }
     if (stage == 'perimenopause') {
       if (_currentStep == 0) return _answers['perimenopause_cycle_change'] != null;

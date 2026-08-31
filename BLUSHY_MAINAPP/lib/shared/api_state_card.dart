@@ -147,7 +147,7 @@ class SourceLabel extends StatelessWidget {
       case 'rule':
         return 'Calculated from your logs';
       case 'ai':
-        return 'Sia observation';
+        return 'Dr. Docsy observation';
       case 'medical_reference':
         return 'Reviewed health information';
       case 'device':

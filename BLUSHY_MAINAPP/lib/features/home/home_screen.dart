@@ -7,6 +7,7 @@ import '../../services/api_auth_service.dart';
 import 'presentation/stages/everyday_wellness_dashboard.dart';
 import '../sia/sia_screen.dart';
 import '../../services/sia_dashboard_service.dart';
+import '../../l10n/app_localizations.dart';
 
 enum HomeWidgetType {
   hero,
@@ -118,7 +119,7 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
           });
         },
         label: Text(
-          'Sia',
+          AppLocalizations.of(context).hDrDocsy,
           style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
         ),
         icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
@@ -354,7 +355,7 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
         "**Biological & Physiological Overview**\n"
         "${widget.summary}\n\n"
         "Clinical wellness data shows that daily lifestyle habits directly influence neuroendocrine and autonomic nervous system regulation. "
-        "Tracking your core metrics allows Sia AI to identify subtle hormonal and energy baseline fluctuations early.\n\n"
+        "Tracking your core metrics allows Dr. Docsy AI to identify subtle hormonal and energy baseline fluctuations early.\n\n"
         "**Key Scientific Insights**\n"
         "• **Circadian & Metabolic Harmony**: Regular sleep and meal timing stabilize cortisol, preventing afternoon energy crashes.\n"
         "• **Vagal Tone & Stress Recovery**: Diaphragmatic breathing and hydration balance parasympathetic nervous system responses.\n"
@@ -362,7 +363,7 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
         "**Actionable Recommendations**\n"
         "1. **Structured Routines**: Maintain consistent daily check-ins within your preferred morning or evening window.\n"
         "2. **Optimal Fluid Intake**: Hydrate continuously throughout high-activity or high-stress workdays.\n"
-        "3. **Sia Companion Check-Ins**: Log daily symptoms to help Sia refine your dynamic health insights.";
+        "3. **Dr. Docsy Companion Check-Ins**: Log daily symptoms to help Dr. Docsy refine your dynamic health insights.";
   }
 
   @override
@@ -468,7 +469,7 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                       const CircularProgressIndicator(color: BlushyColors.primary, strokeWidth: 2.5),
                       const SizedBox(height: 16),
                       Text(
-                        "Sia AI is searching the web and analyzing detailed insights for '${widget.title}'...",
+                        "Dr. Docsy AI is searching the web and analyzing detailed insights for '${widget.title}'...",
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(fontSize: 12, fontStyle: FontStyle.italic, color: BlushyColors.secondaryText),
                       ),
@@ -502,7 +503,7 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(
-            "Close",
+            AppLocalizations.of(context).hClose,
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary),
           ),
         ),

@@ -146,7 +146,7 @@ class ApiPartnerService {
     }
   }
 
-  /// Asks Sia a relationship question about a connected partner.
+  /// Asks Dr. Docsy a relationship question about a connected partner.
   ///
   /// `POST /ai/relationship-advice/:connectionId`. The server gates any partner
   /// data behind that partner's sharing permissions and runs the deterministic
@@ -169,7 +169,7 @@ class ApiPartnerService {
       final message = e.response?.data?['message'] ??
           e.response?.data?['error']?['message'] ??
           e.message ??
-          'Could not reach Sia.';
+          'Could not reach Dr. Docsy.';
       return {'error': message.toString()};
     } catch (e) {
       return {'error': e.toString()};

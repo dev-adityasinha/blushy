@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
 
 import '../../services/api_partner_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class BlushyParentScreen extends StatefulWidget {
   const BlushyParentScreen({super.key});
@@ -50,7 +51,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
     "\"Did you know that periods are actually a sign that your body is growing strong and healthy?\"",
     "\"How are you feeling about all the changes your body is going through lately?\"",
     "\"Let's set up a special bag with pads and spare clothes for your locker, just so you feel ready.\"",
-    "\"Is there anything you want to ask Sia or me about periods today?\""
+    "\"Is there anything you want to ask Dr. Docsy or me about periods today?\""
   ];
 
   @override
@@ -171,7 +172,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                "Your daughter is currently tracking cycle rhythms and logs. Sia provides supportive insights to keep her prepared.",
+                "Your daughter is currently tracking cycle rhythms and logs. Dr. Docsy provides supportive insights to keep her prepared.",
                 style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
               ),
             ],
@@ -225,7 +226,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "PREPARING HER EMERGENCY SCHOOL KIT",
+          AppLocalizations.of(context).pPreparingHerEmergencySchool,
           style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
         ),
         const SizedBox(height: 16),
@@ -261,7 +262,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          " CONVERSATION STARTERS",
+          AppLocalizations.of(context).pConversationStarters,
           style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
         ),
         const SizedBox(height: 12),
@@ -290,7 +291,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "PARENT FREQUENT QUESTIONS",
+          AppLocalizations.of(context).pParentFrequentQuestions,
           style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
         ),
         const SizedBox(height: 12),

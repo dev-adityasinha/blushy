@@ -6,6 +6,9 @@ import { publishToUsers } from '../utils/realtimeHub.js';
 import { emailService } from '../services/emailService.js';
 import { logger } from '../utils/logger.js';
 
+/// Returns the full user record, so unlike the other controllers' helpers this
+/// cannot be skipped when the middleware has already verified the request --
+/// callers read fields the middleware does not carry on req.user.
 async function requireAuthUser(req) {
   const userId = req.user?.userId;
   if (!userId) {

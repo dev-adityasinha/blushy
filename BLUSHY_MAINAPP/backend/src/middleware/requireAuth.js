@@ -41,7 +41,9 @@ export async function requireAuth(req, _res, next) {
     // database said. Reading it here also means a role change takes effect on
     // the next request rather than waiting for a new token, which matters more
     // for revoking an admin than granting one.
-    req.user = { ...decoded, role: dbUser.role ?? decoded.role ?? null };
+    // verifiedAgainstDb tells handlers the record has already been read and
+    // checked, so they need not read it again.
+    req.user = { ...decoded, role: dbUser.role ?? decoded.role ?? null, verifiedAgainstDb: true };
     return next();
   } catch {
     return next(createHttpError(401, 'Authentication session expired or invalid.'));

@@ -188,7 +188,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
                   const SizedBox(height: 24),
                   Text(
                     'Nothing here is a live feed of their records. Blushy only ever sends the '
-                    'categories above, and never their journal, their messages with Sia, or '
+                    'categories above, and never their journal, their messages with Dr. Docsy, or '
                     'anything they have not turned on.',
                     style: GoogleFonts.poppins(
                       fontSize: 11,

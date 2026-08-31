@@ -8,6 +8,7 @@ import '../../../services/api_partner_service.dart';
 import '../../../services/api_blushy_service.dart';
 import '../../../models/blushy_models.dart';
 import 'partner_privacy_screen.dart';
+import '../../../shared/confirm_sign_out.dart';
 
 class PartnerProfileScreen extends StatefulWidget {
   const PartnerProfileScreen({super.key});
@@ -119,37 +120,18 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
     }
   }
 
-  void _handleLogout() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Sign Out', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to sign out of your partner account?', style: GoogleFonts.poppins(fontSize: 14)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final state = BlushyOSProvider.of(context);
-              await state.logout();
-              if (mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BlushyColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: Text('Sign Out', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+  /// Uses the shared confirmation so both sides of the app ask the same
+  /// question. This screen had its own dialog and the main account screen had
+  /// none, which is the kind of drift that produced the difference in the
+  /// first place.
+  Future<void> _handleLogout() async {
+    if (!await confirmSignOut(context)) return;
+    if (!mounted) return;
+
+    final state = BlushyOSProvider.of(context);
+    await state.logout();
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
   }
 
   @override
@@ -297,7 +279,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                         ListTile(
                           leading: const Icon(Icons.notifications_outlined, color: BlushyColors.primary),
                           title: Text('Push Notifications', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-                          subtitle: Text('Get Sia daily support alerts', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
+                          subtitle: Text('Get Dr. Docsy daily support alerts', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
                           trailing: _notificationsSaving
                               ? const SizedBox(
                                   width: 20,

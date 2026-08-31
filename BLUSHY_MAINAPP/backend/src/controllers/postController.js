@@ -19,6 +19,12 @@ async function requireAuthUserAsync(req) {
     throw createHttpError(401, 'Authentication required.');
   }
 
+  // Already read and checked by the auth middleware; only existence matters
+  // here and that has been established.
+  if (req.user?.verifiedAgainstDb) {
+    return { userId };
+  }
+
   const user = await userRepository.getUserById(userId);
   if (!user) {
     throw createHttpError(404, 'User not found.');

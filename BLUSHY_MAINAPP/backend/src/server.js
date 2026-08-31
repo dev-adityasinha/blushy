@@ -6,7 +6,7 @@ import { initDatabase } from './utils/initDatabase.js';
 import { logger } from './utils/logger.js';
 import { assertCaptchaNotFalselyEnabled } from './services/captchaService.js';
 import { startCapsuleDeliveryScheduler } from './services/timeCapsuleService.js';
-import { initRealtimeHub } from './utils/realtimeHub.js';
+import { initRealtimeHub, stopRealtimeHeartbeat } from './utils/realtimeHub.js';
 import { startCommunityCleanupScheduler } from './services/communityCleanupService.js';
 import { startDailyChatSummaryScheduler } from './services/dailyChatSummaryService.js';
 import { startPushDispatchScheduler } from './services/pushDispatchService.js';
@@ -91,5 +91,6 @@ process.on('SIGINT', () => {
   stopDailyChatSummaryScheduler();
   stopPushDispatchScheduler();
   stopCapsuleDeliveryScheduler();
+  stopRealtimeHeartbeat();
   server.close(() => process.exit(0));
 });

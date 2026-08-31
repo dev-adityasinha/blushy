@@ -684,7 +684,7 @@ class PartnerApi {
     return ApiContractClient.get('/partner/connections/$connectionId/home', parse: PartnerHomeModel.fromJson);
   }
 
-  /// The permission-filtered context. This is exactly what Partner Sia sees.
+  /// The permission-filtered context. This is exactly what Partner Dr. Docsy sees.
   static Future<ApiResult<Map<String, dynamic>>> context(String connectionId) {
     return ApiContractClient.get('/partner/connections/$connectionId/context', parse: ApiParse.map);
   }
@@ -949,7 +949,7 @@ class AnalyticsApi {
   const AnalyticsApi._();
 
   /// Only the defined event names are accepted, and any property outside the
-  /// allowlist is dropped server side. Raw journal text and Sia conversations
+  /// allowlist is dropped server side. Raw journal text and Dr. Docsy conversations
   /// can never reach analytics (spec section 26).
   static Future<ApiResult<Map<String, dynamic>>> track(String eventName, {Map<String, dynamic>? properties}) {
     return ApiContractClient.post(

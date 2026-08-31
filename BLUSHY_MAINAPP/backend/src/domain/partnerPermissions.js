@@ -1,6 +1,6 @@
 /**
  * Partner permission matrix and server-side privacy filter
- * (spec §9 "Sia for Partners", §10 "Partner Permissions", §19-§21, §25).
+ * (spec §9 "Dr. Docsy for Partners", §10 "Partner Permissions", §19-§21, §25).
  *
  * Every permission defaults to OFF. The filter here is the only place partner
  * facing data is assembled, and it runs BEFORE any AI context is constructed
@@ -20,7 +20,7 @@ export const PERMISSIONS = Object.freeze({
   general_ai_insights: {
     key: 'general_ai_insights',
     label: 'General AI insights',
-    example: 'Sia noticed she may need more rest.',
+    example: 'Dr. Docsy noticed she may need more rest.',
     default: false,
     legacyKeys: ['shareInsights', 'allowAiSuggestionsMan'],
     grants: ['insight.general'],
@@ -116,7 +116,7 @@ export const PERMISSIONS = Object.freeze({
   },
   sia_conversations: {
     key: 'sia_conversations',
-    label: 'Sia conversations',
+    label: 'Dr. Docsy conversations',
     example: 'Private unless explicitly shared.',
     default: false,
     legacyKeys: [],
@@ -263,7 +263,7 @@ export function isConnectionActive(status) {
  *
  * This is the mandatory server-side filter. It takes the woman's full context
  * and returns ONLY the fields the current permissions allow. It is also what
- * feeds Partner Sia, so the AI never sees unpermitted data at all.
+ * feeds Partner Dr. Docsy, so the AI never sees unpermitted data at all.
  *
  * @param {object} fullContext  the woman's assembled context
  * @param {object} permissions  normalized permission object

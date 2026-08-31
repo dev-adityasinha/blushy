@@ -6,6 +6,7 @@ import '../services/api_sia_service.dart' show ApiSiaService, TranscriptionUnava
 import '../services/html_audio_helper.dart';
 import '../services/journal_quick_entry.dart';
 import '../theme/colors.dart';
+import '../l10n/app_localizations.dart';
 
 class VoiceNoteBottomSheet extends StatefulWidget {
   const VoiceNoteBottomSheet({super.key});
@@ -163,7 +164,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
     // nowhere, which is indistinguishable from a save that failed.
     final saved = await JournalQuickEntry.save(
       text: text,
-      title: 'Voice Reflection',
+      title: AppLocalizations.of(context).vnbVoiceReflection,
     );
 
     if (!mounted) return;
@@ -368,7 +369,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                     maxLines: 3,
                     style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
                     decoration: InputDecoration(
-                      hintText: "Your voice transcript will appear here...",
+                      hintText: AppLocalizations.of(context).vnbYourVoiceTranscriptWill,
                       filled: true,
                       fillColor: const Color(0xFFFAF6F0),
                       border: OutlineInputBorder(

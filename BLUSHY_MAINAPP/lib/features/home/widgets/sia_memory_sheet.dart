@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 class BlushySiaMemorySheet extends StatelessWidget {
   const BlushySiaMemorySheet({super.key});
@@ -32,7 +33,7 @@ class BlushySiaMemorySheet extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Sia Memory & Privacy',
+                'Dr. Docsy Memory & Privacy',
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -41,24 +42,24 @@ class BlushySiaMemorySheet extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Manage what Sia remembers about your conversations and health context. You are always in control of your data.',
+                'Manage what Dr. Docsy remembers about your conversations and health context. You are always in control of your data.',
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   color: BlushyColors.secondaryText,
                 ),
               ),
               const SizedBox(height: 24),
-              _buildSwitchItem('Personalized Insights', 'Allow Sia to use your logs to personalize suggestions.', true),
+              _buildSwitchItem('Personalized Insights', 'Allow Dr. Docsy to use your logs to personalize suggestions.', true),
               const SizedBox(height: 16),
-              _buildSwitchItem('Conversation Memory', 'Allow Sia to remember past chats for context.', true),
+              _buildSwitchItem('Conversation Memory', 'Allow Dr. Docsy to remember past chats for context.', true),
               const SizedBox(height: 16),
-              _buildSwitchItem('Adaptive Greeting', 'Allow Sia to adapt greetings based on daily wellbeing.', true),
+              _buildSwitchItem('Adaptive Greeting', 'Allow Dr. Docsy to adapt greetings based on daily wellbeing.', true),
               const SizedBox(height: 32),
               Center(
                 child: TextButton(
                   onPressed: () {},
                   child: Text(
-                    'Clear Sia Memory',
+                    AppLocalizations.of(context).smClearDrDocsyMemory,
                     style: GoogleFonts.poppins(
                       color: Colors.redAccent,
                       fontWeight: FontWeight.w600,

@@ -8,6 +8,13 @@ async function requireAuthUserAsync(req) {
     throw createHttpError(401, 'Authentication required.');
   }
 
+  // The auth middleware already read this record and checked it exists, so
+  // this lookup was the same query a second time on every request. Only the
+  // existence matters here, and that has been established.
+  if (req.user?.verifiedAgainstDb) {
+    return { userId };
+  }
+
   const user = await userRepository.getUserById(userId);
   if (!user) {
     throw createHttpError(404, 'User not found.');

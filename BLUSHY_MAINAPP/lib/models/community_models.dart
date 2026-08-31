@@ -41,6 +41,31 @@ class CommunityPost {
     DateTime? updatedAt,
   }) : updatedAt = updatedAt ?? createdAt;
 
+  /// The same post with a different vote on it.
+  ///
+  /// Used to show a like immediately rather than waiting for the round trip.
+  /// The vote is recorded server-side either way; what this fixes is the count
+  /// sitting unchanged until the feed is reloaded.
+  CommunityPost withVote({required int userVote, required int score}) {
+    return CommunityPost(
+      postId: postId,
+      authorId: authorId,
+      authorName: authorName,
+      title: title,
+      text: text,
+      tags: tags,
+      postType: postType,
+      moderationNotice: moderationNotice,
+      isClinicallyReviewed: isClinicallyReviewed,
+      sensitiveTopics: sensitiveTopics,
+      score: score,
+      commentCount: commentCount,
+      userVote: userVote,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+
   factory CommunityPost.fromJson(Map<String, dynamic> json) {
     return CommunityPost(
       postId: json['postId'] ?? '',

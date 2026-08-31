@@ -18,7 +18,7 @@ class AboutScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Boutique',
+          'Bouquet',
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: -0.5),
         ),
         centerTitle: true,
@@ -42,7 +42,7 @@ class AboutScreen extends StatelessWidget {
                     const Text('💐', style: TextStyle(fontSize: 48)),
                     const SizedBox(height: 12),
                     Text(
-                      'About Boutique',
+                      'About Bouquet',
                       style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -340,8 +340,8 @@ class AboutScreen extends StatelessWidget {
 // Global Dialog helper
 void showUpiPaymentDialog(BuildContext context) {
   const upiId = 'aditya262701@okicici';
-  const payeeName = 'Boutique';
-  const note = 'Support Boutique';
+  const payeeName = 'Bouquet';
+  const note = 'Support Bouquet';
   final upiLink = 'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&tn=${Uri.encodeComponent(note)}';
   final qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${Uri.encodeComponent(upiLink)}';
 

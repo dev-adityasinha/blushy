@@ -22,7 +22,14 @@ export async function optionalAuth(req, _res, next) {
     if (decoded?.userId) {
       const dbUser = await userRepository.getUserById(decoded.userId);
       if (dbUser && (!decoded.tokenVersion || decoded.tokenVersion === dbUser.tokenVersion)) {
-        req.user = decoded;
+        // The record is already in hand, so the role comes from it rather than
+        // from the token, where it can be stale after a role change. The flag
+        // tells handlers the lookup has been done, so they do not repeat it.
+        req.user = {
+          ...decoded,
+          role: dbUser.role ?? decoded.role ?? null,
+          verifiedAgainstDb: true,
+        };
       } else {
         req.user = null;
       }

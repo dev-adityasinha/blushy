@@ -24,7 +24,7 @@ export const NOTIFICATION_CATEGORIES = Object.freeze({
   // A partner asking to see something. Goes to whoever owns the permissions,
   // so the audience is both: either side of a connection can be the owner.
   partner_permission_request: { key: 'partner_permission_request', label: 'Sharing requests', sensitive: false, defaultEnabled: true, audience: 'both' },
-  sia_proactive: { key: 'sia_proactive', label: 'Sia check-ins', sensitive: false, defaultEnabled: true, audience: 'both' },
+  sia_proactive: { key: 'sia_proactive', label: 'Dr. Docsy check-ins', sensitive: false, defaultEnabled: true, audience: 'both' },
   community: { key: 'community', label: 'Community activity', sensitive: false, defaultEnabled: true, audience: 'both' },
   content_recommendation: { key: 'content_recommendation', label: 'New content', sensitive: false, defaultEnabled: false, audience: 'both' },
   safety_escalation: { key: 'safety_escalation', label: 'Safety notices', sensitive: true, defaultEnabled: true, audience: 'female_user', alwaysOn: true },
@@ -173,7 +173,7 @@ export function evaluateDelivery({
 }
 
 /**
- * Proactive Sia rate limit (spec §20: "Rate limit proactive Sia so it does not
+ * Proactive Dr. Docsy rate limit (spec §20: "Rate limit proactive Dr. Docsy so it does not
  * become notification spam").
  */
 export const PROACTIVE_SIA_LIMITS = Object.freeze({

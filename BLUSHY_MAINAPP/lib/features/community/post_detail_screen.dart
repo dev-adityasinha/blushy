@@ -6,6 +6,7 @@ import '../../services/reddit_community_service.dart';
 import '../../services/auth_storage.dart';
 import 'user_profile_sheet.dart';
 import 'moderation_widgets.dart';
+import '../../l10n/app_localizations.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final CommunityPost post;
@@ -61,14 +62,28 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     });
   }
 
+  /// Same as the feed: show the vote now, reconcile when the server answers.
+  ///
+  /// `votePost` returns `null` for any failure, timeouts included, and `null`
+  /// left the count unchanged even though the vote had been recorded.
   Future<void> _votePost(int voteVal) async {
     final targetVote = _post.userVote == voteVal ? 0 : voteVal;
-    final updated = await _redditService.votePost(_post.postId, targetVote);
-    if (updated != null) {
-      setState(() {
-        _post = updated;
-      });
-    }
+    final before = _post;
+
+    setState(() {
+      // A net score, so flipping a downvote to an upvote moves it by two.
+      _post = before.withVote(
+        userVote: targetVote,
+        score: before.score - before.userVote + targetVote,
+      );
+    });
+
+    final updated = await _redditService.votePost(before.postId, targetVote);
+    if (!mounted || updated == null) return;
+
+    setState(() {
+      _post = updated;
+    });
   }
 
   Future<void> _submitComment() async {
@@ -127,16 +142,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete Comment', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
-        content: Text('Are you sure you want to delete this comment?', style: GoogleFonts.poppins()),
+        title: Text(AppLocalizations.of(context).pdDeleteComment, style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+        content: Text(AppLocalizations.of(context).pdAreYouSureYou, style: GoogleFonts.poppins()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
+            child: Text(AppLocalizations.of(context).pdCancel, style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete', style: GoogleFonts.poppins(color: BlushyColors.primary)),
+            child: Text(AppLocalizations.of(context).pdDelete, style: GoogleFonts.poppins(color: BlushyColors.primary)),
           ),
         ],
       ),
@@ -309,16 +324,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: Text('Delete Post', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
-                        content: Text('Are you sure you want to delete this post?', style: GoogleFonts.poppins()),
+                        title: Text(AppLocalizations.of(context).pdDeletePost, style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+                        content: Text(AppLocalizations.of(context).pdAreYouSureYou2, style: GoogleFonts.poppins()),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, false),
-                            child: Text('Cancel', style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
+                            child: Text(AppLocalizations.of(context).pdCancel, style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, true),
-                            child: Text('Delete', style: GoogleFonts.poppins(color: BlushyColors.primary)),
+                            child: Text(AppLocalizations.of(context).pdDelete, style: GoogleFonts.poppins(color: BlushyColors.primary)),
                           ),
                         ],
                       ),
@@ -472,7 +487,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Comments',
+          AppLocalizations.of(context).pdComments,
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w700,

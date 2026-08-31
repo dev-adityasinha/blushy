@@ -1,4 +1,5 @@
 import { emailAuthService } from '../services/emailAuthService.js';
+import { analyseOnboarding } from '../services/onboardingAnalysisService.js';
 import { googleAuthService } from '../services/googleAuthService.js';
 import { createHttpError } from '../utils/httpError.js';
 import { userRepository } from '../repositories/userRepository.js';
@@ -636,6 +637,32 @@ export async function saveMyOnboarding(req, res, next) {
     }
 
     const updated = await userRepository.updateOnboardingAnswers(userId, answers);
+
+    // Work out how the app should behave for her, from what she just answered.
+    //
+    // Triggered here rather than from the client so it cannot be skipped by
+    // closing the app on the last step, and deliberately not awaited: it calls
+    // a model, and onboarding must not wait on that. The result lands in her
+    // answers, so it reaches the app through the profile it already fetches.
+    //
+    // Only on the run that carries a life stage -- every later tracker write
+    // comes through this same endpoint, and re-analysing on each one would
+    // spend a model call per tap.
+    if (answers.life_stage) {
+      analyseOnboarding(updated?.onboardingAnswers ?? answers)
+        .then((analysis) =>
+          userRepository.updateOnboardingAnswers(userId, {
+            analysis_summary: analysis.summary,
+            analysis_focus_areas: analysis.focusAreas.join(','),
+            analysis_source: analysis.source,
+            analysis_at: new Date().toISOString(),
+          }),
+        )
+        .catch((error) => {
+          logger.warn(`Onboarding analysis failed for ${userId}: ${error.message}`);
+        });
+    }
+
     const hasNutritionChanges = Object.keys(answers).some((key) =>
       key === 'diet_changes' || key.startsWith('nutrition_'),
     );
@@ -1068,7 +1095,7 @@ export async function setMyJournalShared(req, res, next) {
 }
 
 /**
- * Marks one Sia exchange as shared with a partner, or takes it back.
+ * Marks one Dr. Docsy exchange as shared with a partner, or takes it back.
  */
 export async function setMySiaConversationShared(req, res, next) {
   try {

@@ -12,6 +12,8 @@ import '../../../services/api_blushy_service.dart';
 import '../../../services/api_contract_client.dart';
 import '../../../models/blushy_models.dart';
 import '../../../shared/api_state_card.dart';
+import 'partner_privacy_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PartnerHomeScreen extends StatefulWidget {
   const PartnerHomeScreen({super.key});
@@ -173,54 +175,54 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
   static const List<Map<String, String>> _defaultManNeeds = [
     {
       "label": "He needs appreciation & validation",
-      "tip": "Sia recommends: Acknowledge his effort, say thank you for something specific, or let him know how much you value him."
+      "tip": "Dr. Docsy recommends: Acknowledge his effort, say thank you for something specific, or let him know how much you value him."
     },
     {
       "label": "He needs quiet space to decompress",
-      "tip": "Sia recommends: Give him some uninterrupted downtime to unwind after a stressful day without pressure."
+      "tip": "Dr. Docsy recommends: Give him some uninterrupted downtime to unwind after a stressful day without pressure."
     },
     {
       "label": "He needs words of encouragement",
-      "tip": "Sia recommends: Remind him that you believe in him and that you're right by his side through current pressures."
+      "tip": "Dr. Docsy recommends: Remind him that you believe in him and that you're right by his side through current pressures."
     },
     {
       "label": "He wants comfort & physical affection",
-      "tip": "Sia recommends: Offer a warm hug, a gentle massage, or a quiet moment relaxing together."
+      "tip": "Dr. Docsy recommends: Offer a warm hug, a gentle massage, or a quiet moment relaxing together."
     },
     {
       "label": "He wants fun & quality time",
-      "tip": "Sia recommends: Suggest a casual game, watch a movie, share a favorite snack, or go for an easy walk together."
+      "tip": "Dr. Docsy recommends: Suggest a casual game, watch a movie, share a favorite snack, or go for an easy walk together."
     },
     {
       "label": "I don't know what he needs",
-      "tip": "Sia recommends: Ask gently: 'Are you looking for encouragement, quiet downtime, or just want to hang out?'"
+      "tip": "Dr. Docsy recommends: Ask gently: 'Are you looking for encouragement, quiet downtime, or just want to hang out?'"
     },
   ];
 
   static const List<Map<String, String>> _defaultWomanNeeds = [
     {
       "label": "She needs rest",
-      "tip": "Sia recommends: Cancel non-essential tasks, dim the lights, and handle dinner tonight."
+      "tip": "Dr. Docsy recommends: Cancel non-essential tasks, dim the lights, and handle dinner tonight."
     },
     {
       "label": "She needs comfort",
-      "tip": "Sia recommends: Bring a warm heat pack, brew her favorite tea, or offer a back rub."
+      "tip": "Dr. Docsy recommends: Bring a warm heat pack, brew her favorite tea, or offer a back rub."
     },
     {
       "label": "She needs practical help",
-      "tip": "Sia recommends: Check the laundry, wash dishes, or ask: 'Which chore can I handle for you right now?'"
+      "tip": "Dr. Docsy recommends: Check the laundry, wash dishes, or ask: 'Which chore can I handle for you right now?'"
     },
     {
       "label": "She wants company",
-      "tip": "Sia recommends: Put away phones, suggest a relaxed walk, or watch a movie together."
+      "tip": "Dr. Docsy recommends: Put away phones, suggest a relaxed walk, or watch a movie together."
     },
     {
       "label": "She wants space",
-      "tip": "Sia recommends: Give her quiet time. Say: 'I am here in the other room if you need anything.'"
+      "tip": "Dr. Docsy recommends: Give her quiet time. Say: 'I am here in the other room if you need anything.'"
     },
     {
       "label": "I don't know what she needs",
-      "tip": "Sia recommends: Ask gently: 'Are you looking for comfort, help, or space right now?'"
+      "tip": "Dr. Docsy recommends: Ask gently: 'Are you looking for comfort, help, or space right now?'"
     },
   ];
 
@@ -312,7 +314,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       itemBuilder: (context, index) {
                         final item = customNeedsList[index];
                         final String label = (item is Map ? item['label'] : null) ?? item.toString();
-                        final String tip = (item is Map ? item['tip'] : null) ?? "Sia recommends: Show love and patience.";
+                        final String tip = (item is Map ? item['tip'] : null) ?? "Dr. Docsy recommends: Show love and patience.";
                         final String? category = (item is Map ? item['category'] : null);
                         final String? source = (item is Map ? item['source'] : null);
 
@@ -451,7 +453,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                               Expanded(
                                 child: Text(
                                   dynamicNeeds['tip']?.toString() ??
-                                      "Sia recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
+                                      "Dr. Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     height: 1.4,
@@ -475,7 +477,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(
-                      "Got it",
+                      AppLocalizations.of(context).phGotIt,
                       style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -483,7 +485,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 // Case 3: Fallback (unconnected or loading)
                 else ...[
                   Text(
-                    "Here are general ways to support your partner today:",
+                    AppLocalizations.of(context).phHereAreGeneralWays,
                     style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 8),
@@ -523,7 +525,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Got it", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+            child: Text(AppLocalizations.of(context).phGotIt, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
           ),
         ],
       ),
@@ -556,6 +558,23 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
     return null;
   }
 
+  /// Opens the sharing settings, where the per-signal request buttons live.
+  ///
+  /// He cannot grant himself anything there; every request goes to her to
+  /// approve or refuse. That is the point — the alternative to an empty screen
+  /// is asking, not taking.
+  void _openSharingSettings() {
+    final connectionId =
+        (_activeConnection?['connectionId'] ?? _activeConnection?['_id'] ?? '').toString();
+    if (connectionId.isEmpty) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PartnerPrivacyScreen(connectionId: connectionId),
+      ),
+    );
+  }
+
   /// The "Us" surface (spec section 21): only what she has explicitly chosen
   /// to share, plus care requests.
   ///
@@ -580,12 +599,19 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
           ApiStateCard<PartnerHomeModel>(
             result: _partnerHome,
             emptyMessage: "Nothing shared yet.",
+            // "Nothing shared yet" was a dead end: he cannot share anything
+            // himself, and nothing told him he could ask. Sending him to the
+            // privacy screen puts him in front of the per-signal request
+            // buttons, which is the only move available to him — and keeps her
+            // in control, since each request is hers to approve or refuse.
+            emptyActionLabel: "Ask what she'd like to share",
+            onEmptyAction: _openSharingSettings,
             restrictedMessage: "This connection is no longer active.",
             builder: (context, home) {
               if (!home.relationshipActive) {
                 return _usCard(
                   icon: Icons.link_off,
-                  title: "Connection ended",
+                  title: AppLocalizations.of(context).phConnectionEnded,
                   body: "You no longer have access to anything that was shared.",
                 );
               }
@@ -605,9 +631,9 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     // implying something is missing.
                     _usCard(
                       icon: Icons.lock_outline,
-                      title: "Nothing shared right now",
+                      title: AppLocalizations.of(context).phNothingSharedRightNow,
                       body: "She decides what to share, and can change it at any time. "
-                          "You can still use Learn and Sia for general support.",
+                          "You can still use Learn and Dr. Docsy for general support.",
                     )
                   else
                     ...populated.map(_buildSharedSectionCard),
@@ -621,7 +647,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
   }
 
   static const Map<String, String> _sharedSectionTitles = {
-    'shared_insights': 'What Sia noticed',
+    'shared_insights': 'What Dr. Docsy noticed',
     'cycle_context': 'Cycle context',
     'fertility_context': 'Fertility context',
     'pregnancy_milestones': 'Pregnancy milestones',
@@ -857,7 +883,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         _activeConnection?['createdAt'] ??
         _sharedData?['connectedAt'];
 
-    // Dynamic headline for "Sia noticed something"
+    // Dynamic headline for "Dr. Docsy noticed something"
     String siaHeadline = isConnected
         ? "Tending to your relationship garden builds healthy, quiet mutual support."
         : "Connect with your partner to see her live cycle and wellness insights.";
@@ -961,7 +987,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
               _buildUsSection(),
               const SizedBox(height: 24),
 
-              // Sia Noticed (Live Permissions-dependent UI)
+              // Dr. Docsy Noticed (Live Permissions-dependent UI)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24.0),
@@ -978,7 +1004,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         const Icon(Icons.auto_awesome, color: BlushyColors.success, size: 18),
                         const SizedBox(width: 8),
                         Text(
-                          "Sia noticed something",
+                          "Dr. Docsy noticed something",
                           style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.success),
                         ),
                       ],
@@ -1003,7 +1029,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         elevation: 0,
                       ),
                       child: Text(
-                        "See how I can help",
+                        AppLocalizations.of(context).phSeeHowICan,
                         style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
@@ -1083,7 +1109,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "All Today's Actions Completed! 🌸",
+                                    AppLocalizations.of(context).phAllTodaySActions,
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -1186,7 +1212,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
           );
         },
         label: Text(
-          'Sia',
+          AppLocalizations.of(context).phDrDocsy,
           style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
         ),
         icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
@@ -1341,7 +1367,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       ),
                     ),
                     Text(
-                      'Not shared with you',
+                      AppLocalizations.of(context).phNotSharedWithYou,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,

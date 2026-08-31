@@ -13,14 +13,18 @@ import 'features/auth/presentation/partner_onboarding_wizard.dart';
 import 'features/auth/presentation/choose_experience_screen.dart';
 import 'features/dev/developer_playground.dart';
 import 'services/auth_storage.dart';
+import 'services/api_warmup.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Resolves the writable directory before anything reads or writes. Without
   // it every file write on Android fails against a read-only path.
   await BlushyStorage.init();
-  // Restores the language Sia replies in before the first screen renders.
+  // Restores the language Dr. Docsy replies in before the first screen renders.
   LanguagePreference.load();
+  // Wakes the API while the first screen builds, so a cold start is not paid
+  // for under a card the user is waiting on.
+  ApiWarmup.ping();
   runApp(const BlushyApp());
 }
 

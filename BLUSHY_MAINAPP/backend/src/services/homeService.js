@@ -174,7 +174,7 @@ export async function getHome(userId, { referenceDate = new Date(), timezone = n
     }));
   }
 
-  // ---- Sia note (structured insight card) ----
+  // ---- Dr. Docsy note (structured insight card) ----
   if (modules.sia_note) {
     const patterns = await safely(() => getPatterns(userId, { limit: 1 }));
     const top = Array.isArray(patterns.data) && patterns.data.length > 0 ? patterns.data[0] : null;

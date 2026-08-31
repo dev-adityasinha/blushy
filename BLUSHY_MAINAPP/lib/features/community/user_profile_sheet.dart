@@ -4,6 +4,7 @@ import '../../theme/colors.dart';
 import '../../models/community_models.dart';
 import '../../services/reddit_community_service.dart';
 import '../../services/auth_storage.dart';
+import '../../l10n/app_localizations.dart';
 
 class UserProfileSheet extends StatefulWidget {
   final String userId;
@@ -162,7 +163,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                   height: 200,
                   child: Center(
                     child: Text(
-                      'Failed to load profile details.',
+                      AppLocalizations.of(context).upFailedToLoadProfile,
                       style: GoogleFonts.poppins(color: BlushyColors.secondaryText),
                     ),
                   ),
@@ -309,7 +310,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                           TextButton(
                             onPressed: () => setState(() => _isEditingBio = false),
                             child: Text(
-                              'Cancel',
+                              AppLocalizations.of(context).upCancel,
                               style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
                             ),
                           ),
@@ -323,7 +324,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             child: Text(
-                              'Save',
+                              AppLocalizations.of(context).upSave,
                               style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
                             ),
                           ),

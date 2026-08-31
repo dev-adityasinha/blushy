@@ -8,6 +8,7 @@ import '../../../models/auth_models.dart';
 import '../../../services/api_auth_service.dart';
 import '../../../services/auth_storage.dart';
 import '../../legal/legal_documents_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 enum AuthFormMode { login, signup }
 
@@ -235,7 +236,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 onPressed: () => Navigator.of(dialogContext).pop(),
                 child: Text(
-                  'Go to sign in',
+                  AppLocalizations.of(context).sGoToSignIn,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -399,7 +400,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
                             : Text(
-                                'Verify Code',
+                                AppLocalizations.of(context).sVerifyCode,
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
@@ -800,7 +801,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               );
                             },
                             child: Text(
-                              'Forgot password?',
+                              AppLocalizations.of(context).sForgotPassword,
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -852,11 +853,11 @@ class _SignupScreenState extends State<SignupScreen> {
                               child: Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Text('I agree to the ', style: GoogleFonts.poppins(fontSize: 12, color: textDark)),
+                                  Text(AppLocalizations.of(context).sIAgreeToThe, style: GoogleFonts.poppins(fontSize: 12, color: textDark)),
                                   GestureDetector(
                                     onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
                                     child: Text(
-                                      'Terms & Conditions',
+                                      AppLocalizations.of(context).sTermsConditions,
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
@@ -979,7 +980,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         GestureDetector(
                           onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
                           child: Text(
-                            'Terms',
+                            AppLocalizations.of(context).sTerms,
                             style: GoogleFonts.poppins(fontSize: 11, color: primaryColor, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
                           ),
                         ),
@@ -987,7 +988,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         GestureDetector(
                           onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.privacyPolicy),
                           child: Text(
-                            'Privacy Policy',
+                            AppLocalizations.of(context).sPrivacyPolicy,
                             style: GoogleFonts.poppins(fontSize: 11, color: primaryColor, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
                           ),
                         ),

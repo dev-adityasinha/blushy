@@ -27,6 +27,10 @@ class BuilderScreen extends StatefulWidget {
 }
 
 class _BuilderScreenState extends State<BuilderScreen> {
+  /// Whether this bouquet has already been written to the garden, so "Done"
+  /// does not save a second copy of one she saved herself.
+  bool _savedToGarden = false;
+
   final GlobalKey _canvasKey = GlobalKey();
   late ConfettiController _confettiController;
   final TextEditingController _msgController = TextEditingController();
@@ -62,7 +66,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
       final Uint8List pngBytes = byteData.buffer.asUint8List();
 
       final tempDir = await getTemporaryDirectory();
-      final file = await File('${tempDir.path}/my_boutique.png').create();
+      final file = await File('${tempDir.path}/my_bouquet.png').create();
       await file.writeAsBytes(pngBytes);
 
       await Share.shareXFiles(
@@ -150,7 +154,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          state.currentMode == 'mono' ? 'Boutique (B&W)' : 'Boutique',
+          state.currentMode == 'mono' ? 'Bouquet (B&W)' : 'Bouquet',
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -748,7 +752,13 @@ class _BuilderScreenState extends State<BuilderScreen> {
           const SizedBox(height: 32),
 
           // Finish Actions
-          if (widget.connection != null) ...[
+          //
+          // "Send to Partner" is always offered. It used to be hidden whenever
+          // there was no active connection, so the option appeared not to
+          // exist at all -- and _sendBouquetToPartner already explains the
+          // missing connection, which is a far better answer than a button
+          // that is not there.
+          ...[
             ElevatedButton.icon(
               icon: _isSendingBouquet
                   ? const SizedBox(
@@ -773,9 +783,9 @@ class _BuilderScreenState extends State<BuilderScreen> {
             icon: const Icon(Icons.share_rounded),
             label: const Text('Share & Export Image', style: TextStyle(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: widget.connection == null ? const Color(0xFFE8A0B4) : Colors.white,
-              foregroundColor: widget.connection == null ? Colors.white : const Color(0xFF5C3841),
-              side: widget.connection == null ? null : const BorderSide(color: Color(0xFFE6C5CC)),
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF5C3841),
+              side: const BorderSide(color: Color(0xFFE6C5CC)),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               elevation: 0,
@@ -795,6 +805,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
             onPressed: () {
               state.saveBouquetToGarden(UserProfileController.instance.displayName);
               state.incrementBouquetCounter();
+              _savedToGarden = true;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Saved to My Garden!'),
@@ -812,6 +823,36 @@ class _BuilderScreenState extends State<BuilderScreen> {
                           ),
                         )),
               );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // Done: saves, then leaves.
+          //
+          // The finish step had no way out. Every action on it either stayed
+          // put or pushed another screen on top, so the only exit was the back
+          // button -- which reads as the bouquet having been abandoned rather
+          // than finished. This saves once and returns to where the builder
+          // was opened from.
+          ElevatedButton.icon(
+            icon: const Icon(Icons.check_rounded),
+            label: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE8A0B4),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              elevation: 0,
+            ),
+            onPressed: () {
+              if (!_savedToGarden) {
+                state.saveBouquetToGarden(
+                    UserProfileController.instance.displayName);
+                state.incrementBouquetCounter();
+                _savedToGarden = true;
+              }
+              state.resetBuilder();
+              Navigator.of(context).pop();
             },
           ),
           const SizedBox(height: 12),

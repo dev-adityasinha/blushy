@@ -176,7 +176,7 @@ class ApiAuthService implements AuthService {
     }
   }
 
-  /// Same, for one Sia exchange.
+  /// Same, for one Dr. Docsy exchange.
   Future<bool> setSiaConversationShared({
     required String conversationId,
     required bool shared,

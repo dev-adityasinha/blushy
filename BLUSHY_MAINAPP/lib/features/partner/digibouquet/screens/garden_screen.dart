@@ -7,6 +7,7 @@ import '../widgets/bouquet_canvas.dart';
 import 'builder_screen.dart';
 import '../models/auth_models.dart';
 import '../models/partner_models.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class GardenScreen extends StatefulWidget {
   final AuthSession? session;
@@ -103,20 +104,29 @@ class _GardenScreenState extends State<GardenScreen> {
     final state = Provider.of<BouquetState>(context);
 
     final hasSaved = state.savedBouquets.isNotEmpty;
+    // Without this the tab row stayed hidden for someone who had never made
+    // a bouquet but had been sent one.
+    final hasReceived = state.receivedBouquets.isNotEmpty;
 
     // Resolve list based on current tab
     List<Bouquet> displayedList = [];
     if (_currentTab == 'my') {
       displayedList = state.savedBouquets;
+    } else if (_currentTab == 'received') {
+      // These have been fetched into state and exposed as `receivedBouquets`
+      // since the account sync was added, and nothing ever rendered them -- so
+      // a bouquet sent to a partner arrived, was stored, and was never seen.
+      displayedList = state.receivedBouquets;
     } else {
       displayedList = List.from(_communityBouquets);
       if (_currentSort == 'liked') {
+        // Sorted by what she actually liked. The previous ordering derived a
+        // like count from the id -- 'comm_1' became 21 likes, 'comm_2' 35 --
+        // so the ranking was invented, and nothing anywhere counts likes.
         displayedList.sort((a, b) {
-          final aLiked = state.isLiked(a.id);
-          final bLiked = state.isLiked(b.id);
-          final aLikes = (int.tryParse(a.id.replaceAll('comm_', '')) ?? 1) * 14 + 7 + (aLiked ? 1 : 0);
-          final bLikes = (int.tryParse(b.id.replaceAll('comm_', '')) ?? 1) * 14 + 7 + (bLiked ? 1 : 0);
-          return bLikes.compareTo(aLikes);
+          final aLiked = state.isLiked(a.id) ? 1 : 0;
+          final bLiked = state.isLiked(b.id) ? 1 : 0;
+          return bLiked.compareTo(aLiked);
         });
       }
     }
@@ -124,7 +134,7 @@ class _GardenScreenState extends State<GardenScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Boutique',
+          AppLocalizations.of(context).gBouquet,
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -149,7 +159,7 @@ class _GardenScreenState extends State<GardenScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'A peek at some of the bouquets people have made!',
+                    AppLocalizations.of(context).gIdeasSubtitle,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[500]),
                   ),
@@ -159,7 +169,7 @@ class _GardenScreenState extends State<GardenScreen> {
             const SizedBox(height: 16),
 
             // Tabs (Community / My)
-            if (hasSaved)
+            if (hasSaved || hasReceived)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Row(
@@ -185,7 +195,7 @@ class _GardenScreenState extends State<GardenScreen> {
                             ),
                           ),
                           child: Text(
-                            '🌸 Community',
+                            AppLocalizations.of(context).gCommunity,
                             style: TextStyle(
                               fontWeight: _currentTab == 'community' ? FontWeight.bold : FontWeight.normal,
                               color: _currentTab == 'community' ? const Color(0xFFE8A0B4) : Colors.grey,
@@ -219,6 +229,36 @@ class _GardenScreenState extends State<GardenScreen> {
                             style: TextStyle(
                               fontWeight: _currentTab == 'my' ? FontWeight.bold : FontWeight.normal,
                               color: _currentTab == 'my' ? const Color(0xFFE8A0B4) : Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _currentTab = 'received';
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: _currentTab == 'received'
+                                    ? const Color(0xFFE8A0B4)
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            '💌 For Me (${state.receivedBouquets.length})',
+                            style: TextStyle(
+                              fontWeight: _currentTab == 'received' ? FontWeight.bold : FontWeight.normal,
+                              color: _currentTab == 'received' ? const Color(0xFFE8A0B4) : Colors.grey,
                             ),
                           ),
                         ),
@@ -336,11 +376,10 @@ class _GardenScreenState extends State<GardenScreen> {
       (bouquet.seed / 100000),
     );
 
+    // Only whether she liked it. There was a count here derived from the id --
+    // 'comm_1' rendered as 21 likes, 'comm_2' as 35 -- presented on the card as
+    // though other people had liked it. Nothing anywhere counts likes.
     final isLiked = state.isLiked(bouquet.id);
-    final baseLikes = bouquet.id.startsWith('comm_')
-        ? (int.tryParse(bouquet.id.replaceAll('comm_', '')) ?? 1) * 14 + 7
-        : 0;
-    final likes = baseLikes + (isLiked ? 1 : 0);
 
     return Container(
       decoration: BoxDecoration(
@@ -416,11 +455,6 @@ class _GardenScreenState extends State<GardenScreen> {
                               isLiked ? Icons.favorite : Icons.favorite_border,
                               size: 16,
                               color: isLiked ? Colors.red : Colors.grey,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '$likes',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),

@@ -7,6 +7,8 @@ import '../../../services/api_blushy_service.dart';
 import '../../../theme/colors.dart';
 import '../../../theme/spacing.dart';
 import 'life_stage_selector_card.dart';
+import '../../../shared/confirm_sign_out.dart';
+import '../../../services/sia_dashboard_service.dart';
 
 class MyHealthScreen extends StatefulWidget {
   const MyHealthScreen({super.key});
@@ -502,8 +504,8 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                   _buildCard([
                     SwitchListTile(
                       activeThumbColor: BlushyColors.primary,
-                      title: Text('Sia Memory Enabled', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
-                      subtitle: Text('Allow Sia to learn from your interactions over time.', style: GoogleFonts.poppins(fontSize: 12)),
+                      title: Text('Dr. Docsy Memory Enabled', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
+                      subtitle: Text('Allow Dr. Docsy to learn from your interactions over time.', style: GoogleFonts.poppins(fontSize: 12)),
                       value: pc.preferences.wantsSiaMemory,
                       onChanged: (val) {
                         final newPrefs = UserPreferences(
@@ -530,14 +532,24 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                           cyclePhase: null,
                           lastPeriodStart: null,
                         ));
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cycle learning model reset.')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cycle learning reset on this device. Your logged periods are unchanged.')),
+                        );
                       },
                     ),
                     const Divider(color: BlushyColors.border),
                     _buildDangerButton(
                       label: 'Reset AI Recommendations',
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Personalized recommendations reset.')));
+                        // This used to be a snackbar and nothing else -- it
+                        // announced a reset that never happened. Clearing the
+                        // cached observations, patterns and recommendations is
+                        // something it can actually do, and the next load
+                        // rebuilds them from current data.
+                        SiaDashboardService().markDashboardDirty();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cleared. Suggestions will be worked out again from your current data.')),
+                        );
                       },
                     ),
                     const Divider(color: BlushyColors.border),
@@ -552,13 +564,22 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                           lastCheckIn: null,
                           periodActive: false,
                         ));
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Symptom logs cleared.')));
+                        // Local state only -- there is no endpoint that deletes stored logs, and
+                        // the next sync brings the account's copy back. The message
+                        // says what actually happened rather than claiming a deletion.
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cleared from this view. Your saved logs are still on your account.')),
+                        );
                       },
                     ),
                     const Divider(color: BlushyColors.border),
                     _buildDangerButton(
                       label: 'Log out',
                       onPressed: () async {
+                        // This sat directly under "clear symptom logs" and
+                        // signed out on a single tap, while the partner side
+                        // of the app already asked first.
+                        if (!await confirmSignOut(context)) return;
                         await state.logout();
                         if (context.mounted) {
                           Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);

@@ -2,7 +2,7 @@
 ///
 /// RESTRICTION: The backend `periodPredictionService.js` is the Single Source of Truth (SSOT).
 /// This client-side helper is retained strictly for emergency offline presentation.
-/// The offline fallback must NEVER create confirmed records, send predictions to Sia as
+/// The offline fallback must NEVER create confirmed records, send predictions to Dr. Docsy as
 /// authoritative, or override freshly received backend predictions.
 class CycleCalculation {
   final int cycleLength;

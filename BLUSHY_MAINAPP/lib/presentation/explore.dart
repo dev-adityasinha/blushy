@@ -22,7 +22,7 @@ class ExploreScreen extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Curated medical research, anonymous stories, and guidelines compiled by Sia.',
+            'Curated medical research, anonymous stories, and guidelines compiled by Dr. Docsy.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),

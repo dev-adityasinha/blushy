@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../l10n/app_localizations.dart';
 
 class JournalCalendarWidget extends StatelessWidget {
   const JournalCalendarWidget({super.key});
@@ -51,7 +52,7 @@ class JournalCalendarWidget extends StatelessWidget {
                         context: context,
                         builder: (context) => AlertDialog(
                           title: Text('Day $day Memory Preview', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
-                          content: Text('Quick Preview: "Quiet morning walks and warm tea with friends."', style: GoogleFonts.caveat(fontSize: 18)),
+                          content: Text(AppLocalizations.of(context).jcQuickPreviewQuietMorning, style: GoogleFonts.caveat(fontSize: 18)),
                         ),
                       );
                     }

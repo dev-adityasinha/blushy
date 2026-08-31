@@ -6,6 +6,7 @@ import '../../../services/api_blushy_service.dart';
 import '../../../services/api_contract_client.dart';
 import '../../../shared/api_state_card.dart';
 import '../doctor_summary_composer.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Doctor / appointment companion (spec section 18).
 ///
@@ -352,7 +353,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Questions to ask', style: theme.textTheme.titleSmall),
+        Text(AppLocalizations.of(context).dsQuestionsToAsk, style: theme.textTheme.titleSmall),
         const SizedBox(height: 6),
         ..._questions.asMap().entries.map(
               (entry) => ListTile(

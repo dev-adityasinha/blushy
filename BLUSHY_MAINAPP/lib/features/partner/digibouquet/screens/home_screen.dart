@@ -7,6 +7,7 @@ import 'builder_screen.dart';
 import 'garden_screen.dart';
 import '../models/auth_models.dart';
 import '../models/partner_models.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class HomeScreen extends StatelessWidget {
   final AuthSession session;
@@ -56,7 +57,7 @@ class HomeScreen extends StatelessWidget {
 
                     // Logo / Title
                     Text(
-                      'Boutique',
+                      'Bouquet',
                       style: GoogleFonts.outfit(
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
@@ -111,7 +112,7 @@ class HomeScreen extends StatelessWidget {
                               );
                             },
                             child: Text(
-                              'Build a Bouquet',
+                              AppLocalizations.of(context).hBuildABouquet,
                               style: GoogleFonts.inter(
                                   fontSize: 16, fontWeight: FontWeight.w600),
                             ),
@@ -149,7 +150,7 @@ class HomeScreen extends StatelessWidget {
                               );
                             },
                             child: Text(
-                              'Build it in Black & White',
+                              AppLocalizations.of(context).hBuildItInBlack,
                               style: GoogleFonts.inter(
                                   fontSize: 16, fontWeight: FontWeight.w600),
                             ),

@@ -6,6 +6,7 @@ import '../../../core/stage_conflict_engine.dart';
 import '../../../theme/colors.dart';
 import 'stage_questionnaire_dialog.dart';
 import 'stage_conflict_dialog.dart';
+import '../../../services/api_blushy_service.dart';
 
 class LifeStageInfo {
   final String key;
@@ -77,6 +78,75 @@ const List<LifeStageInfo> kAllLifeStages = [
     icon: Icons.wb_sunny_outlined,
   ),
 ];
+
+/// Moves the account to [toStage] through the server's state machine.
+///
+/// Switching from settings used to change local state only: it consulted a
+/// client-side conflict engine, wrote the new stage into `user_profile.json`,
+/// and never called `/life-stage/transition`. Three things followed from that.
+///
+/// The server's allowed-transition rules were bypassed, including the ones
+/// marked "must never be inferred silently" — pregnancy, menopause, and the
+/// move from pregnancy to postpartum. So was the protection that refuses to
+/// re-enter pregnancy after a loss without an explicit confirmation.
+///
+/// And because the server never learned, it carried on serving content, safety
+/// rules and dashboards for the stage she had just left, while the local UI
+/// showed the new one. The change also lived on one device.
+///
+/// Returns true when the account actually moved.
+Future<bool> transitionLifeStage(
+  BuildContext context, {
+  required String toStage,
+  required String stageTitle,
+}) async {
+  var result = await LifeStageApi.transition(toStage: toStage);
+
+  // The server asks rather than assuming for the sensitive moves. Confirming
+  // is the user's to give, so it is asked for here and the call repeated.
+  if (!result.isReady && (result.meta?['requiresConfirmation'] == true)) {
+    if (!context.mounted) return false;
+    final agreed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Move to $stageTitle?',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Text(
+          result.errorMessage ??
+              'This changes the guidance and reminders you see. You can change '
+                  'it back whenever you like.',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('Not now',
+                style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(backgroundColor: BlushyColors.primary),
+            child: Text('Yes, move',
+                style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (agreed != true) return false;
+    result = await LifeStageApi.transition(toStage: toStage, confirmed: true);
+  }
+
+  if (!result.isReady && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result.errorMessage ?? 'That change could not be saved.')),
+    );
+  }
+
+  return result.isReady;
+}
 
 class LifeStageSelectorCard extends StatelessWidget {
   final bool showHeader;
@@ -247,11 +317,23 @@ class LifeStageSelectorCard extends StatelessWidget {
                           context,
                           conflictResult: conflictResult,
                           onConfirmSwitch: () async {
+                            // The server decides first. Local state used to be
+                            // written straight away, so the account and the
+                            // screen could disagree about which stage she was
+                            // in -- and the server kept serving the old one.
+                            final moved = await transitionLifeStage(
+                              context,
+                              toStage: stage.key,
+                              stageTitle: stage.title,
+                            );
+                            if (!moved) return;
+
                             final newStages = Set<String>.from(activeStages)
                               ..removeAll(conflictResult.conflictingActiveStages)
                               ..add(stage.key);
 
                             osState.setActiveLifeStages(newStages);
+                            if (!context.mounted) return;
                             final bool? completed = await StageQuestionnaireDialog.show(
                               context,
                               stageKey: stage.key,
@@ -267,7 +349,14 @@ class LifeStageSelectorCard extends StatelessWidget {
                           onStageUpdated?.call();
                         }
                       } else {
-                        // Directly open stage questionnaire dialog
+                        final moved = await transitionLifeStage(
+                          context,
+                          toStage: stage.key,
+                          stageTitle: stage.title,
+                        );
+                        if (!moved) return;
+                        if (!context.mounted) return;
+
                         final bool? completed = await StageQuestionnaireDialog.show(
                           context,
                           stageKey: stage.key,

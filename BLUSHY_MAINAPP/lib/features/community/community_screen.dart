@@ -11,6 +11,7 @@ import 'user_profile_sheet.dart';
 import '../../services/html_audio_helper.dart';
 import '../../services/api_sia_service.dart';
 import 'moderation_widgets.dart';
+import '../../l10n/app_localizations.dart';
 
 class BlushyCommunityScreen extends StatefulWidget {
   const BlushyCommunityScreen({super.key});
@@ -168,18 +169,48 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
     }
   }
 
+  /// Applies a vote to the feed straight away, then reconciles with the server.
+  ///
+  /// The count used to move only after the feed was reloaded. The request
+  /// itself was fine -- the server records the vote and returns the new score
+  /// -- but `votePost` turns any failure, a timeout included, into `null`, and
+  /// `null` left the UI untouched. So a slow request (the API sleeps when idle,
+  /// and the first call after that can take a minute) counted the vote and
+  /// showed nothing for it, which reads as the tap not having worked.
+  ///
+  /// Showing it immediately is also just correct: this is her own tap, and she
+  /// should not wait on a round trip to see it.
   Future<void> _votePost(CommunityPost post, int voteVal) async {
     final targetVote = post.userVote == voteVal ? 0 : voteVal;
+
+    final idx = _allPosts.indexWhere((p) => p.postId == post.postId);
+    if (idx == -1) return;
+
+    final before = _allPosts[idx];
+    // The score is a net total, so switching a downvote to an upvote moves it
+    // by two, not one.
+    final predicted = before.withVote(
+      userVote: targetVote,
+      score: before.score - before.userVote + targetVote,
+    );
+
+    setState(() {
+      _allPosts[idx] = predicted;
+      _filterPosts();
+    });
+
     final updated = await _redditService.votePost(post.postId, targetVote);
-    if (updated != null) {
-      setState(() {
-        final idx = _allPosts.indexWhere((p) => p.postId == post.postId);
-        if (idx != -1) {
-          _allPosts[idx] = updated;
-          _filterPosts();
-        }
-      });
-    }
+    if (!mounted) return;
+
+    setState(() {
+      final at = _allPosts.indexWhere((p) => p.postId == post.postId);
+      if (at == -1) return;
+      // The server's number wins when it answers. When it does not, the
+      // prediction stands: the vote was almost certainly recorded, and
+      // reverting a tap she just made would be the more confusing of the two.
+      if (updated != null) _allPosts[at] = updated;
+      _filterPosts();
+    });
   }
 
   void _showProfile(String authorId) {
@@ -324,7 +355,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                 },
                 style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
                 decoration: InputDecoration(
-                  hintText: 'Search title, text, tags, or username/email...',
+                  hintText: AppLocalizations.of(context).cSearchTitleTextTags,
                   hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.6)),
                   border: InputBorder.none,
                   isDense: true,
@@ -447,7 +478,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
           Row(
             children: [
               Text(
-                'People',
+                AppLocalizations.of(context).cPeople,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,

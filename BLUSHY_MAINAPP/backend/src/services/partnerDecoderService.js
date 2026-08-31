@@ -169,10 +169,10 @@ export async function decodePartnerMessage({
     ? (Number(todaySleep.durationMinutes) / 60).toFixed(1)
     : null;
 
-  // Attempt Grok / Sia LLM call
+  // Attempt Grok / Dr. Docsy LLM call
   if (env.aiChatApiKey && env.aiChatApiUrl) {
     try {
-      const prompt = `You are Sia, an expert relationship wellness and empathy AI inside Blushy.
+      const prompt = `You are Dr. Docsy, an expert relationship wellness and empathy AI inside Blushy.
 You are helping a man understand and decode what his romantic partner is communicating beneath the surface of her text message.
 
 Context about her:
@@ -205,14 +205,14 @@ Return ONLY raw valid JSON. Do not include markdown formatting or extra text.`;
         headers: {
           Authorization: `Bearer ${env.aiChatApiKey}`,
           'Content-Type': 'application/json',
-          'X-Title': 'Blushy Sia Message Decoder',
+          'X-Title': 'Blushy Dr. Docsy Message Decoder',
         },
         body: JSON.stringify({
           model: env.aiChatModel || 'grok-beta',
           messages: [
             {
               role: 'system',
-              content: 'You are Sia, Blushy\'s relationship empathy decoder. Always return valid JSON with decodedMeaning, emotionalTone, cycleMoodContext, recommendedReply, and actionTip.',
+              content: 'You are Dr. Docsy, Blushy\'s relationship empathy decoder. Always return valid JSON with decodedMeaning, emotionalTone, cycleMoodContext, recommendedReply, and actionTip.',
             },
             {
               role: 'user',

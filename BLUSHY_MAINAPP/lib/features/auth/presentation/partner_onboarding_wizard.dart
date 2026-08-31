@@ -5,6 +5,7 @@ import '../../../core/state.dart';
 import '../../../core/storage.dart';
 import '../../../theme/colors.dart';
 import '../../../services/api_auth_service.dart';
+import '../../../l10n/app_localizations.dart';
 
 enum PartnerOnboardingPhase {
   questions,
@@ -39,7 +40,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
     {'title': 'Connecting with partner space...', 'done': false},
     {'title': 'Preparing support insights...', 'done': false},
     {'title': 'Setting up privacy controls...', 'done': false},
-    {'title': 'Sia assistant ready...', 'done': false},
+    {'title': 'Dr. Docsy assistant ready...', 'done': false},
   ];
 
   @override
@@ -168,7 +169,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
         controller: _nameController,
         style: GoogleFonts.poppins(fontSize: 16, color: BlushyColors.text),
         decoration: InputDecoration(
-          hintText: "Your preferred name",
+          hintText: AppLocalizations.of(context).poYourPreferredName,
           hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
           border: const UnderlineInputBorder(borderSide: BorderSide(color: BlushyColors.primary)),
         ),
@@ -373,7 +374,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
               ),
               const SizedBox(height: 24),
               Text(
-                "Everything she shares with you is controlled by her. You will not automatically see private metrics like symptoms, journal records, or private Sia conversations.",
+                "Everything she shares with you is controlled by her. You will not automatically see private metrics like symptoms, journal records, or private Dr. Docsy conversations.",
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.8), height: 1.45),
               ),

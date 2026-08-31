@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/stage_conflict_engine.dart';
 import '../../../theme/colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 class StageConflictDialog extends StatelessWidget {
   final StageConflictResult conflictResult;
@@ -87,7 +88,7 @@ class StageConflictDialog extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          "Clinical Alignment",
+                          AppLocalizations.of(context).scClinicalAlignment,
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: BlushyColors.secondaryText,
@@ -121,7 +122,7 @@ class StageConflictDialog extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "CURRENT TRACK",
+                          AppLocalizations.of(context).scCurrentTrack,
                           style: GoogleFonts.poppins(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
@@ -162,7 +163,7 @@ class StageConflictDialog extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          "NEW TRACK",
+                          AppLocalizations.of(context).scNewTrack,
                           style: GoogleFonts.poppins(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
@@ -235,7 +236,7 @@ class StageConflictDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      "Keep Current Track",
+                      AppLocalizations.of(context).scKeepCurrentTrack,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -260,7 +261,7 @@ class StageConflictDialog extends StatelessWidget {
                       elevation: 0,
                     ),
                     child: Text(
-                      "Switch Track",
+                      AppLocalizations.of(context).scSwitchTrack,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,

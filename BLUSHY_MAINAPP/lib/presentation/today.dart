@@ -157,7 +157,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
           ),
           const SizedBox(height: 28),
 
-          // Sia's AI Briefing Card
+          // Dr. Docsy's AI Briefing Card
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -187,7 +187,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'Sia\'s Daily Edit',
+                      'Dr. Docsy\'s Daily Edit',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: BlushyColors.dark,
                         fontWeight: FontWeight.w700,
@@ -383,7 +383,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                           
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Briefing adapted. Check Sia & Journey.'),
+                              content: Text('Briefing adapted. Check Dr. Docsy & Journey.'),
                               duration: Duration(seconds: 2),
                               backgroundColor: BlushyColors.primary,
                             ),

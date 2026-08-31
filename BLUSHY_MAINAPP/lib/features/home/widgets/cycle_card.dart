@@ -7,6 +7,7 @@ import '../../../core/state.dart';
 import '../../../core/storage.dart';
 import '../../../core/cycle_calculator.dart';
 import '../../../services/api_auth_service.dart';
+import '../../../l10n/app_localizations.dart';
 
 class BlushyCycleCard extends StatefulWidget {
   final bool purePainterMode;
@@ -512,7 +513,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
     switch(mode) {
       case CycleCardMode.predictable: return 'Your cycle journey';
       case CycleCardMode.variable: return 'Cycle variability detected';
-      case CycleCardMode.learning: return 'Sia is learning your patterns';
+      case CycleCardMode.learning: return 'Dr. Docsy is learning your patterns';
       case CycleCardMode.wellbeing: return 'Daily Wellbeing';
       case CycleCardMode.lifeContext: return 'Life Stage Focus';
     }
@@ -549,17 +550,17 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
         );
       case CycleCardMode.variable:
         return Text(
-          "Your cycle length is varying. Log your symptoms daily so Sia can adjust predictions.",
+          AppLocalizations.of(context).cYourCycleLengthIs,
           style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
         );
       case CycleCardMode.wellbeing:
         return Text(
-          "Tracking is disabled. Focus on your daily energy, mood, and sleep.",
+          AppLocalizations.of(context).cTrackingIsDisabledFocus,
           style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
         );
       case CycleCardMode.lifeContext:
         return Text(
-          "Your recommendations are adapted to your current life stage.",
+          AppLocalizations.of(context).cYourRecommendationsAreAdapted,
           style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
         );
     }

@@ -3,10 +3,12 @@ import { randomUUID } from 'node:crypto';
 import { db, withTransaction, findUserDocument } from '../utils/db.js';
 import { isUserOnline, publishToUsers } from '../utils/realtimeHub.js';
 import { dailyMoodRepository } from './dailyMoodRepository.js';
+import { moodFromEvents, sleepFromEvents } from './checkinEventFallback.js';
 import { sleepRepository } from './sleepRepository.js';
 import { userRepository } from './userRepository.js';
 import { getPeriodEntries } from './periodRepository.js';
 import { env } from '../utils/env.js';
+import { logger } from '../utils/logger.js';
 import {
   ACTIVITY_STATES,
   SHARED_ACTIVITIES,
@@ -809,7 +811,7 @@ async function decodeMessageHelper({ message, cycleInfo, recentHistory }) {
         messages: [
           {
             role: 'system',
-            content: `You are Sia, acting as a close, casual, and supportive "third wheel" friend to the male user ("bro"). Explain his girlfriend's message subtext in a very human, conversational way (not like a clinical AI), and give a direct tip on how he should reply.
+            content: `You are Dr. Docsy, acting as a close, casual, and supportive "third wheel" friend to the male user ("bro"). Explain his girlfriend's message subtext in a very human, conversational way (not like a clinical AI), and give a direct tip on how he should reply.
 Analyze the recent conversation style/tone (e.g. flirting, playful roasting, bantering, serious, funny) and ensure your tone and suggestions match this style (e.g., if they are roasting, keep the tip roasting/playful; if they are flirting, keep the tip romantic/playful).
 The girlfriend is currently ${cycleDesc}.
 Keep it short, simple, cool, and conversational.
@@ -818,7 +820,7 @@ Recent Chat History:
 ${recentHistory}
 
 Format exactly like this (two lines):
-Sia: [casual friendly explanation matching the conversation tone, e.g. "Chill bro, she's just playfully teasing you."]
+Dr. Docsy: [casual friendly explanation matching the conversation tone, e.g. "Chill bro, she's just playfully teasing you."]
 Tip: [casual, actionable reply advice matching the conversation tone, e.g. "Laugh it off and suggest buying a toy car instead."]
 
 Latest Partner Message to Decode: "${message}"`,
@@ -1033,7 +1035,14 @@ async function sendMessageToConnection({
   fileType,
   imageUrl,
 }) {
-  return withTransaction(async (client) => {
+  // No transaction. A single document insert is already atomic, and the only
+  // other write here is the notification, which is derived from the message
+  // rather than part of it. Wrapping the two together meant a failed
+  // notification rolled back a message the sender had been told was sent --
+  // and cost 4-5x a bare insert to do it: measured at 209-1076ms against
+  // 46-129ms, with the variance being what "message is slow" felt like.
+  const client = db;
+  {
     const connection = await client.collection('partner_connections').findOne({
       connection_id: connectionId,
       $or: [{ user_a_id: senderUserId }, { user_b_id: senderUserId }]
@@ -1074,16 +1083,23 @@ async function sendMessageToConnection({
 
     await client.collection('partner_chat_messages').insertOne(doc);
 
-    // Create or update unread partner notification for recipient
+    // The notification is derived from the message, not part of it. Inside the
+    // transaction a failure here rolled back a message the sender had already
+    // been told was sent -- the wrong way round, since the message is the thing
+    // that must survive and the badge can be rebuilt from it.
+    //
+    // The two reads it needs are independent of each other, so they overlap.
     if (recipientUserId) {
-      const sender = await client.collection('users').findOne({ user_id: senderUserId });
+      try {
+      const [sender, unreadCount] = await Promise.all([
+        client.collection('users').findOne({ user_id: senderUserId }),
+        client.collection('partner_chat_messages').countDocuments({
+          connection_id: connectionId,
+          sender_user_id: senderUserId,
+          is_read: false,
+        }),
+      ]);
       const senderName = sender?.display_name || sender?.email || 'Partner';
-
-      const unreadCount = await client.collection('partner_chat_messages').countDocuments({
-        connection_id: connectionId,
-        sender_user_id: senderUserId,
-        is_read: false,
-      });
 
       const notificationTitle = unreadCount > 1
         ? `${senderName} sent ${unreadCount} messages 💌`
@@ -1115,10 +1131,19 @@ async function sendMessageToConnection({
         },
         { upsert: true }
       );
+      } catch (error) {
+        // The message is already stored. A badge that failed to update is a
+        // smaller problem than telling the sender it did not send, and the
+        // count is rebuilt from the messages on the next one.
+        logger.warn('Partner message stored, but its notification failed', {
+          connectionId,
+          message: error?.message,
+        });
+      }
     }
 
     return mapMessageRow(doc);
-  });
+  }
 }
 
 async function deleteConnectionHistory(connectionId) {
@@ -1157,6 +1182,10 @@ async function getSharedData({ connectionId, viewerUserId }) {
   if (permissions.shareMood) {
     const today = new Date().toISOString().slice(0, 10);
     data.mood = await dailyMoodRepository.getDailyMood(partnerUserId, today);
+    // Nothing in the app writes `user_daily_moods` -- the check-in records
+    // health events -- so without this the partner saw null however faithfully
+    // she checked in.
+    if (!data.mood) data.mood = await moodFromEvents(partnerUserId, today);
   }
 
   let periodEntries = [];
@@ -1174,6 +1203,7 @@ async function getSharedData({ connectionId, viewerUserId }) {
   if (permissions.shareSleep) {
     const today = new Date().toISOString().slice(0, 10);
     data.sleep = await sleepRepository.getSleepByDate(partnerUserId, today);
+    if (!data.sleep) data.sleep = await sleepFromEvents(partnerUserId, today);
   }
 
   const cycleInfo = (isPartnerWoman && permissions.shareCycle && data.cycle)
@@ -1193,7 +1223,17 @@ async function getSharedData({ connectionId, viewerUserId }) {
       })
     : [];
 
-  const partnerName = partnerUser?.display_name || partnerUser?.email?.split('@')[0] || (isPartnerWoman ? 'She' : 'He');
+  // `getUserById` returns a mapped row, and the mapped key is `displayName`.
+  // Reading `display_name` off it was always undefined, so this fell through to
+  // the email local-part -- and her account identifier appeared in copy the
+  // partner reads: "probe_sw_1788192975908 doesn't need anything right now".
+  //
+  // The email fallback is gone with it. An address is not a name, and it is not
+  // something to surface to another person.
+  const partnerName = partnerUser?.displayName
+    || partnerUser?.display_name
+    || onboardingAnswers?.preferred_name
+    || (isPartnerWoman ? 'She' : 'He');
 
   let dynamicNeeds = null;
   try {

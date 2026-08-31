@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
 import '../../services/reddit_community_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -138,7 +139,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       ),
                     )
                   : Text(
-                      'Publish',
+                      AppLocalizations.of(context).cpPublish,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -164,7 +165,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   color: BlushyColors.text,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'An interesting title...',
+                  hintText: AppLocalizations.of(context).cpAnInterestingTitle,
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -186,7 +187,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   height: 1.5,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Share your thoughts, experiences, or questions...',
+                  hintText: AppLocalizations.of(context).cpShareYourThoughtsExperiences,
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 14.5,
                     color: BlushyColors.secondaryText.withValues(alpha: 0.4),
@@ -220,7 +221,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         onSubmitted: (_) => _addTag(),
                         style: GoogleFonts.poppins(fontSize: 13.5, color: BlushyColors.text),
                         decoration: InputDecoration(
-                          hintText: 'e.g., Luteal, MoodSwings, SleepTips',
+                          hintText: AppLocalizations.of(context).cpEGLutealMoodswings,
                           hintStyle: GoogleFonts.poppins(
                             fontSize: 12.5, 
                             color: BlushyColors.secondaryText.withValues(alpha: 0.5),

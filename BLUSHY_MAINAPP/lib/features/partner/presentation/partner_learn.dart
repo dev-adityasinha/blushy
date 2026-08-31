@@ -9,6 +9,7 @@ import '../../../services/api_blushy_service.dart';
 import '../../../services/api_contract_client.dart';
 import '../../../models/blushy_models.dart';
 import '../../../shared/api_state_card.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PartnerLearnScreen extends StatefulWidget {
   const PartnerLearnScreen({super.key});
@@ -192,13 +193,13 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Connect with Partner', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context).plConnectWithPartner, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Pairing with your partner enables live AI insights, phase tracking, and support advice on the Learn page.',
+              AppLocalizations.of(context).plPairingWithYourPartner,
               style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
             ),
             const SizedBox(height: 16),
@@ -239,7 +240,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               backgroundColor: BlushyColors.primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Send Invite', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(AppLocalizations.of(context).plSendInvite, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -267,7 +268,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Learn & Discover",
+                          AppLocalizations.of(context).plLearnDiscover,
                           style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: BlushyColors.text),
                         ),
                         IconButton(
@@ -287,7 +288,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                       _buildArticleTile(
                         context: context,
                         category: "Wellness",
-                        title: "Understanding Energy & Fatigue Shifts",
+                        title: AppLocalizations.of(context).plUnderstandingEnergyFatigueShifts,
                         snippet: "How biological rhythms affect baseline energy.",
                         body: "Energy levels naturally fluctuate based on sleep quality, hydration, stress, and daily metabolic demands. Prioritizing consistent sleep schedules and balanced nutrition helps maintain steady focus throughout the week.",
                         action: "Maintain a steady daily sleep schedule and take micro-breaks during long work stretches.",
@@ -295,7 +296,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                       _buildArticleTile(
                         context: context,
                         category: "Wellness",
-                        title: "Mindful Communication Principles",
+                        title: AppLocalizations.of(context).plMindfulCommunicationPrinciples,
                         snippet: "Building empathetic conversations and active listening.",
                         body: "Empathetic communication begins with non-judgmental listening. When someone shares their day or frustration, validating their perspective before jumping to advice creates trust and psychological safety.",
                         action: "Practice reflective listening: summarize what you heard before responding.",
@@ -303,7 +304,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                       _buildArticleTile(
                         context: context,
                         category: "Wellness",
-                        title: "Daily Hydration & Metabolic Balance",
+                        title: AppLocalizations.of(context).plDailyHydrationMetabolicBalance,
                         snippet: "Why water intake and electrolyte balance sustain daily mental focus.",
                         body: "Proper cellular hydration regulates cortisol levels, reduces afternoon brain fog, and stabilizes metabolic energy across long working hours.",
                         action: "Drink a glass of water every morning upon waking and keep a water bottle at your desk.",
@@ -322,7 +323,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                       _buildArticleTile(
                         context: context,
                         category: "Mind",
-                        title: "Managing Stress & Daily Resilience",
+                        title: AppLocalizations.of(context).plManagingStressDailyResilience,
                         snippet: "Practical techniques to regulate your nervous system.",
                         body: "Simple breathwork exercises, such as 4-7-8 breathing or box breathing, instantly signal safety to your central nervous system, helping de-escalate acute stress.",
                         action: "Try 3 minutes of slow box breathing whenever feeling overwhelmed.",
@@ -330,7 +331,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                       _buildArticleTile(
                         context: context,
                         category: "Rest",
-                        title: "Building Healthy Sleep Architecture",
+                        title: AppLocalizations.of(context).plBuildingHealthySleepArchitecture,
                         snippet: "How regular sleep windows improve deep sleep cycles and morning energy.",
                         body: "Maintaining consistent sleep and wake times reinforces your circadian pacemaker, enhancing slow-wave REM sleep for cognitive recovery and mood stability.",
                         action: "Keep sleep and wake times consistent within 30 minutes every day of the week.",
@@ -387,7 +388,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                       style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                     Text(
-                      "Connect with your partner to unlock personalized Sia AI insights.",
+                      AppLocalizations.of(context).plConnectWithYourPartner,
                       style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
                     ),
                   ],
@@ -397,7 +398,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            "Pairing allows Sia to display partner support recommendations, phase awareness, and relationship care tips tailored to your partner.",
+            "Pairing allows Dr. Docsy to display partner support recommendations, phase awareness, and relationship care tips tailored to your partner.",
             style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text.withValues(alpha: 0.8), height: 1.4),
           ),
           const SizedBox(height: 14),
@@ -438,7 +439,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       partnerName = partnerName.split('@').first;
     }
 
-    String siaHeadline = "Sia AI Partner Care Insights";
+    String siaHeadline = "Dr. Docsy AI Partner Care Insights";
     String siaSubtext = "Live advice strictly respecting partner privacy permissions.";
 
     if (canShareCycle && cycleInfo != null && cycleInfo['phase'] != null) {
@@ -448,7 +449,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       siaSubtext = "Hormones adjust energy levels during this phase.";
     } else if (canShareMood && moodData != null && moodData['mood'] != null) {
       siaHeadline = "$partnerName logged feeling ${moodData['mood']} today";
-      siaSubtext = "Sia recommends gentle check-ins and empathetic listening.";
+      siaSubtext = "Dr. Docsy recommends gentle check-ins and empathetic listening.";
     }
 
     // Always guarantee a minimum of 3 suggestions
@@ -483,7 +484,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               const Icon(Icons.auto_awesome, color: BlushyColors.success, size: 18),
               const SizedBox(width: 8),
               Text(
-                "✨ SIA AI PARTNER INSIGHTS",
+                "✨ DR. DOCSY AI PARTNER INSIGHTS",
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.success, letterSpacing: 1.1),
               ),
             ],
