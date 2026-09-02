@@ -293,6 +293,40 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // shown back as a precise measurement.
   // ---------------------------------------------------------------------
 
+  /// Writes one check-in answer where the rest of the app can find it again.
+  ///
+  /// The wellness selectors only called `setState`, so an answer lived until
+  /// the next rebuild and no further. Changing tabs or reopening the app
+  /// dropped it, and the overview above then fell back to the figure the
+  /// server last held -- which is why a stress level logged as Moderate could
+  /// read Low a few minutes later without anyone touching it, and why the
+  /// score it was counted into went back to "Not Logged".
+  ///
+  /// The living selectors already did all four of these steps inline, once per
+  /// metric. This is that same sequence in one place.
+  void _persistCheckinAnswer(String key, String value) {
+    final checkin =
+        Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
+    checkin[key] = value;
+    // Mood is read back under both names; the restore path tries each.
+    if (key == 'mood') checkin['feeling'] = value;
+    checkin['date'] = DateTime.now().toIso8601String();
+    BlushyStorage.write('daily_checkin.json', checkin);
+
+    // A timestamped health event, so patterns and the doctor summary can see
+    // this entry rather than only the dashboard.
+    _recordCheckinEvent(key, value);
+
+    // Her choice wins over the next background sync, which would otherwise
+    // re-apply the stored server value on top of it.
+    _userEditedMetrics.add('daily_$key');
+
+    ApiAuthService().saveOnboardingAnswers({
+      'daily_$key': value,
+      'daily_checkin': checkin,
+    }).catchError((_) => <String, dynamic>{});
+  }
+
   /// Posts one check-in event. Failures are non-fatal: the local write has
   /// already happened, and the offline queue can replay from there.
   ///
@@ -1094,13 +1128,36 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
       restore('feeling', (v) => _selectedFeeling = v);
       restore('mood', (v) => _selectedFeeling = v);
-      restore('energy', (v) => _selectedEnergy = v);
-      restore('sleep', (v) => _livingSleep = v);
-      restore('stress', (v) => _livingStress = v);
-      restore('water', (v) => _livingWater = v);
+      // Each answer is restored into both the living and the wellness field.
+      // They are two sets of variables over one stored answer, and only the
+      // living half was ever read back -- so the same check-in survived a
+      // reload on one dashboard and vanished on the other. The option lists
+      // differ between stages (living sleep offers "6-8h", wellness "7-8h"),
+      // so after a stage change a restored value may not match any option and
+      // simply shows as unselected; it is still her answer, and still shown.
+      restore('energy', (v) {
+        _selectedEnergy = v;
+        _checkInEnergy = v;
+      });
+      restore('sleep', (v) {
+        _livingSleep = v;
+        _wellnessSleep = v;
+      });
+      restore('stress', (v) {
+        _livingStress = v;
+        _wellnessStress = v;
+      });
+      restore('water', (v) {
+        _livingWater = v;
+        _wellnessWater = v;
+      });
+      restore('meditation', (v) => _wellnessMeditation = v);
       restore('flow', (v) => _livingFlow = v);
       restore('pain', (v) => _livingPain = v);
-      restore('exercise', (v) => _livingExercise = v);
+      restore('exercise', (v) {
+        _livingExercise = v;
+        _wellnessExercise = v;
+      });
 
       setState(() {
         final p = decoded['profile'];
@@ -1187,14 +1244,31 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             _onboardingAnalysisSummary = analysis;
           }
 
+          // Both halves again; see the note on the local restore above.
           hydrate('daily_mood', (v) => _selectedFeeling = v);
-          hydrate('daily_energy', (v) => _selectedEnergy = v);
-          hydrate('daily_sleep', (v) => _livingSleep = v);
-          hydrate('daily_water', (v) => _livingWater = v);
-          hydrate('daily_stress', (v) => _livingStress = v);
+          hydrate('daily_energy', (v) {
+            _selectedEnergy = v;
+            _checkInEnergy = v;
+          });
+          hydrate('daily_sleep', (v) {
+            _livingSleep = v;
+            _wellnessSleep = v;
+          });
+          hydrate('daily_water', (v) {
+            _livingWater = v;
+            _wellnessWater = v;
+          });
+          hydrate('daily_stress', (v) {
+            _livingStress = v;
+            _wellnessStress = v;
+          });
           hydrate('daily_flow', (v) => _livingFlow = v);
           hydrate('daily_pain', (v) => _livingPain = v);
-          hydrate('daily_exercise', (v) => _livingExercise = v);
+          hydrate('daily_exercise', (v) {
+            _livingExercise = v;
+            _wellnessExercise = v;
+          });
+          hydrate('daily_meditation', (v) => _wellnessMeditation = v);
 
           if (remoteAnswers['puberty_feeling'] != null) {
             final pf = remoteAnswers['puberty_feeling'];
@@ -1220,13 +1294,32 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             final c = remoteAnswers['daily_checkin'] as Map;
             if (c['feeling'] != null) _selectedFeeling = c['feeling'].toString();
             if (c['mood'] != null) _selectedFeeling = c['mood'].toString();
-            if (c['energy'] != null) _selectedEnergy = c['energy'].toString();
+            // Both halves again; see the note on the local restore above.
+            if (c['energy'] != null) {
+              _selectedEnergy = c['energy'].toString();
+              _checkInEnergy = c['energy'].toString();
+            }
             if (c['flow'] != null) _livingFlow = c['flow'].toString();
             if (c['pain'] != null) _livingPain = c['pain'].toString();
-            if (c['sleep'] != null) _livingSleep = c['sleep'].toString();
-            if (c['stress'] != null) _livingStress = c['stress'].toString();
-            if (c['water'] != null) _livingWater = c['water'].toString();
-            if (c['exercise'] != null) _livingExercise = c['exercise'].toString();
+            if (c['sleep'] != null) {
+              _livingSleep = c['sleep'].toString();
+              _wellnessSleep = c['sleep'].toString();
+            }
+            if (c['stress'] != null) {
+              _livingStress = c['stress'].toString();
+              _wellnessStress = c['stress'].toString();
+            }
+            if (c['water'] != null) {
+              _livingWater = c['water'].toString();
+              _wellnessWater = c['water'].toString();
+            }
+            if (c['exercise'] != null) {
+              _livingExercise = c['exercise'].toString();
+              _wellnessExercise = c['exercise'].toString();
+            }
+            if (c['meditation'] != null) {
+              _wellnessMeditation = c['meditation'].toString();
+            }
           }
 
           // Restored through the same function that writes them, so the two
@@ -2557,19 +2650,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                   children: [
                     _buildSiasDailyLetter(displayName),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     _buildLivingSiaInsights(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     _buildLivingPatterns(),
+                    const SizedBox(height: 32),
+                    _buildConnect(),
                     const SizedBox(height: 32),
                     _buildContinueLearning(),
                     const SizedBox(height: 32),
                     _buildCuriousToday(),
                     const SizedBox(height: 32),
-                    _buildConnect(),
-                    const SizedBox(height: 32),
                     _buildGrowingJourney(),
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -2587,19 +2679,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                   children: [
                     _buildSiasDailyLetter(displayName),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 48),
                     _buildLivingSiaInsights(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 48),
                     _buildLivingPatterns(),
+                    const SizedBox(height: 48),
+                    _buildConnect(),
                     const SizedBox(height: 48),
                     _buildContinueLearning(),
                     const SizedBox(height: 48),
                     _buildCuriousToday(),
                     const SizedBox(height: 48),
-                    _buildConnect(),
-                    const SizedBox(height: 48),
                     _buildGrowingJourney(),
-                    const SizedBox(height: 36),
                   ],
                 ),
               ),
@@ -3078,6 +3169,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       setState(() {
                         _selectedFeeling = opt['label'];
                       });
+                      _persistCheckinAnswer('mood', opt['label'].toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Logged Feeling: ${opt['label']}"),
@@ -3738,23 +3830,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                   children: [
                     GreetingCard(name: displayName),
-                    const SizedBox(height: 24),
-                    const TodaysContextSection(),
-                    const SizedBox(height: 24),
-                    _buildLivingSiaInsights(),
-                    const SizedBox(height: 24),
-                    _buildLivingPatterns(),
                     const SizedBox(height: 32),
                     _buildMyFirstCycles(),
                     const SizedBox(height: 32),
                     _buildHowAreYouToday(),
                     const SizedBox(height: 32),
-                    _buildUnderstandMyCycle(),
+                    _buildLivingSiaInsights(),
+                    const SizedBox(height: 32),
+                    _buildLivingPatterns(),
+                    const SizedBox(height: 32),
+                    const TodaysContextSection(),
                     const SizedBox(height: 32),
                     _buildStartedConnect(),
                     const SizedBox(height: 32),
+                    _buildUnderstandMyCycle(),
+                    const SizedBox(height: 32),
                     _buildStartedJourney(),
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -3772,23 +3863,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                   children: [
                     GreetingCard(name: displayName),
-                    const SizedBox(height: 24),
-                    const TodaysContextSection(),
-                    const SizedBox(height: 24),
-                    _buildLivingSiaInsights(),
-                    const SizedBox(height: 24),
-                    _buildLivingPatterns(),
                     const SizedBox(height: 48),
                     _buildMyFirstCycles(),
                     const SizedBox(height: 48),
                     _buildHowAreYouToday(),
                     const SizedBox(height: 48),
-                    _buildUnderstandMyCycle(),
+                    _buildLivingSiaInsights(),
+                    const SizedBox(height: 48),
+                    _buildLivingPatterns(),
+                    const SizedBox(height: 48),
+                    const TodaysContextSection(),
                     const SizedBox(height: 48),
                     _buildStartedConnect(),
                     const SizedBox(height: 48),
+                    _buildUnderstandMyCycle(),
+                    const SizedBox(height: 48),
                     _buildStartedJourney(),
-                    const SizedBox(height: 36),
                   ],
                 ),
               ),
@@ -3833,9 +3923,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             children: [
                               _buildHowAreYouToday(),
                               const SizedBox(height: 48),
-                              _buildUnderstandMyCycle(),
-                              const SizedBox(height: 48),
                               _buildStartedConnect(),
+                              const SizedBox(height: 48),
+                              _buildUnderstandMyCycle(),
                             ],
                           ),
                         ),
@@ -5286,8 +5376,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                   children: [
                     GreetingCard(name: displayName),
-                    const SizedBox(height: 24),
-                    const TodaysContextSection(),
                     const SizedBox(height: 32),
                     _buildLivingTodayCycle(),
                     const SizedBox(height: 32),
@@ -5297,8 +5385,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     const SizedBox(height: 32),
                     _buildLivingPatterns(),
                     const SizedBox(height: 32),
+                    const TodaysContextSection(),
+                    const SizedBox(height: 32),
                     _buildLivingJourney(),
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -5314,8 +5403,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
                 children: [
                   GreetingCard(name: displayName),
-                  const SizedBox(height: 24),
-                  const TodaysContextSection(),
                   const SizedBox(height: 48),
                   _buildLivingTodayCycle(),
                   const SizedBox(height: 48),
@@ -5325,8 +5412,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   const SizedBox(height: 48),
                   _buildLivingPatterns(),
                   const SizedBox(height: 48),
+                  const TodaysContextSection(),
+                  const SizedBox(height: 48),
                   _buildLivingJourney(),
-                  const SizedBox(height: 36),
                 ],
               ),
             ),
@@ -5651,6 +5739,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       setState(() {
                         _selectedFeeling = opt['label'];
                       });
+                      _persistCheckinAnswer('mood', opt['label'].toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Logged Mood: ${opt['label']}"),
@@ -6679,24 +6768,24 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildHormonalCycleHealth(),
                       const SizedBox(height: 32),
                       _buildHormonalCheckIn(),
                       const SizedBox(height: 32),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 32),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 32),
                       _buildHormonalSiaInsights(),
+                      const SizedBox(height: 32),
+                      _buildHormonalPatterns(),
+                      const SizedBox(height: 32),
+                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildConditionProfileCard(),
                       const SizedBox(height: 32),
                       _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
-                      _buildHormonalPatterns(),
                       const SizedBox(height: 32),
                       _buildHormonalCarePlan(),
                       const SizedBox(height: 32),
@@ -6705,7 +6794,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildHormonalTimeline(),
                       const SizedBox(height: 32),
                       _buildHormonalJourney(),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -6725,24 +6813,24 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildHormonalCycleHealth(),
                       const SizedBox(height: 48),
                       _buildHormonalCheckIn(),
                       const SizedBox(height: 48),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 48),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 48),
                       _buildHormonalSiaInsights(),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 48),
+                      _buildHormonalPatterns(),
+                      const SizedBox(height: 48),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 48),
                       _buildConditionProfileCard(),
                       const SizedBox(height: 48),
                       _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 48),
-                      _buildHormonalPatterns(),
                       const SizedBox(height: 48),
                       _buildHormonalCarePlan(),
                       const SizedBox(height: 48),
@@ -6751,7 +6839,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildHormonalTimeline(),
                       const SizedBox(height: 48),
                       _buildHormonalJourney(),
-                      const SizedBox(height: 36),
                     ],
                   ),
                 ),
@@ -7044,6 +7131,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       setState(() {
                         _selectedFeeling = opt['label'];
                       });
+                      _persistCheckinAnswer('mood', opt['label'].toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Logged Mood: ${opt['label']}"),
@@ -7487,31 +7575,30 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildTtcTimeline(),
                       const SizedBox(height: 32),
                       _buildTtcCheckIn(),
                       const SizedBox(height: 32),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 32),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 32),
                       _buildTtcInsights(),
+                      const SizedBox(height: 32),
+                      _buildTtcPatterns(),
+                      const SizedBox(height: 32),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 32),
+                      _buildTtcPartner(),
                       const SizedBox(height: 32),
                       _buildTtcPlan(),
                       const SizedBox(height: 32),
                       _buildTtcLearn(),
                       const SizedBox(height: 32),
-                      _buildTtcPartner(),
-                      const SizedBox(height: 32),
-                      _buildTtcPatterns(),
-                      const SizedBox(height: 32),
                       _buildTtcJourneyTimeline(),
                       const SizedBox(height: 32),
                       _buildTtcMonthlyReflection(),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -7531,31 +7618,30 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildTtcTimeline(),
                       const SizedBox(height: 48),
                       _buildTtcCheckIn(),
                       const SizedBox(height: 48),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 48),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 48),
                       _buildTtcInsights(),
+                      const SizedBox(height: 48),
+                      _buildTtcPatterns(),
+                      const SizedBox(height: 48),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 48),
+                      _buildTtcPartner(),
                       const SizedBox(height: 48),
                       _buildTtcPlan(),
                       const SizedBox(height: 48),
                       _buildTtcLearn(),
                       const SizedBox(height: 48),
-                      _buildTtcPartner(),
-                      const SizedBox(height: 48),
-                      _buildTtcPatterns(),
-                      const SizedBox(height: 48),
                       _buildTtcJourneyTimeline(),
                       const SizedBox(height: 48),
                       _buildTtcMonthlyReflection(),
-                      const SizedBox(height: 36),
                     ],
                   ),
                 ),
@@ -7604,11 +7690,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 const SizedBox(height: 48),
                                 _buildTtcInsights(),
                                 const SizedBox(height: 48),
+                                _buildTtcPartner(),
+                                const SizedBox(height: 48),
                                 _buildTtcPlan(),
                                 const SizedBox(height: 48),
                                 _buildTtcLearn(),
-                                const SizedBox(height: 48),
-                                _buildTtcPartner(),
                               ],
                             ),
                           ),
@@ -7896,6 +7982,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       setState(() {
                         _selectedFeeling = opt['label'];
                       });
+                      _persistCheckinAnswer('mood', opt['label'].toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Logged Mood: ${opt['label']}"),
@@ -8456,20 +8543,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildPregnancyBabyThisWeek(),
                       const SizedBox(height: 32),
-                      _buildPregnancyJourneyTimeline(),
-                      const SizedBox(height: 32),
                       _buildPregnancyCheckIn(),
                       const SizedBox(height: 32),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 32),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 32),
                       _buildPregnancyInsights(),
+                      const SizedBox(height: 32),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 32),
+                      _buildPregnancyPartner(),
+                      const SizedBox(height: 32),
+                      _buildPregnancyJourneyTimeline(),
                       const SizedBox(height: 32),
                       _buildPregnancyCarePlan(),
                       const SizedBox(height: 32),
@@ -8479,12 +8568,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       const SizedBox(height: 32),
                       _buildPregnancyLearn(),
                       const SizedBox(height: 32),
-                      _buildPregnancyPartner(),
-                      const SizedBox(height: 32),
                       _buildPregnancyJourney(),
                       const SizedBox(height: 32),
                       _buildPregnancyReflection(),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -8504,35 +8590,34 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildPregnancyBabyThisWeek(),
                       const SizedBox(height: 48),
-                      _buildPregnancyJourneyTimeline(),
-                      const SizedBox(height: 48),
                       _buildPregnancyCheckIn(),
+                      const SizedBox(height: 48),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 48),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildPregnancyInsights(),
                       const SizedBox(height: 48),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 48),
+                      _buildPregnancyPartner(),
+                      const SizedBox(height: 48),
+                      _buildPregnancyJourneyTimeline(),
+                      const SizedBox(height: 48),
                       _buildPregnancyCarePlan(),
+                      const SizedBox(height: 48),
                       _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
                       const SizedBox(height: 48),
                       _buildPregnancyPrep(),
                       const SizedBox(height: 48),
                       _buildPregnancyLearn(),
                       const SizedBox(height: 48),
-                      _buildPregnancyPartner(),
-                      const SizedBox(height: 48),
                       _buildPregnancyJourney(),
                       const SizedBox(height: 48),
                       _buildPregnancyReflection(),
-                      const SizedBox(height: 36),
                     ],
                   ),
                 ),
@@ -8594,15 +8679,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 const SizedBox(height: 48),
                                 _buildPregnancyInsights(),
                                 const SizedBox(height: 48),
+                                _buildPregnancyPartner(),
+                                const SizedBox(height: 48),
                                 _buildPregnancyCarePlan(),
+                                const SizedBox(height: 48),
                                 _buildAppointmentSummaryCard(),
-                                const SizedBox(height: 32),
                                 const SizedBox(height: 48),
                                 _buildPregnancyPrep(),
                                 const SizedBox(height: 48),
                                 _buildPregnancyLearn(),
-                                const SizedBox(height: 48),
-                                _buildPregnancyPartner(),
                               ],
                             ),
                           ),
@@ -8706,6 +8791,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       setState(() {
                         _selectedFeeling = opt['label'];
                       });
+                      _persistCheckinAnswer('mood', opt['label'].toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Logged Mood: ${opt['label']}"),
@@ -9127,18 +9213,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildPostpartumRecoveryTimeline(),
                       const SizedBox(height: 32),
                       _buildPostpartumWellbeing(),
                       const SizedBox(height: 32),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 32),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 32),
                       _buildPostpartumInsights(),
+                      const SizedBox(height: 32),
+                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildPostpartumCarePlan(),
                       const SizedBox(height: 32),
@@ -9151,7 +9237,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildPostpartumJourney(),
                       const SizedBox(height: 32),
                       _buildPostpartumReflection(),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -9171,22 +9256,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildPostpartumRecoveryTimeline(),
                       const SizedBox(height: 48),
                       _buildPostpartumWellbeing(),
                       const SizedBox(height: 48),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 48),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 48),
                       _buildPostpartumInsights(),
                       const SizedBox(height: 48),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 48),
                       _buildPostpartumCarePlan(),
+                      const SizedBox(height: 48),
                       _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
                       const SizedBox(height: 48),
                       _buildPostpartumBabyAndYou(),
                       const SizedBox(height: 48),
@@ -9195,7 +9280,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildPostpartumJourney(),
                       const SizedBox(height: 48),
                       _buildPostpartumReflection(),
-                      const SizedBox(height: 36),
                     ],
                   ),
                 ),
@@ -9607,6 +9691,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       setState(() {
                         _selectedFeeling = opt['label'];
                       });
+                      _persistCheckinAnswer('mood', opt['label'].toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Logged Mood: ${opt['label']}"),
@@ -9996,20 +10081,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildPeriChangingCycle(pc),
                       const SizedBox(height: 32),
                       _buildPeriWellbeing(),
                       const SizedBox(height: 32),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 32),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 32),
                       _buildPeriInsights(),
                       const SizedBox(height: 32),
                       _buildPeriPatterns(),
+                      const SizedBox(height: 32),
+                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildPeriCarePlan(),
                       const SizedBox(height: 32),
@@ -10020,7 +10105,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildPeriTransition(),
                       const SizedBox(height: 32),
                       _buildPeriReflection(),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -10040,31 +10124,30 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildPeriChangingCycle(pc),
                       const SizedBox(height: 48),
                       _buildPeriWellbeing(),
                       const SizedBox(height: 48),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 48),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 48),
                       _buildPeriInsights(),
                       const SizedBox(height: 48),
                       _buildPeriPatterns(),
                       const SizedBox(height: 48),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 48),
                       _buildPeriCarePlan(),
+                      const SizedBox(height: 48),
                       _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
                       const SizedBox(height: 48),
                       _buildPeriLearn(),
                       const SizedBox(height: 48),
                       _buildPeriTransition(),
                       const SizedBox(height: 48),
                       _buildPeriReflection(),
-                      const SizedBox(height: 36),
                     ],
                   ),
                 ),
@@ -10389,6 +10472,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       setState(() {
                         _selectedFeeling = opt['label'];
                       });
+                      _persistCheckinAnswer('mood', opt['label'].toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Logged Mood: ${opt['label']}"),
@@ -10889,20 +10973,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
+                      const SizedBox(height: 32),
+                      _buildMenoCheckIn(),
                       const SizedBox(height: 32),
                       _buildMenoWellbeing(),
                       const SizedBox(height: 32),
-                      _buildMenoCheckIn(),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 32),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildMenoInsights(),
                       const SizedBox(height: 32),
                       _buildMenoPatterns(),
+                      const SizedBox(height: 32),
+                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildMenoCarePlan(),
                       const SizedBox(height: 32),
@@ -10913,7 +10997,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildMenoWellnessJourney(),
                       const SizedBox(height: 32),
                       _buildMenoReflection(),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -10933,31 +11016,30 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
+                      const SizedBox(height: 48),
+                      _buildMenoCheckIn(),
                       const SizedBox(height: 48),
                       _buildMenoWellbeing(),
                       const SizedBox(height: 48),
-                      _buildMenoCheckIn(),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 48),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildMenoInsights(),
                       const SizedBox(height: 48),
                       _buildMenoPatterns(),
                       const SizedBox(height: 48),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 48),
                       _buildMenoCarePlan(),
+                      const SizedBox(height: 48),
                       _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
                       const SizedBox(height: 48),
                       _buildMenoLearn(),
                       const SizedBox(height: 48),
                       _buildMenoWellnessJourney(),
                       const SizedBox(height: 48),
                       _buildMenoReflection(),
-                      const SizedBox(height: 36),
                     ],
                   ),
                 ),
@@ -11380,6 +11462,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       setState(() {
                         _selectedFeeling = opt['label'];
                       });
+                      _persistCheckinAnswer('mood', opt['label'].toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Logged Mood: ${opt['label']} ${opt['icon']}"),
@@ -11430,36 +11513,42 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               // Energy Level Selector
               _buildLivingHorizontalSelector(AppLocalizations.of(context).dashEnergyLevel, ["Low", "Balanced", "High"], _checkInEnergy?.isNotEmpty == true ? _checkInEnergy : null, (val) {
                 setState(() => _checkInEnergy = val);
+                _persistCheckinAnswer('energy', val.toString());
               }),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
               // Sleep Duration
               _buildLivingHorizontalSelector("SLEEP TIME", sleepOptions, _wellnessSleep, (val) {
                 setState(() => _wellnessSleep = val);
+                _persistCheckinAnswer('sleep', val.toString());
               }),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
               // Stress Levels
               _buildLivingHorizontalSelector("STRESS LEVEL", stressOptions, _wellnessStress, (val) {
                 setState(() => _wellnessStress = val);
+                _persistCheckinAnswer('stress', val.toString());
               }),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
               // Hydration (Water Intake)
               _buildLivingHorizontalSelector("DAILY HYDRATION (WATER INTAKE)", waterOptions, _wellnessWater, (val) {
                 setState(() => _wellnessWater = val);
+                _persistCheckinAnswer('water', val.toString());
               }),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
               // Exercise
               _buildLivingHorizontalSelector("DAILY EXERCISE", exerciseOptions, _wellnessExercise, (val) {
                 setState(() => _wellnessExercise = val);
+                _persistCheckinAnswer('exercise', val.toString());
               }),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
               // Meditation
               _buildLivingHorizontalSelector("MINDFUL MEDITATION", meditationOptions, _wellnessMeditation, (val) {
                 setState(() => _wellnessMeditation = val);
+                _persistCheckinAnswer('meditation', val.toString());
               }),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
@@ -11820,28 +11909,28 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       _buildBranchSwitcher(state),
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
-                      _buildWellnessDashboard(),
+                      GreetingCard(name: displayName),
                       const SizedBox(height: 32),
                       _buildWellnessCheckIn(),
                       const SizedBox(height: 32),
+                      _buildWellnessDashboard(),
+                      const SizedBox(height: 32),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 32),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 32),
                       _buildWellnessInsights(),
                       const SizedBox(height: 32),
-                      _buildWellnessPlan(),
+                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildWellnessHabitCards(),
+                      const SizedBox(height: 32),
+                      _buildWellnessPlan(),
                       const SizedBox(height: 32),
                       _buildWellnessJourney(),
                       const SizedBox(height: 32),
                       _buildWellnessReflection(),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -11861,27 +11950,26 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-                      _buildWellnessDashboard(),
                       const SizedBox(height: 48),
                       _buildWellnessCheckIn(),
                       const SizedBox(height: 48),
+                      _buildWellnessDashboard(),
+                      const SizedBox(height: 48),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 48),
+                      _buildLivingPatterns(),
+                      const SizedBox(height: 48),
                       _buildWellnessInsights(),
                       const SizedBox(height: 48),
-                      _buildWellnessPlan(),
+                      const TodaysContextSection(),
                       const SizedBox(height: 48),
                       _buildWellnessHabitCards(),
+                      const SizedBox(height: 48),
+                      _buildWellnessPlan(),
                       const SizedBox(height: 48),
                       _buildWellnessJourney(),
                       const SizedBox(height: 48),
                       _buildWellnessReflection(),
-                      const SizedBox(height: 36),
                     ],
                   ),
                 ),
@@ -11930,9 +12018,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 const SizedBox(height: 48),
                                 _buildWellnessInsights(),
                                 const SizedBox(height: 48),
-                                _buildWellnessPlan(),
-                                const SizedBox(height: 48),
                                 _buildWellnessHabitCards(),
+                                const SizedBox(height: 48),
+                                _buildWellnessPlan(),
                               ],
                             ),
                           ),

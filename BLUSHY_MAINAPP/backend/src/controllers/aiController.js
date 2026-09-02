@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { aiChatService } from '../services/aiChatService.js';
 import { uploadedFileBytes } from '../utils/uploadedFileBytes.js';
 import { aiHistoryRepository } from '../repositories/aiHistoryRepository.js';

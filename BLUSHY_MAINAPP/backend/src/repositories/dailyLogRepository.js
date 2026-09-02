@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { db } from '../utils/db.js';
+import { sanitizeDailyLogFields } from '../domain/dailyLogFields.js';
 
 async function getColl(userId) {
   const cleanId = typeof userId === 'string' ? userId.replace('user:', '') : userId;
@@ -43,18 +44,8 @@ export async function createOrUpdateDailyLog(userId, data) {
     throw new Error('Valid logDate in YYYY-MM-DD format is required.');
   }
 
-  const mood = typeof data.mood === 'string' ? data.mood.slice(0, 50) : null;
-  const energyLevel = typeof data.energyLevel === 'string' || typeof data.energy_level === 'string'
-    ? (data.energyLevel || data.energy_level).slice(0, 50)
-    : null;
-  const sleepHours = typeof data.sleepHours === 'number'
-    ? Math.max(0, Math.min(24, Math.round(data.sleepHours)))
-    : (typeof data.sleep_hours === 'number' ? Math.max(0, Math.min(24, Math.round(data.sleep_hours))) : null);
-  const symptoms = Array.isArray(data.symptoms)
-    ? data.symptoms.filter((s) => typeof s === 'string' && s.trim().length > 0).map((s) => s.trim().slice(0, 50)).slice(0, 20)
-    : [];
-  const notes = typeof data.notes === 'string' ? data.notes.slice(0, 500) : null;
-  const source = typeof data.source === 'string' ? data.source.slice(0, 50) : 'manual_checkin';
+  const { mood, energyLevel, sleepHours, symptoms, notes, source } =
+    sanitizeDailyLogFields(data);
 
   const now = new Date();
   const updateDoc = {
@@ -114,3 +105,5 @@ export async function getDailyLogByDate(userId, logDate) {
 
   return mapRow(row);
 }
+
+export { sanitizeDailyLogFields };

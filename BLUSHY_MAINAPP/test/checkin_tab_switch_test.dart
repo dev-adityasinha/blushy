@@ -123,12 +123,28 @@ void main() {
     // Network calls fail under the test binding; not the subject here.
     tester.takeException();
 
-    // Back at the top of a fresh screen, so the only Mild/Severe on it is the
-    // summary value — the cards are below the fold and not built.
-    expect(find.text('Mild'), findsWidgets,
-        reason: 'her answer must be what the summary shows after a reload');
-    expect(find.text('Severe'), findsNothing,
-        reason: 'the previous answer must not come back — this is the bug');
+    // Scoped to the summary's own "Pain" row rather than the whole page.
+    //
+    // This used to search the page, on the grounds that the pain cards were
+    // below the fold and unbuilt, so any Mild or Severe on screen had to be
+    // the summary. The check-in now sits near the top of every dashboard, so
+    // those cards are built and offer "Severe" as an unselected option -- true
+    // of the page, and nothing to do with what the summary reports.
+    final painRow = find.ancestor(
+      of: find.text('Pain'),
+      matching: find.byType(Row),
+    );
+    expect(painRow, findsWidgets, reason: 'the summary row should be built');
+    expect(
+      find.descendant(of: painRow.first, matching: find.text('Mild')),
+      findsOneWidget,
+      reason: 'her answer must be what the summary shows after a reload',
+    );
+    expect(
+      find.descendant(of: painRow.first, matching: find.text('Severe')),
+      findsNothing,
+      reason: 'the previous answer must not come back — this is the bug',
+    );
   });
 
   testWidgets('and the value survives the screen being rebuilt', (tester) async {

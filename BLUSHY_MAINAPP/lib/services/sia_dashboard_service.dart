@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../core/storage.dart';
 import '../core/state.dart';
@@ -64,12 +66,24 @@ class SiaDashboardService {
   void _validateUserCache() {
     final currentUid = AuthStorage.getUserId();
     if (_cachedUserId != currentUid) {
-      clearUserCache();
+      // Deferred, because this sits on the read path. The dashboard calls the
+      // getters below from inside `build`, so bumping the notifier here ran
+      // its listeners synchronously mid-build; they call setState, Flutter
+      // throws "setState() called during build", and the section that asked
+      // for the data fails to render -- visibly, a card that appeared once
+      // and was then gone on every later build. The signal is still sent,
+      // just after the frame that is already in progress.
+      clearUserCache(deferNotification: true);
       _cachedUserId = currentUid;
     }
   }
 
-  void clearUserCache() {
+  /// Drops everything cached for the previous user and asks listeners to
+  /// rebuild.
+  ///
+  /// [deferNotification] delays only the rebuild signal, never the clearing,
+  /// and exists for callers that are themselves inside a build.
+  void clearUserCache({bool deferNotification = false}) {
     ApiCommunityService().clearCache();
     _cachedObservations = null;
     _cachedPatterns = null;
@@ -79,6 +93,13 @@ class SiaDashboardService {
     _cachedDailyHeaderBrief = null;
     hasUnsyncedChanges = false;
     isDiscoverDirty = false;
+
+    if (deferNotification) {
+      // One rebuild after this frame settles. The next build finds the user
+      // id already matching, so this cannot become a loop.
+      scheduleMicrotask(() => refreshNotifier.value++);
+      return;
+    }
     refreshNotifier.value++;
   }
 
