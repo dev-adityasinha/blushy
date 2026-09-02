@@ -22,6 +22,23 @@ void main() {
   useIsolatedStorage();
 
   setUp(() {
+    // A taller surface than the 800x600 default.
+    //
+    // The dashboard is a lazy scrollable, so only what fits is built, and
+    // `find.text` cannot see the rest. Today's Context now renders above the
+    // summary on every stage, which pushed "TODAY'S LOGGED SIGNALS" off a
+    // 600px surface and left this test looking at a value that was never
+    // built. The width is unchanged so the same tablet layout is exercised;
+    // the pain cards sit far below either height and stay unbuilt, which the
+    // last assertion depends on.
+    final view = TestWidgetsFlutterBinding.ensureInitialized().platformDispatcher.views.first;
+    view.physicalSize = const Size(800, 1200);
+    view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      view.resetPhysicalSize();
+      view.resetDevicePixelRatio();
+    });
+
     // Storage is namespaced per user and silently no-ops without a session,
     // so every fixture below would be discarded without this.
     AuthStorage.saveSession(

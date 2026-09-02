@@ -1565,6 +1565,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 children: [
                   // 1. UNIFIED HERO BRIEF
                   GreetingCard(name: displayName),
+                  const SizedBox(height: 24),
+                  const TodaysContextSection(),
                   SizedBox(height: isMobile ? 20 : 32),
 
                   // 2. ACTIVE FOCUS TOPIC HEADERS (RENDERED ONLY AT THE START)
@@ -2555,6 +2557,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                   children: [
                     _buildSiasDailyLetter(displayName),
+                    const SizedBox(height: 24),
+                    _buildLivingSiaInsights(),
+                    const SizedBox(height: 24),
+                    _buildLivingPatterns(),
                     const SizedBox(height: 32),
                     _buildContinueLearning(),
                     const SizedBox(height: 32),
@@ -2581,6 +2587,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                   children: [
                     _buildSiasDailyLetter(displayName),
+                    const SizedBox(height: 24),
+                    _buildLivingSiaInsights(),
+                    const SizedBox(height: 24),
+                    _buildLivingPatterns(),
                     const SizedBox(height: 48),
                     _buildContinueLearning(),
                     const SizedBox(height: 48),
@@ -2610,6 +2620,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     // Row 1: Docsy Daily Letter (12 columns)
                     _buildSiasDailyLetter(displayName),
+                    const SizedBox(height: 24),
+                    _buildLivingSiaInsights(),
+                    const SizedBox(height: 24),
+                    _buildLivingPatterns(),
                     const SizedBox(height: 48),
 
                     // Row 2: Continue Learning (12 columns)
@@ -3500,11 +3514,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Loading Community discussions...")),
-                );
-              },
+              // Switches to the Community tab rather than announcing that it
+              // is about to. This showed a "Loading Community discussions..."
+              // snackbar and then did nothing at all -- the card above it says
+              // "Open the community to read and reply" twice, so the one
+              // control that would do that was the only part that did not
+              // work.
+              onPressed: () => BlushyShellTabs.open(BlushyShellTabs.community),
               style: ElevatedButton.styleFrom(
                 backgroundColor: BlushyColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -3722,6 +3738,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                   children: [
                     GreetingCard(name: displayName),
+                    const SizedBox(height: 24),
+                    const TodaysContextSection(),
+                    const SizedBox(height: 24),
+                    _buildLivingSiaInsights(),
+                    const SizedBox(height: 24),
+                    _buildLivingPatterns(),
                     const SizedBox(height: 32),
                     _buildMyFirstCycles(),
                     const SizedBox(height: 32),
@@ -3750,6 +3772,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                   children: [
                     GreetingCard(name: displayName),
+                    const SizedBox(height: 24),
+                    const TodaysContextSection(),
+                    const SizedBox(height: 24),
+                    _buildLivingSiaInsights(),
+                    const SizedBox(height: 24),
+                    _buildLivingPatterns(),
                     const SizedBox(height: 48),
                     _buildMyFirstCycles(),
                     const SizedBox(height: 48),
@@ -3781,6 +3809,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     // Row 1: Hero (12 columns)
                     GreetingCard(name: displayName),
+                    const SizedBox(height: 24),
+                    const TodaysContextSection(),
+                    const SizedBox(height: 24),
+                    _buildLivingSiaInsights(),
+                    const SizedBox(height: 24),
+                    _buildLivingPatterns(),
                     const SizedBox(height: 48),
 
                     // Row 2: My First Cycles (12 columns)
@@ -4964,11 +4998,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             );
           },
         ),
-        const SizedBox(height: 24),
-        // Today's Context sits under the patterns rather than above the
-        // whole dashboard: the four cards are the day, and the patterns
-        // are the shape the days make.
-        const TodaysContextSection(),
       ],
     );
   }
@@ -5257,6 +5286,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                   children: [
                     GreetingCard(name: displayName),
+                    const SizedBox(height: 24),
+                    const TodaysContextSection(),
                     const SizedBox(height: 32),
                     _buildLivingTodayCycle(),
                     const SizedBox(height: 32),
@@ -5283,6 +5314,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
                 children: [
                   GreetingCard(name: displayName),
+                  const SizedBox(height: 24),
+                  const TodaysContextSection(),
                   const SizedBox(height: 48),
                   _buildLivingTodayCycle(),
                   const SizedBox(height: 48),
@@ -5313,6 +5346,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     // Row 1: Docsy's Daily Brief (Hero)
                     GreetingCard(name: displayName),
+                    const SizedBox(height: 24),
+                    const TodaysContextSection(),
                     const SizedBox(height: 48),
 
                     // Row 2: Today's Cycle
@@ -6644,6 +6679,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildHormonalCycleHealth(),
                       const SizedBox(height: 32),
@@ -6684,6 +6725,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildHormonalCycleHealth(),
                       const SizedBox(height: 48),
@@ -6727,6 +6774,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       // Row 1: Docsy's Daily Brief (Hero)
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
 
                       // Row 2: Cycle Health Tracking
@@ -7434,6 +7487,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildTtcTimeline(),
                       const SizedBox(height: 32),
@@ -7472,6 +7531,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildTtcTimeline(),
                       const SizedBox(height: 48),
@@ -7513,6 +7578,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       // Row 1: Hero
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
 
                       // Row 2: Fertility Timeline (with Ovary Loop)
@@ -8385,6 +8456,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildPregnancyBabyThisWeek(),
                       const SizedBox(height: 32),
@@ -8427,6 +8504,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildPregnancyBabyThisWeek(),
                       const SizedBox(height: 48),
@@ -8472,6 +8555,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       // Row 1: Hero
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
 
                       // Row 2: Baby & Journey Details
@@ -9038,6 +9127,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildPostpartumRecoveryTimeline(),
                       const SizedBox(height: 32),
@@ -9076,6 +9171,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildPostpartumRecoveryTimeline(),
                       const SizedBox(height: 48),
@@ -9117,6 +9218,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       // Row 1: Hero
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
 
                       // Row 2: Recovery Timeline
@@ -9889,6 +9996,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildPeriChangingCycle(pc),
                       const SizedBox(height: 32),
@@ -9927,6 +10040,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildPeriChangingCycle(pc),
                       const SizedBox(height: 48),
@@ -9968,6 +10087,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       // Row 1: Hero
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
 
                       // Row 2: Changing Cycle
@@ -10764,6 +10889,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildMenoWellbeing(),
                       const SizedBox(height: 32),
@@ -10802,6 +10933,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildMenoWellbeing(),
                       const SizedBox(height: 48),
@@ -10843,6 +10980,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       // Row 1: Hero
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
 
                       // Row 2: Wellbeing Card
@@ -11678,6 +11821,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       _buildBranchSwitcher(state),
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildWellnessDashboard(),
                       const SizedBox(height: 32),
@@ -11712,6 +11861,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                     children: [
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildWellnessDashboard(),
                       const SizedBox(height: 48),
@@ -11749,6 +11904,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       // Row 1: Hero
                       GreetingCard(name: displayName),
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
+                      _buildLivingSiaInsights(),
+                      const SizedBox(height: 24),
+                      _buildLivingPatterns(),
                       const SizedBox(height: 48),
 
                       // Row 2: Dashboard Overview
