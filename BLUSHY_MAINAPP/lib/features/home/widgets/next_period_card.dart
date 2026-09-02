@@ -23,7 +23,7 @@ class BlushyNextPeriodCard extends StatelessWidget {
     if (pc.lifeContexts.contains(LifeContext.pregnancy)) {
       header = 'PREGNANCY WELLBEING';
       title = 'Focus on your changing body & nutrition';
-      description = 'Your regular cycle tracking is paused. Dr. Docsy is adapting insights for your pregnancy.';
+      description = 'Your regular cycle tracking is paused. Docsy is adapting insights for your pregnancy.';
       buttonText = 'Manage Pregnancy Info';
     } else if (pc.lifeContexts.contains(LifeContext.postpartum)) {
       header = 'POSTPARTUM RECOVERY';
@@ -42,7 +42,7 @@ class BlushyNextPeriodCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: BlushyColors.cardBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
         boxShadow: const [
           BoxShadow(
@@ -91,7 +91,7 @@ class BlushyNextPeriodCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
                 color: BlushyColors.primary,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
               child: Text(

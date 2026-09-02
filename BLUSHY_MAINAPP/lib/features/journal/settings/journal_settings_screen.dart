@@ -4,6 +4,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/auth_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'journal_diagnostics_screen.dart';
+import '../../../theme/colors.dart';
 
 class JournalSettingsScreen extends StatefulWidget {
   const JournalSettingsScreen({super.key});
@@ -25,10 +26,10 @@ class _JournalSettingsScreenState extends State<JournalSettingsScreen> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         title: Text('${t.settingsTitle} ⚙️', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFFFDFBF7),
+        backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
       body: ListView(

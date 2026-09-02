@@ -157,12 +157,12 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
           ),
           const SizedBox(height: 28),
 
-          // Dr. Docsy's AI Briefing Card
+          // Docsy's AI Briefing Card
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: BlushyColors.surface,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border, width: 1.2),
               boxShadow: [
                 BoxShadow(
@@ -187,7 +187,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'Dr. Docsy\'s Daily Edit',
+                      'Docsy\'s Daily Edit',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: BlushyColors.dark,
                         fontWeight: FontWeight.w700,
@@ -229,7 +229,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
               color: _recommendedActionCompleted 
                 ? BlushyColors.background 
                 : BlushyColors.surface,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _recommendedActionCompleted 
                   ? BlushyColors.border 
@@ -278,7 +278,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                       color: _recommendedActionCompleted 
                         ? Colors.transparent 
                         : BlushyColors.primary,
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(12),
                       border: _recommendedActionCompleted 
                         ? Border.all(color: BlushyColors.border) 
                         : null,
@@ -312,7 +312,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: BlushyColors.surface,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             child: Column(
@@ -363,7 +363,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                         color: _isListeningVoice ? Colors.white : const Color(0xFF6F42F5),
                       ),
                       style: IconButton.styleFrom(
-                        backgroundColor: _isListeningVoice ? const Color(0xFFDD0D22) : const Color(0xFFF3E8FF),
+                        backgroundColor: _isListeningVoice ? BlushyColors.primary : const Color(0xFFF3E8FF),
                       ),
                       tooltip: "Speak reflection",
                     ),
@@ -383,7 +383,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                           
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Briefing adapted. Check Dr. Docsy & Journey.'),
+                              content: Text('Briefing adapted. Check Docsy & Journey.'),
                               duration: Duration(seconds: 2),
                               backgroundColor: BlushyColors.primary,
                             ),
@@ -395,7 +395,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: const Text('Commit to Ledger', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
@@ -419,7 +419,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: BlushyColors.surface,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             child: Column(

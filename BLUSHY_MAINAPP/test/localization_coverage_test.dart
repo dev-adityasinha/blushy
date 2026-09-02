@@ -54,7 +54,7 @@ void main() {
           .where((k) => data[k] is String && template[k] is String)
           .where((k) => (data[k] as String) == (template[k] as String))
           // A brand name is legitimately the same in every language.
-          .where((k) => !(data[k] as String).contains('Dr. Docsy'))
+          .where((k) => !(data[k] as String).contains('Docsy'))
           .toList()
         ..sort();
 

@@ -7,7 +7,7 @@ import { db } from '../utils/db.js';
  * §27 "Audit logs for safety and clinical changes", §28 "Do not log raw health
  * content").
  *
- * Nothing here stores raw health content, journal text or Dr. Docsy conversation
+ * Nothing here stores raw health content, journal text or Docsy conversation
  * bodies - only the fact that something happened, to what entity, and when.
  */
 
@@ -148,7 +148,7 @@ export const ANALYTICS_EVENTS = Object.freeze([
 
 /**
  * Property keys allowed on an analytics event. Free-form properties are
- * dropped so raw journal text or Dr. Docsy conversations can never be sent
+ * dropped so raw journal text or Docsy conversations can never be sent
  * (spec §26).
  */
 const ALLOWED_PROPERTY_KEYS = new Set([

@@ -442,7 +442,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
-                subtitle: "Dr. Docsy adapts tracking cards to prioritize these.",
+                subtitle: "Docsy adapts tracking cards to prioritize these.",
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Pelvic pain / Cramps",
@@ -632,7 +632,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
-                subtitle: "Dr. Docsy adapts tracking cards to prioritize these.",
+                subtitle: "Docsy adapts tracking cards to prioritize these.",
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Hot flashes & temperature shifts",
@@ -878,7 +878,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       decoration: const BoxDecoration(
-        color: Color(0xFFFAF6F0),
+        color: BlushyColors.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
@@ -997,7 +997,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                       side: const BorderSide(color: BlushyColors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(
                       "Back",
@@ -1014,7 +1014,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                       disabledBackgroundColor: BlushyColors.primary.withValues(alpha: 0.35),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _isSubmitting
                         ? const SizedBox(
@@ -1074,7 +1074,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               onTap: () {
                 setState(() {
                   _answers[storageKey] = opt;
@@ -1089,7 +1089,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                     color: isSelected ? BlushyColors.primary : BlushyColors.border,
                     width: isSelected ? 1.8 : 1.0,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
@@ -1153,7 +1153,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               onTap: () {
                 setState(() {
                   if (isSelected) {
@@ -1172,7 +1172,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                     color: isSelected ? BlushyColors.primary : BlushyColors.border,
                     width: isSelected ? 1.8 : 1.0,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
@@ -1232,7 +1232,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         ),
         const SizedBox(height: 24),
         InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           onTap: () async {
             final now = DateTime.now();
             final picked = await showDatePicker(
@@ -1265,7 +1265,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
             padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _selectedDate != null ? BlushyColors.primary : BlushyColors.border,
                 width: _selectedDate != null ? 1.8 : 1.0,

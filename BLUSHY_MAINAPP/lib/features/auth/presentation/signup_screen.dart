@@ -9,8 +9,23 @@ import '../../../services/api_auth_service.dart';
 import '../../../services/auth_storage.dart';
 import '../../legal/legal_documents_screen.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../theme/colors.dart';
 
 enum AuthFormMode { login, signup }
+
+/// The Google *web* client id, used on every platform.
+///
+/// On web it identifies the page; on Android and iOS it is passed as the
+/// server client so the ID token is minted for the backend to verify. Client
+/// ids are public by design, so this is not a secret, but it is overridable
+/// for a different Google project:
+///
+///     flutter build apk --dart-define=GOOGLE_WEB_CLIENT_ID=...
+const String _googleWebClientId = String.fromEnvironment(
+  'GOOGLE_WEB_CLIENT_ID',
+  defaultValue:
+      '1026935398251-f1uvakds07sran9i87kgq1oon3vu4uo4.apps.googleusercontent.com',
+);
 
 class SignupScreen extends StatefulWidget {
   final AuthFormMode initialMode;
@@ -29,6 +44,14 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  /// Whether to ask the phone's password manager to remember these details.
+  ///
+  /// The app never stores the password itself. Ticking this hands the pair to
+  /// the keystore Android and iOS already use for every other app, which is
+  /// what fills them in next time; leaving it unticked means nothing is
+  /// offered for saving.
+  bool _savePassword = true;
 
   final ApiAuthService _apiAuthService = ApiAuthService();
 
@@ -105,6 +128,7 @@ class _SignupScreenState extends State<SignupScreen> {
           setState(() {
             _isSubmitting = false;
           });
+          _offerToSaveCredentials();
           _showOtpVerificationDialog(_emailController.text.trim());
         }
       } else {
@@ -114,6 +138,7 @@ class _SignupScreenState extends State<SignupScreen> {
           role: _selectedRole.value,
         );
         if (success && mounted) {
+          _offerToSaveCredentials();
           final state = BlushyOSProvider.of(context);
           final onboardingCompleted = AuthStorage.isOnboardingCompleted();
           state.setAuthenticated(true, onboardingCompleted: onboardingCompleted);
@@ -132,6 +157,15 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  /// Closes the autofill session so the phone offers to save what was typed.
+  ///
+  /// Only on success: offering to save a password that was just rejected would
+  /// store the wrong one. Skipped entirely when the box is unticked.
+  void _offerToSaveCredentials() {
+    if (!_savePassword) return;
+    TextInput.finishAutofillContext();
+  }
+
   Future<void> _handleGoogleSignIn() async {
     setState(() {
       _isSubmitting = true;
@@ -140,8 +174,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: kIsWeb ? '1026935398251-f1uvakds07sran9i87kgq1oon3vu4uo4.apps.googleusercontent.com' : null,
-        scopes: ['email', 'profile'],
+        // On web the web client identifies the page. On Android and iOS it is
+        // the *server* client, which is what makes Google mint an ID token at
+        // all: without it `auth.idToken` comes back null and this silently
+        // fell through to the access token instead.
+        clientId: kIsWeb ? _googleWebClientId : null,
+        serverClientId: kIsWeb ? null : _googleWebClientId,
+        scopes: const ['email', 'profile'],
       );
 
       final GoogleSignInAccount? account = await googleSignIn.signIn();
@@ -194,8 +233,8 @@ class _SignupScreenState extends State<SignupScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: const Color(0xFFFAF6F0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: BlushyColors.background,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -230,9 +269,9 @@ class _SignupScreenState extends State<SignupScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDD0D22),
+                  backgroundColor: BlushyColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () => Navigator.of(dialogContext).pop(),
                 child: Text(
@@ -275,8 +314,8 @@ class _SignupScreenState extends State<SignupScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              backgroundColor: const Color(0xFFFAF6F0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: BlushyColors.background,
               title: Text(
                 'Enter Verification Code',
                 textAlign: TextAlign.center,
@@ -335,11 +374,11 @@ class _SignupScreenState extends State<SignupScreen> {
                               fillColor: Colors.white,
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFEFEAE2)),
+                                borderSide: const BorderSide(color: BlushyColors.border),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFDD0D22), width: 2),
+                                borderSide: const BorderSide(color: BlushyColors.primary, width: 2),
                               ),
                             ),
                             onChanged: (val) {
@@ -358,9 +397,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDD0D22),
+                          backgroundColor: BlushyColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: isVerifying
                             ? null
@@ -429,10 +468,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFDD0D22);
-    const bgPinkColor = Color(0xFFFAF6F0);
+    const primaryColor = BlushyColors.primary;
+    const bgPinkColor = BlushyColors.background;
     const cardSelectedBg = Color(0xFFFDF2F2);
-    const borderColor = Color(0xFFEFEAE2);
+    const borderColor = BlushyColors.border;
     const textDark = Color(0xFF2D2529);
     const textMuted = Color(0xFF7A6B72);
 
@@ -444,7 +483,10 @@ class _SignupScreenState extends State<SignupScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
+              // The fields have to sit in one group for the phone to
+              // treat them as a single credential worth saving.
+              child: AutofillGroup(
+                child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -476,8 +518,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       height: 48,
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFEAE2),
-                        borderRadius: BorderRadius.circular(24),
+                        color: BlushyColors.border,
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
@@ -488,7 +530,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 duration: const Duration(milliseconds: 200),
                                 decoration: BoxDecoration(
                                   color: _mode == AuthFormMode.login ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(12),
                                   boxShadow: _mode == AuthFormMode.login
                                       ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
                                       : [],
@@ -512,7 +554,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 duration: const Duration(milliseconds: 200),
                                 decoration: BoxDecoration(
                                   color: _mode == AuthFormMode.signup ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(12),
                                   boxShadow: _mode == AuthFormMode.signup
                                       ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
                                       : [],
@@ -725,6 +767,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [
+                        AutofillHints.username,
+                        AutofillHints.email,
+                      ],
                       style: GoogleFonts.poppins(fontSize: 14, color: textDark),
                       decoration: _buildInputDecoration('you@example.com', Icons.mail_outline),
                       validator: (val) {
@@ -815,6 +861,13 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
+                      // newPassword on signup, so the manager offers to
+                      // generate and save one rather than filling an old one.
+                      autofillHints: [
+                        _mode == AuthFormMode.signup
+                            ? AutofillHints.newPassword
+                            : AutofillHints.password,
+                      ],
                       style: GoogleFonts.poppins(fontSize: 14, color: textDark),
                       decoration: _buildInputDecoration('Minimum 8 characters', Icons.lock_outline).copyWith(
                         suffixIcon: IconButton(
@@ -831,7 +884,40 @@ class _SignupScreenState extends State<SignupScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 4),
+
+                    // Handing the pair to the phone's password manager, which
+                    // is what fills them in next time. The app itself never
+                    // keeps the password.
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: _savePassword,
+                            activeColor: BlushyColors.primary,
+                            onChanged: (value) =>
+                                setState(() => _savePassword = value ?? false),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () =>
+                                setState(() => _savePassword = !_savePassword),
+                            child: Text(
+                              'Save my password on this device',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: textMuted,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
                     // Terms Checkbox (Signup mode only)
                     if (_mode == AuthFormMode.signup) ...[
@@ -879,9 +965,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     Container(
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFDD0D22), Color(0xFFE52035)],
+                          colors: [BlushyColors.primary, Color(0xFFE52035)],
                         ),
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
                             color: primaryColor.withValues(alpha: 0.3),
@@ -896,7 +982,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: _isSubmitting
                             ? const SizedBox(
@@ -951,7 +1037,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         side: const BorderSide(color: borderColor),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         backgroundColor: Colors.white,
                       ),
                       child: Row(
@@ -1019,6 +1105,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ],
                 ),
+                ),
               ),
             ),
           ),
@@ -1047,19 +1134,19 @@ class _SignupScreenState extends State<SignupScreen> {
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(24),
-        borderSide: const BorderSide(color: Color(0xFFEFEAE2)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: BlushyColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(24),
-        borderSide: const BorderSide(color: Color(0xFFDD0D22), width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: BlushyColors.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
     );

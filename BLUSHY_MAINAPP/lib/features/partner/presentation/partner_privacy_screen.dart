@@ -113,7 +113,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -139,7 +139,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: Row(
@@ -188,7 +188,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
                   const SizedBox(height: 24),
                   Text(
                     'Nothing here is a live feed of their records. Blushy only ever sends the '
-                    'categories above, and never their journal, their messages with Dr. Docsy, or '
+                    'categories above, and never their journal, their messages with Docsy, or '
                     'anything they have not turned on.',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
@@ -247,7 +247,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Row(

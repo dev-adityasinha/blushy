@@ -85,6 +85,27 @@ export const env = {
   // them is what keeps them from being swapped again.
   //
   // GROK_*/GROQ_* are still read as fallbacks so an older .env keeps working.
+  // Object storage for uploads. Unset means the local `uploads/` directory,
+  // which is what development uses and what production used until now -- and
+  // on an ephemeral filesystem that meant every uploaded file was lost on the
+  // next restart. S3-compatible, so the same four settings work for AWS,
+  // Cloudflare R2, Backblaze B2, DigitalOcean Spaces and MinIO.
+  // Connection pool bounds. See the comments in `utils/db.js` for why the
+  // driver's defaults are wrong here; these are sized for a cluster that
+  // allows 500 connections in total.
+  mongoMaxPoolSize: Number(process.env.MONGO_MAX_POOL_SIZE ?? 20),
+  mongoWaitQueueTimeoutMs: Number(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS ?? 10000),
+  mongoMaxIdleTimeMs: Number(process.env.MONGO_MAX_IDLE_TIME_MS ?? 60000),
+
+  s3Bucket: process.env.S3_BUCKET ?? '',
+  s3Region: process.env.S3_REGION ?? 'auto',
+  s3AccessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+  s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
+  // Required for everything except AWS itself.
+  s3Endpoint: process.env.S3_ENDPOINT ?? '',
+  // A CDN or custom domain in front of the bucket, when there is one.
+  s3PublicBaseUrl: process.env.S3_PUBLIC_BASE_URL ?? '',
+
   aiChatApiKey: process.env.AI_CHAT_API_KEY ?? process.env.OPENROUTER_API_KEY ?? process.env.GROK_API_KEY ?? '',
   aiChatModel: process.env.AI_CHAT_MODEL ?? process.env.GROQ_MODEL ?? process.env.GROK_MODEL ?? 'x-ai/grok-4.3',
   aiChatApiUrl: process.env.AI_CHAT_API_URL ?? process.env.GROK_API_URL ?? process.env.GROQ_API_URL ?? 'https://openrouter.ai/api/v1/chat/completions',

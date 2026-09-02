@@ -38,7 +38,7 @@ class _BouquetCanvasState extends State<BouquetCanvas> {
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.4)),
           boxShadow: [
             BoxShadow(

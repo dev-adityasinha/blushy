@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/storage.dart';
@@ -602,10 +601,10 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       ),
     );
 
-    // Save Coach Marks first launch indicator
-    try {
-      File('coach_first_launch.json').writeAsStringSync('true');
-    } catch (_) {}
+    // The first-run tour decides for itself whether it has been shown, from
+    // `product_tour.json` in BlushyStorage. This used to write a flag here with
+    // a raw File() at a relative path -- unwritable on Android -- which the
+    // dashboard then read, acted on with an empty setState, and deleted.
 
     // Complete authentication flags
     state.setAuthenticated(true);
@@ -655,7 +654,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFFAF6F0),
+        backgroundColor: BlushyColors.background,
         body: Center(child: CircularProgressIndicator(color: BlushyColors.primary)),
       );
     }
@@ -678,7 +677,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   // --- 1. PRIVACY & CONSENT SCREEN ---
   Widget _buildPrivacyScreen() {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -772,7 +771,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                       backgroundColor: BlushyColors.primary,
                       disabledBackgroundColor: const Color(0x1F2E2623),
                       padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
                     child: Text(
@@ -910,7 +909,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -995,7 +994,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
@@ -1066,7 +1065,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   // --- 4. DR. DOCSY WELCOME SCREEN ---
   Widget _buildSiaWelcomeScreen() {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.center,
@@ -1083,7 +1082,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                   ),
                   const SizedBox(height: 36),
                   Text(
-                    "Hi, ${_profile.preferredName}.\nI'm Dr. Docsy.",
+                    "Hi, ${_profile.preferredName}.\nI'm Docsy.",
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(fontSize: 42, fontWeight: FontWeight.w300, color: BlushyColors.text, height: 1.1),
                   ),
@@ -1104,7 +1103,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
                     child: Text(
@@ -1133,7 +1132,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.center,
@@ -1168,7 +1167,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0x1F2E2623)),
                         ),
                         child: Row(
@@ -1192,7 +1191,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
                     child: Text(
@@ -1214,7 +1213,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     String explanation = "This information helps customize your daily insights and companion interactions.";
     
     if (_currentStepIndex == 0) {
-      explanation = "Your preferred name is used by Dr. Docsy to personalize letters, notes, and wellness greetings.";
+      explanation = "Your preferred name is used by Docsy to personalize letters, notes, and wellness greetings.";
     } else if (_currentStepIndex == 1) {
       explanation = "Your age dictates key physiological milestones, health warnings, and maturity checkins.";
     } else if (_currentStepIndex == 2) {
@@ -1273,7 +1272,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
         ),
         const SizedBox(height: 8),
         Text(
-          "What name would you like Dr. Docsy to call you?",
+          "What name would you like Docsy to call you?",
           style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 32),
@@ -1648,7 +1647,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           ),
           const SizedBox(height: 4),
           Text(
-            "Helps Dr. Docsy calculate your exact cycle length and pattern right away.",
+            "Helps Docsy calculate your exact cycle length and pattern right away.",
             style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
           ),
           const SizedBox(height: 12),
@@ -1779,7 +1778,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectSymptomsStep(
       title: AppLocalizations.of(context).oWhichSymptomsAffectYou,
-      subtitle: "Dr. Docsy adapts tracking cards to prioritize these.",
+      subtitle: "Docsy adapts tracking cards to prioritize these.",
       options: options,
     );
   }
@@ -2041,7 +2040,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectSymptomsStep(
       title: AppLocalizations.of(context).oWhichSymptomsAffectYou,
-      subtitle: "Dr. Docsy adapts tracking cards to prioritize these.",
+      subtitle: "Docsy adapts tracking cards to prioritize these.",
       options: options,
     );
   }
@@ -2325,7 +2324,7 @@ class _ContinueButtonState extends State<_ContinueButton> {
           padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
           decoration: BoxDecoration(
             color: widget.onPressed != null ? BlushyColors.primary : const Color(0x1F2E2623),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             AppLocalizations.of(context).onbContinue,

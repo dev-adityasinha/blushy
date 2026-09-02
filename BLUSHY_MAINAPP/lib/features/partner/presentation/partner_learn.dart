@@ -122,7 +122,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
   void _showArticle(BuildContext context, String category, String title, String body, String action) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -159,7 +159,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFF9F2),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFFEE8D6)),
                     ),
                     child: Column(
@@ -192,7 +192,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(AppLocalizations.of(context).plConnectWithPartner, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -208,7 +208,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               decoration: InputDecoration(
                 hintText: "Partner's email address",
                 prefixIcon: const Icon(Icons.email_outlined, color: BlushyColors.primary),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               ),
             ),
@@ -250,7 +250,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _fetchPartnerState,
@@ -355,7 +355,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
         boxShadow: [
           BoxShadow(
@@ -398,7 +398,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            "Pairing allows Dr. Docsy to display partner support recommendations, phase awareness, and relationship care tips tailored to your partner.",
+            "Pairing allows Docsy to display partner support recommendations, phase awareness, and relationship care tips tailored to your partner.",
             style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text.withValues(alpha: 0.8), height: 1.4),
           ),
           const SizedBox(height: 14),
@@ -408,7 +408,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               onPressed: _showConnectPartnerDialog,
               style: ElevatedButton.styleFrom(
                 backgroundColor: BlushyColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 elevation: 0,
               ),
@@ -439,7 +439,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       partnerName = partnerName.split('@').first;
     }
 
-    String siaHeadline = "Dr. Docsy AI Partner Care Insights";
+    String siaHeadline = "Docsy AI Partner Care Insights";
     String siaSubtext = "Live advice strictly respecting partner privacy permissions.";
 
     if (canShareCycle && cycleInfo != null && cycleInfo['phase'] != null) {
@@ -449,7 +449,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       siaSubtext = "Hormones adjust energy levels during this phase.";
     } else if (canShareMood && moodData != null && moodData['mood'] != null) {
       siaHeadline = "$partnerName logged feeling ${moodData['mood']} today";
-      siaSubtext = "Dr. Docsy recommends gentle check-ins and empathetic listening.";
+      siaSubtext = "Docsy recommends gentle check-ins and empathetic listening.";
     }
 
     // Always guarantee a minimum of 3 suggestions
@@ -473,7 +473,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFFF3FAF6),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFD6F1DF)),
       ),
       child: Column(
@@ -484,7 +484,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               const Icon(Icons.auto_awesome, color: BlushyColors.success, size: 18),
               const SizedBox(width: 8),
               Text(
-                "✨ DR. DOCSY AI PARTNER INSIGHTS",
+                "✨ DOCSY AI PARTNER INSIGHTS",
                 style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.success, letterSpacing: 1.1),
               ),
             ],
@@ -625,7 +625,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border, width: 0.8),
       ),
       child: Text(
@@ -641,7 +641,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border, width: 0.8),
         ),
         child: ListTile(
@@ -761,12 +761,12 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
     return Card(
       color: Colors.white,
       margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 0,
       borderOnForeground: true,
       child: InkWell(
         onTap: () => _showArticle(context, category, title, body, action),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(18.0),
           child: Row(

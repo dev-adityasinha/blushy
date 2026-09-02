@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FFF0F2</color>
+    <!-- The launch background, matching BlushyColors.primary so the
+         native splash and the Flutter one are the same red and there
+         is no white flash between them. -->
+    <color name="blushy_splash">#DD0D22</color>
 </resources>

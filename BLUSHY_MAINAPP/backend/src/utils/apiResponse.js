@@ -1,3 +1,4 @@
+import { isPoolSaturationError, SERVICE_BUSY_RETRY_SECONDS } from './dbErrors.js';
 /**
  * Standard API response contract (spec §27 "STANDARD API RESPONSE CONTRACT").
  *
@@ -41,6 +42,10 @@ export const ERROR_CODES = Object.freeze({
   CONFLICT: 'CONFLICT',
   UPSTREAM_UNAVAILABLE: 'UPSTREAM_UNAVAILABLE',
   RATE_LIMITED: 'RATE_LIMITED',
+  // Every database connection is in use. Distinct from UPSTREAM_UNAVAILABLE:
+  // nothing is down, the service is saturated and the same request will
+  // succeed shortly.
+  SERVICE_BUSY: 'SERVICE_BUSY',
   INTERNAL: 'INTERNAL',
 });
 
@@ -154,6 +159,14 @@ export function contractHandler(handler) {
       if (res.headersSent) {
         return next(error);
       }
+      // A saturated connection pool is not a failure to report as one.
+      if (isPoolSaturationError(error)) {
+        res.setHeader('Retry-After', String(SERVICE_BUSY_RETRY_SECONDS));
+        console.warn(`[contract] ${req.method} ${req.originalUrl} was refused: connection pool saturated`);
+        return sendError(res, 503, ERROR_CODES.SERVICE_BUSY,
+          'The service is busy right now. Please try again in a moment.');
+      }
+
       const status = error.statusCode ?? error.status ?? 500;
       const code = error.errorCode ?? (status === 500 ? ERROR_CODES.INTERNAL : ERROR_CODES.VALIDATION_FAILED);
       const message = status === 500 ? 'Internal server error.' : (error.message ?? 'Request failed.');

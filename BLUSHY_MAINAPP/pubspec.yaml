@@ -75,6 +75,26 @@ flutter:
     - assets/mono/flowers/
     - assets/mono/bush/
 
+  # The layouts asked for Georgia and Courier and shipped neither, so on Android
+  # both fell back to Roboto and the editorial serif was lost. Neither is
+  # redistributable, so these are the open-licensed metric-compatible
+  # equivalents -- same widths, so nothing had to be re-tuned. Registered under
+  # the names the code already uses, so no call site changes.
+  # See assets/fonts/README.md and OFL.txt.
+  fonts:
+    - family: Georgia
+      fonts:
+        - asset: assets/fonts/Gelasio-Regular.ttf
+        - asset: assets/fonts/Gelasio-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Gelasio-Bold.ttf
+          weight: 700
+    - family: Courier
+      fonts:
+        - asset: assets/fonts/CourierPrime-Regular.ttf
+        - asset: assets/fonts/CourierPrime-Bold.ttf
+          weight: 700
+
 
   # To add assets to your application, add an assets section, like this:
   # assets:

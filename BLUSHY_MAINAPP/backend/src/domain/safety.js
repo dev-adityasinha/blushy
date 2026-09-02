@@ -258,7 +258,7 @@ function ruleApplies(rule, lifeStage) {
  * @param {object} input
  * @param {string} input.lifeStage        normalized life stage key
  * @param {Array}  input.symptoms         [{ symptom, severity }] from health events
- * @param {string} input.freeText         journal / Dr. Docsy message text to scan
+ * @param {string} input.freeText         journal / Docsy message text to scan
  * @param {number} input.gestationalWeek  when known
  * @returns {{ triggered: boolean, level: string|null, rules: Array, suppressWellnessContent: boolean, rulesetVersion: string, evaluatedAt: string }}
  */

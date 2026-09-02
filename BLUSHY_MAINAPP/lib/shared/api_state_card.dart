@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 
 import '../services/api_contract_client.dart';
+import 'skeleton.dart';
 
 /// Renders the eight states every card must support (spec section 4
 /// "FRONTEND STATES EVERY CARD MUST SUPPORT").
@@ -147,7 +148,7 @@ class SourceLabel extends StatelessWidget {
       case 'rule':
         return 'Calculated from your logs';
       case 'ai':
-        return 'Dr. Docsy observation';
+        return 'Docsy observation';
       case 'medical_reference':
         return 'Reviewed health information';
       case 'device':
@@ -181,33 +182,26 @@ class _CardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.surfaceContainerHighest;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _bar(color, widthFactor: 0.45, height: 14),
-          const SizedBox(height: 10),
-          _bar(color, widthFactor: 1, height: 12),
-          const SizedBox(height: 6),
-          _bar(color, widthFactor: 0.8, height: 12),
-        ],
-      ),
-    );
-  }
-
-  Widget _bar(Color color, {required double widthFactor, required double height}) {
-    return FractionallySizedBox(
-      alignment: Alignment.centerLeft,
-      widthFactor: widthFactor,
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(6)),
+    // Was three static grey bars. A skeleton that does not move reads as a
+    // card that failed to paint; the shimmer is what says "still coming".
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 12),
+      child: Shimmer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SkeletonLine(widthFactor: 0.45, height: 14),
+            SizedBox(height: 12),
+            SkeletonLine(),
+            SizedBox(height: 8),
+            SkeletonLine(widthFactor: 0.8),
+          ],
+        ),
       ),
     );
   }
 }
+
 
 class _MessageBody extends StatelessWidget {
   final IconData icon;

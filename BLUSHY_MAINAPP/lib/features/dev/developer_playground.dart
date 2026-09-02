@@ -47,7 +47,7 @@ class DeveloperPlaygroundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         title: Text(
           "Developer Playground",

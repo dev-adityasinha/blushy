@@ -51,7 +51,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
     "\"Did you know that periods are actually a sign that your body is growing strong and healthy?\"",
     "\"How are you feeling about all the changes your body is going through lately?\"",
     "\"Let's set up a special bag with pads and spare clothes for your locker, just so you feel ready.\"",
-    "\"Is there anything you want to ask Dr. Docsy or me about periods today?\""
+    "\"Is there anything you want to ask Docsy or me about periods today?\""
   ];
 
   @override
@@ -105,7 +105,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
                             color: isActive ? BlushyColors.primary : BlushyColors.text,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                             side: BorderSide(color: isActive ? BlushyColors.primary : BlushyColors.border),
                           ),
                           onSelected: (val) {
@@ -155,7 +155,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: const Color(0xFFFDF2F2),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFFEDE0D4)),
           ),
           child: Column(
@@ -172,7 +172,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                "Your daughter is currently tracking cycle rhythms and logs. Dr. Docsy provides supportive insights to keep her prepared.",
+                "Your daughter is currently tracking cycle rhythms and logs. Docsy provides supportive insights to keep her prepared.",
                 style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
               ),
             ],
@@ -195,7 +195,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             child: Row(
@@ -272,7 +272,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             child: Text(
@@ -303,7 +303,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             child: ExpansionTile(

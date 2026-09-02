@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../repository/journal_repository.dart';
+import '../../../theme/colors.dart';
 
 /// Statistics computed from the journal the user actually wrote.
 ///
@@ -106,13 +107,13 @@ class _JournalDashboardWidgetState extends State<JournalDashboardWidget> {
     final stats = _stats;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         title: Text(
           'Journal insights',
           style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFFFDFBF7),
+        backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
       body: _loading
@@ -165,7 +166,7 @@ class _JournalDashboardWidgetState extends State<JournalDashboardWidget> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFDE68A)),
         boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2))],
       ),

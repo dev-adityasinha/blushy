@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { uploadedFileBytes } from '../utils/uploadedFileBytes.js';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { db } from '../utils/db.js';
@@ -34,7 +35,7 @@ export async function parseAndSaveMedicalReport({ userId, file }) {
 
   if (isPdf) {
     try {
-      const dataBuffer = fs.readFileSync(file.path);
+      const dataBuffer = uploadedFileBytes(file);
       const parser = new PDFParse({ data: dataBuffer });
       const pdfData = await parser.getText();
       textContent = pdfData.text || '';
@@ -43,7 +44,7 @@ export async function parseAndSaveMedicalReport({ userId, file }) {
     }
   } else if (file.mimetype === 'text/plain' || lowerName.endsWith('.txt') || lowerName.endsWith('.md')) {
     try {
-      textContent = fs.readFileSync(file.path, 'utf8');
+      textContent = uploadedFileBytes(file)?.toString('utf8') ?? '';
     } catch (_) {}
   }
 
@@ -83,7 +84,7 @@ If it is not a medical report/prescription (e.g. general chat photo, screenshot 
       
       let messagesPayload = [];
       if (isImage) {
-        const imageBase64 = fs.readFileSync(file.path, 'base64');
+        const imageBase64 = uploadedFileBytes(file)?.toString('base64') ?? '';
         const dataUrl = `data:${file.mimetype};base64,${imageBase64}`;
         messagesPayload = [
           {

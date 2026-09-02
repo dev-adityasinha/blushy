@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../shared/skeleton.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/state.dart';
 import '../../core/storage.dart';
 import '../../theme/colors.dart';
 import '../../services/api_auth_service.dart';
 import 'presentation/stages/everyday_wellness_dashboard.dart';
-import '../sia/sia_screen.dart';
-import '../../services/sia_dashboard_service.dart';
 import '../../l10n/app_localizations.dart';
 
 enum HomeWidgetType {
@@ -101,28 +100,6 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
           if (osState.isSyncing) const _DashboardSyncBanner(),
           Expanded(child: body),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'sia_fab',
-        backgroundColor: BlushyColors.dark,
-        onPressed: () {
-          final state = BlushyOSProvider.of(context);
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const BlushySiaScreen(),
-            ),
-          ).then((_) {
-            if (mounted) {
-              SiaDashboardService().syncAllDashboardsFromBackend(state: state);
-              setState(() {});
-            }
-          });
-        },
-        label: Text(
-          AppLocalizations.of(context).hDrDocsy,
-          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
-        ),
-        icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
       ),
     );
   }
@@ -355,7 +332,7 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
         "**Biological & Physiological Overview**\n"
         "${widget.summary}\n\n"
         "Clinical wellness data shows that daily lifestyle habits directly influence neuroendocrine and autonomic nervous system regulation. "
-        "Tracking your core metrics allows Dr. Docsy AI to identify subtle hormonal and energy baseline fluctuations early.\n\n"
+        "Tracking your core metrics allows Docsy AI to identify subtle hormonal and energy baseline fluctuations early.\n\n"
         "**Key Scientific Insights**\n"
         "• **Circadian & Metabolic Harmony**: Regular sleep and meal timing stabilize cortisol, preventing afternoon energy crashes.\n"
         "• **Vagal Tone & Stress Recovery**: Diaphragmatic breathing and hydration balance parasympathetic nervous system responses.\n"
@@ -363,14 +340,14 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
         "**Actionable Recommendations**\n"
         "1. **Structured Routines**: Maintain consistent daily check-ins within your preferred morning or evening window.\n"
         "2. **Optimal Fluid Intake**: Hydrate continuously throughout high-activity or high-stress workdays.\n"
-        "3. **Dr. Docsy Companion Check-Ins**: Log daily symptoms to help Dr. Docsy refine your dynamic health insights.";
+        "3. **Docsy Companion Check-Ins**: Log daily symptoms to help Docsy refine your dynamic health insights.";
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: const Color(0xFFFAF6F0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: BlushyColors.background,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.all(24),
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -400,7 +377,7 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -432,7 +409,7 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFDFBF7),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.3), width: 1.0),
                   ),
                   child: Column(
@@ -461,15 +438,30 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: BlushyColors.border),
                   ),
                   child: Column(
                     children: [
-                      const CircularProgressIndicator(color: BlushyColors.primary, strokeWidth: 2.5),
+                      // Shaped like the paragraph that replaces it, so the card
+                      // does not resize when the text lands. The line below
+                      // stays: it says why this is slow, which a placeholder
+                      // cannot.
+                      const Shimmer(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SkeletonLine(),
+                            SizedBox(height: 8),
+                            SkeletonLine(),
+                            SizedBox(height: 8),
+                            SkeletonLine(widthFactor: 0.7),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       Text(
-                        "Dr. Docsy AI is searching the web and analyzing detailed insights for '${widget.title}'...",
+                        "Docsy AI is searching the web and analyzing detailed insights for '${widget.title}'...",
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(fontSize: 12, fontStyle: FontStyle.italic, color: BlushyColors.secondaryText),
                       ),
@@ -489,7 +481,7 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
                   ),
@@ -526,10 +518,13 @@ class _DashboardSyncBanner extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // A shimmering pill rather than a spinner: this banner sits over
+          // content that is already readable, so it reports progress without
+          // asking to be watched.
           const SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: BlushyColors.primary),
+            width: 28,
+            height: 8,
+            child: Shimmer(child: SkeletonBox(height: 8, radius: 4)),
           ),
           const SizedBox(width: 10),
           Flexible(

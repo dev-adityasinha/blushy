@@ -20,6 +20,16 @@ android {
     namespace = "com.blushy.blushy_love_app"
     compileSdk = 36
 
+    // Set explicitly, because unset does not mean "no opinion": AGP falls back
+    // to its own default (27.0.12077973) while the `jni` plugin -- pulled in
+    // transitively -- declares `ndkVersion flutter.ndkVersion`. The two
+    // disagreeing is what the NDK warning was about.
+    //
+    // Taken from the same source `jni` takes it from rather than written out,
+    // so the next Flutter upgrade moves both together instead of leaving this
+    // pinned to a version nothing else is using.
+    ndkVersion = flutter.ndkVersion
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

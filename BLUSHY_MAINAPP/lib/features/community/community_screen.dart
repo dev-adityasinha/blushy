@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../shared/skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
@@ -12,6 +13,25 @@ import '../../services/html_audio_helper.dart';
 import '../../services/api_sia_service.dart';
 import 'moderation_widgets.dart';
 import '../../l10n/app_localizations.dart';
+
+/// Whether a post matches what was typed in the search box.
+///
+/// The box says "title, text, tags, or username", but the author was never
+/// checked -- so searching someone's name found them under People and none of
+/// their posts, which read as only people being searched.
+///
+/// This looks at the posts already loaded for the current feed. There is no
+/// server-side post search to call: `/posts/feed` takes a feed type and
+/// nothing else.
+bool communityPostMatches(CommunityPost post, String query) {
+  final needle = query.trim().toLowerCase();
+  if (needle.isEmpty) return true;
+
+  return post.title.toLowerCase().contains(needle) ||
+      post.text.toLowerCase().contains(needle) ||
+      post.authorName.toLowerCase().contains(needle) ||
+      post.tags.any((tag) => tag.toLowerCase().contains(needle));
+}
 
 class BlushyCommunityScreen extends StatefulWidget {
   const BlushyCommunityScreen({super.key});
@@ -30,6 +50,24 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
   bool _isTranscribingSearchVoice = false;
 
   String _activeTab = 'Home'; // Home, Trending, Latest, Following
+
+  /// Whether the create-post button is showing its label.
+  ///
+  /// It sits collapsed as a plain `+`, and expands for [_labelFlash] whenever
+  /// the feed filter changes -- long enough to say what the button does,
+  /// brief enough that it is not permanently covering the feed.
+  bool _isCreateLabelShowing = false;
+  Timer? _createLabelTimer;
+  static const Duration _labelFlash = Duration(seconds: 2);
+
+  /// The feed filters, in order, each with the icon that sits before its name.
+  /// Kept as one list so the row and the chips cannot fall out of step.
+  static const Map<String, IconData> _feedTabs = <String, IconData>{
+    'Home': Icons.home_rounded,
+    'Trending': Icons.trending_up_rounded,
+    'Latest': Icons.schedule_rounded,
+    'Following': Icons.people_rounded,
+  };
   String _searchQuery = '';
   List<CommunityPost> _allPosts = [];
   List<CommunityPost> _feedPosts = [];
@@ -107,8 +145,21 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _createLabelTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Expands the create-post button briefly, then lets it collapse again.
+  void _flashCreateLabel() {
+    // Held so it can be cancelled: changing filter twice inside the window
+    // should restart it, not leave the first timer to collapse the button
+    // early. An uncancelled timer also fires after dispose.
+    _createLabelTimer?.cancel();
+    setState(() => _isCreateLabelShowing = true);
+    _createLabelTimer = Timer(_labelFlash, () {
+      if (mounted) setState(() => _isCreateLabelShowing = false);
+    });
   }
 
   Future<void> _performUserSearch(String query) async {
@@ -146,27 +197,26 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
       _isLoadingFeed = true;
     });
     final type = _activeTab.toLowerCase();
-    final posts = await _redditService.getFeed(type);
-    if (mounted) {
-      setState(() {
-        _allPosts = posts;
-        _filterPosts();
-        _isLoadingFeed = false;
-      });
-    }
+    // The term goes to the server so the whole feed is searched, not just the
+    // page already loaded. The local filter below still runs, which keeps
+    // typing responsive between round trips.
+    final query = _searchQuery.trim();
+    final posts = await _redditService.getFeed(type, search: query);
+    if (!mounted) return;
+    // A slower earlier request must not overwrite a newer search.
+    if (_searchQuery.trim() != query) return;
+    setState(() {
+      _allPosts = posts;
+      _filterPosts();
+      _isLoadingFeed = false;
+    });
   }
 
   void _filterPosts() {
-    if (_searchQuery.trim().isEmpty) {
-      _feedPosts = List.from(_allPosts);
-    } else {
-      final query = _searchQuery.toLowerCase();
-      _feedPosts = _allPosts.where((post) {
-        return post.title.toLowerCase().contains(query) ||
-            post.text.toLowerCase().contains(query) ||
-            post.tags.any((t) => t.toLowerCase().contains(query));
-      }).toList();
-    }
+    final query = _searchQuery.trim();
+    _feedPosts = query.isEmpty
+        ? List.from(_allPosts)
+        : _allPosts.where((post) => communityPostMatches(post, query)).toList();
   }
 
   /// Applies a vote to the feed straight away, then reconciles with the server.
@@ -247,6 +297,9 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
     return Scaffold(
       backgroundColor: BlushyColors.background,
       floatingActionButton: FloatingActionButton.extended(
+        // Collapsed to a `+` unless the label is flashing, so it does not sit
+        // over the feed saying the same thing all session.
+        isExtended: _isCreateLabelShowing,
         onPressed: _navigateToCreatePost,
         backgroundColor: BlushyColors.primary,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
@@ -268,38 +321,6 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (Navigator.canPop(context)) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(left: 20.0, top: 12.0, bottom: 4.0),
-                    child: InkWell(
-                      onTap: () => Navigator.pop(context),
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: BlushyColors.border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.arrow_back_rounded, size: 18, color: BlushyColors.text),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Back to Home',
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: BlushyColors.text,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
 
                 // 1. Search Bar
                 _buildSearchBar(),
@@ -333,7 +354,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border),
         ),
         child: Row(
@@ -351,6 +372,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                   if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
                   _searchDebounce = Timer(const Duration(milliseconds: 300), () {
                     _performUserSearch(val);
+                    _fetchCommunityFeed();
                   });
                 },
                 style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
@@ -408,60 +430,80 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
   }
 
   Widget _buildNavigationTabs() {
+    // All four share the width instead of running off the edge. Scrolling put
+    // the last filter behind a gesture nobody had a reason to try.
     return Padding(
-      padding: EdgeInsets.only(left: BlushyTheme.getPagePadding(context)),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: [
-            _buildTabItem('Home'),
-            _buildTabItem('Trending'),
-            _buildTabItem('Latest'),
-            _buildTabItem('Following'),
-          ],
-        ),
+      padding: EdgeInsets.symmetric(
+        horizontal: BlushyTheme.getPagePadding(context),
+      ),
+      child: Row(
+        children: [
+          for (final label in _feedTabs.keys)
+            Expanded(child: _buildTabItem(label)),
+        ],
       ),
     );
   }
 
+  /// One feed filter, as a chip that fills with red when it is the one in use.
+  ///
+  /// This was a text label with a two-pixel rule under it, which is a small
+  /// target and a quiet signal for the control that decides what the whole
+  /// feed shows.
   Widget _buildTabItem(String label) {
     final active = _activeTab == label;
-    return GestureDetector(
-      onTap: () {
-        if (_activeTab != label) {
-          setState(() {
-            _activeTab = label;
-          });
-          _fetchCommunityFeed();
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 16),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                color: active ? BlushyColors.text : BlushyColors.secondaryText.withValues(alpha: 0.7),
+    final foreground = active ? Colors.white : BlushyColors.secondaryText;
+
+    return Padding(
+      // Even gaps, so the row reads as four equal filters.
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Semantics(
+        button: true,
+        selected: active,
+        label: label,
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: () {
+            if (_activeTab != label) {
+              setState(() {
+                _activeTab = label;
+              });
+              _flashCreateLabel();
+              _fetchCommunityFeed();
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 10),
+            decoration: BoxDecoration(
+              color: active ? BlushyColors.primary : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: active ? BlushyColors.primary : BlushyColors.border,
               ),
             ),
-            const SizedBox(height: 4),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: 2,
-              width: 16,
-              decoration: BoxDecoration(
-                color: active ? BlushyColors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(1),
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(_feedTabs[label], size: 12, color: foreground),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: foreground,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -598,10 +640,16 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
 
   Widget _buildCommunityFeed() {
     if (_isLoadingFeed) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 60.0),
-          child: CircularProgressIndicator(color: BlushyColors.primary),
+      // Post-shaped, so the feed does not jump when the real posts arrive and
+      // a slow load looks like a feed filling in rather than a stalled screen.
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.0),
+        child: Column(
+          children: [
+            SkeletonPostCard(),
+            SkeletonPostCard(),
+            SkeletonPostCard(),
+          ],
         ),
       );
     }
@@ -643,7 +691,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6), width: 0.8),
           boxShadow: const [
             BoxShadow(
@@ -698,7 +746,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                       Text(
                         '•  ${_timeAgo(post.createdAt)}',
                         style: GoogleFonts.poppins(
-                          fontSize: 10.5,
+                          fontSize: 10,
                           color: BlushyColors.secondaryText.withValues(alpha: 0.7),
                         ),
                       ),
@@ -781,7 +829,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                     final targetVote = post.userVote == 1 ? 0 : 1;
                     _votePost(post, targetVote);
                   },
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(
@@ -816,7 +864,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                     final targetVote = post.userVote == -1 ? 0 : -1;
                     _votePost(post, targetVote);
                   },
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(
@@ -836,7 +884,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                 // COMMENT BUTTON
                 InkWell(
                   onTap: () => _navigateToPostDetail(post),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(

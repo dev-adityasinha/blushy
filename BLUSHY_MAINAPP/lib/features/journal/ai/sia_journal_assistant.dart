@@ -76,7 +76,7 @@ class _SiaJournalAssistantState extends State<SiaJournalAssistant> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFDE68A)),
         boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3))],
       ),
@@ -89,7 +89,7 @@ class _SiaJournalAssistantState extends State<SiaJournalAssistant> {
               const Icon(Icons.auto_awesome_rounded, size: 16, color: Color(0xFFD97706)),
               const SizedBox(width: 6),
               Text(
-                'Dr. Docsy Companion Suggestion',
+                'Docsy Suggestion',
                 style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF92400E)),
               ),
               const Spacer(),
@@ -183,7 +183,7 @@ class _SiaJournalAssistantState extends State<SiaJournalAssistant> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFD97706) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: isSelected ? const Color(0xFFD97706) : const Color(0xFFFDE68A)),
         ),
         child: Text(

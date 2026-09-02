@@ -189,7 +189,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
     final double cycleProgress = ((currentDay - 1) / cycleLength).clamp(0.0, 1.0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -221,7 +221,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                   ),
                   const SizedBox(height: 20),
 
-                  // 4. Combined Dr. Docsy AI Intelligence Briefing
+                  // 4. Combined Docsy AI Intelligence Briefing
                   _buildSiaCombinedInsightCard(pc),
                   const SizedBox(height: 20),
 
@@ -255,7 +255,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
@@ -327,7 +327,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.3)),
             boxShadow: [
               BoxShadow(
@@ -373,7 +373,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
@@ -495,7 +495,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.2)),
       ),
       child: Column(
@@ -513,7 +513,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
               ),
               const SizedBox(width: 12),
               Text(
-                "Dr. Docsy's Cross-Topic Synthesis",
+                "Docsy's Cross-Topic Synthesis",
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -545,7 +545,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
       return "Cycle & Endocrine Balance: During this cycle phase, supporting insulin sensitivity and reducing inflammation with magnesium and restorative movement helps optimize energy.";
     }
     if (stages.contains('tryingToConceive') && stages.contains('hormonalHealth')) {
-      return "Fertility & Hormone Sync: Tracking ovulation biomarkers alongside hormonal health markers gives Dr. Docsy high precision for identifying your optimal conception window.";
+      return "Fertility & Hormone Sync: Tracking ovulation biomarkers alongside hormonal health markers gives Docsy high precision for identifying your optimal conception window.";
     }
     if (stages.contains('perimenopause') && stages.contains('hormonalHealth')) {
       return "Transition & Endocrine Care: Cross-referencing cycle rhythm shifts with hormonal symptom logs helps manage hot flashes, mood transitions, and sleep vitality.";
@@ -559,7 +559,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
     if (stages.contains('postpartum') && stages.contains('reproductiveYears')) {
       return "Postpartum Cycle Return: Logging early postpartum cycle patterns alongside newborn care and restorative maternal recovery.";
     }
-    return "All active modules are synchronized with your personal MongoDB health logs. Your daily metrics dynamically power Dr. Docsy's guidance.";
+    return "All active modules are synchronized with your personal MongoDB health logs. Your daily metrics dynamically power Docsy's guidance.";
   }
 
   Widget _buildDailyWellbeingLogger(BlushyOSState state) {
@@ -577,7 +577,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border.withValues(alpha: 0.7)),
       ),
       child: Column(
@@ -661,7 +661,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                 ),
                 selected: isSelected,
                 selectedColor: BlushyColors.primary,
-                backgroundColor: const Color(0xFFFAF6F0),
+                backgroundColor: BlushyColors.background,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
@@ -723,7 +723,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
               style: ElevatedButton.styleFrom(
                 backgroundColor: BlushyColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
               child: Text(
@@ -742,7 +742,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border.withValues(alpha: 0.7)),
       ),
       child: Column(
@@ -767,8 +767,8 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFAF6F0),
-                  borderRadius: BorderRadius.circular(16),
+                  color: BlushyColors.background,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border.withValues(alpha: 0.5)),
                 ),
                 child: Row(
@@ -839,13 +839,13 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
     required VoidCallback onTap,
   }) {
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFFAF6F0),
-          borderRadius: BorderRadius.circular(14),
+          color: BlushyColors.background,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6)),
         ),
         child: Column(

@@ -123,7 +123,7 @@ abstract class AppLocalizations {
   /// No description provided for @navSia.
   ///
   /// In en, this message translates to:
-  /// **'Dr. Docsy'**
+  /// **'Docsy'**
   String get navSia;
 
   /// No description provided for @navStudio.
@@ -261,13 +261,13 @@ abstract class AppLocalizations {
   /// No description provided for @languageSheetTitle.
   ///
   /// In en, this message translates to:
-  /// **'Dr. Docsy speaks'**
+  /// **'Docsy speaks'**
   String get languageSheetTitle;
 
   /// No description provided for @languageSheetExplainer.
   ///
   /// In en, this message translates to:
-  /// **'Changes the language Dr. Docsy replies in. The rest of the app stays in English for now.'**
+  /// **'Changes the language Docsy replies in. The rest of the app stays in English for now.'**
   String get languageSheetExplainer;
 
   /// No description provided for @privacyTitle.
@@ -333,7 +333,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSiaAssistant.
   ///
   /// In en, this message translates to:
-  /// **'Dr. Docsy AI Assistant'**
+  /// **'Docsy AI Assistant'**
   String get settingsSiaAssistant;
 
   /// No description provided for @settingsSiaAssistantSub.
@@ -429,13 +429,13 @@ abstract class AppLocalizations {
   /// No description provided for @siaAsk.
   ///
   /// In en, this message translates to:
-  /// **'Ask Dr. Docsy'**
+  /// **'Ask Docsy'**
   String get siaAsk;
 
   /// No description provided for @siaThinking.
   ///
   /// In en, this message translates to:
-  /// **'Dr. Docsy is thinking…'**
+  /// **'Typing....'**
   String get siaThinking;
 
   /// No description provided for @siaVoiceTranscribed.
@@ -573,7 +573,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashSiaInsights.
   ///
   /// In en, this message translates to:
-  /// **'DR. DOCSY INSIGHTS'**
+  /// **'DOCSY INSIGHTS'**
   String get dashSiaInsights;
 
   /// No description provided for @dashHelpful.
@@ -693,7 +693,7 @@ abstract class AppLocalizations {
   /// No description provided for @journalNothingToReflect.
   ///
   /// In en, this message translates to:
-  /// **'Nothing to reflect on yet. Write an entry and Dr. Docsy will read it back to you.'**
+  /// **'Nothing to reflect on yet. Write an entry and Docsy will read it back to you.'**
   String get journalNothingToReflect;
 
   /// No description provided for @journalNoMemoriesFound.
@@ -783,7 +783,7 @@ abstract class AppLocalizations {
   /// No description provided for @journalCloudAiSub.
   ///
   /// In en, this message translates to:
-  /// **'Allow cloud processing for Dr. Docsy insights'**
+  /// **'Allow cloud processing for Docsy insights'**
   String get journalCloudAiSub;
 
   /// No description provided for @journalCloseMemoryBook.
@@ -885,7 +885,7 @@ abstract class AppLocalizations {
   /// No description provided for @partnerSiaDecoding.
   ///
   /// In en, this message translates to:
-  /// **'Dr. Docsy is decoding…'**
+  /// **'Docsy is decoding…'**
   String get partnerSiaDecoding;
 
   /// No description provided for @partnerSuggestedReply.
@@ -945,13 +945,13 @@ abstract class AppLocalizations {
   /// No description provided for @partnerSiaAdviceTitle.
   ///
   /// In en, this message translates to:
-  /// **'DR. DOCSY RELATIONSHIP ADVICE'**
+  /// **'DOCSY RELATIONSHIP ADVICE'**
   String get partnerSiaAdviceTitle;
 
   /// No description provided for @partnerSiaAdviceExplainer.
   ///
   /// In en, this message translates to:
-  /// **'Ask about something that is on your mind. Dr. Docsy only sees what your partner has chosen to share.'**
+  /// **'Ask about something that is on your mind. Docsy only sees what your partner has chosen to share.'**
   String get partnerSiaAdviceExplainer;
 
   /// No description provided for @partnerTryAgain.
@@ -981,7 +981,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeGreetingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'How are you feeling today?'**
+  /// **'Whatever today looks like, you don\'t have to do it alone.'**
   String get homeGreetingSubtitle;
 
   /// No description provided for @dashLogFirstCheckIn.
@@ -1041,7 +1041,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbPreparingDocsy.
   ///
   /// In en, this message translates to:
-  /// **'Preparing Dr. Docsy'**
+  /// **'Preparing Docsy'**
   String get onbPreparingDocsy;
 
   /// No description provided for @jrnCancel.
@@ -1485,7 +1485,7 @@ abstract class AppLocalizations {
   /// No description provided for @hDrDocsy.
   ///
   /// In en, this message translates to:
-  /// **'Dr. Docsy'**
+  /// **'Docsy'**
   String get hDrDocsy;
 
   /// No description provided for @hClose.
@@ -1515,7 +1515,7 @@ abstract class AppLocalizations {
   /// No description provided for @cYourCycleLengthIs.
   ///
   /// In en, this message translates to:
-  /// **'Your cycle length is varying. Log your symptoms daily so Dr. Docsy can adjust predictions.'**
+  /// **'Your cycle length is varying. Log your symptoms daily so Docsy can adjust predictions.'**
   String get cYourCycleLengthIs;
 
   /// No description provided for @cTrackingIsDisabledFocus.
@@ -1539,7 +1539,7 @@ abstract class AppLocalizations {
   /// No description provided for @smClearDrDocsyMemory.
   ///
   /// In en, this message translates to:
-  /// **'Clear Dr. Docsy Memory'**
+  /// **'Clear Docsy Memory'**
   String get smClearDrDocsyMemory;
 
   /// No description provided for @scClinicalAlignment.
@@ -1983,7 +1983,7 @@ abstract class AppLocalizations {
   /// No description provided for @phDrDocsy.
   ///
   /// In en, this message translates to:
-  /// **'Dr. Docsy'**
+  /// **'Docsy'**
   String get phDrDocsy;
 
   /// No description provided for @phNotSharedWithYou.
@@ -2031,7 +2031,7 @@ abstract class AppLocalizations {
   /// No description provided for @plConnectWithYourPartner.
   ///
   /// In en, this message translates to:
-  /// **'Connect with your partner to unlock personalized Dr. Docsy AI insights.'**
+  /// **'Connect with your partner to unlock personalized Docsy AI insights.'**
   String get plConnectWithYourPartner;
 
   /// No description provided for @plUnderstandingEnergyFatigueShifts.
@@ -2147,6 +2147,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That photo could not be added. Try another one.'**
   String get jrnCouldNotAddPhoto;
+
+  /// First-run product tour.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day at a glance: cycle, check-ins and what to expect. Log how you feel here.'**
+  String get tourHomeBody;
+
+  /// First-run product tour.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions and answers from other people going through the same thing.'**
+  String get tourCommunityBody;
+
+  /// First-run product tour.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Docsy anything, by typing or by voice. She knows what you have logged.'**
+  String get tourSiaBody;
+
+  /// First-run product tour.
+  ///
+  /// In en, this message translates to:
+  /// **'Your journal, guided recovery sessions and time capsules you write to your future self.'**
+  String get tourStudioBody;
+
+  /// First-run product tour.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite a partner and choose exactly what they can see. Nothing is shared until you say so.'**
+  String get tourPartnerBody;
+
+  /// First-run product tour.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get tourSkip;
+
+  /// First-run product tour.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get tourNext;
+
+  /// First-run product tour.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get tourDone;
+
+  /// Shown instead of a profile when a post has no author to show.
+  ///
+  /// In en, this message translates to:
+  /// **'This was posted anonymously, so there is no profile to open. Whoever wrote it chose not to be named, and that stays their choice.'**
+  String get upAnonymousProfile;
 }
 
 class _AppLocalizationsDelegate

@@ -100,7 +100,7 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
       case CoverMaterial.leather:
         return BoxDecoration(
           color: widget.coverColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -116,7 +116,7 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
       case CoverMaterial.linen:
         return BoxDecoration(
           color: widget.coverColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white24, width: 1.5),
           boxShadow: [
             BoxShadow(color: Colors.black.withValues(alpha: 0.28), blurRadius: _shadowAnim.value, offset: const Offset(0, 10)),
@@ -125,7 +125,7 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
       case CoverMaterial.velvet:
         return BoxDecoration(
           color: widget.coverColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 1.2,
@@ -141,7 +141,7 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
       default:
         return BoxDecoration(
           color: widget.coverColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: _shadowAnim.value, offset: const Offset(0, 10)),
           ],
@@ -229,7 +229,7 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
                         // Gold Foil Embossed Border Line
                         Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
                           ),
                         ),

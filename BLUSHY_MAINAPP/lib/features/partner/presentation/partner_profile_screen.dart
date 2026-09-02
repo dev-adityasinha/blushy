@@ -144,7 +144,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -174,7 +174,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: Row(
@@ -228,7 +228,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: Row(
@@ -237,7 +237,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF3FAF6),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.favorite_rounded, color: BlushyColors.success, size: 24),
                         ),
@@ -271,7 +271,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: Column(
@@ -279,7 +279,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                         ListTile(
                           leading: const Icon(Icons.notifications_outlined, color: BlushyColors.primary),
                           title: Text('Push Notifications', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-                          subtitle: Text('Get Dr. Docsy daily support alerts', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
+                          subtitle: Text('Get Docsy daily support alerts', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
                           trailing: _notificationsSaving
                               ? const SizedBox(
                                   width: 20,
@@ -329,7 +329,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: const BorderSide(color: Color(0xFFFFCDD2)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),

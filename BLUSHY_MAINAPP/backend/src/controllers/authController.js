@@ -1095,7 +1095,7 @@ export async function setMyJournalShared(req, res, next) {
 }
 
 /**
- * Marks one Dr. Docsy exchange as shared with a partner, or takes it back.
+ * Marks one Docsy exchange as shared with a partner, or takes it back.
  */
 export async function setMySiaConversationShared(req, res, next) {
   try {

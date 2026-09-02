@@ -91,7 +91,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border, width: 0.8),
       ),
       child: Column(
@@ -139,7 +139,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: muted ? BlushyColors.taupe : BlushyColors.lutealSoft,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
@@ -158,7 +158,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: BoxDecoration(
         color: BlushyColors.cardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Column(

@@ -244,7 +244,7 @@ class SiaDashboardService {
 
     if (list.isEmpty) {
       list.add(SiaDashboardObservation(
-        insight: "Dr. Docsy is continuously learning your wellness rhythm.",
+        insight: "Docsy is continuously learning your wellness rhythm.",
         explanation: "Daily check-ins, symptom logs, and chats help build your authentic personalized health pattern.",
         category: "General",
       ));
@@ -413,8 +413,8 @@ class SiaDashboardService {
       ),
       MilestoneItem(
         id: 'milestone_sia_engagement',
-        title: 'Dr. Docsy Wellness Conversations',
-        description: 'Engage with Dr. Docsy for personalized wellness guidance.',
+        title: 'Docsy Wellness Conversations',
+        description: 'Engage with Docsy for personalized wellness guidance.',
         sourceField: 'ai_chat_history_woman',
         completionRule: 'siaConversationsCount >= 3',
         isCompleted: false,
@@ -426,7 +426,7 @@ class SiaDashboardService {
     final List<String> milestones = [
       pc.lastPeriodStart != null ? "Your cycle established a steady rhythm." : "No cycle logged.",
       "You completed $checkinCount check-ins.",
-      "Dr. Docsy wellness conversations logged.",
+      "Docsy wellness conversations logged.",
       "Tracked wellness feelings and symptoms.",
     ];
     final String reflection = checkinCount >= 15
@@ -473,7 +473,7 @@ class SiaDashboardService {
     } else if (hasCycle && phase != null && phase.toLowerCase().contains('follicular') && cycleDay != null) {
       brief = "You're on Cycle Day $cycleDay in your Follicular Phase. Rising estrogen supports high cognitive focus, fresh creativity, and physical stamina today.";
     } else if (topics.contains('sleep') || (feeling != null && feeling.toLowerCase().contains('tired'))) {
-      brief = "Here is your personalized wellness space. Dr. Docsy has tuned today's insights to support deeper rest, gentle movement, and steady energy.";
+      brief = "Here is your personalized wellness space. Docsy has tuned today's insights to support deeper rest, gentle movement, and steady energy.";
     } else {
       brief = "Here is your personalized space bringing together insights for $stagesSummary. Every rhythm is connected, and we're here to guide you seamlessly.";
     }

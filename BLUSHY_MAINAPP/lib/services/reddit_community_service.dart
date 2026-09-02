@@ -23,7 +23,9 @@ class RedditCommunityService {
   final Dio _dio = Dio(BaseOptions(
     baseUrl: resolveApiBaseUrl(),
     connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 25),
+    // Despite the name this goes to our own backend, so it pays the same
+    // Render cold start (~27s) as the rest; see api_community_service.dart.
+    receiveTimeout: const Duration(seconds: 60),
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -41,11 +43,19 @@ class RedditCommunityService {
   // --- Post APIs ---
 
   /// Fetches feed posts based on type: latest, trending, following, home
-  Future<List<CommunityPost>> getFeed(String type) async {
+  /// The feed, optionally narrowed by a search term.
+  ///
+  /// [search] is applied on the server across every public post, not only the
+  /// page the app is holding. Filtering client-side could never find anything
+  /// past the first page, while people search hit the server and did.
+  Future<List<CommunityPost>> getFeed(String type, {String search = ''}) async {
     try {
       final response = await _dio.get(
         '/posts/feed',
-        queryParameters: {'type': type},
+        queryParameters: {
+          'type': type,
+          if (search.trim().isNotEmpty) 'search': search.trim(),
+        },
         options: _authOptions(),
       );
       if (response.data is Map<String, dynamic> && response.data['posts'] is List) {

@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
+import '../../shared/skeleton.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
 import '../../services/api_blushy_service.dart';
 import 'recovery_session_player.dart';
 import '../../core/theme.dart' hide BlushyColors;
-import '../../core/state.dart';
 import '../../core/storage.dart';
 import '../journal/journal_screen.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../journal/calendar/memory_map.dart';
+import '../journal/insights/achievement_garden.dart';
+import '../journal/vault/year_in_review.dart';
+import '../journal/vault/memory_vault.dart';
+import '../../services/journal_storage.dart';
+import '../journal/insights/journal_dashboard.dart';
+import 'dart:convert';
+import '../partner/digibouquet/state/bouquet_state.dart';
+import '../partner/digibouquet/screens/home_screen.dart' show HomeScreen;
+import '../partner/digibouquet/models/auth_models.dart';
+import '../../services/auth_storage.dart';
+import 'package:provider/provider.dart';
 
 
 class BlushyMStudioScreen extends StatefulWidget {
@@ -19,19 +31,72 @@ class BlushyMStudioScreen extends StatefulWidget {
 }
 
 class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerProviderStateMixin {
-  final GlobalKey<BlushyJournalScreenState> _embeddedJournalKey = GlobalKey<BlushyJournalScreenState>();
   // Tab index names
-  final List<String> _tabs = [
-    'Journal',
-    'Recovery',
-    'Time Capsules',
-    // 'AI Reflections' removed on request.
+  ///
+  /// M Studio used to be three horizontal tabs with everything else buried in
+  /// a bottom sheet inside the embedded journal. It is a hub now: every area
+  /// is a card, and opening one shows that area's own cards.
+
+  /// A destination inside the Journal section that needs the embedded journal
+  /// to be mounted first. Run once the section has been laid out.
+  /// Set while a section screen is open, so data loaded here can redraw it.
+  VoidCallback? _refreshOpenSection;
+
+  /// The hub, in the order it is shown.
+  static const List<Map<String, dynamic>> _sections = [
+    {
+      'title': 'Journal',
+      'sub': 'Write, record and look back',
+      'icon': Icons.auto_stories_rounded,
+      'tint': Color(0xFFFDF2F2),
+    },
+    {
+      'title': 'Recovery',
+      'sub': 'Guided sessions for how you feel now',
+      'icon': Icons.spa_rounded,
+      'tint': Color(0xFFF3FAF6),
+    },
+    {
+      'title': 'Time Capsules',
+      'sub': 'Letters that unseal later',
+      'icon': Icons.hourglass_empty_rounded,
+      'tint': Color(0xFFFFF9F2),
+    },
+    {
+      'title': 'Bouquet',
+      'sub': 'Arrange one and share it as an image',
+      'icon': Icons.local_florist_rounded,
+      'tint': Color(0xFFFDF2F2),
+    },
+    {
+      'title': 'Smart Calendar & Map',
+      'sub': 'Mood grid and the places behind it',
+      'icon': Icons.calendar_month_rounded,
+      'tint': Color(0xFFF3FAF6),
+    },
+    {
+      'title': 'Smart AI Search',
+      'sub': 'Search across everything you have written',
+      'icon': Icons.search_rounded,
+      'tint': Color(0xFFF3EEFA),
+    },
+    {
+      'title': 'Memory Vault',
+      'sub': 'Starred memories and collections',
+      'icon': Icons.military_tech_rounded,
+      'tint': Color(0xFFFFF9F2),
+    },
+    {
+      'title': 'Reflective Content Garden',
+      'sub': 'Grows with how much you reflect',
+      'icon': Icons.eco_rounded,
+      'tint': Color(0xFFF3FAF6),
+    },
   ];
-  int _selectedTabIndex = 0;
 
   // Active view states
   bool _isEditorOpen = false;
-  String _activeJournalTemplate = 'Daily Reflection';
+  final String _activeJournalTemplate = 'Daily Reflection';
   String _editorTheme = 'Default'; // Default, Travel, Gratitude, Pink Self-Love
   bool _isDecorated = false;
 
@@ -113,6 +178,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     }
 
     await _loadCapsules();
+    _refreshOpenSection?.call();
     if (!mounted) return;
 
     showDialog<void>(
@@ -142,48 +208,6 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     super.dispose();
   }
 
-  // Helper to determine the floating button label and icon based on selected tab
-  String _getFloatingActionText() {
-    switch (_tabs[_selectedTabIndex]) {
-      case 'Journal':
-        return 'New Journal';
-      case 'Recovery':
-        return 'Start Recovery';
-      case 'Time Capsules':
-        return 'New Capsule';
-      default:
-        return 'Create';
-    }
-  }
-
-  IconData _getFloatingActionIcon() {
-    switch (_tabs[_selectedTabIndex]) {
-      case 'Journal':
-        return Icons.auto_stories_rounded;
-      case 'Recovery':
-        return Icons.spa_rounded;
-      case 'Time Capsules':
-        return Icons.hourglass_empty_rounded;
-      default:
-        return Icons.add_rounded;
-    }
-  }
-
-  void _onFloatingActionTap() {
-    final currentTab = _tabs[_selectedTabIndex];
-    if (currentTab == 'Journal') {
-      _embeddedJournalKey.currentState?.openNewEntryBottomSheet();
-    } else if (currentTab == 'Recovery') {
-      _startRecoveryFlow();
-    } else if (currentTab == 'Time Capsules') {
-      _showCreateCapsuleDialog();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Starting $currentTab creation...')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isEditorOpen) {
@@ -191,7 +215,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0), // Handcrafted cream paper background
+      backgroundColor: BlushyColors.background, // Handcrafted cream paper background
       body: SafeArea(
         child: Stack(
           children: [
@@ -202,7 +226,6 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                 _buildHeader(),
 
                 // 2. HORIZONTAL TAB NAVIGATION (Pill capsules list)
-                _buildHorizontalTabNavigation(),
 
                 // 3. MAIN WORKSPACE CONTAINER (Morphing view switcher)
                 Expanded(
@@ -223,7 +246,6 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
             ),
 
             // 4. FLOATING ADAPTIVE ACTION BUTTON
-            _buildAdaptiveFloatingActionButton(),
           ],
         ),
       ),
@@ -243,223 +265,90 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: InkWell(
-              onTap: () => Navigator.pop(context),
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: BlushyColors.border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.arrow_back_rounded, size: 18, color: BlushyColors.text),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Back to Home',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: BlushyColors.text,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildHorizontalTabNavigation() {
-    final double pagePadding = BlushyTheme.getPagePadding(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: BlushyColors.border)),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: List.generate(_tabs.length, (index) {
-            final active = _selectedTabIndex == index;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedTabIndex = index;
-                });
-              },
-              child: Container(
-                margin: EdgeInsets.only(
-                  left: index == 0 ? pagePadding : 8,
-                  right: index == _tabs.length - 1 ? pagePadding : 0,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: active ? BlushyColors.text : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: active ? BlushyColors.text : BlushyColors.border,
-                  ),
-                ),
-                child: Text(
-                  _tabs[index],
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    color: active ? Colors.white : BlushyColors.secondaryText,
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWorkspaceTabContent() {
-    switch (_tabs[_selectedTabIndex]) {
-      case 'Journal':
-        return _buildJournalTab();
-      case 'Recovery':
-        return _buildRecoveryTab();
-      case 'Time Capsules':
-        return _buildTimeCapsulesTab();
-      default:
-        return _buildJournalTab();
-    }
-  }
-
-  Widget _buildJournalTab() {
-    // Subscribes this widget to BlushyOSState. The values below come from
-    // BlushyStorage, which has no change notification of its own, so this
-    // dependency is what rebuilds the tab when the profile changes.
-    BlushyOSProvider.of(context);
-    String stage = 'everydayWellness';
-    try {
-      final profile = BlushyStorage.read('user_profile.json');
-      if (profile['profile'] != null) {
-        stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
-      }
-    } catch (_) {}
-
-    List<String> prompts = ['What did your body need today that it didn\'t get?', 'Describe a moment of calm during your luteal phase today.'];
-    String aiFeedback = 'Your logs indicate a 15% increase in rest cycles. Estrogen levels are stabilizing.';
-
-    if (stage == 'pregnancy') {
-      prompts = ['How is your physical comfort and sleep alignment today?', 'Log any symptoms or baby movements today.'];
-      aiFeedback = 'Fetal heart rate simulation is stable. Logged hydration is optimal for third-trimester rest.';
-    } else if (stage == 'postpartum') {
-      prompts = ['Rate your energy recovery and sleep quality from last night.', 'What is one gentle self-care step you took today?'];
-      aiFeedback = 'Pelvic floor alignment recovery is tracking well. Parasympathetic rebound shows positive sleep offsets.';
-    } else if (stage == 'menopause') {
-      prompts = ['Log any hot flashes, night sweats, or temperature indicators today.', 'How are your joints and bone strength feeling today?'];
-      aiFeedback = 'Vasomotor stability remains optimal. Night sweats logged are 25% lower than last week.';
-    }
-
+  /// The hub: one card per area of the studio.
+  Widget _buildStudioHub() {
     return Column(
-      key: const ValueKey('journal_tab'),
+      key: const ValueKey('studio_hub'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildWorkspaceActionCard(
-          title: 'Continue Yesterday',
-          sub: '“Had a peaceful walk after lunch. Felt very introspective...”',
-          icon: Icons.history_rounded,
-          onTap: () {
-            setState(() {
-              _activeJournalTemplate = 'Daily Reflection';
-              _isEditorOpen = true;
-            });
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        Text(
-          'SUGGESTED PROMPTS',
-          style: GoogleFonts.poppins(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: BlushyColors.secondaryText,
-            letterSpacing: 0.5,
+        for (final section in _sections)
+          _buildWorkspaceActionCard(
+            title: section['title'] as String,
+            sub: section['sub'] as String,
+            icon: section['icon'] as IconData,
+            onTap: () => _openStudioSection(section['title'] as String),
           ),
-        ),
-        const SizedBox(height: 10),
-        for (var p in prompts) _buildPromptRow(p),
-        
-        const SizedBox(height: 20),
-        Text(
-          'TODAY\'S AI REFLECTION',
-          style: GoogleFonts.poppins(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: BlushyColors.primary,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BlushyTheme.premiumCardDecoration,
-          child: Text(
-            aiFeedback,
-            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'CREATIVE JOURNAL',
-          style: GoogleFonts.poppins(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: BlushyColors.secondaryText,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 650,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: BlushyJournalScreen(
-              key: _embeddedJournalKey,
-              isEmbedded: true,
-            ),
-          ),
-        ),
       ],
     );
   }
 
-  Widget _buildPromptRow(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.auto_awesome_rounded, color: BlushyColors.warning, size: 14),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, height: 1.35),
+  /// Opens a section as its own screen.
+  ///
+  /// These used to swap the body in place, and everything that was not
+  /// Journal, Recovery or Time Capsules fell through to the journal -- so
+  /// Scrapbook and Smart Calendar rendered the journal page, and its cards
+  /// (including the insights dashboard) appeared under every section.
+  Future<void> _openStudioSection(String title) async {
+    Future<void> push(Widget screen) =>
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+
+    switch (title) {
+      case 'Journal':
+        await push(const _JournalSectionScreen());
+      case 'Recovery':
+        await push(_StudioSectionScreen(
+          title: 'Recovery',
+          builder: () => _buildRecoveryTab(),
+        ));
+      case 'Time Capsules':
+        await push(_StudioSectionScreen(
+          title: 'Time Capsules',
+          builder: () => _buildTimeCapsulesTab(),
+          onRegister: (refresh) => _refreshOpenSection = refresh,
+        ));
+      case 'Bouquet':
+        // No connections passed, so the builder's "Send to Partner" is
+        // disabled and only the image share applies. Partner sending stays on
+        // the Partner tab, where a connection actually exists.
+        await push(
+          ChangeNotifierProvider<BouquetState>(
+            create: (_) => BouquetState(),
+            child: HomeScreen(
+              session: AuthSession(
+                message: 'Verified',
+                token: AuthStorage.getToken() ?? '',
+                userId: AuthStorage.getUserId() ?? 'user',
+                tokenType: 'Bearer',
+                expiresIn: 3600,
+                role: UserRole.woman,
+              ),
+              activeConnections: const [],
             ),
           ),
-        ],
-      ),
-    );
+        );
+      case 'Smart Calendar & Map':
+        await push(const MemoryMapWidget());
+      case 'Smart AI Search':
+        await push(const _JournalActionScreen(action: _JournalAction.search));
+      case 'Reflective Content Garden':
+        final entries = await JournalStorage().loadEntries('default_user');
+        if (!mounted) return;
+        await push(AchievementGardenWidget.fromEntries(entries));
+      case 'Memory Vault':
+        // The vault reads saved entries, which live in JournalStorage rather
+        // than in the journal screen's own list.
+        final entries = await JournalStorage().loadEntries('default_user');
+        if (!mounted) return;
+        await push(MemoryVaultWidget(entries: entries, onEntryTap: (e) {}));
+    }
   }
 
-
+  Widget _buildWorkspaceTabContent() => _buildStudioHub();
 
   // --- TAB 3: RECOVERY ---
   /// Guided sessions, loaded from the server.
@@ -473,6 +362,15 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
       key: const ValueKey('recovery_tab'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Starting a session used to be the floating button, which was tied to
+        // the tab strip. It is a card here so it survives that going away.
+        _buildWorkspaceActionCard(
+          title: 'Start a Session',
+          sub: 'Begin a guided relaxation now',
+          icon: Icons.spa_rounded,
+          onTap: _startRecoveryFlow,
+        ),
+        const SizedBox(height: 8),
         Text(
           'GUIDED SESSIONS',
           style: GoogleFonts.poppins(
@@ -490,8 +388,16 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
         const SizedBox(height: 14),
         if (_sessionsLoading)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Shimmer(
+              child: Column(
+                children: [
+                  SkeletonListRow(showTrailing: true),
+                  SkeletonListRow(showTrailing: true),
+                  SkeletonListRow(showTrailing: true),
+                ],
+              ),
+            ),
           )
         else if (_sessions.isEmpty)
           Container(
@@ -651,8 +557,15 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
         const SizedBox(height: 12),
         if (_capsulesLoading)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Shimmer(
+              child: Column(
+                children: [
+                  SkeletonListRow(),
+                  SkeletonListRow(),
+                ],
+              ),
+            ),
           )
         else if (_capsules.isEmpty)
           Container(
@@ -779,6 +692,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
 
             Navigator.of(dialogContext).pop();
             await _loadCapsules();
+    _refreshOpenSection?.call();
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -790,7 +704,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
           }
 
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Text(
               AppLocalizations.of(context).msNewTimeCapsule,
               style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
@@ -878,7 +792,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
         width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border),
           boxShadow: [
             BoxShadow(
@@ -939,27 +853,8 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     );
   }
 
-  Widget _buildAdaptiveFloatingActionButton() {
-    return Positioned(
-      bottom: 24,
-      right: 24,
-      child: FloatingActionButton.extended(
-        heroTag: 'm_studio_fab',
-        backgroundColor: BlushyColors.dark,
-        onPressed: _onFloatingActionTap,
-        label: Text(
-          _getFloatingActionText(),
-          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
-        ),
-        icon: Icon(_getFloatingActionIcon(), color: Colors.white, size: 16),
-      ),
-    );
-  }
-
-
-  // --- FREE-FORM JOURNAL CANVAS EDITOR ---
   Widget _buildJournalEditor() {
-    Color paperColor = const Color(0xFFFAF6F0);
+    Color paperColor = BlushyColors.background;
     if (_editorTheme == 'Gratitude') paperColor = const Color(0xFFFFFDF9);
     if (_editorTheme == 'Pink Self-Love') paperColor = const Color(0xFFFFF0F2);
     if (_editorTheme == 'Travel') paperColor = const Color(0xFFF5EFE6);
@@ -1057,7 +952,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFF6F42F5),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
@@ -1150,3 +1045,596 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     );
   }
 }
+
+/// A section of the studio, shown as its own screen.
+class _StudioSectionScreen extends StatefulWidget {
+  const _StudioSectionScreen({
+    required this.title,
+    required this.builder,
+    this.onRegister,
+  });
+
+  final String title;
+  final Widget Function() builder;
+
+  /// Handed a callback that redraws this screen, and null when it closes.
+  final void Function(VoidCallback?)? onRegister;
+
+  @override
+  State<_StudioSectionScreen> createState() => _StudioSectionScreenState();
+}
+
+class _StudioSectionScreenState extends State<_StudioSectionScreen> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onRegister?.call(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.onRegister?.call(null);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: BlushyColors.background,
+      appBar: AppBar(
+        backgroundColor: BlushyColors.background,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: BlushyColors.text),
+        title: Text(
+          widget.title,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: BlushyColors.text,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.symmetric(
+          horizontal: BlushyTheme.getPagePadding(context),
+          vertical: 16,
+        ),
+        child: widget.builder(),
+      ),
+    );
+  }
+}
+
+/// The Journal section: two ways in, Reflection and Scrapbook.
+///
+/// It used to be a flat list of six cards over an embedded journal, mixing
+/// creating an entry with looking back at a year of them.
+class _JournalSectionScreen extends StatelessWidget {
+  const _JournalSectionScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: BlushyColors.background,
+      appBar: _studioAppBar(context, 'Journal'),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.symmetric(
+            horizontal: BlushyTheme.getPagePadding(context),
+            vertical: 16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _studioCard(
+                title: 'Reflection',
+                sub: 'Write, record and search what you have written',
+                icon: Icons.edit_note_rounded,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const _ReflectionSectionScreen(),
+                  ),
+                ),
+              ),
+              _studioCard(
+                title: 'Scrapbook',
+                sub: 'Build a page, or look back at the year',
+                icon: Icons.auto_stories_rounded,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const _ScrapbookSectionScreen(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Lets someone pick a template, and returns the one they chose.
+///
+/// The journal has its own picker, but that one creates the entry itself.
+/// This returns the name so the caller can open it on a screen of its own.
+Future<String?> _pickTemplate(BuildContext context, String heading) {
+  final templates = journalTemplatesForUser(context);
+
+  return showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) => Material(
+      color: Colors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                heading,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: BlushyColors.text,
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (final template in templates)
+                ListTile(
+                  leading: const Icon(Icons.star_outline_rounded,
+                      color: BlushyColors.primary),
+                  title: Text(
+                    template,
+                    style: GoogleFonts.poppins(
+                        fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                  onTap: () => Navigator.of(sheetContext).pop(template),
+                ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Opens the picker, then the chosen template on its own screen.
+Future<void> _createFromTemplate(BuildContext context, String heading) async {
+  final template = await _pickTemplate(context, heading);
+  if (template == null || !context.mounted) return;
+  await Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => _JournalActionScreen(
+        action: _JournalAction.writeTemplate,
+        templateName: template,
+      ),
+    ),
+  );
+}
+
+/// Writing and recording entries.
+///
+/// The journal used to be embedded here in a 650px box, which is why the brown
+/// diary appeared at the bottom of this page and again when coming back from
+/// an entry. Each option opens the journal on its own screen instead.
+class _ReflectionSectionScreen extends StatelessWidget {
+  const _ReflectionSectionScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: BlushyColors.background,
+      appBar: _studioAppBar(context, 'Reflection'),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.symmetric(
+            horizontal: BlushyTheme.getPagePadding(context),
+            vertical: 16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _studioCard(
+                title: 'Create Reflection',
+                sub: 'Choose a template, then write',
+                icon: Icons.edit_note_rounded,
+                onTap: () => _createFromTemplate(context, 'Start a reflection'),
+              ),
+              _studioCard(
+                title: 'Record & Transcribe',
+                sub: 'Speak and let Docsy write it down',
+                icon: Icons.mic_none_rounded,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const _JournalActionScreen(
+                      action: _JournalAction.record,
+                    ),
+                  ),
+                ),
+              ),
+              _studioCard(
+                title: 'History',
+                sub: 'Every reflection, by the date it was written',
+                icon: Icons.history_rounded,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const _JournalHistoryScreen(scrapbooks: false),
+                  ),
+                ),
+              ),
+              _studioCard(
+                title: 'Journal Insights Dashboard',
+                sub: 'Writing statistics, word count and active hours',
+                icon: Icons.analytics_rounded,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const JournalDashboardWidget(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Building a scrapbook page, and looking back at a year of them.
+class _ScrapbookSectionScreen extends StatelessWidget {
+  const _ScrapbookSectionScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: BlushyColors.background,
+      appBar: _studioAppBar(context, 'Scrapbook'),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.symmetric(
+            horizontal: BlushyTheme.getPagePadding(context),
+            vertical: 16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _studioCard(
+                title: 'Create Scrapbook',
+                sub: 'A blank page, with stickers, tape and photo frames',
+                icon: Icons.add_photo_alternate_rounded,
+                // A blank canvas rather than a prompt sheet: the prompts are
+                // what make Reflection a thing to answer.
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const _JournalActionScreen(
+                      action: _JournalAction.scrapbook,
+                    ),
+                  ),
+                ),
+              ),
+              _studioCard(
+                title: 'History',
+                sub: 'Every scrapbook page, by the date it was made',
+                icon: Icons.history_rounded,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const _JournalHistoryScreen(scrapbooks: true),
+                  ),
+                ),
+              ),
+              _studioCard(
+                title: 'Year in Review Scrapbook',
+                sub: 'A guided multi-page recap of the year',
+                icon: Icons.history_edu_rounded,
+                onTap: () async {
+                  final entries =
+                      await JournalStorage().loadEntries('default_user');
+                  if (!context.mounted) return;
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => YearInReviewScrapbook(
+                        entries: entries,
+                        year: DateTime.now().year,
+                        onClose: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The journal on its own screen, optionally opening straight into something.
+///
+/// Each value opens the journal straight into one thing.
+///
+/// There is deliberately no "just show the journal" value: that landed on the
+/// decorative cover screen, whose only action was to reveal the same journal
+/// Reflection opens, and whose cover and desk choices were never saved.
+enum _JournalAction { scrapbook, writeTemplate, record, search }
+
+class _JournalActionScreen extends StatefulWidget {
+  const _JournalActionScreen({required this.action, this.templateName});
+
+  final _JournalAction action;
+
+  /// The template to start on, when the action is [_JournalAction.writeTemplate].
+  final String? templateName;
+
+  @override
+  State<_JournalActionScreen> createState() => _JournalActionScreenState();
+}
+
+class _JournalActionScreenState extends State<_JournalActionScreen> {
+  final GlobalKey<BlushyJournalScreenState> _journalKey =
+      GlobalKey<BlushyJournalScreenState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // The journal has no state to act on until it has been laid out.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final journal = _journalKey.currentState;
+      if (journal == null) return;
+
+      switch (widget.action) {
+        case _JournalAction.scrapbook:
+          journal.openScrapbookCanvas();
+        case _JournalAction.writeTemplate:
+          final template = widget.templateName;
+          if (template == null) {
+            journal.openWriteReflection();
+          } else {
+            journal.openTemplate(template);
+          }
+        case _JournalAction.record:
+          journal.openRecordAndTranscribe();
+        case _JournalAction.search:
+          journal.openSmartSearch();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlushyJournalScreen(key: _journalKey);
+  }
+}
+
+/// The bar every studio screen wears.
+AppBar _studioAppBar(BuildContext context, String title) {
+  return AppBar(
+    backgroundColor: BlushyColors.background,
+    elevation: 0,
+    iconTheme: const IconThemeData(color: BlushyColors.text),
+    title: Text(
+      title,
+      style: GoogleFonts.poppins(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: BlushyColors.text,
+      ),
+    ),
+  );
+}
+
+/// One option inside a studio section.
+Widget _studioCard({
+  required String title,
+  required String sub,
+  required IconData icon,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: BlushyColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFDF2F2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: BlushyColors.primary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text)),
+                const SizedBox(height: 3),
+                Text(sub,
+                    style: GoogleFonts.poppins(
+                        fontSize: 10, color: BlushyColors.secondaryText)),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded,
+              size: 18, color: BlushyColors.secondaryText),
+        ],
+      ),
+    ),
+  );
+}
+
+/// What was written, and when.
+///
+/// Reads the saved entries and splits them on the marker the journal writes
+/// when it creates a scrapbook page, so each section lists only its own.
+class _JournalHistoryScreen extends StatefulWidget {
+  const _JournalHistoryScreen({required this.scrapbooks});
+
+  /// True for the scrapbook list, false for reflections.
+  final bool scrapbooks;
+
+  @override
+  State<_JournalHistoryScreen> createState() => _JournalHistoryScreenState();
+}
+
+class _JournalHistoryScreenState extends State<_JournalHistoryScreen> {
+  late final Future<List<LocalJournalEntry>> _entries =
+      JournalStorage().loadEntries('default_user');
+
+  static const List<String> _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  /// The date an entry carries, or null when it is unreadable.
+  DateTime? _dateOf(LocalJournalEntry entry) =>
+      DateTime.tryParse(entry.dateTime ?? entry.date);
+
+  bool _isScrapbook(LocalJournalEntry entry) {
+    final raw = entry.rawJson;
+    if (raw == null || raw.isEmpty) return false;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return false;
+      return decoded['templateName'] == scrapbookTemplateName;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = widget.scrapbooks ? 'Scrapbook history' : 'Reflection history';
+
+    return Scaffold(
+      backgroundColor: BlushyColors.background,
+      appBar: _studioAppBar(context, label),
+      body: SafeArea(
+        child: FutureBuilder<List<LocalJournalEntry>>(
+          future: _entries,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const SkeletonList(
+                count: 4,
+                itemBuilder: _historySkeletonRow,
+              );
+            }
+
+            final all = snapshot.data ?? const <LocalJournalEntry>[];
+            final mine = all.where((e) => _isScrapbook(e) == widget.scrapbooks).toList()
+              ..sort((a, b) {
+                final da = _dateOf(a);
+                final db = _dateOf(b);
+                if (da == null || db == null) return 0;
+                return db.compareTo(da);
+              });
+
+            if (mine.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    widget.scrapbooks
+                        ? 'No scrapbook pages yet.'
+                        : 'No reflections yet.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: BlushyColors.secondaryText,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.symmetric(
+                horizontal: BlushyTheme.getPagePadding(context),
+                vertical: 16,
+              ),
+              itemCount: mine.length,
+              itemBuilder: (context, index) {
+                final entry = mine[index];
+                final date = _dateOf(entry);
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: BlushyColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              entry.title.trim().isEmpty
+                                  ? 'Untitled'
+                                  : entry.title.trim(),
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: BlushyColors.text,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              date == null
+                                  // Shown rather than invented: an entry with an
+                                  // unreadable date still belongs in the list.
+                                  ? 'Date unknown'
+                                  : '${date.day} ${_months[date.month - 1]} ${date.year}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                color: BlushyColors.secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+Widget _historySkeletonRow(BuildContext context, int index) =>
+    const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      child: SkeletonListRow(),
+    );
+

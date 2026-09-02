@@ -41,7 +41,7 @@ class GreetingCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Column(

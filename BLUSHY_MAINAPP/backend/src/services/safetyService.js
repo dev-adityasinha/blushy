@@ -26,7 +26,7 @@ const RECENT_SYMPTOM_WINDOW_DAYS = 3;
 
 /**
  * Evaluates the user's current safety state from stored events plus optional
- * inbound free text (a Dr. Docsy message or journal entry being written now).
+ * inbound free text (a Docsy message or journal entry being written now).
  */
 export async function evaluateUserSafety(userId, { freeText = '', surface = 'unknown' } = {}) {
   const stageState = await getLifeStageState(userId);

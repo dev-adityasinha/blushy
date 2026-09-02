@@ -4,23 +4,46 @@ import { env } from '../utils/env.js';
 import { userRepository } from '../repositories/userRepository.js';
 import { signAccessToken } from './tokenService.js';
 import { normalizeRole } from '../utils/role.js';
+import { emailService } from './emailService.js';
+import { logger } from '../utils/logger.js';
 
-const clients = [];
-if (env.googleClientIdWeb) {
-  clients.push(new OAuth2Client(env.googleClientIdWeb));
-}
-if (env.googleClientIdAndroid) {
-  clients.push(new OAuth2Client(env.googleClientIdAndroid));
-}
-if (env.googleClientIdIos) {
-  clients.push(new OAuth2Client(env.googleClientIdIos));
-}
+/**
+ * The client ids this server will accept a Google token for.
+ *
+ * A token is only proof of identity if it was minted for *us*. Anyone can get
+ * a valid Google token for their own app; without an audience check it would
+ * sign them in here as whoever it belongs to.
+ */
+const allowedAudiences = [
+  env.googleClientIdWeb,
+  env.googleClientIdAndroid,
+  env.googleClientIdIos,
+].filter(Boolean);
 
-if (clients.length === 0) {
-  clients.push(new OAuth2Client());
+const clients = allowedAudiences.map((id) => new OAuth2Client(id));
+
+/**
+ * Refuses to verify anything when nothing is configured.
+ *
+ * This used to fall back to `new OAuth2Client()` and verify against an empty
+ * audience list, which switches the audience check off: with the env vars
+ * missing, a Google token issued to any other app in the world would have been
+ * accepted. Failing closed turns a silent auth bypass into an obvious
+ * misconfiguration.
+ */
+function assertConfigured() {
+  if (allowedAudiences.length === 0) {
+    logger.error(
+      'Google sign-in is not configured: set GOOGLE_CLIENT_ID_WEB, ' +
+      'GOOGLE_CLIENT_ID_ANDROID or GOOGLE_CLIENT_ID_IOS.',
+    );
+    throw createHttpError(503, 'Google sign-in is not available right now.');
+  }
 }
 
 async function verifyToken(token) {
+  assertConfigured();
+
   // If it's a JWT (has 3 parts):
   if (typeof token === 'string' && token.split('.').length === 3) {
     let payload = null;
@@ -30,11 +53,7 @@ async function verifyToken(token) {
       try {
         const ticket = await client.verifyIdToken({
           idToken: token,
-          audience: [
-            env.googleClientIdWeb,
-            env.googleClientIdAndroid,
-            env.googleClientIdIos
-          ].filter(Boolean)
+          audience: allowedAudiences,
         });
         payload = ticket.getPayload();
         if (payload) break;
@@ -59,9 +78,20 @@ async function verifyToken(token) {
       if (!data.email) {
         throw new Error('Token payload does not contain a verified email.');
       }
+      // tokeninfo reports which client the token was minted for. Without this
+      // the fallback accepted an access token issued to any Google app, which
+      // is the same bypass the ID token path guards against.
+      if (!allowedAudiences.includes(data.aud)) {
+        throw new Error('Token was issued for a different application.');
+      }
+      // Strings, not booleans, from this endpoint.
+      if (String(data.email_verified) !== 'true') {
+        throw new Error('Google has not verified this email address.');
+      }
       return {
         sub: data.sub || data.user_id,
         email: data.email,
+        email_verified: true,
         name: data.name || data.given_name || 'Blushy User',
       };
     } catch (e) {
@@ -88,7 +118,13 @@ export async function signInWithGoogle(idToken, role = 'woman') {
 
   let user = await userRepository.getUserByGoogleId(googleId);
 
-  if (!user && email) {
+  // Only an address Google has verified may be matched to an existing account.
+  // Otherwise anyone could create a Google account claiming someone else's
+  // email and be linked straight into their Blushy account.
+  const emailIsVerified = payload.email_verified === true ||
+    String(payload.email_verified) === 'true';
+
+  if (!user && email && emailIsVerified) {
     const existingUser = await userRepository.getUserByEmail(email);
     if (existingUser) {
       user = await userRepository.linkGoogleId(existingUser.user_id, googleId);
@@ -114,6 +150,14 @@ export async function signInWithGoogle(idToken, role = 'woman') {
       googleId,
       emailVerifiedAt: new Date().toISOString(),
     });
+
+    // The other place an account first exists. Google verifies the address
+    // itself, so there is no OTP step here to hang this off.
+    try {
+      await emailService.sendWelcome({ to: email, name: displayName ?? null });
+    } catch (error) {
+      logger.warn(`googleLogin: welcome email failed for ${email}: ${error?.message ?? error}`);
+    }
   }
 
   const token = signAccessToken({ userId: user.user_id });

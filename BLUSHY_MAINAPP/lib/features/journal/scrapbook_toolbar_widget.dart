@@ -36,7 +36,7 @@ class ScrapbookToolbarWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(color: Colors.black38, blurRadius: 16, offset: Offset(0, 6)),
         ],
@@ -103,7 +103,7 @@ class ScrapbookToolbarWidget extends StatelessWidget {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         child: Column(

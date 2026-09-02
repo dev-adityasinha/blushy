@@ -105,7 +105,7 @@ class _MemoryMapWidgetState extends State<MemoryMapWidget> {
             Center(
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
                 child: Text('Location features are currently turned OFF for privacy.', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
               ),
             ),

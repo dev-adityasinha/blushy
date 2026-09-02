@@ -15,7 +15,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navCommunity => 'Community';
 
   @override
-  String get navSia => 'Dr. Docsy';
+  String get navSia => 'Docsy';
 
   @override
   String get navStudio => 'M Studio';
@@ -86,11 +86,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stateCouldNotSave => 'Could not save that. Please try again.';
 
   @override
-  String get languageSheetTitle => 'Dr. Docsy speaks';
+  String get languageSheetTitle => 'Docsy speaks';
 
   @override
   String get languageSheetExplainer =>
-      'Changes the language Dr. Docsy replies in. The rest of the app stays in English for now.';
+      'Changes the language Docsy replies in. The rest of the app stays in English for now.';
 
   @override
   String get privacyTitle => 'Privacy & Sharing';
@@ -141,7 +141,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTitle => 'Settings & Privacy Center';
 
   @override
-  String get settingsSiaAssistant => 'Dr. Docsy AI Assistant';
+  String get settingsSiaAssistant => 'Docsy AI Assistant';
 
   @override
   String get settingsSiaAssistantSub =>
@@ -195,10 +195,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Inspect storage, cache, search index, and AI queue health';
 
   @override
-  String get siaAsk => 'Ask Dr. Docsy';
+  String get siaAsk => 'Ask Docsy';
 
   @override
-  String get siaThinking => 'Dr. Docsy is thinking…';
+  String get siaThinking => 'Typing....';
 
   @override
   String get siaVoiceTranscribed =>
@@ -271,7 +271,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashCheckIn => 'Check in';
 
   @override
-  String get dashSiaInsights => 'DR. DOCSY INSIGHTS';
+  String get dashSiaInsights => 'DOCSY INSIGHTS';
 
   @override
   String get dashHelpful => 'Helpful';
@@ -335,7 +335,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get journalNothingToReflect =>
-      'Nothing to reflect on yet. Write an entry and Dr. Docsy will read it back to you.';
+      'Nothing to reflect on yet. Write an entry and Docsy will read it back to you.';
 
   @override
   String get journalNoMemoriesFound => 'No memories found yet';
@@ -382,8 +382,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalCloudAi => 'Cloud AI';
 
   @override
-  String get journalCloudAiSub =>
-      'Allow cloud processing for Dr. Docsy insights';
+  String get journalCloudAiSub => 'Allow cloud processing for Docsy insights';
 
   @override
   String get journalCloseMemoryBook => 'Close memory book';
@@ -435,7 +434,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get partnerSayHello => 'Say hello to start the conversation.';
 
   @override
-  String get partnerSiaDecoding => 'Dr. Docsy is decoding…';
+  String get partnerSiaDecoding => 'Docsy is decoding…';
 
   @override
   String get partnerSuggestedReply => 'Suggested reply';
@@ -467,11 +466,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Nothing here yet. Finish a shared activity together and it will be kept here.';
 
   @override
-  String get partnerSiaAdviceTitle => 'DR. DOCSY RELATIONSHIP ADVICE';
+  String get partnerSiaAdviceTitle => 'DOCSY RELATIONSHIP ADVICE';
 
   @override
   String get partnerSiaAdviceExplainer =>
-      'Ask about something that is on your mind. Dr. Docsy only sees what your partner has chosen to share.';
+      'Ask about something that is on your mind. Docsy only sees what your partner has chosen to share.';
 
   @override
   String get partnerTryAgain => 'Try again';
@@ -492,7 +491,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeGreetingSubtitle => 'How are you feeling today?';
+  String get homeGreetingSubtitle =>
+      'Whatever today looks like, you don\'t have to do it alone.';
 
   @override
   String get dashLogFirstCheckIn => 'Log your first check-in';
@@ -522,7 +522,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onbCreatingInsights => 'Creating your daily insights';
 
   @override
-  String get onbPreparingDocsy => 'Preparing Dr. Docsy';
+  String get onbPreparingDocsy => 'Preparing Docsy';
 
   @override
   String get jrnCancel => 'Cancel';
@@ -754,7 +754,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get upSave => 'Save';
 
   @override
-  String get hDrDocsy => 'Dr. Docsy';
+  String get hDrDocsy => 'Docsy';
 
   @override
   String get hClose => 'Close';
@@ -771,7 +771,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cYourCycleLengthIs =>
-      'Your cycle length is varying. Log your symptoms daily so Dr. Docsy can adjust predictions.';
+      'Your cycle length is varying. Log your symptoms daily so Docsy can adjust predictions.';
 
   @override
   String get cTrackingIsDisabledFocus =>
@@ -785,7 +785,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paTodaySNextStep => 'TODAY\\\'S NEXT STEP';
 
   @override
-  String get smClearDrDocsyMemory => 'Clear Dr. Docsy Memory';
+  String get smClearDrDocsyMemory => 'Clear Docsy Memory';
 
   @override
   String get scClinicalAlignment => 'Clinical Alignment';
@@ -1019,7 +1019,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phAllTodaySActions => 'All Today\'s Actions Completed! 🌸';
 
   @override
-  String get phDrDocsy => 'Dr. Docsy';
+  String get phDrDocsy => 'Docsy';
 
   @override
   String get phNotSharedWithYou => 'Not shared with you';
@@ -1045,7 +1045,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plConnectWithYourPartner =>
-      'Connect with your partner to unlock personalized Dr. Docsy AI insights.';
+      'Connect with your partner to unlock personalized Docsy AI insights.';
 
   @override
   String get plUnderstandingEnergyFatigueShifts =>
@@ -1113,4 +1113,37 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get jrnCouldNotAddPhoto =>
       'That photo could not be added. Try another one.';
+
+  @override
+  String get tourHomeBody =>
+      'Your day at a glance: cycle, check-ins and what to expect. Log how you feel here.';
+
+  @override
+  String get tourCommunityBody =>
+      'Questions and answers from other people going through the same thing.';
+
+  @override
+  String get tourSiaBody =>
+      'Ask Docsy anything, by typing or by voice. She knows what you have logged.';
+
+  @override
+  String get tourStudioBody =>
+      'Your journal, guided recovery sessions and time capsules you write to your future self.';
+
+  @override
+  String get tourPartnerBody =>
+      'Invite a partner and choose exactly what they can see. Nothing is shared until you say so.';
+
+  @override
+  String get tourSkip => 'Skip';
+
+  @override
+  String get tourNext => 'Next';
+
+  @override
+  String get tourDone => 'Got it';
+
+  @override
+  String get upAnonymousProfile =>
+      'This was posted anonymously, so there is no profile to open. Whoever wrote it chose not to be named, and that stays their choice.';
 }

@@ -19,7 +19,7 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(AppLocalizations.of(context).puHowSharingWorks, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Text(
           "Blushy respects individual privacy. Your partner holds granular control over their information. They can toggled permissions for cycle updates, appointments, care requests, and fertility windows at any time in their Partner Mode settings panel.",
@@ -56,7 +56,7 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
     final stageDetails = StageConfig.forStage(activeStage);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -170,7 +170,7 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Row(

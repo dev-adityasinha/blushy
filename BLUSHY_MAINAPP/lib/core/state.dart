@@ -184,6 +184,14 @@ class PersonalContext {
 class CurrentWellbeingState {
   final int? energy;          // 1 - 10
   final int? mood;            // 1 - 10
+
+  /// The word she tapped, when a picker offered words.
+  ///
+  /// `mood` is a 1-10 number, and the shared `feeling` used to be re-derived
+  /// from it against a four-word scale -- so "Tired" was recorded as "Calm"
+  /// and "Anxious" as "Low". Keeping the label means the app stores what she
+  /// said rather than a word inferred from a score.
+  final String? moodLabel;
   final int? sleepQuality;    // 1 - 10
   final List<String> symptoms;
   final DateTime? lastCheckIn;
@@ -193,6 +201,7 @@ class CurrentWellbeingState {
   CurrentWellbeingState({
     this.energy,
     this.mood,
+    this.moodLabel,
     this.sleepQuality,
     this.symptoms = const [],
     this.lastCheckIn,
@@ -201,6 +210,7 @@ class CurrentWellbeingState {
   });
 
   CurrentWellbeingState copyWith({
+    String? moodLabel,
     int? energy,
     int? mood,
     int? sleepQuality,
@@ -213,6 +223,7 @@ class CurrentWellbeingState {
       energy: energy ?? this.energy,
       mood: mood ?? this.mood,
       sleepQuality: sleepQuality ?? this.sleepQuality,
+      moodLabel: moodLabel ?? this.moodLabel,
       symptoms: symptoms ?? this.symptoms,
       lastCheckIn: lastCheckIn ?? this.lastCheckIn,
       lastSiaConversation: lastSiaConversation ?? this.lastSiaConversation,
@@ -278,7 +289,7 @@ class AdaptiveActionRanker {
     List<CandidateAction> actions = [
       CandidateAction(id: 'a1', label: 'Log Symptoms', icon: Icons.health_and_safety, priority: 5, destination: 'log'),
       CandidateAction(id: 'a2', label: 'Breathing Exercise', icon: Icons.air, priority: 4, destination: 'breathe'),
-      CandidateAction(id: 'a3', label: 'Dr. Docsy Chat', icon: Icons.chat_bubble_outline, priority: 3, destination: 'chat'),
+      CandidateAction(id: 'a3', label: 'Docsy Chat', icon: Icons.chat_bubble_outline, priority: 3, destination: 'chat'),
       CandidateAction(id: 'a4', label: 'Hydration', icon: Icons.water_drop_outlined, priority: 2, destination: 'water'),
       CandidateAction(id: 'a5', label: 'Cycle Insights', icon: Icons.auto_graph, priority: 1, destination: 'insights'),
     ];
@@ -1204,7 +1215,7 @@ class BlushyOSState extends ChangeNotifier {
         // the cards, and then quietly undid both.
         'symptoms': newContext.userSymptoms.toList(),
         'goals': newContext.userGoals.toList(),
-        // "Allow Dr. Docsy to learn from your interactions over time" lived on
+        // "Allow Docsy to learn from your interactions over time" lived on
         // the device only. It survived a restart and reached nothing else, so
         // the server kept learning after she turned it off, and the choice did
         // not follow her to another device. A privacy control has to be known
@@ -1394,8 +1405,13 @@ class BlushyOSState extends ChangeNotifier {
       final checkinData = BlushyStorage.read('daily_checkin.json');
       final Map<String, dynamic> checkinMap = Map<String, dynamic>.from(checkinData);
 
-      String? feelingStr;
-      if (wb.mood != null) {
+      // Her own word first. The thresholds below are a fallback for a mood set
+      // as a bare number, and re-deriving a word from one silently replaced her
+      // answer with a different one: tapping "Tired" (level 4) was stored as
+      // "Calm", and "Anxious", "Irritated", "Sleepy" and "Sad" all became
+      // "Low". Only "Happy" ever survived the round trip.
+      String? feelingStr = wb.moodLabel;
+      if (feelingStr == null && wb.mood != null) {
         if (wb.mood! >= 8) {
           feelingStr = 'Happy';
         } else if (wb.mood! >= 6) {
@@ -1488,16 +1504,16 @@ class BlushyOSState extends ChangeNotifier {
       return "$name, your period is active. Focus on rest and hydration today.";
     }
     if (_personalContext.lifeContexts.contains(LifeContext.pregnancy)) {
-      return "Hello $name, taking care of your changing body is key right now. Dr. Docsy is adapting to your pregnancy context.";
+      return "Hello $name, taking care of your changing body is key right now. Docsy is adapting to your pregnancy context.";
     }
     if (_personalContext.cyclePhase == 'Luteal Phase' && _wellbeingState.symptoms.contains('fatigue')) {
-      return "$name, Dr. Docsy noticed your logged fatigue matches Luteal Phase changes. Prioritizing rest and setting boundaries could help today.";
+      return "$name, Docsy noticed your logged fatigue matches Luteal Phase changes. Prioritizing rest and setting boundaries could help today.";
     }
     if (_wellbeingState.symptoms.isNotEmpty) {
       final symptom = _wellbeingState.symptoms.join(', ');
-      return "Dr. Docsy noticed you logged $symptom. Focus on gentle movement and recovery today.";
+      return "Docsy noticed you logged $symptom. Focus on gentle movement and recovery today.";
     }
-    return "Hello $name, Dr. Docsy is here and ready to support you. Let's look at what matters to you today.";
+    return "Hello $name, Docsy is here and ready to support you. Let's look at what matters to you today.";
   }
 
   void updateDynamicAiBriefing(String briefing) {
@@ -1636,12 +1652,16 @@ class BlushyOSState extends ChangeNotifier {
   int get cycleDay => _personalContext.cycleDay ?? 0;
   
   // Active navigation view state
-  int currentViewIndex = 0; // 0: Today, 1: Journey, 2: Explore, 3: Dr. Docsy
+  int currentViewIndex = 0; // 0: Today, 1: Journey, 2: Explore, 3: Docsy
 
-  void updateWellbeing({int? energy, int? mood, int? sleepQuality, List<String>? symptoms, bool? periodActive}) {
+  void updateWellbeing({int? energy, int? mood, String? moodLabel, int? sleepQuality, List<String>? symptoms, bool? periodActive}) {
     _wellbeingState = CurrentWellbeingState(
       energy: energy ?? _wellbeingState.energy,
       mood: mood ?? _wellbeingState.mood,
+      // A new mood without a label is a bare number, and the old word no
+      // longer describes it -- keeping it would let a stale label outrank the
+      // reading that replaced it.
+      moodLabel: moodLabel ?? (mood != null ? null : _wellbeingState.moodLabel),
       sleepQuality: sleepQuality ?? _wellbeingState.sleepQuality,
       symptoms: symptoms ?? _wellbeingState.symptoms,
       lastCheckIn: DateTime.now(),

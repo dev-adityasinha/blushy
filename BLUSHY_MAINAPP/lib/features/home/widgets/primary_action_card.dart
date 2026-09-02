@@ -13,7 +13,7 @@ class BlushyPrimaryActionCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: BlushyColors.cardBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
         boxShadow: const [
           BoxShadow(
@@ -67,7 +67,7 @@ class BlushyPrimaryActionCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: BlushyColors.primary,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 'Begin',

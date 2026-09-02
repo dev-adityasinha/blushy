@@ -126,7 +126,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Dr. Docsy Companion',
+                'Docsy Companion',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontSize: 22,
                   fontWeight: FontWeight.w600,
@@ -135,7 +135,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Dr. Docsy adapts based on your cycle logs, sleep duration, and journal reflections.',
+                'Docsy adapts based on your cycle logs, sleep duration, and journal reflections.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontSize: 12,
                 ),
@@ -176,7 +176,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                     style: const TextStyle(fontSize: 14, color: BlushyColors.textDark),
                     onSubmitted: (_) => _sendMessage(state),
                     decoration: const InputDecoration(
-                      hintText: "Reflect or query Dr. Docsy...",
+                      hintText: "Reflect or query Docsy...",
                       hintStyle: TextStyle(color: BlushyColors.secondaryText, fontSize: 14),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -190,7 +190,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                     color: _isListeningVoice ? Colors.white : const Color(0xFF6F42F5),
                   ),
                   style: IconButton.styleFrom(
-                    backgroundColor: _isListeningVoice ? const Color(0xFFDD0D22) : const Color(0xFFF3E8FF),
+                    backgroundColor: _isListeningVoice ? BlushyColors.primary : const Color(0xFFF3E8FF),
                     shape: const CircleBorder(),
                   ),
                 ),
@@ -244,7 +244,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                     color: msg.isUser 
                       ? BlushyColors.background 
                       : BlushyColors.cardBg,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: BlushyColors.border),
                   ),
                   child: Text(
@@ -271,7 +271,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                         backgroundColor: BlushyColors.cardBg,
                         side: const BorderSide(color: BlushyColors.border),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         onPressed: () {
                           state.addSiaMessage(suggestion);

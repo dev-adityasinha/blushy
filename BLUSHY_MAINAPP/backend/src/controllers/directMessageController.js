@@ -58,7 +58,7 @@ export async function sendMessage(req, res, next) {
     }
 
     const uploadedImageUrl = uploadedImage
-      ? `${req.protocol}://${req.get('host')}/uploads/direct_messages/${uploadedImage.filename}`
+      ? uploadedImage.storedUrl
       : null;
 
     const message = await directMessageRepository.addMessage({

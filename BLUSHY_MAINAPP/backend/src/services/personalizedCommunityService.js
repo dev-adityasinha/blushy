@@ -197,7 +197,7 @@ async function getUserSignals(userId) {
     new Set(recentLogs.flatMap((l) => (Array.isArray(l.symptoms) ? l.symptoms : [])))
   );
 
-  // Confirmed structured Dr. Docsy memories
+  // Confirmed structured Docsy memories
   const memoryDoc = await db.collection(memoryColl).findOne({ user_id: userId });
   const siaTopics = Array.isArray(memoryDoc?.extracted_symptoms) ? memoryDoc.extracted_symptoms : [];
   for (const st of siaTopics) {

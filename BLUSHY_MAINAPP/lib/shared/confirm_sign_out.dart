@@ -18,7 +18,7 @@ Future<bool> confirmSignOut(BuildContext context) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: Text(
         AppLocalizations.of(context).csoSignOut,
         style: GoogleFonts.poppins(fontWeight: FontWeight.bold),

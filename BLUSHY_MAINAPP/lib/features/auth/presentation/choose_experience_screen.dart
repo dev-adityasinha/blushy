@@ -22,7 +22,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -38,7 +38,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                     height: 180,
                     margin: const EdgeInsets.only(bottom: 32),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(12),
                       image: const DecorationImage(
                         image: NetworkImage(
                           "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
@@ -87,7 +87,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: _selectedOption == 1
                                 ? BlushyColors.primary
@@ -161,7 +161,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: _selectedOption == 2
                                 ? BlushyColors.primary
@@ -240,7 +240,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: Text(

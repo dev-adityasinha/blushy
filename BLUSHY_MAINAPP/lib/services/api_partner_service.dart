@@ -51,7 +51,9 @@ class ApiPartnerService {
   final Dio _dio = Dio(BaseOptions(
     baseUrl: resolveApiBaseUrl(),
     connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 25),
+    // Absorbs a Render cold start (~27s); see api_community_service.dart for
+    // why this is the timeout that gives rather than connectTimeout.
+    receiveTimeout: const Duration(seconds: 60),
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -146,7 +148,7 @@ class ApiPartnerService {
     }
   }
 
-  /// Asks Dr. Docsy a relationship question about a connected partner.
+  /// Asks Docsy a relationship question about a connected partner.
   ///
   /// `POST /ai/relationship-advice/:connectionId`. The server gates any partner
   /// data behind that partner's sharing permissions and runs the deterministic
@@ -169,7 +171,7 @@ class ApiPartnerService {
       final message = e.response?.data?['message'] ??
           e.response?.data?['error']?['message'] ??
           e.message ??
-          'Could not reach Dr. Docsy.';
+          'Could not reach Docsy.';
       return {'error': message.toString()};
     } catch (e) {
       return {'error': e.toString()};

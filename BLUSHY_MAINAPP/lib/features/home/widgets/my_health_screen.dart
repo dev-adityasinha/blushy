@@ -9,6 +9,8 @@ import '../../../theme/spacing.dart';
 import 'life_stage_selector_card.dart';
 import '../../../shared/confirm_sign_out.dart';
 import '../../../services/sia_dashboard_service.dart';
+import '../../journal/settings/journal_settings_screen.dart';
+import '../../journal/themes/theme_marketplace.dart';
 
 class MyHealthScreen extends StatefulWidget {
   const MyHealthScreen({super.key});
@@ -149,27 +151,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
       // Offline or signed out: leave the field blank rather than guessing.
     }
   }
-
-  void _savePeriodLength(String raw) {
-    final days = int.tryParse(raw.trim());
-    // The backend accepts 2-10; anything else is a typo in progress, so it is
-    // not sent rather than being rejected noisily on every keystroke.
-    if (days == null || days < 2 || days > 10) return;
-
-    // Debounced: this writes over the network, unlike the fields above which
-    // only touch local state.
-    _periodLengthDebounce?.cancel();
-    _markSaving();
-    _periodLengthDebounce = Timer(const Duration(milliseconds: 600), () async {
-      try {
-        await ApiAuthService().saveOnboardingAnswers({'period_duration_days': days});
-        _markSaved();
-      } catch (_) {
-        _markSaveError();
-      }
-    });
-  }
-
   void _saveField(BuildContext ctx, PersonalContext Function(PersonalContext) updateFn) {
     try {
       final state = BlushyOSProvider.of(ctx);
@@ -226,7 +207,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final state = BlushyOSProvider.of(context);
-    final pc = state.personalContext;
 
     return Scaffold(
       backgroundColor: BlushyColors.background,
@@ -238,11 +218,13 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'My Health Profile',
+          'Account Settings',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.bold,
             color: BlushyColors.text,
-            fontSize: 24,
+            fontSize: 20,
           ),
         ),
         actions: [
@@ -261,13 +243,316 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildSectionHeader('Personal Information'),
+                  _buildHubCard(
+                    icon: Icons.person_outline_rounded,
+                    title: 'Personal Information',
+                    subtitle: 'Your name and date of birth',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Personal Information',
+                          editable: true,
+                          body: _sectionPersonalInformation,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.calendar_month_rounded,
+                    title: 'Cycle Configuration',
+                    subtitle: 'Tracking, cycle and period length',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Cycle Configuration',
+                          editable: true,
+                          body: _sectionCycleConfiguration,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.timeline_rounded,
+                    title: 'Current Life Stage',
+                    subtitle: 'The dates behind your stage',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Current Life Stage',
+                          editable: true,
+                          body: _sectionCurrentLifeStage,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.medical_information_outlined,
+                    title: 'Diagnoses & Medical Conditions',
+                    subtitle: 'What you have told us you live with',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Diagnoses & Medical Conditions',
+                          editable: true,
+                          body: _sectionDiagnosesMedicalConditions,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.flag_outlined,
+                    title: 'Health & Wellness Goals',
+                    subtitle: 'What you are working towards',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Health & Wellness Goals',
+                          editable: true,
+                          body: _sectionHealthWellnessGoals,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.monitor_heart_outlined,
+                    title: 'Primary Symptom Focus',
+                    subtitle: 'The symptoms worth watching',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Primary Symptom Focus',
+                          editable: true,
+                          body: _sectionPrimarySymptomFocus,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.medication_outlined,
+                    title: 'Medications & Supplements',
+                    subtitle: 'What you take, and when',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Medications & Supplements',
+                          editable: true,
+                          body: _sectionMedicationsSupplements,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.shield_outlined,
+                    title: 'Privacy & Companion Memory',
+                    subtitle: 'What Docsy is allowed to remember',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Privacy & Companion Memory',
+                          editable: true,
+                          body: _sectionPrivacyCompanionMemory,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.palette_outlined,
+                    title: 'Journal & Personalisation',
+                    subtitle: 'Journal settings and themes',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Journal & Personalisation',
+                          editable: false,
+                          body: _sectionJournalPersonalisation,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.storage_rounded,
+                    title: 'Manage My Data',
+                    subtitle: 'Reset learning, clear history',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _AccountSectionScreen(
+                          title: 'Manage My Data',
+                          editable: false,
+                          body: _sectionManageMyData,
+                          onSave: _commitDraft,
+                          onFlush: _flushPending,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildHubCard(
+                    icon: Icons.help_outline_rounded,
+                    title: 'FAQ',
+                    subtitle: 'How tracking, privacy and Docsy work',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const _AccountFaqScreen()),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Filled and centred rather than a left-aligned text button:
+                  // it is the last thing on the page and the only one that
+                  // ends the session.
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BlushyColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (!await confirmSignOut(context)) return;
+                        await state.logout();
+                        if (context.mounted) {
+                          Navigator.of(context)
+                              .pushNamedAndRemoveUntil('/', (route) => false);
+                        }
+                      },
+                      child: Text(
+                        'Sign Out',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  /// Writes a finished draft through to state. Called by Save, never by a
+  /// field.
+  void _commitDraft(BuildContext ctx, PersonalContext draft) {
+    _saveField(ctx, (_) => draft);
+  }
+
+  /// Sends the fields that live on the server rather than on PersonalContext.
+  ///
+  /// Period duration is stored with the onboarding answers, and the life-stage
+  /// dates go to LifeStageApi. Both used to fire on every keystroke or tap;
+  /// they are held until Save now, like everything else on the page.
+  Future<void> _flushPending(Map<String, Object?> pending) async {
+    final days = pending['period_duration_days'];
+    if (days is int) {
+      _markSaving();
+      try {
+        await ApiAuthService()
+            .saveOnboardingAnswers({'period_duration_days': days});
+        _markSaved();
+      } catch (_) {
+        _markSaveError();
+      }
+    }
+
+    final branch = <String, dynamic>{
+      for (final entry in pending.entries)
+        if (entry.key.startsWith('branch:'))
+          entry.key.substring('branch:'.length): entry.value,
+    };
+    if (branch.isNotEmpty) await _saveBranchContext(branch);
+  }
+
+  Widget _buildHubCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: BlushyColors.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFDF2F2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 16, color: BlushyColors.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: BlushyColors.text)),
+                    const SizedBox(height: 3),
+                    Text(subtitle,
+                        style: GoogleFonts.poppins(
+                            fontSize: 10, color: BlushyColors.secondaryText)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 18, color: BlushyColors.secondaryText),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionPersonalInformation(BuildContext context, _SectionEditor e) {
+    final pc = e.pc;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                   _buildCard([
                     _buildTextField(
                       controller: _nameController,
                       label: 'Preferred Name',
                       onChanged: (val) {
-                        _saveField(context, (c) => c.copyWith(
+                        e.set((c) => c.copyWith(
                           userName: val.trim().isEmpty ? null : val.trim(),
                         ));
                       },
@@ -277,14 +562,21 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                       label: 'Date of Birth',
                       value: pc.dateOfBirth,
                       onSelected: (date) {
-                        _saveField(context, (c) => c.copyWith(
+                        e.set((c) => c.copyWith(
                           dateOfBirth: date,
                         ));
                       },
                     ),
                   ]),
-                  
-                  _buildSectionHeader('Cycle Configuration'),
+      ],
+    );
+  }
+
+  Widget _sectionCycleConfiguration(BuildContext context, _SectionEditor e) {
+    final pc = e.pc;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                   _buildCard([
                     _buildDropdownRow<CycleTrackingPreference>(
                       label: 'Cycle Tracking',
@@ -292,7 +584,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                       items: CycleTrackingPreference.values,
                       onChanged: (val) {
                         if (val != null) {
-                          _saveField(context, (c) => c.copyWith(
+                          e.set((c) => c.copyWith(
                             trackingPreference: val,
                           ));
                         }
@@ -306,7 +598,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                         items: CyclePattern.values,
                         onChanged: (val) {
                           if (val != null) {
-                            _saveField(context, (c) => c.copyWith(
+                            e.set((c) => c.copyWith(
                               cyclePattern: val,
                             ));
                           }
@@ -319,7 +611,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                         keyboardType: TextInputType.number,
                         onChanged: (val) {
                           final len = int.tryParse(val);
-                          _saveField(context, (c) => c.copyWith(
+                          e.set((c) => c.copyWith(
                             cycleLength: len,
                           ));
                         },
@@ -329,22 +621,35 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                         controller: _periodLengthController,
                         label: 'Average Period Length (Days)',
                         keyboardType: TextInputType.number,
-                        onChanged: _savePeriodLength,
+                        onChanged: (raw) {
+                          final days = int.tryParse(raw.trim());
+                          // The backend accepts 2-10; anything else is a typo
+                          // in progress and is not queued.
+                          if (days == null || days < 2 || days > 10) return;
+                          e.queue('period_duration_days', days);
+                        },
                       ),
                       const SizedBox(height: 16),
                       _buildDatePickerRow(
                         label: 'Last Period Start Date',
                         value: pc.lastPeriodStart,
                         onSelected: (date) {
-                          _saveField(context, (c) => c.copyWith(
+                          e.set((c) => c.copyWith(
                             lastPeriodStart: date,
                           ));
                         },
                       ),
                     ]
                   ]),
+      ],
+    );
+  }
 
-                  _buildSectionHeader('Current Life Stage'),
+  Widget _sectionCurrentLifeStage(BuildContext context, _SectionEditor e) {
+    final pc = e.pc;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                   const LifeStageSelectorCard(showHeader: false),
 
                   // Only the branch the user is actually in gets its date, and
@@ -357,9 +662,8 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                         value: _branchDueDate,
                         onSelected: (date) {
                           setState(() => _branchDueDate = date);
-                          _saveBranchContext({
-                            'due_date': date.toIso8601String().split('T').first,
-                          });
+                          e.queue('branch:due_date',
+                              date.toIso8601String().split('T').first);
                         },
                       ),
                     ]),
@@ -372,15 +676,21 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                         value: _branchBirthDate,
                         onSelected: (date) {
                           setState(() => _branchBirthDate = date);
-                          _saveBranchContext({
-                            'baby_birth_date': date.toIso8601String().split('T').first,
-                          });
+                          e.queue('branch:baby_birth_date',
+                              date.toIso8601String().split('T').first);
                         },
                       ),
                     ]),
                   ],
+      ],
+    );
+  }
 
-                  _buildSectionHeader('Diagnoses & Medical Conditions'),
+  Widget _sectionDiagnosesMedicalConditions(BuildContext context, _SectionEditor e) {
+    final pc = e.pc;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                   _buildCard([
                     ...['PCOS', 'Endometriosis', 'Adenomyosis', 'Fibroids', 'PMDD / PMS', 'Thyroid Imbalance', 'None / Exploring'].map((cond) {
                       final isSelected = pc.medicalConditions.contains(cond);
@@ -395,13 +705,20 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                           } else {
                             newConds.remove(cond);
                           }
-                          _saveField(context, (c) => c.copyWith(medicalConditions: newConds));
+                          e.set((c) => c.copyWith(medicalConditions: newConds));
                         },
                       );
                     })
                   ]),
+      ],
+    );
+  }
 
-                  _buildSectionHeader('Health & Wellness Goals'),
+  Widget _sectionHealthWellnessGoals(BuildContext context, _SectionEditor e) {
+    final pc = e.pc;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                   _buildCard([
                     ...[
                       'Understand cycle phases & predictions',
@@ -425,13 +742,20 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                           } else {
                             newGoals.remove(goal);
                           }
-                          _saveField(context, (c) => c.copyWith(userGoals: newGoals));
+                          e.set((c) => c.copyWith(userGoals: newGoals));
                         },
                       );
                     })
                   ]),
+      ],
+    );
+  }
 
-                  _buildSectionHeader('Primary Symptom Focus'),
+  Widget _sectionPrimarySymptomFocus(BuildContext context, _SectionEditor e) {
+    final pc = e.pc;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                   _buildCard([
                     ...[
                       'Cramps & Pelvic Pain',
@@ -455,13 +779,20 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                           } else {
                             newSymptoms.remove(symptom);
                           }
-                          _saveField(context, (c) => c.copyWith(userSymptoms: newSymptoms));
+                          e.set((c) => c.copyWith(userSymptoms: newSymptoms));
                         },
                       );
                     })
                   ]),
+      ],
+    );
+  }
 
-                  _buildSectionHeader('Medications & Supplements'),
+  Widget _sectionMedicationsSupplements(BuildContext context, _SectionEditor e) {
+    final pc = e.pc;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                   _buildCard([
                     if (pc.medications.isNotEmpty) ...[
                       ListView.separated(
@@ -479,7 +810,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                               icon: const Icon(Icons.delete_outline, color: BlushyColors.primary),
                               onPressed: () {
                                 final list = List<Medication>.from(pc.medications)..removeAt(idx);
-                                _saveField(context, (c) => c.copyWith(medications: list));
+                                e.set((c) => c.copyWith(medications: list));
                               },
                             ),
                           );
@@ -499,13 +830,20 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                       ),
                     )
                   ]),
+      ],
+    );
+  }
 
-                  _buildSectionHeader('Privacy & Companion Memory'),
+  Widget _sectionPrivacyCompanionMemory(BuildContext context, _SectionEditor e) {
+    final pc = e.pc;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                   _buildCard([
                     SwitchListTile(
                       activeThumbColor: BlushyColors.primary,
-                      title: Text('Dr. Docsy Memory Enabled', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
-                      subtitle: Text('Allow Dr. Docsy to learn from your interactions over time.', style: GoogleFonts.poppins(fontSize: 12)),
+                      title: Text('Docsy Memory Enabled', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
+                      subtitle: Text('Allow Docsy to learn from your interactions over time.', style: GoogleFonts.poppins(fontSize: 12)),
                       value: pc.preferences.wantsSiaMemory,
                       onChanged: (val) {
                         final newPrefs = UserPreferences(
@@ -515,17 +853,65 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                           wantsSiaMemory: val,
                           wantsNotifications: pc.preferences.wantsNotifications,
                         );
-                        _saveField(context, (c) => c.copyWith(preferences: newPrefs));
+                        e.set((c) => c.copyWith(preferences: newPrefs));
                       },
                     )
                   ]),
 
-                  _buildSectionHeader('Manage My Data'),
+                  // Moved out of the journal's new-entry sheet: both are
+                  // account-level settings, and neither had anything to do
+                  // with starting an entry.
+      ],
+    );
+  }
+
+  Widget _sectionJournalPersonalisation(BuildContext context, _SectionEditor e) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+                  _buildCard([
+                    ListTile(
+                      leading: const Icon(Icons.settings_rounded, color: BlushyColors.primary),
+                      title: Text('Settings & Privacy Center',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
+                      subtitle: Text('Subsystem flags, diagnostics & accessibility',
+                          style: GoogleFonts.poppins(fontSize: 12)),
+                      trailing: const Icon(Icons.chevron_right_rounded, color: BlushyColors.secondaryText),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const JournalSettingsScreen()),
+                      ),
+                    ),
+                    const Divider(color: BlushyColors.border),
+                    ListTile(
+                      leading: const Icon(Icons.palette_rounded, color: BlushyColors.primary),
+                      title: Text('Modular Theme Marketplace',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
+                      subtitle: Text('Mix & match covers, paper, fonts & audio',
+                          style: GoogleFonts.poppins(fontSize: 12)),
+                      trailing: const Icon(Icons.chevron_right_rounded, color: BlushyColors.secondaryText),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ThemeMarketplaceWidget(onApplyTheme: (pack) {}),
+                        ),
+                      ),
+                    ),
+                  ]),
+      ],
+    );
+  }
+
+  Widget _sectionManageMyData(BuildContext context, _SectionEditor e) {
+    final state = BlushyOSProvider.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                   _buildCard([
                     _buildDangerButton(
                       label: 'Restart Cycle Learning',
                       onPressed: () {
-                        _saveField(context, (c) => c.copyWith(
+                        e.set((c) => c.copyWith(
                           confidence: DataConfidence.low,
                           cycleLength: null,
                           cycleDay: null,
@@ -572,38 +958,17 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                         );
                       },
                     ),
-                    const Divider(color: BlushyColors.border),
-                    _buildDangerButton(
-                      label: 'Log out',
-                      onPressed: () async {
-                        // This sat directly under "clear symptom logs" and
-                        // signed out on a single tap, while the partner side
-                        // of the app already asked first.
-                        if (!await confirmSignOut(context)) return;
-                        await state.logout();
-                        if (context.mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-                        }
-                      },
-                    ),
                   ]),
-                  const SizedBox(height: 48),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+      ],
     );
   }
-
   void _showAddMedicationDialog(BuildContext context, List<Medication> currentList) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: BlushyColors.background,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Text(
             "Add Medication / Supplement",
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 22),
@@ -755,7 +1120,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
               : _saveStatus == 'error'
                   ? const Color(0xFFFFEBEE)
                   : BlushyColors.background.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _saveStatus == 'saved'
                 ? const Color(0xFF43A047).withValues(alpha: 0.3)
@@ -769,30 +1134,15 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24, bottom: 8, left: 4),
-      child: Text(
-        title.toUpperCase(),
-        style: GoogleFonts.poppins(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          color: BlushyColors.secondaryText,
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
-  }
-
   Widget _buildCard(dynamic children) {
     return Material(
       color: BlushyColors.cardBg,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border),
           boxShadow: const [
             BoxShadow(
@@ -889,3 +1239,310 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
     );
   }
 }
+
+/// What a section screen hands its fields.
+///
+/// The account screen used to write every keystroke straight through to
+/// state. A section is read-only until Edit is pressed; changes then go into
+/// [pc], a draft, and reach state only when Save is pressed.
+class _SectionEditor {
+  const _SectionEditor({
+    required this.pc,
+    required this.editing,
+    required this.set,
+    required this.queue,
+  });
+
+  final PersonalContext pc;
+  final bool editing;
+  final void Function(PersonalContext Function(PersonalContext)) set;
+
+  /// Holds a change that does not live on PersonalContext -- period length and
+  /// the life-stage dates are stored server-side -- until Save. Without this
+  /// they went over the network on every keystroke, so Save was not what
+  /// committed them.
+  final void Function(String field, Object? value) queue;
+}
+
+/// One section of the account, as its own screen with an Edit/Save pair.
+class _AccountSectionScreen extends StatefulWidget {
+  const _AccountSectionScreen({
+    required this.title,
+    required this.body,
+    required this.editable,
+    required this.onSave,
+    required this.onFlush,
+  });
+
+  final String title;
+  final Widget Function(BuildContext, _SectionEditor) body;
+
+  /// False for sections that are links or one-off actions, which have no
+  /// fields and so nothing to edit.
+  final bool editable;
+
+  final void Function(BuildContext, PersonalContext) onSave;
+
+  /// Applies the queued server-side fields. Called with the same press as
+  /// [onSave], and not at all if Cancel is pressed.
+  final Future<void> Function(Map<String, Object?>) onFlush;
+
+  @override
+  State<_AccountSectionScreen> createState() => _AccountSectionScreenState();
+}
+
+class _AccountSectionScreenState extends State<_AccountSectionScreen> {
+  bool _editing = false;
+  PersonalContext? _draft;
+
+  /// Server-side fields changed since Edit was pressed.
+  final Map<String, Object?> _pending = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final state = BlushyOSProvider.of(context);
+    final pc = _draft ?? state.personalContext;
+
+    return Scaffold(
+      backgroundColor: BlushyColors.background,
+      appBar: AppBar(
+        backgroundColor: BlushyColors.background,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: BlushyColors.text),
+        title: Text(
+          widget.title,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: BlushyColors.text,
+          ),
+        ),
+        actions: [
+          if (widget.editable && !_editing)
+            TextButton(
+              onPressed: () => setState(() {
+                _editing = true;
+                _draft = state.personalContext;
+              }),
+              child: Text(
+                'Edit',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                  color: BlushyColors.primary,
+                ),
+              ),
+            ),
+          if (widget.editable && _editing) ...[
+            TextButton(
+              onPressed: () => setState(() {
+                _editing = false;
+                _draft = null;
+                _pending.clear();
+              }),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(color: BlushyColors.secondaryText),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                final draft = _draft;
+                if (draft != null) widget.onSave(context, draft);
+                if (_pending.isNotEmpty) {
+                  widget.onFlush(Map<String, Object?>.from(_pending));
+                }
+                setState(() {
+                  _editing = false;
+                  _draft = null;
+                  _pending.clear();
+                });
+              },
+              child: Text(
+                'Save',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                  color: BlushyColors.primary,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(
+            horizontal: BlushySpacing.lg,
+            vertical: BlushySpacing.md,
+          ),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Read-only until Edit: the fields are visible but inert, so
+                  // nothing is changed by a stray tap on the way past.
+                  IgnorePointer(
+                    ignoring: widget.editable && !_editing,
+                    child: Opacity(
+                      opacity: (widget.editable && !_editing) ? 0.72 : 1,
+                      child: widget.body(
+                        context,
+                        _SectionEditor(
+                          pc: pc,
+                          editing: _editing,
+                          set: (update) => setState(
+                            () => _draft = update(_draft ?? state.personalContext),
+                          ),
+                          queue: (field, value) =>
+                              setState(() => _pending[field] = value),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Answers to the questions the app itself raises.
+///
+/// Every answer here describes something the app actually does; none of it is
+/// aspirational.
+class _AccountFaqScreen extends StatelessWidget {
+  const _AccountFaqScreen();
+
+  static const List<(String, String)> _faqs = [
+    (
+      'Is Docsy a doctor?',
+      'No. Docsy is an AI companion. It never names a specific medicine or '
+          'brand, and for anything to do with medication it will point you to a '
+          'qualified physician. Treat it as a well-read friend, not a diagnosis.',
+    ),
+    (
+      'How accurate are my cycle predictions?',
+      'They are estimates built from the periods you have logged, and they get '
+          'steadier the more you log. They are not reliable enough for '
+          'contraception, and they are not a diagnosis. If too little has been '
+          'logged, the app says so instead of guessing.',
+    ),
+    (
+      'What can my partner see?',
+      'Only what you allow. Nothing is shared until you connect a partner and '
+          'choose what to share, in Privacy & Sharing on the Partner tab. '
+          'Turning on Argument Mode pauses personal insights immediately, while '
+          'shared activities keep working.',
+    ),
+    (
+      'What does Docsy remember?',
+      'Whatever you allow under Privacy & Companion Memory here. Switch memory '
+          'off and it stops learning from your interactions over time.',
+    ),
+    (
+      'Where do my journal entries live?',
+      'On your device, with a copy on your account so they survive a reinstall '
+          'or a move to the web. You can review what is stored under Settings & '
+          'Privacy Center in Journal & Personalisation.',
+    ),
+    (
+      'Why did my check-in options change?',
+      'The home page is built from your onboarding answers, so the cards and '
+          'options follow the stage and symptoms you chose. Changing your '
+          'answers here changes what the home page offers.',
+    ),
+    (
+      'Can I change my life stage later?',
+      'Yes. Current Life Stage on this page holds the dates behind it, and the '
+          'app re-shapes the home page around the stage you are in.',
+    ),
+    (
+      'What happens when I reset my data?',
+      'Manage My Data resets what the app has learned — cycle learning, AI '
+          'recommendations, or symptom history — on this device. Your logged '
+          'periods are not deleted by resetting cycle learning.',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: BlushyColors.background,
+      appBar: AppBar(
+        backgroundColor: BlushyColors.background,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: BlushyColors.text),
+        title: Text(
+          'FAQ',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: BlushyColors.text,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: ListView.builder(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(
+            horizontal: BlushySpacing.lg,
+            vertical: BlushySpacing.md,
+          ),
+          itemCount: _faqs.length,
+          itemBuilder: (context, index) {
+            final (question, answer) = _faqs[index];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              // A Material rather than a coloured box: ExpansionTile paints its
+              // ink on the nearest Material, and a DecoratedBox over it hides
+              // the splash entirely -- which Flutter asserts on.
+              child: Material(
+                color: Colors.white,
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: BlushyColors.border),
+                ),
+                child: Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  title: Text(
+                    question,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: BlushyColors.text,
+                    ),
+                  ),
+                  childrenPadding:
+                      const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      answer,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        height: 1.55,
+                        color: BlushyColors.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+

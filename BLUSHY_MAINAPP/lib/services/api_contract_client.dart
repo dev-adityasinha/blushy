@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -141,7 +142,7 @@ class ApiContractClient {
   /// the live host: a first call hung past 90s and the next answered in 18.3s,
   /// while a warm one comes back in about 1s. Every screen that happened to
   /// make that first call reported a request timeout -- on the home page, that
-  /// is Dr. Docsy insights and cycle patterns.
+  /// is Docsy insights and cycle patterns.
   ///
   /// The retry is what actually fixes it: the failed attempt is what wakes the
   /// instance, so the second usually succeeds. A raised timeout alone would
@@ -175,16 +176,62 @@ class ApiContractClient {
     }
   }
 
+  /// Whether repeating this exact request is safe.
+  ///
+  /// A retry is only ever correct when sending the request twice leaves the
+  /// same result as sending it once. `GET` and `PUT` satisfy that by
+  /// definition. `POST` does not — it creates something — so it qualifies only
+  /// when it carries an idempotency key the server actually dedupes on, which
+  /// today is the events and period-log routes. `PATCH` may be a partial or
+  /// relative change, and a repeated `DELETE` reports a 404 for work that
+  /// succeeded, so neither is retried.
+  ///
+  /// Without this, a slow `POST /posts` that the server had already accepted
+  /// was sent again and published the post twice.
+  static bool _isRepeatable(String method, {String? idempotencyKey}) {
+    switch (method) {
+      case 'GET':
+      case 'PUT':
+        return true;
+      case 'POST':
+        return idempotencyKey != null && idempotencyKey.isNotEmpty;
+      default:
+        return false;
+    }
+  }
+
+  /// How long the server asked us to wait, bounded.
+  ///
+  /// `Retry-After` is seconds here. It is clamped because a caller must not be
+  /// left waiting on a number the app did not choose, and jittered because
+  /// every client saturated at the same moment would otherwise come back at the
+  /// same moment and saturate it again.
+  static Duration _retryAfterDelay(http.Response response) {
+    final header = response.headers['retry-after'];
+    final seconds = int.tryParse(header?.trim() ?? '') ?? 2;
+    // .toInt() because num.clamp returns num, which Duration will not take.
+    final int bounded = seconds.clamp(1, 10).toInt();
+    final int jitterMs = _random.nextInt(400);
+    return Duration(milliseconds: bounded * 1000 + jitterMs);
+  }
+
+  static final math.Random _random = math.Random();
+
   static Future<ApiResult<T>> _send<T>(
     Future<http.Response> Function() request,
-    T Function(dynamic data)? parse,
-  ) async {
+    T Function(dynamic data)? parse, {
+    required bool repeatable,
+  }) async {
     try {
       http.Response response;
       try {
         response = await request().timeout(_timeout);
       } on TimeoutException {
-        // Second attempt, against an instance the first one has now woken.
+        // The instance sleeps when idle, and the first request after that waits
+        // on a cold start. The failed attempt is what wakes it, so a second one
+        // usually succeeds -- but only where repeating it is safe. A timed-out
+        // write that the server had in fact accepted must not be sent again.
+        if (!repeatable) rethrow;
         response = await request().timeout(_wakeTimeout);
       }
 
@@ -196,6 +243,15 @@ class ApiContractClient {
         if (await _tryRefreshSession()) {
           response = await request().timeout(_timeout);
         }
+      }
+
+      // 503 means every database connection is in use: the service is busy, not
+      // broken, and the same request will succeed shortly. Waiting the interval
+      // it asked for turns that into content rather than an error message --
+      // again only where repeating is safe.
+      if (response.statusCode == 503 && repeatable) {
+        await Future<void>.delayed(_retryAfterDelay(response));
+        response = await request().timeout(_wakeTimeout);
       }
 
       return _decode<T>(response, parse);
@@ -288,7 +344,8 @@ class ApiContractClient {
     final uri = Uri.parse('$_base$path').replace(
       queryParameters: query == null || query.isEmpty ? null : query,
     );
-    return _send<T>(() => http.get(uri, headers: _headers()), parse);
+    return _send<T>(() => http.get(uri, headers: _headers()), parse,
+        repeatable: _isRepeatable('GET'));
   }
 
   static Future<ApiResult<T>> post<T>(
@@ -304,6 +361,7 @@ class ApiContractClient {
         body: body == null ? null : jsonEncode(body),
       ),
       parse,
+      repeatable: _isRepeatable('POST', idempotencyKey: idempotencyKey),
     );
   }
 
@@ -319,6 +377,7 @@ class ApiContractClient {
         body: body == null ? null : jsonEncode(body),
       ),
       parse,
+      repeatable: _isRepeatable('PUT'),
     );
   }
 
@@ -334,6 +393,7 @@ class ApiContractClient {
         body: body == null ? null : jsonEncode(body),
       ),
       parse,
+      repeatable: _isRepeatable('PATCH'),
     );
   }
 
@@ -353,6 +413,7 @@ class ApiContractClient {
         body: body == null ? null : jsonEncode(body),
       ),
       parse,
+      repeatable: _isRepeatable('DELETE'),
     );
   }
 }

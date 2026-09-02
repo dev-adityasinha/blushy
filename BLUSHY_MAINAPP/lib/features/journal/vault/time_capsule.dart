@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../theme/colors.dart';
 
 class TimeCapsuleItem {
   final String id;
@@ -66,7 +67,7 @@ class _TimeCapsuleWidgetState extends State<TimeCapsuleWidget> with SingleTicker
             final val = _unlockAnimController.value;
             return AlertDialog(
               backgroundColor: Color.lerp(const Color(0xFF1E293B), const Color(0xFFFFFBEB), val),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               title: Column(
                 children: [
                   Icon(val < 0.6 ? Icons.lock_clock_rounded : Icons.lock_open_rounded, color: const Color(0xFFD97706), size: 36),
@@ -91,10 +92,10 @@ class _TimeCapsuleWidgetState extends State<TimeCapsuleWidget> with SingleTicker
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         title: Text('Memory Time Capsule ⌛', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFFFDFBF7),
+        backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
       body: ListView.builder(
@@ -106,7 +107,7 @@ class _TimeCapsuleWidgetState extends State<TimeCapsuleWidget> with SingleTicker
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
               leading: Icon(canUnlock ? Icons.mark_email_read_rounded : Icons.lock_rounded, color: canUnlock ? const Color(0xFF10B981) : const Color(0xFFD97706)),
               title: Text(item.title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),

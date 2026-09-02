@@ -155,7 +155,7 @@ class BlushyTheme {
 
   static BoxDecoration get premiumCardDecoration => BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border, width: 1.0),
         boxShadow: [
           BoxShadow(
@@ -165,6 +165,17 @@ class BlushyTheme {
           ),
         ],
       );
+
+  /// The corner radius the whole app is built on.
+  ///
+  /// One small value rather than a spread from 14 to 32: buttons, chips, cards
+  /// and fields read as rectangles with the corners taken off rather than as
+  /// pills. Genuinely round things -- avatars, the radio marker, the raised nav
+  /// button -- are circles via BoxShape.circle and are unaffected by this.
+  static const double radius = 12;
+
+  static RoundedRectangleBorder get shape =>
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -219,11 +230,31 @@ class BlushyTheme {
           letterSpacing: 0.8,
         ),
       ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(shape: shape),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(shape: shape),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(shape: shape),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(shape: shape),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(shape: shape),
+      dialogTheme: DialogThemeData(shape: shape),
+      chipTheme: ChipThemeData(shape: shape),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      ),
       cardTheme: CardThemeData(
         color: BlushyColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: BlushyColors.border, width: 1),
         ),
         margin: EdgeInsets.zero,

@@ -35,7 +35,7 @@ class TextNoteRenderer extends StatelessWidget {
           constraints: const BoxConstraints(minWidth: 160, maxWidth: 240),
           decoration: BoxDecoration(
             color: (customBgColor ?? Colors.white).withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
             boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
           ),

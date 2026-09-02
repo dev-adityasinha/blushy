@@ -222,6 +222,78 @@ async function sendPartnerInvite({ to, senderName, inviteUrl = null }) {
 }
 
 /**
+ * Welcomes someone the first time their account exists.
+ *
+ * Sent once, from the two places an account is actually created: finishing an
+ * email signup, and a first Google sign-in. Deliberately not sent when the
+ * code is merely requested, because at that point there is no account yet.
+ *
+ * Failure is swallowed by the caller: a welcome that does not arrive is not a
+ * reason to fail a signup that has already succeeded.
+ */
+async function sendWelcome({ to, name = null }) {
+  const who = name && name.trim().length > 0 ? name.trim() : 'you';
+  const greeting = who === 'you' ? 'Welcome to Blushy' : `Welcome to Blushy, ${who}`;
+  const subject = 'Welcome to Blushy 💗';
+
+  const text = [
+    `${greeting}.`,
+    '',
+    'We are so glad you are here.',
+    '',
+    'Blushy is a soft place to keep track of your body and your days. Log what',
+    'you feel, as much or as little as you like, and it starts noticing the',
+    'patterns with you. Docsy is here whenever you want to talk something',
+    'through, at any hour.',
+    '',
+    'A few gentle things to know:',
+    '- Nothing you write is shared with anyone unless you connect a partner and',
+    '  choose what to share.',
+    '- Your journal stays yours. You decide what Docsy remembers.',
+    '- There is no streak to keep and nothing to fall behind on.',
+    '',
+    'Take your time. We are glad you found us.',
+    '',
+    'With love,',
+    'The Blushy family',
+  ].join('\n');
+
+  const html = `
+  <div style="font-family:Arial,sans-serif;line-height:1.6;color:#2b2b2b;max-width:500px;margin:0 auto;padding:24px;border:1px solid #f5d6de;border-radius:12px;background-color:#fff7f9;">
+    <div style="text-align:center;font-size:34px;line-height:1;margin-bottom:8px;">💗</div>
+    <h2 style="margin:0 0 6px;color:#f76b8a;text-align:center;font-size:22px;">${greeting}</h2>
+    <p style="text-align:center;font-size:15px;color:#555;margin:0 0 20px;">
+      We are so glad you are here.
+    </p>
+
+    <p style="font-size:14px;color:#555;margin:0 0 16px;">
+      Blushy is a soft place to keep track of your body and your days. Log what you
+      feel, as much or as little as you like, and it starts noticing the patterns
+      with you. Docsy is here whenever you want to talk something through, at
+      any hour.
+    </p>
+
+    <div style="background-color:#ffffff;border:1px solid #f5d6de;border-radius:12px;padding:16px;margin:20px 0;">
+      <p style="margin:0 0 10px;font-size:13px;color:#f76b8a;font-weight:bold;letter-spacing:1px;">A FEW GENTLE THINGS</p>
+      <p style="margin:0 0 8px;font-size:14px;color:#555;">Nothing you write is shared with anyone unless you connect a partner and choose what to share.</p>
+      <p style="margin:0 0 8px;font-size:14px;color:#555;">Your journal stays yours. You decide what Docsy remembers.</p>
+      <p style="margin:0;font-size:14px;color:#555;">There is no streak to keep and nothing to fall behind on.</p>
+    </div>
+
+    <p style="text-align:center;font-size:14px;color:#555;margin:0 0 4px;">Take your time. We are glad you found us.</p>
+    <p style="text-align:center;font-size:14px;color:#f76b8a;margin:16px 0 0;font-weight:bold;">With love,<br/>The Blushy family</p>
+  </div>`;
+
+  return deliver({
+    to,
+    subject,
+    text,
+    html,
+    devLogLine: `DEV welcome email for ${to}`,
+  });
+}
+
+/**
  * Sends the signup / password-reset code.
  *
  * This carried its own copy of the SMTP ladder and never called `deliver()`,
@@ -277,4 +349,5 @@ export const emailService = {
   deliver,
   sendVerificationLink,
   sendPartnerInvite,
+  sendWelcome,
 };

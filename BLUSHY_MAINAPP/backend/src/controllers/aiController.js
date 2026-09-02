@@ -1,4 +1,5 @@
 import { aiChatService } from '../services/aiChatService.js';
+import { uploadedFileBytes } from '../utils/uploadedFileBytes.js';
 import { aiHistoryRepository } from '../repositories/aiHistoryRepository.js';
 import { profileMemoryRepository } from '../repositories/profileMemoryRepository.js';
 import { userRepository } from '../repositories/userRepository.js';
@@ -275,11 +276,35 @@ async function transcribeAudioFile(file) {
     format = 'webm';
   }
 
+  // The provider validates the part's content type against the registered
+  // list, so it has to be sent a real one. Android records AAC-LC in an MP4
+  // container and the plugin labels it `audio/m4a`, which is not a registered
+  // type: forwarding that verbatim is rejected before the audio is even read.
+  const CANONICAL_AUDIO_TYPES = {
+    wav: 'audio/wav',
+    mp3: 'audio/mpeg',
+    webm: 'audio/webm',
+    ogg: 'audio/ogg',
+    m4a: 'audio/mp4',
+    aac: 'audio/mp4',
+    flac: 'audio/flac',
+  };
+  const contentType = CANONICAL_AUDIO_TYPES[format] ?? 'audio/webm';
+
+  // The name has to agree with the type, for the same reason.
+  const uploadName = (() => {
+    const original = path.basename(file.originalname || '');
+    if (original && original.toLowerCase().endsWith(`.${format}`)) return original;
+    return `audio.${format}`;
+  })();
+
   try {
     const formData = new FormData();
-    formData.append('file', new Blob([fs.readFileSync(file.path)], {
-      type: file.mimetype || 'application/octet-stream',
-    }), path.basename(file.originalname || `audio.${format}`));
+    const audioBytes = uploadedFileBytes(file);
+    if (!audioBytes) {
+      throw createHttpError(400, 'The uploaded audio could not be read.');
+    }
+    formData.append('file', new Blob([audioBytes], { type: contentType }), uploadName);
     formData.append('model', env.speechToTextModel);
     formData.append('prompt', 'Transcribe spoken English and regional Indian languages (Hindi, Tamil, Telugu, Kannada) accurately. Ignore background noise, hums, or silence.');
 
@@ -307,7 +332,10 @@ async function transcribeAudioFile(file) {
       }
     } else {
       const errText = await response.text().catch(() => '');
-      console.warn(`[WARN] Grok/Whisper STT failed (Status ${response.status}): ${errText}`);
+      console.warn(
+        `[WARN] STT failed (provider status ${response.status}) for ` +
+        `${uploadName} as ${contentType}, ${audioBytes.length} bytes: ${errText}`,
+      );
       // A rejected key or a provider outage is not the user mumbling. Saying
       // so lets the app show something they can act on.
       throw createHttpError(502, 'The speech-to-text provider rejected the request.', {
@@ -411,7 +439,7 @@ export async function createChatReply(req, res, next) {
         // A failure here must not silently drop the safety check. Log the
         // failure without the user's words and continue; the post-generation
         // gate below is the second line of defence.
-        console.error('[safety] evaluation failed for Dr. Docsy chat:', safetyError.message);
+        console.error('[safety] evaluation failed for Docsy chat:', safetyError.message);
       }
     }
 
@@ -925,7 +953,7 @@ export async function getRelationshipAdvice(req, res, next) {
     // matrix describes what she shares with him. Asked from her side, this
     // gathered context about him while gating it on her own switches -- the
     // wrong direction -- and he logs nothing anyway, since the partner shell
-    // has no Dr. Docsy and no M Studio. There was never an answer to give.
+    // has no Docsy and no M Studio. There was never an answer to give.
     if (connection.canManagePermissions) {
       throw createHttpError(403, 'Relationship advice is for the partner supporting you.');
     }
@@ -987,7 +1015,7 @@ export async function getRelationshipAdvice(req, res, next) {
     }
 
     const systemPrompt = [
-      `You are Dr. Docsy, giving short, practical relationship guidance to someone about ${partnerName}.`,
+      `You are Docsy, giving short, practical relationship guidance to someone about ${partnerName}.`,
       'Answer in at most four sentences. Be concrete and kind, and suggest something they can actually do.',
       'You are not a therapist and must not diagnose either person or their relationship.',
       'Never speculate about information you were not given.',
@@ -1008,14 +1036,14 @@ export async function getRelationshipAdvice(req, res, next) {
       });
     } catch (error) {
       console.error('[relationship-ai] generation failed:', error.message);
-      throw createHttpError(503, 'Dr. Docsy could not answer just now. Please try again shortly.', {
+      throw createHttpError(503, 'Docsy could not answer just now. Please try again shortly.', {
         code: 'AI_UNAVAILABLE',
       });
     }
 
     const replyText = typeof answer === 'string' ? answer : (answer?.message ?? answer?.content ?? '');
     if (!replyText || replyText.trim().length === 0) {
-      throw createHttpError(503, 'Dr. Docsy could not answer just now. Please try again shortly.', {
+      throw createHttpError(503, 'Docsy could not answer just now. Please try again shortly.', {
         code: 'AI_UNAVAILABLE',
       });
     }
@@ -1141,7 +1169,7 @@ export async function extractAndStoreProfileMemory(req, res, next) {
       throw createHttpError(401, 'Authentication required to store profile memory.');
     }
 
-    // "Allow Dr. Docsy to learn from your interactions over time" is a real
+    // "Allow Docsy to learn from your interactions over time" is a real
     // control, not a local display toggle. It lived on the device only, so the
     // server kept storing what it learned after she turned it off. Nothing is
     // written when it is off, and the caller is told why rather than being led
@@ -1299,7 +1327,7 @@ export async function decodePartnerMessage(req, res, next) {
             messages: [
               {
                 role: 'system',
-                content: `You are Dr. Docsy, acting as a close, casual, and supportive "third wheel" friend to the male user ("bro"). Explain his girlfriend's message subtext in a very human, conversational way (not like a clinical AI), and give a direct tip on how he should reply.
+                content: `You are Docsy, acting as a close, casual, and supportive "third wheel" friend to the male user ("bro"). Explain his girlfriend's message subtext in a very human, conversational way (not like a clinical AI), and give a direct tip on how he should reply.
 Analyze the recent conversation style/tone (e.g. flirting, playful roasting, bantering, serious, funny) and ensure your tone and suggestions match this style (e.g., if they are roasting, keep the tip roasting/playful; if they are flirting, keep the tip romantic/playful).
 The girlfriend is currently ${cycleDesc}.
 Keep it short, simple, cool, and conversational.
@@ -1308,7 +1336,7 @@ Recent Chat History:
 ${messagesText}
 
 Format exactly like this (two lines):
-Dr. Docsy: [casual friendly explanation matching the conversation tone, e.g. "Chill bro, she's just playfully teasing you."]
+Docsy: [casual friendly explanation matching the conversation tone, e.g. "Chill bro, she's just playfully teasing you."]
 Tip: [casual, actionable reply advice matching the conversation tone, e.g. "Laugh it off and suggest buying a toy car instead."]
 
 Latest Partner Message to Decode: "${latestMessage.message}"`,
@@ -1384,7 +1412,7 @@ export async function transcribeAudio(req, res, next) {
  *
  * Reflections could previously only be produced by the midnight IST run, so a
  * conversation held during the day showed nothing at all in the AI Reflections
- * tab -- which said letters would appear once you had talked with Dr. Docsy.
+ * tab -- which said letters would appear once you had talked with Docsy.
  */
 export async function generateMyDailySummary(req, res, next) {
   try {
@@ -1608,7 +1636,7 @@ export async function getDailyDiscoverTopicsAndCards(req, res, next) {
 
     if (aiChatApiKey) {
       try {
-        const prompt = `You are Dr. Docsy, an expert women's health and wellness AI guide for Blushy.
+        const prompt = `You are Docsy, an expert women's health and wellness AI guide for Blushy.
 Today is ${dateStr} (Day ${dayIndex} of rotation cycle).
 ${userContext ? `User Research Context: ${userContext}` : `No specific user data available yet (Cold Start). Default 24h featured topic: "${fallbackFeaturedTopic}".`}
 ${seenPromptContext}

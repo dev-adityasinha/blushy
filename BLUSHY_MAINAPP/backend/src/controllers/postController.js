@@ -141,8 +141,11 @@ export async function reportPost(req, res, next) {
 export async function listFeed(req, res, next) {
   try {
     const auth = await requireAuthUserAsync(req);
-    const { type } = req.query; // latest, trending, following, home
-    const posts = await postRepository.listFeed(auth.userId, type || 'home');
+    const { type, search } = req.query; // latest, trending, following, home
+    const posts = await postRepository.listFeed(auth.userId, type || 'home', {
+      // Bounded so a pasted essay cannot become the query.
+      search: typeof search === 'string' ? search.slice(0, 120) : '',
+    });
 
     // Audience separation, blocks and moderation state are enforced here, not
     // by the client hiding things (spec §28).

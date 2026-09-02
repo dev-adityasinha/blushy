@@ -237,7 +237,7 @@ export async function sendMessage(req, res, next) {
     }
 
     const uploadedImageUrl = uploadedImage
-      ? `${req.protocol}://${req.get('host')}/uploads/community/${uploadedImage.filename}`
+      ? uploadedImage.storedUrl
       : null;
 
     const message = await communityRepository.addMessage({
@@ -390,7 +390,7 @@ export async function updateDetails(req, res, next) {
     }
 
     const uploadedImageUrl = uploadedImage
-      ? `${req.protocol}://${req.get('host')}/uploads/community/${uploadedImage.filename}`
+      ? uploadedImage.storedUrl
       : undefined;
 
     await communityRepository.updateGroupDetails(communityId, {

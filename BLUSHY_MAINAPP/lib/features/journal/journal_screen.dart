@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -34,15 +33,14 @@ import 'vault/time_capsule.dart';
 import 'calendar/memory_map.dart';
 import 'insights/achievement_garden.dart';
 import 'insights/journal_dashboard.dart';
-import 'themes/theme_marketplace.dart';
 import 'backup/backup_service.dart';
 import 'export/export_service.dart';
-import 'settings/journal_settings_screen.dart';
 import 'controller/journal_controller.dart';
 import '../../services/api_blushy_service.dart';
 import '../../services/api_contract_client.dart';
 import '../../services/offline_event_queue.dart';
 import 'journal_templates.dart';
+import 'package:flutter/foundation.dart';
 
 /// Wide enough to fill a phone screen, small enough that a page of photos
 /// does not make the entry too large to sync.
@@ -221,6 +219,32 @@ ScrapbookItem scrapbookItemFromJson(Map<String, dynamic> json) {
   );
 }
 
+/// Marks an entry as a scrapbook page rather than a reflection.
+///
+/// Written into the entry's templateName so the history lists can tell them
+/// apart without guessing from the title, which someone can edit.
+const String scrapbookTemplateName = 'Scrapbook';
+
+/// The journal templates for whoever is signed in.
+///
+/// Read from StageConfig, the same place the journal reads them, so a picker
+/// outside the journal offers exactly the same list.
+List<String> journalTemplatesForUser(BuildContext context) {
+  final state = BlushyOSProvider.of(context);
+  var stage = 'everydayWellness';
+  try {
+    if (state.selectedRole == 'partner') {
+      stage = 'partner';
+    } else {
+      final profile = BlushyStorage.read('user_profile.json');
+      if (profile['profile'] != null) {
+        stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
+      }
+    }
+  } catch (_) {}
+  return StageConfig.forStage(stage).journalTemplates;
+}
+
 class BlushyJournalScreen extends StatefulWidget {
   final bool isEmbedded;
   const BlushyJournalScreen({super.key, this.isEmbedded = false});
@@ -230,6 +254,116 @@ class BlushyJournalScreen extends StatefulWidget {
 }
 
 class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerProviderStateMixin {
+  /// The journal's actions, reachable from M Studio.
+  ///
+  /// M Studio holds a GlobalKey to this state so its section cards can drive
+  /// the journal directly, instead of every route into the journal going
+  /// through one bottom sheet of tiles.
+  void openWriteReflection() => _createNewEntry(title: 'Self Reflection');
+
+  void openRecordAndTranscribe() {
+    _leaveDeskCover();
+    setState(() => _showRecordOverlay = true);
+    _startRecordingFlow();
+  }
+
+  void openTemplates() => _showTemplateSelectionModal();
+
+  /// Starts an entry on a named template, for a picker that lives
+  /// outside this screen.
+  ///
+  /// Titled "Reflection" rather than the template's name: the title is what
+  /// the editor's header shows, and the template still decides the prompts.
+  void openTemplate(String name) =>
+      _createNewEntry(title: 'Reflection', templateName: name);
+
+  /// Opens a blank scrapbook page: the canvas and its sticker, washi tape and
+  /// photo-frame toolbar, with nothing written on it.
+  ///
+  /// This is what separates a scrapbook from a reflection. Before, Create
+  /// Scrapbook opened a decorative cover whose only action was to reveal the
+  /// same journal Reflection opens, and whose cover and desk choices were
+  /// never saved.
+  void openScrapbookCanvas() => _createNewEntry(
+        title: 'Scrapbook',
+        // Recorded as the template too, so history can tell the two apart.
+        templateName: scrapbookTemplateName,
+        blank: true,
+      );
+
+  /// The destinations that need this screen's entries. Opened from here rather
+  /// than rebuilt in M Studio, which has no journal entries of its own.
+  List<LocalJournalEntry> get _localEntries => _entries
+      .map((e) => LocalJournalEntry(
+            id: e.id,
+            date: e.dateTime.toString(),
+            title: e.title,
+            body: '',
+            moodKey: e.moodKey,
+          ))
+      .toList();
+
+  void openMemoryVault() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MemoryVaultWidget(entries: _localEntries, onEntryTap: (e) {}),
+      ),
+    );
+  }
+
+  void openSmartCalendar() {
+    _backupService.createBackupPackage(_localEntries.map((l) => l.toJson()).toList());
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MemoryMapWidget()),
+    );
+  }
+
+  void openContentGarden() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AchievementGardenWidget.fromEntries(_localEntries),
+      ),
+    );
+  }
+
+  void openInsightsDashboard() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const JournalDashboardWidget()),
+    );
+  }
+
+  void openYearInReview() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => YearInReviewScrapbook(
+          entries: _localEntries,
+          year: DateTime.now().year,
+          onClose: () => Navigator.pop(context),
+        ),
+      ),
+    );
+  }
+
+  void openSmartSearch() {
+    _leaveDeskCover();
+    _openSmartSearchDialog();
+  }
+
+  /// Drops the cover-and-desk screen.
+  ///
+  /// A tool opened from M Studio otherwise appears over the decorative diary
+  /// cover, which is not the context it belongs to. The entry list behind it
+  /// is what the tool is actually acting on.
+  void _leaveDeskCover() {
+    if (!_showDeskCoverView) return;
+    setState(() => _showDeskCoverView = false);
+  }
+
   void openNewEntryBottomSheet() {
     _showCreateOptionsBottomSheet();
   }
@@ -291,53 +425,48 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     }
   }
 
+  /// Today's entries, with the open one's live items instead of its last
+  /// saved copy.
+  ///
+  /// The counts below each added `_items` on top of the whole list, so an
+  /// entry open from today was counted twice -- which is why "Words" read far
+  /// higher than the summary sentence. They also fell back to the most recent
+  /// entry when nothing had been written today, reporting another day's
+  /// writing under a heading that says "Today".
+  List<List<ScrapbookItem>> get _todaysItemLists {
+    final now = DateTime.now();
+    return _entries
+        .where((e) =>
+            e.dateTime.year == now.year &&
+            e.dateTime.month == now.month &&
+            e.dateTime.day == now.day)
+        .map((e) => e.id == _currentEntryId ? _items : e.items)
+        .toList();
+  }
+
+  /// Today's word count, for tests. The getter itself stays private.
+  @visibleForTesting
+  int get debugWordsToday => _calculatedWordsCount;
+
+  int _countTodaysItems(String type) => _todaysItemLists
+      .expand((items) => items)
+      .where((item) => item.type == type)
+      .length;
+
   int get _calculatedWordsCount {
-    int total = 0;
-    for (var item in _items) {
-      if (item.type == 'text' && item.content is String) {
-        final text = (item.content as String).trim();
-        if (text.isNotEmpty) {
-          total += text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
-        }
-      }
-    }
-    final now = DateTime.now();
-    final todayEntries = _entries.where((e) => e.dateTime.year == now.year && e.dateTime.month == now.month && e.dateTime.day == now.day).toList();
-    final targetList = todayEntries.isNotEmpty ? todayEntries : (_entries.isNotEmpty ? [_entries.first] : <JournalEntryItem>[]);
-    for (var entry in targetList) {
-      for (var item in entry.items) {
-        if (item.type == 'text' && item.content is String) {
-          final text = (item.content as String).trim();
-          if (text.isNotEmpty) {
-            total += text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
-          }
-        }
-      }
+    var total = 0;
+    for (final item in _todaysItemLists.expand((items) => items)) {
+      if (item.type != 'text' || item.content is! String) continue;
+      final text = (item.content as String).trim();
+      if (text.isEmpty) continue;
+      total += text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
     }
     return total;
   }
 
-  int get _calculatedPhotosCount {
-    int total = _items.where((i) => i.type == 'photo').length;
-    final now = DateTime.now();
-    final todayEntries = _entries.where((e) => e.dateTime.year == now.year && e.dateTime.month == now.month && e.dateTime.day == now.day).toList();
-    final targetList = todayEntries.isNotEmpty ? todayEntries : (_entries.isNotEmpty ? [_entries.first] : <JournalEntryItem>[]);
-    for (var entry in targetList) {
-      total += entry.items.where((i) => i.type == 'photo').length;
-    }
-    return total;
-  }
+  int get _calculatedPhotosCount => _countTodaysItems('photo');
 
-  int get _calculatedVoiceCount {
-    int total = _items.where((i) => i.type == 'voice').length;
-    final now = DateTime.now();
-    final todayEntries = _entries.where((e) => e.dateTime.year == now.year && e.dateTime.month == now.month && e.dateTime.day == now.day).toList();
-    final targetList = todayEntries.isNotEmpty ? todayEntries : (_entries.isNotEmpty ? [_entries.first] : <JournalEntryItem>[]);
-    for (var entry in targetList) {
-      total += entry.items.where((i) => i.type == 'voice').length;
-    }
-    return total;
-  }
+  int get _calculatedVoiceCount => _countTodaysItems('voice');
 
   int get _calculatedWritingTimeMins {
     final words = _calculatedWordsCount;
@@ -529,7 +658,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           color: _saveIndicatorStatus == 'saved'
               ? const Color(0xFFE8F5E9)
               : const Color(0xFFFFF8E1),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _saveIndicatorStatus == 'saved'
                 ? const Color(0xFF43A047).withValues(alpha: 0.3)
@@ -1022,13 +1151,20 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     }
   }
 
-  void _createNewEntry({String title = 'Self Reflection', String? templateName}) {
+  void _createNewEntry({
+    String title = 'Self Reflection',
+    String? templateName,
+    bool blank = false,
+  }) {
     final String newId = 'entry_${DateTime.now().millisecondsSinceEpoch}';
 
     // The template decides what the page opens with. It used to decide nothing:
     // every entry got the same blank "Tap to start writing your reflection...",
     // whichever template had been chosen, so the choice was cosmetic.
-    final prompts = JournalTemplates.promptsFor(templateName);
+    //
+    // A scrapbook page opens blank: prompts are what makes a page something to
+    // answer, and a scrapbook is something to build.
+    final prompts = blank ? const <String>[] : JournalTemplates.promptsFor(templateName);
 
     final List<ScrapbookItem> initialItems = [
       ScrapbookItem(id: 'tape_$newId', type: 'tape', content: const Color(0xFFFBCFE8), position: const Offset(20, 16)),
@@ -1201,9 +1337,9 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFDD0D22), Color(0xFFFF4D6D)],
+                    colors: [BlushyColors.primary, Color(0xFFFF4D6D)],
                   ),
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: const [
                     BoxShadow(color: Color(0x66DD0D22), blurRadius: 16, offset: Offset(0, 6)),
                   ],
@@ -1259,7 +1395,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.white24),
                 ),
                 child: Wrap(
@@ -1375,42 +1511,11 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!widget.isEmbedded && Navigator.canPop(context)) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: InkWell(
-                    onTap: () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: BlushyColors.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.arrow_back_rounded, size: 18, color: BlushyColors.text),
-                          const SizedBox(width: 6),
-                          Text(
-                            AppLocalizations.of(context).journalBackToHome,
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: BlushyColors.text,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Builder(
+                  Expanded(
+                    child: Builder(
                     builder: (context) {
                       final osState = BlushyOSProvider.of(context);
                       final String displayName = (osState.personalContext.userName != null && osState.personalContext.userName!.trim().isNotEmpty)
@@ -1421,6 +1526,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                         children: [
                           Text(
                             '${_getTimeBasedGreetingPrefix()}, $displayName',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.playfairDisplay(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
@@ -1429,11 +1536,14 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                           ),
                           Text(
                             "Today's mood? Record your thoughts below",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
                           ),
                         ],
                       );
                     },
+                    ),
                   ),
                   Row(
                     children: [
@@ -1466,7 +1576,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   filled: true,
                   fillColor: BlushyColors.cardBg,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
               ),
             ],
@@ -1478,47 +1588,12 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
             children: [
-              // Today's Inspiration Quote Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFFF0F5), Color(0xFFFBCFE8)],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFF472B6).withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.auto_awesome_rounded, color: Color(0xFFDB2777), size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'TODAY\'S INSPIRATION',
-                            style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFFDB2777), letterSpacing: 1.2),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '"The smallest memories become the biggest treasures."',
-                            style: GoogleFonts.caveat(fontSize: 16, fontWeight: FontWeight.w600, color: BlushyColors.text),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
               // Today's Summary Memory Card
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border),
                   boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 12, offset: Offset(0, 4))],
                 ),
@@ -1528,17 +1603,36 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.auto_awesome_rounded, size: 18, color: BlushyColors.primary),
-                            const SizedBox(width: 8),
-                            Text('Today\'s Memory Summary', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text)),
-                          ],
+                        Expanded(
+                          child: Row(
+                            children: [
+                              const Icon(Icons.auto_awesome_rounded, size: 18, color: BlushyColors.primary),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  "Today's Memory Summary",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(12)),
-                          child: Text('Emotion: $_currentEmotionLabel', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF0369A1))),
+                        const SizedBox(width: 8),
+                        // Both children sized to their own text in a
+                        // spaceBetween row, so together they ran past the card.
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(12)),
+                            child: Text(
+                              'Emotion: $_currentEmotionLabel',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF0369A1)),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -1607,10 +1701,10 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                       spacing: 12,
                       runSpacing: 8,
                       children: [
-                        _buildSummaryMetric(Icons.schedule_rounded, 'Writing Time: $_calculatedWritingTimeMins mins', Colors.blue),
-                        _buildSummaryMetric(Icons.notes_rounded, 'Words: $_calculatedWordsCount', Colors.purple),
-                        _buildSummaryMetric(Icons.camera_alt_rounded, 'Photos: $_calculatedPhotosCount', Colors.pink),
-                        _buildSummaryMetric(Icons.graphic_eq_rounded, 'Voice: $_calculatedVoiceCount', Colors.teal),
+                        _buildSummaryMetric(Icons.schedule_rounded, 'Writing time today: $_calculatedWritingTimeMins mins', Colors.blue),
+                        _buildSummaryMetric(Icons.notes_rounded, 'Words today: $_calculatedWordsCount', Colors.purple),
+                        _buildSummaryMetric(Icons.camera_alt_rounded, 'Photos today: $_calculatedPhotosCount', Colors.pink),
+                        _buildSummaryMetric(Icons.graphic_eq_rounded, 'Voice today: $_calculatedVoiceCount', Colors.teal),
                         _buildSummaryMetric(Icons.local_fire_department_rounded, 'Streak: $_calculatedStreakDays Days', Colors.orange),
                       ],
                     ),
@@ -1835,7 +1929,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: theme['bgColor'] as Color,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: (theme['borderColor'] as Color).withValues(alpha: 0.8), width: 1.2),
           boxShadow: const [
             BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 4)),
@@ -1937,7 +2031,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   _buildOptionTile(
                     icon: Icons.mic_none_rounded,
                     title: 'Record & Transcribe',
-                    subtitle: 'Speak and let Dr. Docsy transcribe into your journal',
+                    subtitle: 'Speak and let Docsy transcribe into your journal',
                     onTap: () {
                       Navigator.pop(context);
                       setState(() {
@@ -1991,25 +2085,9 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     subtitle: 'Organic garden growth tied to reflection depth',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AchievementGardenWidget()));
-                    },
-                  ),
-                  _buildOptionTile(
-                    icon: Icons.palette_rounded,
-                    title: 'Modular Theme Marketplace',
-                    subtitle: 'Mix & match covers, paper, fonts & audio',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => ThemeMarketplaceWidget(onApplyTheme: (pack) {})));
-                    },
-                  ),
-                  _buildOptionTile(
-                    icon: Icons.settings_rounded,
-                    title: 'Settings & Privacy Center',
-                    subtitle: 'Subsystem flags, diagnostics & accessibility',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const JournalSettingsScreen()));
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => AchievementGardenWidget.fromEntries(_localEntries),
+                      ));
                     },
                   ),
                   _buildOptionTile(
@@ -2027,7 +2105,11 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     subtitle: 'Guided multi-page yearly recap',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => YearInReviewScrapbook(onClose: () => Navigator.pop(context))));
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => YearInReviewScrapbook(
+                        entries: _localEntries,
+                        year: DateTime.now().year,
+                        onClose: () => Navigator.pop(context),
+                      )));
                     },
                   ),
                   _buildOptionTile(
@@ -2074,7 +2156,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
       margin: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: BlushyColors.cardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
           leading: CircleAvatar(
@@ -2184,6 +2266,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   IconButton(
                     icon: const Icon(Icons.check_rounded, color: Colors.green),
+                    tooltip: 'Save & close',
                     onPressed: _saveAndCloseEntry,
                   ),
                 ],
@@ -2234,14 +2317,14 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: activeThemeObj['bgColor'] as Color,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: activeThemeObj['borderColor'] as Color, width: 1.5),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(12),
                 child: GestureDetector(
                   onTap: () => setState(() => _selectedItemId = null),
                   child: Stack(
@@ -2539,7 +2622,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFFBCFE8)),
           boxShadow: const [BoxShadow(color: Color(0x10000000), blurRadius: 4)],
         ),
@@ -2584,7 +2667,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFF87171).withValues(alpha: 0.3)),
           boxShadow: const [BoxShadow(color: Color(0x10000000), blurRadius: 6)],
         ),
@@ -2596,7 +2679,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               children: [
                 const Icon(Icons.auto_awesome_rounded, size: 14, color: BlushyColors.primary),
                 const SizedBox(width: 4),
-                Text('DR. DOCSY INSIGHTS', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
+                Text('DOCSY INSIGHTS', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
               ],
             ),
             const SizedBox(height: 6),
@@ -2618,7 +2701,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: BlushyColors.text,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4))],
         ),
         child: SingleChildScrollView(
@@ -2719,7 +2802,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   _buildToolbarTabButton('Text Box', Icons.text_fields_rounded),
                   _buildToolbarTabButton('Voice Note', Icons.graphic_eq_rounded),
                   _buildToolbarTabButton('Dictate (STT)', Icons.mic_rounded),
-                  _buildToolbarTabButton('Dr. Docsy Insights', Icons.auto_awesome_rounded),
+                  _buildToolbarTabButton('Docsy Insights', Icons.auto_awesome_rounded),
                 ],
               ),
             ),
@@ -2778,7 +2861,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFFAF6F0),
+                color: BlushyColors.background,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: BlushyColors.border),
               ),
@@ -2838,7 +2921,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFFAF6F0),
+                color: BlushyColors.background,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: BlushyColors.border),
               ),
@@ -2878,7 +2961,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: isSel ? BlushyColors.primary : const Color(0xFFFAF6F0),
+                color: isSel ? BlushyColors.primary : BlushyColors.background,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: isSel ? BlushyColors.primary : BlushyColors.border),
               ),
@@ -2904,7 +2987,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           style: OutlinedButton.styleFrom(
             foregroundColor: BlushyColors.primary,
             side: const BorderSide(color: BlushyColors.primary),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       );
@@ -2920,12 +3003,12 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           style: ElevatedButton.styleFrom(
             backgroundColor: BlushyColors.primary,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             elevation: 0,
           ),
         ),
       );
-    } else if (_activeToolbarTab == 'Dr. Docsy Insights') {
+    } else if (_activeToolbarTab == 'Docsy Insights') {
       final prompt = _promptService.getPrompts().first;
       final localEntries = _entries.map((e) => LocalJournalEntry(id: e.id, date: e.dateTime.toString(), title: e.title, body: '', moodKey: e.moodKey)).toList();
       final reflection = _reflectionService.generateSummary(localEntries, ReflectionPeriod.weekly);
@@ -2938,17 +3021,17 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
         child: Row(
           children: [
             ElevatedButton.icon(
-              onPressed: () => _addItem('ai_${DateTime.now().millisecondsSinceEpoch}', 'ai_insight', 'Dr. Docsy Reflection: ${reflection.summaryText}', const Offset(30, 180)),
+              onPressed: () => _addItem('ai_${DateTime.now().millisecondsSinceEpoch}', 'ai_insight', 'Docsy Reflection: ${reflection.summaryText}', const Offset(30, 180)),
               icon: const Icon(Icons.auto_awesome_rounded, size: 16),
               label: const Text('Add Reflection Summary'),
-              style: ElevatedButton.styleFrom(backgroundColor: BlushyColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 0),
+              style: ElevatedButton.styleFrom(backgroundColor: BlushyColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
             ),
             const SizedBox(width: 8),
             OutlinedButton.icon(
               onPressed: () => _addItem('text_${DateTime.now().millisecondsSinceEpoch}', 'text', prompt.text, const Offset(40, 100)),
               icon: const Icon(Icons.lightbulb_outline_rounded, size: 16),
               label: Text('Prompt: ${prompt.category}'),
-              style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFD97706), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+              style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFD97706), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             ),
             const SizedBox(width: 8),
             if (highlights.isNotEmpty)
@@ -2956,7 +3039,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 onPressed: () => _addItem('ai_h_${DateTime.now().millisecondsSinceEpoch}', 'ai_insight', '${highlights.first.category}: ${highlights.first.title}', const Offset(50, 220)),
                 icon: const Icon(Icons.star_rounded, size: 16),
                 label: Text('Highlight (${timeline.length} entries)'),
-                style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF10B981), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF10B981), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               ),
           ],
         ),
@@ -2969,7 +3052,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           label: Text(AppLocalizations.of(context).journalAddTextBox),
           style: OutlinedButton.styleFrom(
             foregroundColor: BlushyColors.primary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       );
@@ -2995,7 +3078,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 children: [
                   const Icon(Icons.auto_awesome_rounded, color: Color(0xFFD97706), size: 20),
                   const SizedBox(width: 8),
-                  Text('Dr. Docsy Title Suggestions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Docsy Title Suggestions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 6),
@@ -3131,7 +3214,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               Center(
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   child: Text(AppLocalizations.of(context).journalCloseMemoryBook, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -3144,13 +3227,23 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
 
   void _openSmartSearchDialog() {
     final searchController = TextEditingController();
-    final localEntries = _entries.map((e) => LocalJournalEntry(
-      id: e.id,
-      date: e.dateTime.toString(),
-      title: e.title,
-      body: e.items.where((it) => it.type == 'text').map((it) => it.content.toString()).join(' '),
-      moodKey: e.moodKey,
-    )).toList();
+
+    // Read at search time, not at open time. Entries load asynchronously from
+    // storage (and sometimes the server) after initState, and this dialog is
+    // opened on the very next frame when it comes from M Studio -- so the list
+    // was empty and every search answered "no entries matched".
+    List<LocalJournalEntry> currentEntries() => _entries
+        .map((e) => LocalJournalEntry(
+              id: e.id,
+              date: e.dateTime.toString(),
+              title: e.title,
+              body: e.items
+                  .where((it) => it.type == 'text')
+                  .map((it) => it.content.toString())
+                  .join(' '),
+              moodKey: e.moodKey,
+            ))
+        .toList();
 
     showDialog(
       context: context,
@@ -3179,7 +3272,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                       ),
                       onChanged: (val) {
                         setDialogState(() {
-                          results = _smartSearchService.search(val, localEntries);
+                          results = _smartSearchService.search(val, currentEntries());
                         });
                       },
                     ),
@@ -3193,7 +3286,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                           itemCount: results.length,
                           itemBuilder: (context, i) {
                             final res = results[i];
-                            final connections = _connectionsService.findConnections(res.entry, localEntries);
+                            final connections = _connectionsService.findConnections(res.entry, currentEntries());
                             final explanation = connections.isNotEmpty ? connections.first.explanation : res.matchedConcept;
                             return ListTile(
                               title: Text(res.entry.title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
@@ -3220,7 +3313,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   Widget _buildBookStatBadge(String count, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFFDE68A))),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFFDE68A))),
       child: Column(
         children: [
           Text(count, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
@@ -3300,7 +3393,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -3333,7 +3426,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     onPressed: _stopRecordingAndTranscribe,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
                     child: Text(AppLocalizations.of(context).journalDoneRecording, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
@@ -3448,7 +3541,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         width: 340,
         padding: const EdgeInsets.all(20),
@@ -3469,7 +3562,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                     height: 56,
                     decoration: BoxDecoration(
                       color: _currentColor,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.black12),
                       boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
                     ),
@@ -3483,9 +3576,9 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                         labelText: 'Hex Code',
                         labelStyle: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(color: BlushyColors.primary),
                         ),
                       ),
@@ -3625,7 +3718,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                     ),
                     child: Text(AppLocalizations.of(context).journalApply, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),

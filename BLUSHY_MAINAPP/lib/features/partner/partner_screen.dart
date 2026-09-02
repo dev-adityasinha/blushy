@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../theme/colors.dart';
+import '../../shared/skeleton.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/state.dart';
 import '../../core/theme.dart' hide BlushyColors;
@@ -218,7 +219,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       SnackBar(
         content: Text(
           _isMessageDecoderActive
-              ? '✨ Message Decoder enabled. Dr. Docsy will analyze her messages in Messenger.'
+              ? '✨ Message Decoder enabled. Docsy will analyze her messages in Messenger.'
               : 'Message Decoder disabled.',
         ),
       ),
@@ -256,7 +257,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         // A failed decode used to just stop the spinner, which is
         // indistinguishable from a button that is not wired up.
         setState(() => _decodingMessageIds.remove(msgId));
-        _showComposerNotice('Dr. Docsy could not read that message just now.');
+        _showComposerNotice('Docsy could not read that message just now.');
       }
     } catch (e) {
       if (mounted) {
@@ -465,7 +466,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('💌 Partner Request from $senderEmail!'),
-              backgroundColor: const Color(0xFFDD0D22),
+              backgroundColor: BlushyColors.primary,
               duration: const Duration(seconds: 6),
               action: SnackBarAction(
                 label: 'ACCEPT',
@@ -640,7 +641,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       case 'Memory Book':
         return 'Add Scrapbook';
       case 'Relationship AI':
-        return 'Ask Dr. Docsy';
+        return 'Ask Docsy';
       case 'Gifts':
         return 'Send Surprise';
       default:
@@ -731,7 +732,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     final state = BlushyOSProvider.of(context);
     final isHome = _selectedTabIndex == 0;
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Stack(
           children: [
@@ -802,7 +803,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -839,53 +840,53 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 ? [
                     {
                       "label": "He needs appreciation & validation",
-                      "tip": "Dr. Docsy recommends: Acknowledge his effort, say thank you for something specific, or let him know how much you value him."
+                      "tip": "Docsy recommends: Acknowledge his effort, say thank you for something specific, or let him know how much you value him."
                     },
                     {
                       "label": "He needs quiet space to decompress",
-                      "tip": "Dr. Docsy recommends: Give him some uninterrupted downtime to unwind after a stressful day without pressure."
+                      "tip": "Docsy recommends: Give him some uninterrupted downtime to unwind after a stressful day without pressure."
                     },
                     {
                       "label": "He needs words of encouragement",
-                      "tip": "Dr. Docsy recommends: Remind him that you believe in him and that you're right by his side through current pressures."
+                      "tip": "Docsy recommends: Remind him that you believe in him and that you're right by his side through current pressures."
                     },
                     {
                       "label": "He wants comfort & physical affection",
-                      "tip": "Dr. Docsy recommends: Offer a warm hug, a gentle massage, or a quiet moment relaxing together."
+                      "tip": "Docsy recommends: Offer a warm hug, a gentle massage, or a quiet moment relaxing together."
                     },
                     {
                       "label": "He wants fun & quality time",
-                      "tip": "Dr. Docsy recommends: Suggest a casual game, watch a movie, share a favorite snack, or go for an easy walk together."
+                      "tip": "Docsy recommends: Suggest a casual game, watch a movie, share a favorite snack, or go for an easy walk together."
                     },
                     {
                       "label": "I don't know what he needs",
-                      "tip": "Dr. Docsy recommends: Ask gently: 'Are you looking for encouragement, quiet downtime, or just want to hang out?'"
+                      "tip": "Docsy recommends: Ask gently: 'Are you looking for encouragement, quiet downtime, or just want to hang out?'"
                     },
                   ]
                 : [
                     {
                       "label": "She needs rest",
-                      "tip": "Dr. Docsy recommends: Cancel non-essential tasks, dim the lights, and handle dinner tonight."
+                      "tip": "Docsy recommends: Cancel non-essential tasks, dim the lights, and handle dinner tonight."
                     },
                     {
                       "label": "She needs comfort",
-                      "tip": "Dr. Docsy recommends: Bring a warm heat pack, brew her favorite herbal tea, or offer a back rub."
+                      "tip": "Docsy recommends: Bring a warm heat pack, brew her favorite herbal tea, or offer a back rub."
                     },
                     {
                       "label": "She needs practical help",
-                      "tip": "Dr. Docsy recommends: Check the laundry, wash dishes, or ask: 'Which chore can I take off your plate right now?'"
+                      "tip": "Docsy recommends: Check the laundry, wash dishes, or ask: 'Which chore can I take off your plate right now?'"
                     },
                     {
                       "label": "She wants company",
-                      "tip": "Dr. Docsy recommends: Put away phones, suggest a relaxed walk, or watch a movie together."
+                      "tip": "Docsy recommends: Put away phones, suggest a relaxed walk, or watch a movie together."
                     },
                     {
                       "label": "She wants space",
-                      "tip": "Dr. Docsy recommends: Give her quiet time. Say: 'I am right here in the other room if you need anything.'"
+                      "tip": "Docsy recommends: Give her quiet time. Say: 'I am right here in the other room if you need anything.'"
                     },
                     {
                       "label": "I don't know what she needs",
-                      "tip": "Dr. Docsy recommends: Ask gently: 'Are you looking for comfort, help, or quiet space right now?'"
+                      "tip": "Docsy recommends: Ask gently: 'Are you looking for comfort, help, or quiet space right now?'"
                     },
                   ];
 
@@ -933,11 +934,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     const SizedBox(height: 16),
 
                     if (snapshot.connectionState == ConnectionState.waiting)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(24.0),
-                          child: CircularProgressIndicator(color: BlushyColors.primary),
-                        ),
+                      // The shape of the needs list, rather than a spinner
+                      // where the needs are about to be.
+                      SkeletonList(
+                        count: 2,
+                        itemBuilder: (context, index) => const SkeletonListRow(),
                       )
                     else if (hasNeeds && customNeedsList.isNotEmpty) ...[
                       if (dynamicNeeds['message'] != null)
@@ -959,7 +960,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           itemBuilder: (context, index) {
                             final item = customNeedsList[index];
                             final String label = (item is Map ? item['label'] : null) ?? item.toString();
-                            final String tip = (item is Map ? item['tip'] : null) ?? "Dr. Docsy recommends: Show love and patience.";
+                            final String tip = (item is Map ? item['tip'] : null) ?? "Docsy recommends: Show love and patience.";
                             final String? category = (item is Map ? item['category'] : null);
                             final String? source = (item is Map ? item['source'] : null);
 
@@ -1021,7 +1022,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.04),
@@ -1084,7 +1085,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFAF6F0),
+                                color: BlushyColors.background,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: const Color(0xFFE8DFD8)),
                               ),
@@ -1096,7 +1097,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                   Expanded(
                                     child: Text(
                                       dynamicNeeds['tip']?.toString() ??
-                                          "Dr. Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
+                                          "Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         height: 1.4,
@@ -1116,7 +1117,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: BlushyColors.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
@@ -1162,7 +1163,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Text(tip, style: GoogleFonts.poppins(fontSize: 14, height: 1.5, color: BlushyColors.text)),
         actions: [
@@ -1180,7 +1181,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: const Text("Turn on Argument Mode?"),
           content: const Text(
             "While Argument Mode is enabled, your personal insights, mood, cycle and wellbeing updates won't be shared with your partner.\n\nShared relationship activities and milestones will continue to work."
@@ -1219,36 +1220,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: InkWell(
-              onTap: () => Navigator.pop(context),
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: BlushyColors.border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.arrow_back_rounded, size: 18, color: BlushyColors.text),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Back to Home',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: BlushyColors.text,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -1290,7 +1261,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         _buildHeader(state),
         if (_incomingInvitations.isNotEmpty) _buildPendingRequestsBanner(),
         _buildRelationshipStatusCard(state),
-        _buildQuickActionsRow(),
+        // The quick actions now sit under the Your Timeline heading, with the
+        // entries they open -- they were floating between the portal card and
+        // that heading, belonging to neither.
         _buildRelationshipTimeline(state),
         const SizedBox(height: 24),
         _buildRecentMomentsCarousel(state),
@@ -1312,7 +1285,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFFFDA4AF), width: 1.2),
             boxShadow: [
               BoxShadow(
@@ -1393,7 +1366,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       foregroundColor: const Color(0xFF64748B),
                       side: const BorderSide(color: Color(0xFFCBD5E1)),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () async {
                       final ok = await _partnerService.respondToInvitation(invId, 'reject');
@@ -1406,10 +1379,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   const SizedBox(width: 10),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFDD0D22),
+                      backgroundColor: BlushyColors.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 1,
                     ),
                     onPressed: () async {
@@ -1435,6 +1408,146 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  /// The portal card before there is a partner: the mark, the name, the one
+  /// line about what to do, and the action across the full width.
+  Widget _buildUnpairedPortalHeader(String subtitle) {
+    return Column(
+      // Stretch so the button runs the width of the card.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: BlushyColors.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.favorite_rounded,
+              color: BlushyColors.primary,
+              size: 28,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'Partner Portal',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: BlushyColors.text,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: BlushyColors.secondaryText,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 18),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: BlushyColors.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 0,
+          ),
+          onPressed: _showPartnerConnectionsModal,
+          icon: const Icon(Icons.person_add_rounded, size: 18, color: Colors.white),
+          label: Text(
+            AppLocalizations.of(context).pConnect,
+            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// True once there is somebody on the other side.
+  bool get _hasPartner => _connections.isNotEmpty;
+
+  /// Opens one of the shared tabs, or says why it will not open yet.
+  ///
+  /// The tabs used to open regardless, onto a space with nobody in it, which
+  /// reads as broken rather than as not-set-up-yet.
+  void _openPartnerTab(int index) {
+    if (!_hasPartner) {
+      _showConnectFirstDialog();
+      return;
+    }
+    setState(() => _selectedTabIndex = index);
+  }
+
+  /// Explains a closed shared space, and offers the one thing that opens it.
+  Future<void> _showConnectFirstDialog() {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          'This one needs two',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: BlushyColors.text,
+          ),
+        ),
+        content: Text(
+          'Everything in the portal is something you and your partner do '
+          'together, so it stays closed until there is someone on the other '
+          'side. Send an invite and it opens the moment they accept.',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            height: 1.5,
+            color: BlushyColors.secondaryText,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Close',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: BlushyColors.secondaryText,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BlushyColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _showPartnerConnectionsModal();
+            },
+            child: Text(
+              'Connect',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1469,14 +1582,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         ? (isUserWoman
             ? 'Live Sync • Shared Connection • $currentEnergy Energy'
             : 'Live Sync • Day $cycleDay of Cycle • $currentEnergy Energy')
-        : 'No partner paired yet • Send an invite to begin sharing';
+        : 'Send an invite to begin sharing';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
         boxShadow: [
           BoxShadow(
@@ -1489,104 +1602,87 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: BlushyColors.primary.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
+          // Unpaired, the card has one thing to say and one thing to do, so it
+          // says it down the middle instead of squeezing a subtitle and a
+          // button either side of the icon.
+          if (!hasConnection)
+            _buildUnpairedPortalHeader(statusSubtitle)
+          else
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: BlushyColors.primary.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    color: BlushyColors.primary,
+                    size: 20,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.favorite_rounded,
-                  color: BlushyColors.primary,
-                  size: 20,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "$partnerNameOrEmail's Portal",
+                        style: GoogleFonts.poppins(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: BlushyColors.text,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        statusSubtitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: BlushyColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      hasConnection ? "$partnerNameOrEmail's Portal" : "Partner Portal",
-                      style: GoogleFonts.poppins(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.text,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      statusSubtitle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: hasConnection ? BlushyColors.primary : BlushyColors.secondaryText,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (hasConnection) ...[
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: BlushyColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _selectedTabIndex = 2; // Messenger tab
-                        });
-                      },
-                      icon: const Icon(Icons.chat_bubble_rounded, size: 13, color: Colors.white),
-                      label: Text(
-                        'Open Chat',
-                        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.success,
-                        side: const BorderSide(color: Color(0xFFD6F1DF)),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: () => _showHelpOptionsDialog(context),
-                      child: Text(
-                        AppLocalizations.of(context).pTips,
-                        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BlushyColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
-                  onPressed: _showPartnerConnectionsModal,
-                  icon: const Icon(Icons.person_add_rounded, size: 14, color: Colors.white),
+                  onPressed: () {
+                    setState(() {
+                      _selectedTabIndex = 2; // Messenger tab
+                    });
+                  },
+                  icon: const Icon(Icons.chat_bubble_rounded, size: 13, color: Colors.white),
                   label: Text(
-                    AppLocalizations.of(context).pConnect,
+                    'Open Chat',
+                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: BlushyColors.success,
+                    side: const BorderSide(color: Color(0xFFD6F1DF)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => _showHelpOptionsDialog(context),
+                  child: Text(
+                    AppLocalizations.of(context).pTips,
                     style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
-            ],
-          ),
+            ),
           const SizedBox(height: 16),
           const Divider(color: BlushyColors.border),
           const SizedBox(height: 10),
@@ -1632,30 +1728,39 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     ),
                     const SizedBox(width: 8),
                   ],
-                  GestureDetector(
-                    onTap: () {
-                      if (!active) {
-                        _showArgumentModeConfirmationDialog(state);
-                      } else {
-                        state.setArgumentModeActive(false);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Argument Mode disabled. Resuming normal sharing.')),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: active ? const Color(0xFFFDF2F2) : const Color(0xFFFAF6F0),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: active ? BlushyColors.secondary : BlushyColors.border),
-                      ),
-                      child: Text(
-                        active ? "ON" : "OFF",
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          color: active ? BlushyColors.success : BlushyColors.secondaryText,
+                  // It pauses what a partner sees, so with nobody connected
+                  // there is nothing for it to pause.
+                  Opacity(
+                    opacity: _hasPartner ? 1 : 0.55,
+                    child: GestureDetector(
+                      onTap: () {
+                        if (!_hasPartner) {
+                          _showConnectFirstDialog();
+                          return;
+                        }
+                        if (!active) {
+                          _showArgumentModeConfirmationDialog(state);
+                        } else {
+                          state.setArgumentModeActive(false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Argument Mode disabled. Resuming normal sharing.')),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: active ? const Color(0xFFFDF2F2) : BlushyColors.background,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: active ? BlushyColors.secondary : BlushyColors.border),
+                        ),
+                        child: Text(
+                          active ? "ON" : "OFF",
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: active ? BlushyColors.success : BlushyColors.secondaryText,
+                          ),
                         ),
                       ),
                     ),
@@ -1663,6 +1768,18 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 ],
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Pauses what your partner can see. Your mood, cycle and wellbeing '
+            'updates stop reaching them until you switch it off. Shared '
+            'activities and milestones keep working, and nothing already '
+            'shared is deleted.',
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              height: 1.45,
+              color: BlushyColors.secondaryText,
+            ),
           ),
           if (active) ...[
             const SizedBox(height: 12),
@@ -1720,8 +1837,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: _isMessageDecoderActive ? const Color(0xFFF3EFFF) : const Color(0xFFFAF6F0),
-                          borderRadius: BorderRadius.circular(16),
+                          color: _isMessageDecoderActive ? const Color(0xFFF3EFFF) : BlushyColors.background,
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: _isMessageDecoderActive ? const Color(0xFF9D7BFF) : BlushyColors.border,
                           ),
@@ -1755,7 +1872,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        "Decoder is ON. Dr. Docsy will translate what she is coming to tell based on her live cycle phase, mood, and sleep levels in Messenger.",
+                        "Decoder is ON. Docsy will translate what she is coming to tell based on her live cycle phase, mood, and sleep levels in Messenger.",
                         style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF5A31D8), height: 1.4),
                       ),
                     ),
@@ -1779,7 +1896,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   ///
   /// Relationship advice is built for the supporting side: it explains what she
   /// is telling him, grounded in what she chose to share. Asked from her side
-  /// there is nothing to ground it in -- the partner shell has no Dr. Docsy and no
+  /// there is nothing to ground it in -- the partner shell has no Docsy and no
   /// M Studio, so he logs nothing -- and the server refuses it outright.
   bool get _isSupportingPartner {
     final active = _connections.firstWhere(
@@ -1831,7 +1948,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             return Container(
               height: MediaQuery.of(context).size.height * 0.75,
               decoration: const BoxDecoration(
-                color: Color(0xFFFAF6F0),
+                color: BlushyColors.background,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: DefaultTabController(
@@ -1874,22 +1991,25 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       unselectedLabelColor: BlushyColors.secondaryText,
                       indicatorColor: BlushyColors.primary,
                       labelStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                      // Invite first: the modal is opened by someone with no
+                      // partner far more often than by someone managing one,
+                      // and it used to open on an empty Connections list.
                       tabs: [
-                        Tab(text: 'Connections (${_connections.length})'),
+                        const Tab(text: 'Invite'),
                         Tab(
                           text: _incomingInvitations.isNotEmpty
                               ? 'Pending (${_incomingInvitations.length})'
                               : AppLocalizations.of(context).pPending,
                         ),
-                        const Tab(text: 'Invite'),
+                        Tab(text: 'Connections (${_connections.length})'),
                       ],
                     ),
                     Expanded(
                       child: TabBarView(
                         children: [
-                          _buildConnectionsListTab(setModalState),
-                          _buildPendingRequestsTab(setModalState),
                           _buildInvitePartnerTab(setModalState),
+                          _buildPendingRequestsTab(setModalState),
+                          _buildConnectionsListTab(setModalState),
                         ],
                       ),
                     ),
@@ -1944,7 +2064,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border),
           ),
           child: Row(
@@ -2058,7 +2178,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             return Container(
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
-                color: Color(0xFFFAF6F0),
+                color: BlushyColors.background,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: Column(
@@ -2115,7 +2235,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: BlushyColors.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () async {
                           final messenger = ScaffoldMessenger.of(context);
@@ -2197,7 +2317,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.3)),
               ),
               child: Column(
@@ -2214,7 +2334,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () async {
                           final ok = await _partnerService.respondToInvitation(invId, 'reject');
@@ -2231,7 +2351,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           backgroundColor: BlushyColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () async {
                           final ok = await _partnerService.respondToInvitation(invId, 'accept');
@@ -2269,7 +2389,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: BlushyColors.border),
               ),
               child: Row(
@@ -2337,15 +2457,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: BlushyColors.border),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: BlushyColors.border),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: BlushyColors.primary, width: 2),
               ),
             ),
@@ -2358,7 +2478,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: BlushyColors.primary,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: _isSendingInvite
                   ? null
@@ -2430,7 +2550,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             child: Column(
@@ -2459,7 +2579,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: BlushyColors.primary,
                       side: const BorderSide(color: BlushyColors.primary),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () async {
                       final messenger = ScaffoldMessenger.of(context);
@@ -2589,7 +2709,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: BlushyColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () async {
                   await Clipboard.setData(ClipboardData(text: url));
@@ -2682,7 +2802,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: submit,
                     child: Text(AppLocalizations.of(context).pConnect, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
@@ -2692,62 +2812,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildQuickActionsRow() {
-    final actions = [
-      {'label': 'Bouquet', 'icon': Icons.local_florist_rounded, 'tab': 1},
-      {'label': 'Message', 'icon': Icons.chat_bubble_outline_rounded, 'tab': 2},
-      {'label': 'Shared Activity', 'icon': Icons.task_alt_rounded, 'tab': 3},
-      {'label': 'Send Letter', 'icon': Icons.mail_outline_rounded, 'tab': 4},
-      {'label': 'Memory Book', 'icon': Icons.photo_library_outlined, 'tab': 5},
-      if (_isSupportingPartner)
-        {'label': 'Ask Relationship AI', 'icon': Icons.psychology_alt_rounded, 'tab': 6},
-      {'label': 'Surprise', 'icon': Icons.card_giftcard_rounded, 'tab': 7},
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
-      child: Row(
-        children: actions.map((act) {
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedTabIndex = act['tab'] as int;
-              });
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: BlushyColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: BlushyColors.dark.withValues(alpha: 0.01),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(act['icon'] as IconData, size: 14, color: BlushyColors.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    act['label'] as String,
-                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }
@@ -2762,6 +2826,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     final partnerIdentifier = (activeConn['partnerEmail'] ?? activeConn['partnerUserId'] ?? 'Partner').toString();
     final connectionDuration = formatConnectionDuration(activeConn['created_at'] ?? activeConn['createdAt']);
 
+    // One list, one card shape. The shared actions used to be a scrolling row
+    // of chips above this, which meant two visual languages for the same set
+    // of destinations -- and "Shared Activity" and the letters appeared in
+    // both.
     final dynamicTimelineEvents = <Map<String, dynamic>>[
       if (hasActivePartner)
         {
@@ -2769,6 +2837,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           'time': 'Connected with $partnerIdentifier • $connectionDuration',
           'icon': Icons.favorite_rounded,
           'color': const Color(0xFFFDF2F2),
+          'enabled': true,
           'onTap': () => setState(() => _selectedTabIndex = 2), // Messenger
         }
       else
@@ -2777,6 +2846,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           'time': 'Link accounts to unlock live cycle sharing and messaging',
           'icon': Icons.person_add_rounded,
           'color': const Color(0xFFFDF2F2),
+          'enabled': true,
           'onTap': () => _showPartnerConnectionsModal(),
         },
       // Reachable only while connected, which is when it matters. The sharing
@@ -2789,14 +2859,65 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           'time': 'Choose what your partner can see. Nothing is shared until you say so.',
           'icon': Icons.shield_outlined,
           'color': const Color(0xFFF3EEFA),
+          'enabled': true,
           'onTap': () => _openSharingPanel(),
         },
+      {
+        'title': 'Bouquet',
+        'time': 'Send a postcard and a flower bloom',
+        'icon': Icons.local_florist_rounded,
+        'color': const Color(0xFFFDF2F2),
+        'enabled': _hasPartner,
+        'onTap': () => _openPartnerTab(1),
+      },
+      {
+        'title': 'Message',
+        'time': 'Chat privately with your partner',
+        'icon': Icons.chat_bubble_outline_rounded,
+        'color': const Color(0xFFF3EEFA),
+        'enabled': _hasPartner,
+        'onTap': () => _openPartnerTab(2),
+      },
       {
         'title': 'Shared Activity',
         'time': 'Gratitude Checklist & Couple Challenges',
         'icon': Icons.task_alt_rounded,
         'color': const Color(0xFFF3FAF6),
-        'onTap': () => setState(() => _selectedTabIndex = 3), // Activities
+        'enabled': _hasPartner,
+        'onTap': () => _openPartnerTab(3),
+      },
+      {
+        'title': 'Time Capsule Letters',
+        'time': 'Sealed milestones and personal messages',
+        'icon': Icons.mail_outline_rounded,
+        'color': const Color(0xFFFFF9F2),
+        'enabled': _hasPartner,
+        'onTap': () => _openPartnerTab(4),
+      },
+      {
+        'title': 'Memory Book',
+        'time': 'The scrapbook the two of you keep',
+        'icon': Icons.photo_library_outlined,
+        'color': const Color(0xFFF3FAF6),
+        'enabled': _hasPartner,
+        'onTap': () => _openPartnerTab(5),
+      },
+      if (_isSupportingPartner)
+        {
+          'title': 'Ask Relationship AI',
+          'time': 'Talk something through with Docsy',
+          'icon': Icons.psychology_alt_rounded,
+          'color': const Color(0xFFF3EEFA),
+          'enabled': _hasPartner,
+          'onTap': () => _openPartnerTab(6),
+        },
+      {
+        'title': 'Surprise',
+        'time': 'Send a small gift, unannounced',
+        'icon': Icons.card_giftcard_rounded,
+        'color': const Color(0xFFFFF9F2),
+        'enabled': _hasPartner,
+        'onTap': () => _openPartnerTab(7),
       },
       {
         'title': 'Garden Blossoming',
@@ -2809,17 +2930,17 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 : '$_flowersCount flowers, $_treesCount trees together (Tap to tend)'),
         'icon': Icons.local_florist_rounded,
         'color': const Color(0xFFF3FAF6),
+        'enabled': _hasPartner,
         'onTap': () {
+          // The garden is shared, so growing one alone is the same empty room
+          // as the other shared spaces.
+          if (!_hasPartner) {
+            _showConnectFirstDialog();
+            return;
+          }
           // Grown on the server, so the flower shows up for both of you.
           unawaited(_growGarden(flowers: 1));
         },
-      },
-      {
-        'title': 'Time Capsule Letters',
-        'time': 'Sealed milestones and personal messages',
-        'icon': Icons.mail_outline_rounded,
-        'color': const Color(0xFFFFF9F2),
-        'onTap': () => setState(() => _selectedTabIndex = 4), // Letters
       },
     ];
 
@@ -2828,26 +2949,22 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Your Timeline',
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: BlushyColors.text,
-            ),
-          ),
-          const SizedBox(height: 12),
           ...dynamicTimelineEvents.map((evt) {
             final onTap = evt['onTap'] as VoidCallback?;
-            return InkWell(
+            final enabled = evt['enabled'] as bool? ?? true;
+            // Faded and padlocked rather than merely padlocked, so a closed
+            // space reads as closed before you tap it.
+            return Opacity(
+              opacity: enabled ? 1 : 0.55,
+              child: InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border),
                   boxShadow: [
                     BoxShadow(
@@ -2884,9 +3001,16 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right_rounded, size: 18, color: BlushyColors.secondaryText),
+                    Icon(
+                      enabled
+                          ? Icons.chevron_right_rounded
+                          : Icons.lock_outline_rounded,
+                      size: 18,
+                      color: BlushyColors.secondaryText,
+                    ),
                   ],
                 ),
+              ),
               ),
             );
           }),
@@ -2946,14 +3070,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     _selectedTabIndex = tabIndex;
                   });
                 },
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: 160,
                   margin: const EdgeInsets.only(right: 12),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFAF6F0),
-                    borderRadius: BorderRadius.circular(20),
+                    color: BlushyColors.background,
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: BlushyColors.border),
                     boxShadow: [
                       BoxShadow(
@@ -2991,7 +3115,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // --- TAB 2: MESSENGER (INSTAGRAM-QUALITY REDESIGN) ---
   Widget _buildMessengerTab(BlushyOSState state) {
     final messages = state.argumentModeActive
-        ? _chatMessages.where((msg) => msg['sender'] != 'Dr. Docsy' || msg['isCard'] == false).toList()
+        ? _chatMessages.where((msg) => msg['sender'] != 'Docsy' || msg['isCard'] == false).toList()
         : _chatMessages;
 
     final currentUserId = AuthStorage.getUserId();
@@ -3043,8 +3167,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _isMessageDecoderActive ? const Color(0xFFF3EFFF) : const Color(0xFFFAF6F0),
-                    borderRadius: BorderRadius.circular(14),
+                    color: _isMessageDecoderActive ? const Color(0xFFF3EFFF) : BlushyColors.background,
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _isMessageDecoderActive ? const Color(0xFF9D7BFF) : BlushyColors.border,
                     ),
@@ -3082,7 +3206,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         // 2. Chat history body
         Expanded(
           child: Container(
-            color: const Color(0xFFFAF6F0),
+            color: BlushyColors.background,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: messages.isEmpty
                 ? Center(
@@ -3169,7 +3293,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF9F7F5),
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: BlushyColors.border),
                   ),
                   child: Row(
@@ -3194,7 +3318,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               GestureDetector(
                 onTap: _sendTextMessage,
                 child: const CircleAvatar(
-                  backgroundColor: Color(0xFFDD0D22),
+                  backgroundColor: BlushyColors.primary,
                   radius: 18,
                   child: Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 18),
                 ),
@@ -3212,7 +3336,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Column(
@@ -3279,7 +3403,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isMe ? const Color(0xFFFFF0F3) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFFF2C6D0), width: 1.5),
             boxShadow: [
               BoxShadow(
@@ -3435,7 +3559,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 decoration: isMe
                     ? BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFDD0D22), Color(0xFFFF4B5C)],
+                          colors: [BlushyColors.primary, Color(0xFFFF4B5C)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -3447,7 +3571,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFDD0D22).withValues(alpha: 0.25),
+                            color: BlushyColors.primary.withValues(alpha: 0.25),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -3552,7 +3676,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             const Icon(Icons.auto_awesome_rounded, size: 12, color: Color(0xFF6F42F5)),
                             const SizedBox(width: 4),
                             Text(
-                              "✨ Decode with Dr. Docsy",
+                              "✨ Decode with Docsy",
                               style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF6F42F5)),
                             ),
                           ],
@@ -3568,7 +3692,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFAF7FF),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFD6C8FF), width: 1.2),
                     boxShadow: [
                       BoxShadow(
@@ -3586,7 +3710,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6F42F5), size: 14),
                           const SizedBox(width: 6),
                           Text(
-                            "Dr. Docsy Decoded Meaning",
+                            "Docsy Decoded Meaning",
                             style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF6F42F5)),
                           ),
                           const Spacer(),
@@ -3707,7 +3831,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -3867,7 +3991,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   final title = idea.title;
                   final description = idea.description ?? '';
                   return InkWell(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     onTap: () {
                       Navigator.of(sheetContext).pop();
                       _sendComposerMessage(title);
@@ -3875,7 +3999,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: BlushyColors.border),
                       ),
                       child: Column(
@@ -4180,7 +4304,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Row(
@@ -4264,7 +4388,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
               decoration: const BoxDecoration(
-                color: Color(0xFFFAF6F0),
+                color: BlushyColors.background,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: Column(
@@ -4306,7 +4430,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: isSel ? const Color(0xFF6F42F5) : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: isSel ? const Color(0xFF6F42F5) : BlushyColors.border),
                             ),
                             child: Text(
@@ -4329,7 +4453,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: TextField(
@@ -4349,7 +4473,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: BlushyColors.border),
                       ),
                       child: TextField(
@@ -4395,7 +4519,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6F42F5),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () async {
                         final title = titleController.text.trim();
@@ -4496,7 +4620,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           height: MediaQuery.of(context).size.height * 0.75,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xFFFAF6F0),
+            color: BlushyColors.background,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(color: const Color(0xFFE8DCCF)),
           ),
@@ -4553,7 +4677,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: BlushyColors.border),
                     boxShadow: [
                       BoxShadow(
@@ -4598,7 +4722,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 backgroundColor: const Color(0xFF6F42F5),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
               icon: const Icon(Icons.create_rounded, size: 14),
@@ -4612,7 +4736,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             height: 140,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             alignment: Alignment.center,
@@ -4629,12 +4753,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             margin: const EdgeInsets.only(bottom: 12),
             child: InkWell(
               onTap: () => _showReadLetterModal(context, letter),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border),
                   boxShadow: [
                     BoxShadow(
@@ -4732,16 +4856,18 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         ),
         const SizedBox(height: 14),
         if (_activitiesLoading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 40),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          // Each finished activity is a circle and two lines, so that is what
+          // stands in for one while they load.
+          SkeletonList(
+            count: 3,
+            itemBuilder: (context, index) => const SkeletonListRow(),
           )
         else if (completed.isEmpty)
           Container(
             height: 160,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             alignment: Alignment.center,
@@ -4761,7 +4887,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: BlushyColors.border),
               ),
               child: Row(
@@ -4842,7 +4968,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // --- TAB 6: RELATIONSHIP AI ---
   //
   // This tab used to be one hardcoded sentence with no input and no request
-  // behind it, so there was nothing here that could work. It now asks Dr. Docsy,
+  // behind it, so there was nothing here that could work. It now asks Docsy,
   // grounded server-side in whatever the partner has agreed to share.
   Widget _buildRelationshipAITab(BlushyOSState state) {
     final connectionId = _activeConnectionId;
@@ -4855,7 +4981,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: const Color(0xFFF3EEFA),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFFE4D6F1)),
           ),
           child: Column(
@@ -4872,7 +4998,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const SizedBox(height: 10),
               if (connectionId == null)
                 Text(
-                  'Connect with your partner first, and Dr. Docsy can help you think things through together.',
+                  'Connect with your partner first, and Docsy can help you think things through together.',
                   style: GoogleFonts.poppins(fontSize: 12, height: 1.45),
                 )
               else if (state.argumentModeActive)
@@ -4896,7 +5022,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFE4D6F1)),
               ),
               child: Column(
@@ -4913,7 +5039,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           // Saying which is the difference between advice that
                           // knows something and advice that is guessing.
                           ? 'Based on what your partner shares with you.'
-                          : 'Your partner has not shared data Dr. Docsy could use here.',
+                          : 'Your partner has not shared data Docsy could use here.',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
                         color: BlushyColors.secondaryText,
@@ -4944,7 +5070,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Color(0xFFE4D6F1)),
               ),
             ),
@@ -4956,7 +5082,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 backgroundColor: const Color(0xFF6F42F5),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: _relationshipLoading ? null : () => _askRelationshipAi(connectionId),
               icon: _relationshipLoading
@@ -4967,7 +5093,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     )
                   : const Icon(Icons.psychology_alt_rounded, size: 16),
               label: Text(
-                _relationshipLoading ? 'Thinking…' : 'Ask Dr. Docsy',
+                _relationshipLoading ? 'Thinking…' : 'Ask Docsy',
                 style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
               ),
             ),
@@ -5105,7 +5231,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: const Text('Start Shared Activity'),
           content: const Text('Would you like to notify Partner to start the Gratitude Checklist together?'),
           actions: [

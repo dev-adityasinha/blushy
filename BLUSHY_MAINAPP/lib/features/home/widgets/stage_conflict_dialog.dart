@@ -43,7 +43,7 @@ class StageConflictDialog extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: BlushyColors.primary.withValues(alpha: 0.12),
@@ -110,8 +110,8 @@ class StageConflictDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFAF6F0),
-                borderRadius: BorderRadius.circular(18),
+                color: BlushyColors.background,
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: BlushyColors.border.withValues(alpha: 0.7)),
               ),
               child: Row(
@@ -232,7 +232,7 @@ class StageConflictDialog extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       side: BorderSide(color: BlushyColors.border.withValues(alpha: 0.8)),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: Text(
@@ -256,7 +256,7 @@ class StageConflictDialog extends StatelessWidget {
                       backgroundColor: BlushyColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
                     ),

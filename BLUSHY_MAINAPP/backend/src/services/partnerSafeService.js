@@ -213,7 +213,7 @@ async function buildSubjectContext(subjectUserId, { referenceDate = new Date() }
 }
 
 /**
- * Partner-safe context. This is what Partner Dr. Docsy receives - nothing more.
+ * Partner-safe context. This is what Partner Docsy receives - nothing more.
  */
 export async function getPartnerSafeContext(connectionId, viewerUserId, { referenceDate = new Date() } = {}) {
   const auth = await authorizeConnection(connectionId, viewerUserId);
@@ -277,7 +277,7 @@ export async function getSharedSurface(connectionId, viewerUserId, { referenceDa
     limit: 10,
   });
 
-  // Journal days and Dr. Docsy exchanges reach a partner only when both the category
+  // Journal days and Docsy exchanges reach a partner only when both the category
   // permission is on AND that specific item was marked shared. The grants
   // existed in the permission matrix from the start but nothing ever served
   // them, so turning either category on delivered nothing at all.

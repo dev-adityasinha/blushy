@@ -37,7 +37,7 @@ String _resolve() {
     if (host == 'localhost' || host == '127.0.0.1') {
       return 'http://localhost:3000';
     }
-    return 'https://api.blushy.life';
+    return _liveBaseUrl;
   }
 
   if (kDebugMode) {
@@ -57,5 +57,21 @@ String _resolve() {
     return 'http://127.0.0.1:3000';
   }
 
-  return 'https://api.blushy.life';
+  return _liveBaseUrl;
 }
+
+/// The deployed backend, for release builds and the hosted web build.
+///
+/// This is the Render service declared in `render.yaml` at the repository root
+/// (`name: blushy-api`), which is where the backend is deployed from.
+///
+/// It replaces api.blushy.life, which answers on the same paths but is a
+/// separate box -- nginx on a VPS rather than Render -- so a release build was
+/// talking to a deployment that nothing in this repository deploys to.
+///
+/// Render's free plan stops the instance when it is idle, and the first
+/// request after that pays the cold start: measured at 27s, and the client
+/// timeout has to be able to absorb it. `ApiWarmup.ping()` fires during
+/// startup so that wait is spent behind the splash rather than under the first
+/// card the user looks at.
+const String _liveBaseUrl = 'https://blushy-api.onrender.com';

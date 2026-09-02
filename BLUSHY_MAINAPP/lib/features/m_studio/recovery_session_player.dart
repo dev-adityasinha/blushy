@@ -119,7 +119,7 @@ class _RecoverySessionPlayerState extends State<RecoverySessionPlayer> {
     final progress = _totalSeconds == 0 ? 0.0 : _secondsElapsed / _totalSeconds;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -191,7 +191,7 @@ class _RecoverySessionPlayerState extends State<RecoverySessionPlayer> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   onPressed: _finished

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../theme/colors.dart';
 
 class ModularThemePack {
   final String id;
@@ -45,10 +46,10 @@ class _ThemeMarketplaceWidgetState extends State<ThemeMarketplaceWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         title: Text('Modular Theme Engine 🎨', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFFFDFBF7),
+        backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
       body: ListView.builder(
@@ -58,7 +59,7 @@ class _ThemeMarketplaceWidgetState extends State<ThemeMarketplaceWidget> {
           final pack = _themePacks[i];
           return Card(
             margin: const EdgeInsets.only(bottom: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(

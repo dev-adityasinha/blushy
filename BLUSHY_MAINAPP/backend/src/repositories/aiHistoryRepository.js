@@ -133,10 +133,10 @@ async function listUserKeysWithHistory() {
 
 
 /**
- * Marks one Dr. Docsy exchange as shareable with a partner, or takes it back.
+ * Marks one Docsy exchange as shareable with a partner, or takes it back.
  *
  * Same rule as the journal: the `sia_conversations` permission says a partner
- * may receive conversations, this flag says which ones. Dr. Docsy is where people
+ * may receive conversations, this flag says which ones. Docsy is where people
  * disclose the things they have not told anyone, so a blanket release would be
  * the single worst default in the app.
  */

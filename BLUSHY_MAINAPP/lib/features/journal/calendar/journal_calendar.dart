@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../theme/colors.dart';
 
 class JournalCalendarWidget extends StatelessWidget {
   const JournalCalendarWidget({super.key});
@@ -8,10 +9,10 @@ class JournalCalendarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         title: Text('Smart Memory Calendar 📅', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFFFDFBF7),
+        backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
       body: Column(

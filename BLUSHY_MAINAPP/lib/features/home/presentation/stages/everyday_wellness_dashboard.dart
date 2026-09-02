@@ -6,7 +6,6 @@ import '../../../../core/checkin_merge.dart';
 import '../../../../core/metric_gating.dart';
 import '../../../../core/tracker_log.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:io';
 import 'dart:math' show min;
 import '../../../../core/state.dart';
 import '../../../../core/storage.dart';
@@ -32,9 +31,10 @@ import '../doctor_summary_screen.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_insights_service.dart';
 import '../../../sia/sia_screen.dart';
-import '../../../m_studio/m_studio_screen.dart';
 import '../../home_screen.dart';
 import '../../widgets/greeting_card.dart';
+import '../../../../shared/section_heading.dart';
+import '../../blushy_shell.dart';
 
 String _getTimeBasedGreetingPrefix() {
   final istNow = DateTime.now().toUtc().add(const Duration(hours: 5, minutes: 30));
@@ -73,13 +73,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }) {
     if (widget.isNested) {
       return Container(
-        color: const Color(0xFFFAF6F0),
+        color: BlushyColors.background,
         child: child,
       );
     }
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(child: child),
     );
   }
@@ -422,7 +422,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: accent.withValues(alpha: 0.35)),
       ),
       child: Column(
@@ -472,7 +472,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // ---------------------------------------------------------------------
-  // Patterns and the Dr. Docsy Note.
+  // Patterns and the Docsy Note.
   //
   // These previously rendered hardcoded sentences chosen by keyword-matching
   // recent chat topics, with a fixed "Medium" confidence and an "Evidence:"
@@ -694,7 +694,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     await PatternsApi.feedback(insight.id, helpful: true);
     if (!mounted) return;
     messenger.showSnackBar(
-      const SnackBar(content: Text('Noted. Dr. Docsy will keep showing observations like this.')),
+      const SnackBar(content: Text('Noted. Docsy will keep showing observations like this.')),
     );
   }
 
@@ -983,7 +983,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       duration: const Duration(milliseconds: 600),
     );
     _animController.forward();
-    _checkFirstLaunchCoach();
     _loadOnboardingData();
     // Cycle day, phase and predictions come from the backend calculation
     // service rather than being derived on the client.
@@ -1335,17 +1334,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     }).catchError((_) {});
   }
 
-  void _checkFirstLaunchCoach() {
-    try {
-      final file = File('coach_first_launch.json');
-      if (file.existsSync()) {
-        setState(() {
-        });
-        file.deleteSync();
-      }
-    } catch (_) {}
-  }
-
   @override
   void dispose() {
     SiaDashboardService().refreshNotifier.removeListener(_onSiaRefresh);
@@ -1595,7 +1583,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   _buildLivingCheckIn(),
                   SizedBox(height: isMobile ? 32 : 48),
 
-                  // 5. COMBINED DR. DOCSY INSIGHTS
+                  // 5. COMBINED DOCSY INSIGHTS
                   _buildUnifiedMultiSiaInsights(stages),
                   SizedBox(height: isMobile ? 32 : 48),
 
@@ -1630,13 +1618,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
 
 
-  // --- SECTION 1: DR. DOCSY'S DAILY LETTER (HERO) ---
+  // --- SECTION 1: DOCSY'S DAILY LETTER (HERO) ---
   Widget _buildSiasDailyLetter(String name) {
     return _buildUnifiedHeroCard(
-      category: "Dr. Docsy's Daily Note",
+      category: "Docsy's Daily Note",
       title: "${_getTimeBasedGreetingPrefix()}, $name",
       subtitle: "Growing up happens one step at a time. You don't have to know everything today. We'll learn together.",
-      primaryBtnText: "Ask Dr. Docsy",
+      primaryBtnText: "Ask Docsy",
       onPrimaryTap: () => _openAskSiaChat(context, null),
       secondaryBtnText: "Continue Learning",
       onSecondaryTap: () {
@@ -1662,15 +1650,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "CONTINUE LEARNING",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("CONTINUE LEARNING"),
               const SizedBox(height: 6),
               Text(
                 "Small lessons designed for your stage.",
@@ -1713,7 +1693,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isCompleted ? BlushyColors.primary.withValues(alpha: 0.4) : BlushyColors.border,
                       width: isCompleted ? 1.5 : 0.8,
@@ -1852,15 +1832,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "CURIOUS TODAY",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("CURIOUS TODAY"),
         ),
         const SizedBox(height: 16),
         // Subsection A: Daily Discovery
@@ -1868,7 +1840,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -1975,7 +1947,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFDFBF7),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: BlushyColors.border, width: 0.8),
                   ),
                   child: Column(
@@ -2012,15 +1984,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "CONNECT",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("CONNECT"),
         ),
         const SizedBox(height: 12),
         // Premium Segmented Tab Selector
@@ -2088,7 +2052,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border, width: 0.8),
       ),
       child: Column(
@@ -2123,7 +2087,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "You can focus on learning, discharge changes and kits here! Dr. Docsy helps guide you.",
+                      "You can focus on learning, discharge changes and kits here! Docsy helps guide you.",
                       style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
                     ),
                   ],
@@ -2194,8 +2158,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: const Color(0xFFFAF6F0),
-            borderRadius: BorderRadius.circular(16),
+            color: BlushyColors.background,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -2254,7 +2218,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -2310,11 +2274,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         // First Period Kit Checklist
         Material(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border, width: 0.8),
             ),
             child: Column(
@@ -2351,8 +2315,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: const Color(0xFFFAF6F0),
-            borderRadius: BorderRadius.circular(16),
+            color: BlushyColors.background,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -2464,21 +2428,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border, width: 0.8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "GROWING JOURNEY",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          SectionHeading("GROWING JOURNEY"),
           const SizedBox(height: 20),
           ...timelineStages.map((stage) {
             final isActive = stage['status'] == "active" || stage['status'] == "done";
@@ -2559,7 +2515,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         minChildSize: 0.5,
         builder: (context, scrollController) => Container(
           decoration: const BoxDecoration(
-            color: Color(0xFFFAF6F0),
+            color: BlushyColors.background,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: ClipRRect(
@@ -2652,7 +2608,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
                   children: [
-                    // Row 1: Dr. Docsy Daily Letter (12 columns)
+                    // Row 1: Docsy Daily Letter (12 columns)
                     _buildSiasDailyLetter(displayName),
                     const SizedBox(height: 48),
 
@@ -2803,7 +2759,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
                     child: Text(
@@ -2823,7 +2779,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         foregroundColor: BlushyColors.primary,
                         side: const BorderSide(color: BlushyColors.primary, width: 1.2),
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: Text(
                         secondaryBtnText,
@@ -2843,7 +2799,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  // --- SECTION 1: DR. DOCSY'S LETTER (HERO) ---
+  // --- SECTION 1: DOCSY'S LETTER (HERO) ---
 
   // --- SECTION 2: MY FIRST CYCLES (Featuring Ovary loop tracker BlushyCycleCard) ---
   Widget _buildMyFirstCycles() {
@@ -2855,15 +2811,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "MY FIRST CYCLES",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("MY FIRST CYCLES"),
               const SizedBox(height: 6),
               Text(
                 "Your learning cycle companion.",
@@ -2881,7 +2829,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -2950,7 +2898,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildStartedLegendDot("Menstrual", const Color(0xFFDD0D22)),
+                  _buildStartedLegendDot("Menstrual", BlushyColors.primary),
                   const SizedBox(width: 14),
                   _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
                   const SizedBox(width: 14),
@@ -3080,22 +3028,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            AppLocalizations.of(context).dashHowAreYouToday,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading(AppLocalizations.of(context).dashHowAreYouToday),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -3282,10 +3222,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const BlushyMStudioScreen()),
-                        );
+                        // The tab, not a second copy of it stacked on top.
+                        BlushyShellTabs.open(BlushyShellTabs.mStudio);
                       },
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text("M Studio"),
@@ -3336,15 +3274,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "UNDERSTAND MY CYCLE",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("UNDERSTAND MY CYCLE"),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -3361,7 +3291,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                   boxShadow: [
                     BoxShadow(
@@ -3436,15 +3366,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "CONNECT",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("CONNECT"),
         ),
         const SizedBox(height: 12),
         // Segment selector
@@ -3512,7 +3434,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border, width: 0.8),
       ),
       child: Column(
@@ -3608,8 +3530,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: const Color(0xFFFAF6F0),
-            borderRadius: BorderRadius.circular(16),
+            color: BlushyColors.background,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -3668,7 +3590,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -3722,11 +3644,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         // Shared checklist
         Material(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border, width: 0.8),
             ),
             child: Column(
@@ -3761,7 +3683,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4.0),
           child: Text(
-            " Dr. Docsy Safety: Your parent never has access to your private chat logs, notes, or moods.",
+            " Docsy Safety: Your parent never has access to your private chat logs, notes, or moods.",
             style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText, fontStyle: FontStyle.italic),
           ),
         ),
@@ -3916,7 +3838,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- BRANCH: LIVING WITH MY CYCLE (livingWithMyCycle) ---
   final ScrollController _livingHomeScrollController = ScrollController();
 
-  // --- SECTION 1: DR. DOCSY'S DAILY BRIEF (HERO) ---
+  // --- SECTION 1: DOCSY'S DAILY BRIEF (HERO) ---
 
   // --- SECTION 2: TODAY'S CYCLE (Featuring Ovary loop tracker BlushyCycleCard) ---
   Widget _buildLivingTodayCycle() {
@@ -3957,15 +3879,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "TODAY'S CYCLE",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("TODAY'S CYCLE"),
               const SizedBox(height: 6),
               Text(
                 phaseText,
@@ -3983,7 +3897,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -4048,7 +3962,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildStartedLegendDot("Menstrual", const Color(0xFFDD0D22)),
+                  _buildStartedLegendDot("Menstrual", BlushyColors.primary),
                   const SizedBox(width: 14),
                   _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
                   const SizedBox(width: 14),
@@ -4069,7 +3983,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   backgroundColor: BlushyColors.primary,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: Text(
@@ -4124,7 +4038,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
               ),
               decoration: const BoxDecoration(
-                color: Color(0xFFFAF6F0),
+                color: BlushyColors.background,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
@@ -4262,7 +4176,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: BlushyColors.border),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: Text(
@@ -4282,7 +4196,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             backgroundColor: BlushyColors.primary,
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: Text(
@@ -4441,22 +4355,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "CHECK IN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("CHECK IN"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -4778,10 +4684,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const BlushyMStudioScreen()),
-                        );
+                        // The tab, not a second copy of it stacked on top.
+                        BlushyShellTabs.open(BlushyShellTabs.mStudio);
                       },
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text("M Studio"),
@@ -4881,22 +4785,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  // --- SECTION 4: DR. DOCSY INSIGHTS (AI section) ---
+  // --- SECTION 4: DOCSY INSIGHTS (AI section) ---
   Widget _buildLivingSiaInsights() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            AppLocalizations.of(context).dashSiaInsights,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading(AppLocalizations.of(context).dashSiaInsights),
         ),
 
         // What the analysis of her onboarding answers concluded.
@@ -4922,16 +4818,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         ApiStateCard<List<Insight>>(
           result: _patternsResult,
           onRetry: () => _loadPatterns(refresh: true),
-          emptyMessage: "Dr. Docsy has not noticed anything in your logs yet.",
+          emptyMessage: "Docsy has not noticed anything in your logs yet.",
           emptyActionLabel: AppLocalizations.of(context).dashLogFirstCheckIn,
           onEmptyAction: _scrollToCheckIn,
           insufficientDataMessage:
-              "Once you have logged a few days, Dr. Docsy will start sharing what it notices.",
+              "Once you have logged a few days, Docsy will start sharing what it notices.",
           builder: (context, insights) {
             if (insights.isEmpty) {
-              return _buildPatternsPlaceholder("Dr. Docsy has not noticed anything in your logs yet.");
+              return _buildPatternsPlaceholder("Docsy has not noticed anything in your logs yet.");
             }
-            // The Dr. Docsy Note surfaces the strongest current observation.
+            // The Docsy Note surfaces the strongest current observation.
             return _buildSiaNoteCard(insights.first);
           },
         ),
@@ -4946,7 +4842,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: const Color(0xFFFDFBF7),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border, width: 0.8),
         ),
         child: Column(
@@ -5003,7 +4899,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 TextButton(
                   onPressed: () => _showArticleDialog(
                     context,
-                    "How Dr. Docsy noticed this",
+                    "How Docsy noticed this",
                     "${insight.description}\n\n${_evidenceLine(insight)}.\n\n"
                         "This describes a pattern in what you logged. It does not explain why, "
                         "and it is not a diagnosis. Blushy shows it so you can decide whether it "
@@ -5037,15 +4933,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                AppLocalizations.of(context).dashPatternsTitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading(AppLocalizations.of(context).dashPatternsTitle),
               // Refresh recomputes from current logs; it does not create a
               // duplicate insight (spec section 9).
               IconButton(
@@ -5076,6 +4964,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             );
           },
         ),
+        const SizedBox(height: 24),
+        // Today's Context sits under the patterns rather than above the
+        // whole dashboard: the four cards are the day, and the patterns
+        // are the shape the days make.
+        const TodaysContextSection(),
       ],
     );
   }
@@ -5086,7 +4979,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border, width: 0.8),
       ),
       child: Text(
@@ -5117,7 +5010,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border, width: 0.8),
         ),
         child: Column(
@@ -5262,7 +5155,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border, width: 0.8),
       ),
       child: Column(
@@ -5325,7 +5218,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           }),
           const Divider(height: 36, color: Color(0xFFF5F0EB)),
           Text(
-            "DR. DOCSY'S REFLECTION",
+            "DOCSY'S REFLECTION",
             style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary),
           ),
           const SizedBox(height: 8),
@@ -5418,7 +5311,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
                   children: [
-                    // Row 1: Dr. Docsy's Daily Brief (Hero)
+                    // Row 1: Docsy's Daily Brief (Hero)
                     GreetingCard(name: displayName),
                     const SizedBox(height: 48),
 
@@ -5471,7 +5364,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- BRANCH: HORMONAL HEALTH (hormonalHealth) ---
   final ScrollController _hormonalHomeScrollController = ScrollController();
 
-  // --- SECTION 1: DR. DOCSY'S DAILY BRIEF (HERO) ---
+  // --- SECTION 1: DOCSY'S DAILY BRIEF (HERO) ---
 
   // --- SECTION 2: MY CYCLE HEALTH (Irregular tracking metrics & Ovary shape) ---
   Widget _buildHormonalCycleHealth() {
@@ -5484,15 +5377,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "MY CYCLE HEALTH",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("MY CYCLE HEALTH"),
               const SizedBox(height: 6),
               Text(
                 "Hormonal Rhythm Tracker",
@@ -5510,7 +5395,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -5581,7 +5466,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildStartedLegendDot("Menstrual", const Color(0xFFDD0D22)),
+                  _buildStartedLegendDot("Menstrual", BlushyColors.primary),
                   const SizedBox(width: 14),
                   _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
                   const SizedBox(width: 14),
@@ -5695,22 +5580,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S CHECK-IN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("TODAY'S CHECK-IN"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -5932,10 +5809,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const BlushyMStudioScreen()),
-                        );
+                        // The tab, not a second copy of it stacked on top.
+                        BlushyShellTabs.open(BlushyShellTabs.mStudio);
                       },
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text("M Studio"),
@@ -5956,7 +5831,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  // --- SECTION 4: DR. DOCSY INSIGHTS (Observations) ---
+  // --- SECTION 4: DOCSY INSIGHTS (Observations) ---
   /// Condition profile (spec section 14).
   ///
   /// Shows only what the user told Blushy they were diagnosed with, the
@@ -5966,7 +5841,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   ///
   /// This previously rendered `dummyConditionInsights`, which is an empty list,
   /// so the card showed nothing at all.
-  /// The hormonal branch shows the same real Dr. Docsy observation as every other
+  /// The hormonal branch shows the same real Docsy observation as every other
   /// branch, rather than its own copy.
   Widget _buildHormonalSiaInsights() => _buildLivingSiaInsights();
 
@@ -5976,15 +5851,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            AppLocalizations.of(context).dashYourConditions,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading(AppLocalizations.of(context).dashYourConditions),
         ),
         const SizedBox(height: 16),
         ApiStateCard<Map<String, dynamic>>(
@@ -6008,7 +5875,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: BlushyColors.border, width: 0.8),
               ),
               child: Column(
@@ -6125,22 +5992,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "FOR YOUR NEXT APPOINTMENT",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("FOR YOUR NEXT APPOINTMENT"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -6179,7 +6038,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BlushyColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     elevation: 0,
                   ),
@@ -6241,15 +6100,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "UNDERSTANDING MY PATTERNS",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("UNDERSTANDING MY PATTERNS"),
               const SizedBox(height: 4),
               Text(
                 "AI-generated trends across multiple cycle logs",
@@ -6269,7 +6120,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: BlushyColors.border, width: 0.8),
               ),
               child: Column(
@@ -6295,7 +6146,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       TextButton(
                         onPressed: () => _openAskSiaChat(context, "Explain this pattern: ${card['title']}"),
-                        child: Text("Ask Dr. Docsy", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
+                        child: Text("Ask Docsy", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
                       ),
                       const SizedBox(width: 8),
                       TextButton(
@@ -6340,7 +6191,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: ApiStateCard<CarePlan>(
@@ -6500,15 +6351,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "LEARN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("LEARN"),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -6527,7 +6370,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
@@ -6552,7 +6395,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -6655,7 +6498,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: ApiStateCard<Timeline>(
@@ -6790,7 +6633,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           // 1. MOBILE LAYOUT
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -6831,7 +6674,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else if (width <= 1200) {
           // 2. TABLET LAYOUT
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -6871,7 +6714,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else {
           // 3. DESKTOP LAYOUT (8 / 4 Responsive Editorial Grid)
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -6882,7 +6725,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     controller: _hormonalHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      // Row 1: Dr. Docsy's Daily Brief (Hero)
+                      // Row 1: Docsy's Daily Brief (Hero)
                       GreetingCard(name: displayName),
                       const SizedBox(height: 48),
 
@@ -6946,7 +6789,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- BRANCH: TRYING TO CONCEIVE (tryingToConceive) ---
   final ScrollController _ttcHomeScrollController = ScrollController();
 
-  // --- SECTION 1: DR. DOCSY'S FERTILITY BRIEF (HERO) ---
+  // --- SECTION 1: DOCSY'S FERTILITY BRIEF (HERO) ---
 
   // --- SECTION 2: FERTILITY TIMELINE (Reuses Ovary tracker & metrics) ---
   Widget _buildTtcTimeline() {
@@ -6959,15 +6802,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "FERTILITY TIMELINE",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("FERTILITY TIMELINE"),
               const SizedBox(height: 6),
               Text(
                 "Your Fertility Journey",
@@ -6985,7 +6820,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Builder(
@@ -7069,7 +6904,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildStartedLegendDot("Menstrual", const Color(0xFFDD0D22)),
+                      _buildStartedLegendDot("Menstrual", BlushyColors.primary),
                       const SizedBox(width: 14),
                       _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
                       const SizedBox(width: 14),
@@ -7120,22 +6955,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S CHECK-IN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("TODAY'S CHECK-IN"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -7374,15 +7201,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "LEARN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("LEARN"),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -7401,7 +7220,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
@@ -7426,7 +7245,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -7499,22 +7318,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "PARTNER MODE",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("PARTNER MODE"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -7612,7 +7423,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           // 1. MOBILE LAYOUT
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -7651,7 +7462,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else if (width <= 1200) {
           // 2. TABLET LAYOUT
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -7689,7 +7500,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else {
           // 3. DESKTOP LAYOUT (8 / 4 Responsive Editorial Grid)
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -7837,15 +7648,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "BABY THIS WEEK",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("BABY THIS WEEK"),
               const SizedBox(height: 6),
               Text(
                 // Fixed at week 24 for everyone. The due date is on the
@@ -7867,7 +7670,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -7915,7 +7718,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       height: 120,
                       decoration: BoxDecoration(
                         color: const Color(0xFFFDFBF7),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: BlushyColors.border, width: 0.8),
                       ),
                       child: Center(
@@ -7986,22 +7789,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S CHECK-IN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("TODAY'S CHECK-IN"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -8265,7 +8060,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  // --- SECTION 5: DR. DOCSY INSIGHTS ---
+  // --- SECTION 5: DOCSY INSIGHTS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPregnancyInsights() {
@@ -8294,22 +8089,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "BABY PREPARATION",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("BABY PREPARATION"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -8379,15 +8166,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "LEARN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("LEARN"),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -8406,7 +8185,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
@@ -8431,7 +8210,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -8504,22 +8283,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "PARTNER & FAMILY",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("PARTNER & FAMILY"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -8603,7 +8374,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           // 1. MOBILE LAYOUT
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -8646,7 +8417,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else if (width <= 1200) {
           // 2. TABLET LAYOUT
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -8688,7 +8459,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else {
           // 3. DESKTOP LAYOUT (8 / 4 Responsive Editorial Grid)
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -8810,22 +8581,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S WELLBEING",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("TODAY'S WELLBEING"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -9035,7 +8798,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  // --- SECTION 4: DR. DOCSY INSIGHTS ---
+  // --- SECTION 4: DOCSY INSIGHTS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPostpartumInsights() {
@@ -9063,22 +8826,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "BABY & YOU",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("BABY & YOU"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -9140,15 +8895,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "LEARN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("LEARN"),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -9167,7 +8914,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
@@ -9192,7 +8939,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -9280,7 +9027,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           // 1. MOBILE LAYOUT
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -9319,7 +9066,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else if (width <= 1200) {
           // 2. TABLET LAYOUT
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -9357,7 +9104,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else {
           // 3. DESKTOP LAYOUT (8 / 4 Responsive Editorial Grid)
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -9430,7 +9177,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- BRANCH: PERIMENOPAUSE (perimenopause) ---
   final ScrollController _periHomeScrollController = ScrollController();
 
-  // --- SECTION 1: DR. DOCSY'S DAILY BRIEF ---
+  // --- SECTION 1: DOCSY'S DAILY BRIEF ---
 
   // --- SECTION 2: MY CHANGING CYCLE ---
   Widget _buildPeriChangingCycle(PersonalContext pc) {
@@ -9450,15 +9197,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "MY CHANGING CYCLE",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("MY CHANGING CYCLE"),
               const SizedBox(height: 6),
               Text(
                 "Transition Tracking & History",
@@ -9476,7 +9215,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -9608,7 +9347,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFAF6F0),
+                        color: BlushyColors.background,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: BlushyColors.border, width: 0.8),
                       ),
@@ -9725,22 +9464,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S CHECK-IN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("TODAY'S CHECK-IN"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -9975,7 +9706,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  // --- SECTION 4: DR. DOCSY INSIGHTS ---
+  // --- SECTION 4: DOCSY INSIGHTS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPeriInsights() {
@@ -10015,15 +9746,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "LEARN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("LEARN"),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -10042,7 +9765,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
@@ -10067,7 +9790,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -10155,7 +9878,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           // 1. MOBILE LAYOUT
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -10194,7 +9917,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else if (width <= 1200) {
           // 2. TABLET LAYOUT
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -10232,7 +9955,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else {
           // 3. DESKTOP LAYOUT (8 / 4 Responsive Editorial Grid)
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -10305,7 +10028,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- BRANCH: MENOPAUSE (menopause) ---
   final ScrollController _menoHomeScrollController = ScrollController();
 
-  // --- SECTION 1: DR. DOCSY'S DAILY BRIEF ---
+  // --- SECTION 1: DOCSY'S DAILY BRIEF ---
 
   // --- SECTION 2: MY WELLBEING ---
   // --- SECTION 2: MY WELLBEING ---
@@ -10347,15 +10070,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "MY WELLBEING",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("MY WELLBEING"),
               const SizedBox(height: 6),
               Text(
                 "Long-Term Wellness Overview",
@@ -10373,7 +10088,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -10513,22 +10228,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S CHECK-IN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("TODAY'S CHECK-IN"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -10771,7 +10478,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  // --- SECTION 4: DR. DOCSY INSIGHTS ---
+  // --- SECTION 4: DOCSY INSIGHTS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildMenoInsights() {
@@ -10818,15 +10525,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "LONG-TERM WELLNESS",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("LONG-TERM WELLNESS"),
               const SizedBox(height: 6),
               Text(
                 "EMPOWERED POST-MENOPAUSE WELLNESS CARDS",
@@ -10854,7 +10553,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -10886,7 +10585,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         ),
                         TextButton(
                           onPressed: () => _openAskSiaChat(context, "Tell me about my ${card['title']}"),
-                          child: Text("Ask Dr. Docsy", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
+                          child: Text("Ask Docsy", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
                         ),
                       ],
                     ),
@@ -10922,15 +10621,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "LEARN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("LEARN"),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -10949,7 +10640,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
@@ -10974,7 +10665,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -11062,7 +10753,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           // 1. MOBILE LAYOUT
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -11101,7 +10792,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else if (width <= 1200) {
           // 2. TABLET LAYOUT
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -11139,7 +10830,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else {
           // 3. DESKTOP LAYOUT (8 / 4 Responsive Editorial Grid)
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -11212,7 +10903,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- BRANCH: EVERYDAY WELLNESS (everydayWellness) ---
   final ScrollController _wellnessHomeScrollController = ScrollController();
 
-  // --- SECTION 1: DR. DOCSY'S DAILY BRIEF (HERO) ---
+  // --- SECTION 1: DOCSY'S DAILY BRIEF (HERO) ---
 
   // --- SECTION 2: MY WELLNESS ---
   // --- SECTION 2: MY WELLNESS ---
@@ -11326,15 +11017,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "MY WELLNESS",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("MY WELLNESS"),
               const SizedBox(height: 6),
               Text(
                 "Daily Lifestyle Overview",
@@ -11352,7 +11035,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -11410,8 +11093,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFAF6F0),
-                  borderRadius: BorderRadius.circular(16),
+                  color: BlushyColors.background,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -11518,22 +11201,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            "TODAY'S CHECK-IN",
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
+          child: SectionHeading("TODAY'S CHECK-IN"),
         ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 0.8),
           ),
           child: Column(
@@ -11659,8 +11334,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   showDialog(
                     context: context,
                     builder: (dialogContext) => AlertDialog(
-                      backgroundColor: const Color(0xFFFAF6F0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      backgroundColor: BlushyColors.background,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       title: Text(
                         AppLocalizations.of(context).dashLogWeight,
                         style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.text),
@@ -11761,10 +11436,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const BlushyMStudioScreen()),
-                        );
+                        // The tab, not a second copy of it stacked on top.
+                        BlushyShellTabs.open(BlushyShellTabs.mStudio);
                       },
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text("M Studio"),
@@ -11785,7 +11458,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  // --- SECTION 4: DR. DOCSY INSIGHTS ---
+  // --- SECTION 4: DOCSY INSIGHTS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildWellnessInsights() {
@@ -11897,15 +11570,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "MY HABITS",
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 2.0,
-                ),
-              ),
+              SectionHeading("MY HABITS"),
               const SizedBox(height: 6),
               Text(
                 "AI-Generated Habit Insights",
@@ -11933,7 +11598,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: BlushyColors.border, width: 0.8),
                 ),
                 child: Column(
@@ -12001,7 +11666,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           // 1. MOBILE LAYOUT
           return Scaffold(
             key: _scaffoldKey,
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -12037,7 +11702,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else if (width <= 1200) {
           // 2. TABLET LAYOUT
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -12071,7 +11736,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         } else {
           // 3. DESKTOP LAYOUT (8 / 4 Responsive Editorial Grid)
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF6F0),
+            backgroundColor: BlushyColors.background,
             body: SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,

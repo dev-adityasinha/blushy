@@ -109,7 +109,7 @@ Future<bool> transitionLifeStage(
     final agreed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text('Move to $stageTitle?',
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Text(
@@ -246,7 +246,7 @@ class LifeStageSelectorCard extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border.withValues(alpha: 0.7)),
             boxShadow: [
               BoxShadow(
@@ -257,7 +257,7 @@ class LifeStageSelectorCard extends StatelessWidget {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),

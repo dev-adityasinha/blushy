@@ -36,6 +36,11 @@ class _BuilderScreenState extends State<BuilderScreen> {
   final TextEditingController _msgController = TextEditingController();
   bool _isSendingBouquet = false;
 
+  /// Whether there is a partner to send to. Opened from M Studio there is no
+  /// session or connection, so only the image share applies.
+  bool get _canSendToPartner =>
+      widget.session != null && widget.connection != null;
+
   @override
   void initState() {
     super.initState();
@@ -394,7 +399,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
               return Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: count > 0 ? const Color(0xFFE8A0B4) : Theme.of(context).dividerColor.withValues(alpha: 0.2),
                     width: count > 0 ? 2 : 1,
@@ -493,7 +498,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
               backgroundColor: const Color(0xFFE8A0B4),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
             onPressed: isSelectionValid
@@ -646,7 +651,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                     foregroundColor: isDark ? const Color(0xFFFADDE3) : const Color(0xFF5C3841),
                     side: BorderSide(color: isDark ? const Color(0xFF5C3841) : const Color(0xFFE6C5CC)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () => state.setStep('pick'),
                   child: const Text('Back'),
@@ -659,7 +664,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                     backgroundColor: const Color(0xFFE8A0B4),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
                   onPressed: () => state.setStep('finish'),
@@ -753,30 +758,49 @@ class _BuilderScreenState extends State<BuilderScreen> {
 
           // Finish Actions
           //
-          // "Send to Partner" is always offered. It used to be hidden whenever
-          // there was no active connection, so the option appeared not to
-          // exist at all -- and _sendBouquetToPartner already explains the
-          // missing connection, which is a far better answer than a button
-          // that is not there.
+          // "Send to Partner" is always shown, never hidden: an option that
+          // disappears reads as one that does not exist. Without a connection
+          // it is visibly disabled with the reason underneath, rather than
+          // live and then failing on tap.
           ...[
-            ElevatedButton.icon(
-              icon: _isSendingBouquet
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.send_rounded),
-              label: Text(_isSendingBouquet ? 'Sending...' : 'Send to Partner', style: const TextStyle(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE8A0B4),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                elevation: 0,
+            Opacity(
+              opacity: _canSendToPartner ? 1 : 0.5,
+              child: ElevatedButton.icon(
+                icon: _isSendingBouquet
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.send_rounded),
+                label: Text(_isSendingBouquet ? 'Sending...' : 'Send to Partner', style: const TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE8A0B4),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: const Color(0xFFE8A0B4),
+                  disabledForegroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                onPressed: (!_canSendToPartner || _isSendingBouquet)
+                    ? null
+                    : () => _sendBouquetToPartner(state),
               ),
-              onPressed: _isSendingBouquet ? null : () => _sendBouquetToPartner(state),
             ),
+            if (!_canSendToPartner) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Connect a partner to send this to them. You can still share '
+                'it as an image with anyone.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  height: 1.4,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
           ],
           ElevatedButton.icon(
@@ -787,7 +811,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
               foregroundColor: const Color(0xFF5C3841),
               side: const BorderSide(color: Color(0xFFE6C5CC)),
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
             onPressed: _shareBouquetImage,
@@ -800,7 +824,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
               foregroundColor: isDark ? const Color(0xFFFADDE3) : const Color(0xFF5C3841),
               side: BorderSide(color: isDark ? const Color(0xFF5C3841) : const Color(0xFFE6C5CC)),
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
               state.saveBouquetToGarden(UserProfileController.instance.displayName);
@@ -841,7 +865,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
               backgroundColor: const Color(0xFFE8A0B4),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
             onPressed: () {

@@ -35,7 +35,9 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
       final dio = Dio(BaseOptions(
         baseUrl: resolveApiBaseUrl(),
         connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
+        // Absorbs a Render cold start (~27s); see api_community_service.dart
+        // for why this is the timeout that gives rather than connectTimeout.
+        receiveTimeout: const Duration(seconds: 60),
         headers: token != null ? {'Authorization': 'Bearer $token'} : {},
       ));
 
@@ -62,7 +64,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
       } else if (lower.contains("tired") || lower.contains("fatigue") || lower.contains("sleep")) {
         reply = "When she feels fatigued, simple practical help makes the biggest difference: ask 'Can I take care of dinner tonight?' and make sure she has quiet space to decompress.";
       } else {
-        reply = "As her partner companion, Dr. Docsy recommends open communication. You can ask: 'Would you like some quiet time to relax, a listening ear, or some practical help right now?'";
+        reply = "As her partner companion, Docsy recommends open communication. You can ask: 'Would you like some quiet time to relax, a listening ear, or some practical help right now?'";
       }
     }
 
@@ -93,9 +95,9 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFAF6F0),
+        backgroundColor: BlushyColors.background,
         elevation: 0,
         leading: Navigator.canPop(context)
             ? IconButton(
@@ -104,7 +106,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
               )
             : null,
         title: Text(
-          "Ask Dr. Docsy",
+          "Ask Docsy",
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -127,7 +129,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                           const Icon(Icons.auto_awesome, color: BlushyColors.primary, size: 48),
                           const SizedBox(height: 16),
                           Text(
-                            "Ask Dr. Docsy about supporting her",
+                            "Ask Docsy about supporting her",
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                           ),
@@ -180,7 +182,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: isUser ? BlushyColors.primary : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               border: isUser ? null : Border.all(color: BlushyColors.border),
                             ),
                             constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),

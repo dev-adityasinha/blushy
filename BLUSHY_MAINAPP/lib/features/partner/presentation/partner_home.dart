@@ -175,54 +175,54 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
   static const List<Map<String, String>> _defaultManNeeds = [
     {
       "label": "He needs appreciation & validation",
-      "tip": "Dr. Docsy recommends: Acknowledge his effort, say thank you for something specific, or let him know how much you value him."
+      "tip": "Docsy recommends: Acknowledge his effort, say thank you for something specific, or let him know how much you value him."
     },
     {
       "label": "He needs quiet space to decompress",
-      "tip": "Dr. Docsy recommends: Give him some uninterrupted downtime to unwind after a stressful day without pressure."
+      "tip": "Docsy recommends: Give him some uninterrupted downtime to unwind after a stressful day without pressure."
     },
     {
       "label": "He needs words of encouragement",
-      "tip": "Dr. Docsy recommends: Remind him that you believe in him and that you're right by his side through current pressures."
+      "tip": "Docsy recommends: Remind him that you believe in him and that you're right by his side through current pressures."
     },
     {
       "label": "He wants comfort & physical affection",
-      "tip": "Dr. Docsy recommends: Offer a warm hug, a gentle massage, or a quiet moment relaxing together."
+      "tip": "Docsy recommends: Offer a warm hug, a gentle massage, or a quiet moment relaxing together."
     },
     {
       "label": "He wants fun & quality time",
-      "tip": "Dr. Docsy recommends: Suggest a casual game, watch a movie, share a favorite snack, or go for an easy walk together."
+      "tip": "Docsy recommends: Suggest a casual game, watch a movie, share a favorite snack, or go for an easy walk together."
     },
     {
       "label": "I don't know what he needs",
-      "tip": "Dr. Docsy recommends: Ask gently: 'Are you looking for encouragement, quiet downtime, or just want to hang out?'"
+      "tip": "Docsy recommends: Ask gently: 'Are you looking for encouragement, quiet downtime, or just want to hang out?'"
     },
   ];
 
   static const List<Map<String, String>> _defaultWomanNeeds = [
     {
       "label": "She needs rest",
-      "tip": "Dr. Docsy recommends: Cancel non-essential tasks, dim the lights, and handle dinner tonight."
+      "tip": "Docsy recommends: Cancel non-essential tasks, dim the lights, and handle dinner tonight."
     },
     {
       "label": "She needs comfort",
-      "tip": "Dr. Docsy recommends: Bring a warm heat pack, brew her favorite tea, or offer a back rub."
+      "tip": "Docsy recommends: Bring a warm heat pack, brew her favorite tea, or offer a back rub."
     },
     {
       "label": "She needs practical help",
-      "tip": "Dr. Docsy recommends: Check the laundry, wash dishes, or ask: 'Which chore can I handle for you right now?'"
+      "tip": "Docsy recommends: Check the laundry, wash dishes, or ask: 'Which chore can I handle for you right now?'"
     },
     {
       "label": "She wants company",
-      "tip": "Dr. Docsy recommends: Put away phones, suggest a relaxed walk, or watch a movie together."
+      "tip": "Docsy recommends: Put away phones, suggest a relaxed walk, or watch a movie together."
     },
     {
       "label": "She wants space",
-      "tip": "Dr. Docsy recommends: Give her quiet time. Say: 'I am here in the other room if you need anything.'"
+      "tip": "Docsy recommends: Give her quiet time. Say: 'I am here in the other room if you need anything.'"
     },
     {
       "label": "I don't know what she needs",
-      "tip": "Dr. Docsy recommends: Ask gently: 'Are you looking for comfort, help, or space right now?'"
+      "tip": "Docsy recommends: Ask gently: 'Are you looking for comfort, help, or space right now?'"
     },
   ];
 
@@ -245,7 +245,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -314,7 +314,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       itemBuilder: (context, index) {
                         final item = customNeedsList[index];
                         final String label = (item is Map ? item['label'] : null) ?? item.toString();
-                        final String tip = (item is Map ? item['tip'] : null) ?? "Dr. Docsy recommends: Show love and patience.";
+                        final String tip = (item is Map ? item['tip'] : null) ?? "Docsy recommends: Show love and patience.";
                         final String? category = (item is Map ? item['category'] : null);
                         final String? source = (item is Map ? item['source'] : null);
 
@@ -378,7 +378,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.04),
@@ -441,7 +441,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFAF6F0),
+                            color: BlushyColors.background,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: const Color(0xFFE8DFD8)),
                           ),
@@ -453,7 +453,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                               Expanded(
                                 child: Text(
                                   dynamicNeeds['tip']?.toString() ??
-                                      "Dr. Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
+                                      "Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     height: 1.4,
@@ -473,7 +473,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(
@@ -519,7 +519,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Text(tip, style: GoogleFonts.poppins(fontSize: 14, height: 1.5, color: BlushyColors.text)),
         actions: [
@@ -633,7 +633,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       icon: Icons.lock_outline,
                       title: AppLocalizations.of(context).phNothingSharedRightNow,
                       body: "She decides what to share, and can change it at any time. "
-                          "You can still use Learn and Dr. Docsy for general support.",
+                          "You can still use Learn and Docsy for general support.",
                     )
                   else
                     ...populated.map(_buildSharedSectionCard),
@@ -647,7 +647,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
   }
 
   static const Map<String, String> _sharedSectionTitles = {
-    'shared_insights': 'What Dr. Docsy noticed',
+    'shared_insights': 'What Docsy noticed',
     'cycle_context': 'Cycle context',
     'fertility_context': 'Fertility context',
     'pregnancy_milestones': 'Pregnancy milestones',
@@ -666,7 +666,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border, width: 0.8),
         ),
         child: Column(
@@ -739,7 +739,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: const Color(0xFFFDF6F0),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.35), width: 1),
         ),
         child: Column(
@@ -805,7 +805,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border, width: 0.8),
       ),
       child: Row(
@@ -883,7 +883,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         _activeConnection?['createdAt'] ??
         _sharedData?['connectedAt'];
 
-    // Dynamic headline for "Dr. Docsy noticed something"
+    // Dynamic headline for "Docsy noticed something"
     String siaHeadline = isConnected
         ? "Tending to your relationship garden builds healthy, quiet mutual support."
         : "Connect with your partner to see her live cycle and wellness insights.";
@@ -938,7 +938,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
     final bool isAllCompleted = actionItems.isNotEmpty && completedCount == actionItems.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -987,13 +987,13 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
               _buildUsSection(),
               const SizedBox(height: 24),
 
-              // Dr. Docsy Noticed (Live Permissions-dependent UI)
+              // Docsy Noticed (Live Permissions-dependent UI)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24.0),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3FAF6),
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFD6F1DF)),
                 ),
                 child: Column(
@@ -1004,7 +1004,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         const Icon(Icons.auto_awesome, color: BlushyColors.success, size: 18),
                         const SizedBox(width: 8),
                         Text(
-                          "Dr. Docsy noticed something",
+                          "Docsy noticed something",
                           style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.success),
                         ),
                       ],
@@ -1083,7 +1083,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0xFFA5D6A7)),
                           boxShadow: [
                             BoxShadow(
@@ -1149,7 +1149,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           side: const BorderSide(color: BlushyColors.primary, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: Text(
                           "I want to help",
@@ -1169,7 +1169,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: BlushyColors.border),
                       ),
                       child: Column(
@@ -1230,14 +1230,14 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
 
     return InkWell(
       onTap: () => _toggleActionCompletion(actionId),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isCompleted ? const Color(0xFFF1F8F4) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isCompleted ? const Color(0xFFC8E6C9) : BlushyColors.border,
             width: isCompleted ? 1.5 : 1.0,
@@ -1336,7 +1336,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Column(
@@ -1348,7 +1348,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: BlushyColors.secondaryText.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.lock_outline_rounded,
                     color: BlushyColors.secondaryText, size: 22),
@@ -1384,8 +1384,8 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFAF6F0),
-                borderRadius: BorderRadius.circular(14),
+                color: BlushyColors.background,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 'Mood shared today: $mood',
@@ -1423,7 +1423,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
 
     switch (phase.toLowerCase()) {
       case 'menstrual':
-        phaseColor = const Color(0xFFDD0D22);
+        phaseColor = BlushyColors.primary;
         phaseIcon = Icons.water_drop_rounded;
         phaseEmoji = "🩸";
         phaseDescription = "Energy is lower. She may experience fatigue or cramps. Offer warmth, rest, and handle dinner tonight.";
@@ -1455,7 +1455,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
         boxShadow: [
           BoxShadow(
@@ -1477,7 +1477,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: phaseColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(phaseIcon, color: phaseColor, size: 22),
                   ),
@@ -1501,8 +1501,8 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFAF6F0),
-                    borderRadius: BorderRadius.circular(20),
+                    color: BlushyColors.background,
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: BlushyColors.border),
                   ),
                   child: Row(
@@ -1519,7 +1519,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: phaseColor.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

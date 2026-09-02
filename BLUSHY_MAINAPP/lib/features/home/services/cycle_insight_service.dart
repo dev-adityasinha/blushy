@@ -17,7 +17,7 @@ class CycleInsightService {
 
       final List<String> conversationSnippets = [];
 
-      // 1. Read Dr. Docsy user chat messages
+      // 1. Read Docsy user chat messages
       if (chatData['messages'] is List) {
         final msgs = chatData['messages'] as List;
         for (var m in msgs.reversed) {
@@ -45,7 +45,7 @@ class CycleInsightService {
           CycleInsight(
             title: "AI Chat Insight: Headaches & Tension Relief",
             observation: "Discussed in your recent talk: Hydration and 5-minute dark room relaxation ease vascular headache tension.",
-            evidence: "Synthesized directly from your latest Dr. Docsy AI conversation.",
+            evidence: "Synthesized directly from your latest Docsy AI conversation.",
             confidenceLevel: "High",
             timestamp: "Just now",
           ),
@@ -57,7 +57,7 @@ class CycleInsightService {
           CycleInsight(
             title: "AI Chat Insight: Stress & Cortisol Shield",
             observation: "Expressed stress in your recent conversation. 3 minutes of slow box breathing lowers sympathetic cortisol spikes.",
-            evidence: "Derived directly from your active Dr. Docsy chat session.",
+            evidence: "Derived directly from your active Docsy chat session.",
             confidenceLevel: "High",
             timestamp: "Just now",
           ),
@@ -69,7 +69,7 @@ class CycleInsightService {
           CycleInsight(
             title: "AI Chat Insight: Fatigue Recovery",
             observation: "Discussed low energy in your talk. Scheduling short micro-rest breaks preserves energy for week 1 menstruation.",
-            evidence: "Extracted directly from your recent Dr. Docsy AI chat.",
+            evidence: "Extracted directly from your recent Docsy AI chat.",
             confidenceLevel: "High",
             timestamp: "Just now",
           ),
@@ -92,7 +92,7 @@ class CycleInsightService {
         insights.add(
           CycleInsight(
             title: "AI Chat Insight: Sleep Architecture",
-            observation: "Talked about sleep challenges with Dr. Docsy. Maintaining a 19°C cool room setting and avoiding late screens promotes REM sleep.",
+            observation: "Talked about sleep challenges with Docsy. Maintaining a 19°C cool room setting and avoiding late screens promotes REM sleep.",
             evidence: "Extracted directly from your latest conversation entries.",
             confidenceLevel: "High",
             timestamp: "Just now",
@@ -120,7 +120,7 @@ class CycleInsightService {
           CycleInsight(
             title: "AI Chat Insight: Personal Reflection",
             observation: "Synthesized from your recent conversation: \"$shortQuote\". Taking a quiet moment to reflect helps align your emotional baseline.",
-            evidence: "Extracted directly from your active Dr. Docsy conversation.",
+            evidence: "Extracted directly from your active Docsy conversation.",
             confidenceLevel: "High",
             timestamp: "Just now",
           ),
@@ -266,7 +266,7 @@ class CycleInsightService {
       insights.add(
         CycleInsight(
           title: "Personalized Cycle Sync",
-          observation: "Your daily insights update automatically based on your active Dr. Docsy AI talks and onboarding choices.",
+          observation: "Your daily insights update automatically based on your active Docsy AI talks and onboarding choices.",
           evidence: "Synthesized from your active Blushy profile.",
           confidenceLevel: "High",
           timestamp: "Updated today",

@@ -137,12 +137,40 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
         );
       }
       return;
-    } catch (_) {}
+    } catch (error, stack) {
+      // Anything else. This used to be `catch (_) {}`: the spinner stopped, no
+      // message appeared and the note field stayed empty, which is the one
+      // outcome that gives the user nothing to act on -- it reads as the
+      // feature simply not working.
+      debugPrint('VoiceNote: transcription failed: $error');
+      debugPrintStack(stackTrace: stack);
+      if (mounted) {
+        setState(() => _isTranscribing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not transcribe that recording. '
+              'You can type your reflection instead.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
 
+    // Recorded, but nothing came back to transcribe.
     if (mounted) {
       setState(() {
         _isTranscribing = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'That recording came through empty. Try holding the button a '
+            'little longer, or type your reflection instead.',
+          ),
+        ),
+      );
     }
   }
 
@@ -202,7 +230,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
     return Container(
       margin: EdgeInsets.only(top: mediaQuery.padding.top + 40),
       decoration: const BoxDecoration(
-        color: Color(0xFFFAF6F0),
+        color: BlushyColors.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
@@ -265,7 +293,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border, width: 0.8),
             ),
             child: Column(
@@ -333,7 +361,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.redAccent,
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ] else if (_isTranscribing) ...[
@@ -371,7 +399,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context).vnbYourVoiceTranscriptWill,
                       filled: true,
-                      fillColor: const Color(0xFFFAF6F0),
+                      fillColor: BlushyColors.background,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: BlushyColors.border),
@@ -383,29 +411,44 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // Both buttons sized to their own labels in a spaceBetween
+                  // row, so "Save Reflection" ran past the card. They share the
+                  // width now and the labels shrink rather than push.
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      OutlinedButton.icon(
-                        onPressed: _startRecording,
-                        icon: const Icon(Icons.refresh_rounded, size: 16),
-                        label: const Text("Re-record"),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: BlushyColors.primary,
-                          side: const BorderSide(color: BlushyColors.primary),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _startRecording,
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text("Re-record"),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: BlushyColors.primary,
+                            side: const BorderSide(color: BlushyColors.primary),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                         ),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: _saveVoiceNote,
-                        icon: const Icon(Icons.check, color: Colors.white, size: 16),
-                        label: Text(
-                          "Save Reflection",
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BlushyColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _saveVoiceNote,
+                          icon: const Icon(Icons.check, color: Colors.white, size: 16),
+                          label: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              "Save Reflection",
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: BlushyColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                         ),
                       ),
                     ],

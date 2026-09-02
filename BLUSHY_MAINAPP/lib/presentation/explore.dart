@@ -22,7 +22,7 @@ class ExploreScreen extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Curated medical research, anonymous stories, and guidelines compiled by Dr. Docsy.',
+            'Curated medical research, anonymous stories, and guidelines compiled by Docsy.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
@@ -32,7 +32,7 @@ class ExploreScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: BlushyColors.surface,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             child: Row(
@@ -111,7 +111,7 @@ class ExploreScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: BlushyColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Column(
@@ -159,7 +159,7 @@ class ExploreScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: BlushyColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Column(

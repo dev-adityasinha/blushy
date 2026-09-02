@@ -6,7 +6,7 @@ import 'api_base_url.dart';
 import 'language_preference.dart';
 import 'auth_storage.dart';
 
-/// One night's summary of the user's real conversation with Dr. Docsy, generated
+/// One night's summary of the user's real conversation with Docsy, generated
 /// server-side from actual chat history.
 class DailyChatSummary {
   const DailyChatSummary({
@@ -51,7 +51,9 @@ class ApiSiaService {
   final Dio _dio = Dio(BaseOptions(
     baseUrl: resolveApiBaseUrl(),
     connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 25),
+    // Absorbs a Render cold start (~27s); see api_community_service.dart for
+    // why this is the timeout that gives rather than connectTimeout.
+    receiveTimeout: const Duration(seconds: 60),
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -76,7 +78,7 @@ class ApiSiaService {
   /// The server aborts its own AI call at `AI_REQUEST_TIMEOUT_MS` (30s by
   /// default) and then still has to write the response, while this client gave
   /// up at 25s. So a slow-but-successful generation was reported to the user as
-  /// a request timeout, having actually worked -- which is what "Dr. Docsy
+  /// a request timeout, having actually worked -- which is what "Docsy
   /// insights" and "cycle patterns" were showing.
   ///
   /// Kept to the AI routes: nothing else should be allowed to hang this long.
@@ -86,18 +88,62 @@ class ApiSiaService {
   }
 
   /// Comfortably past the server's own abort, with room for the response.
-  static const Duration _aiReceiveTimeout = Duration(seconds: 50);
+  ///
+  /// This has to stay above the 60s base, or `_aiOptions` would shorten the
+  /// window for the one kind of request that legitimately needs the longest
+  /// one. The AI call can also be the request that wakes a sleeping instance,
+  /// so the budget is the cold start (~27s) followed by the model's own time
+  /// rather than either alone.
+  static const Duration _aiReceiveTimeout = Duration(seconds: 90);
 
-  /// Sends a user chat message to Dr. Docsy AI Companion: `POST /ai/chat`
-  Future<String> sendMessage(String userMessage, {Map<String, dynamic>? healthContext}) async {
-    final result = await sendMessageDetailed(userMessage, healthContext: healthContext);
+  /// Sends a user chat message to Docsy AI Companion: `POST /ai/chat`
+  Future<String> sendMessage(
+    String userMessage, {
+    Map<String, dynamic>? healthContext,
+    List<Map<String, String>> history = const [],
+  }) async {
+    final result = await sendMessageDetailed(
+      userMessage,
+      healthContext: healthContext,
+      history: history,
+    );
     return result.message;
   }
 
+  /// How much of the conversation travels with each message.
+  ///
+  /// The server caps this again on its side; the point of a limit here is to
+  /// keep the request small on a phone connection.
+  static const int _historyTurns = 12;
+
   /// Sends a user chat message and returns detailed captures: `POST /ai/chat`
-  Future<SiaChatResult> sendMessageDetailed(String userMessage, {Map<String, dynamic>? healthContext}) async {
+  ///
+  /// [history] is the conversation so far, oldest first, each entry carrying a
+  /// `sender` of `sia` or `user`. Only the message being sent used to go over
+  /// the wire, so every reply was a single-turn conversation: Docsy could not
+  /// see what she had just said or what it had just answered, and repeated
+  /// itself and its questions.
+  Future<SiaChatResult> sendMessageDetailed(
+    String userMessage, {
+    Map<String, dynamic>? healthContext,
+    List<Map<String, String>> history = const [],
+  }) async {
     try {
+      final turns = <Map<String, String>>[
+        for (final entry in history.length > _historyTurns
+            ? history.sublist(history.length - _historyTurns)
+            : history)
+          if ((entry['text'] ?? '').trim().isNotEmpty)
+            {
+              'role': entry['sender'] == 'sia' ? 'assistant' : 'user',
+              'content': entry['text']!.trim(),
+            },
+        {'role': 'user', 'content': userMessage},
+      ];
+
       final payload = <String, dynamic>{
+        'messages': turns,
+        // Kept alongside `messages` because older server builds read this one.
         'message': userMessage,
         // The server has reviewed strings per language and falls back to
         // English for anything it does not have.
@@ -140,7 +186,7 @@ class ApiSiaService {
     }
   }
 
-  /// Sends a document or image file with a prompt to Dr. Docsy AI: `POST /ai/chat` (multipart/form-data)
+  /// Sends a document or image file with a prompt to Docsy AI: `POST /ai/chat` (multipart/form-data)
   Future<SiaChatResult> uploadDocumentAndChat({
     required List<int> fileBytes,
     required String fileName,
@@ -198,7 +244,7 @@ class ApiSiaService {
     }
   }
 
-  /// Fetches saved Dr. Docsy conversation history: `GET /ai/history`
+  /// Fetches saved Docsy conversation history: `GET /ai/history`
   Future<List<Map<String, String>>> getChatHistory() async {
     try {
       final response = await _dio.get(
@@ -223,12 +269,19 @@ class ApiSiaService {
               final conversationId = item['id']?.toString() ?? '';
               final shared = item['sharedWithPartner'] == true ? '1' : '0';
 
+              // The server stamps every exchange; this was dropped here, so
+              // the screen had no idea when anything was said.
+              final at = item['createdAt']?.toString() ??
+                  item['created_at']?.toString() ??
+                  '';
+
               if (userMsg != null && userMsg.trim().isNotEmpty) {
                 result.add({
                   'sender': 'user',
                   'text': userMsg.trim(),
                   'conversationId': conversationId,
                   'shared': shared,
+                  'at': at,
                 });
               }
               if (assistantMsg != null && assistantMsg.trim().isNotEmpty) {
@@ -237,13 +290,18 @@ class ApiSiaService {
                   'text': assistantMsg.trim(),
                   'conversationId': conversationId,
                   'shared': shared,
+                  'at': at,
                 });
               }
               if ((userMsg == null || userMsg.trim().isEmpty) &&
                   (assistantMsg == null || assistantMsg.trim().isEmpty) &&
                   text != null &&
                   text.trim().isNotEmpty) {
-                result.add({'sender': role == 'user' ? 'user' : 'sia', 'text': text.trim()});
+                result.add({
+                  'sender': role == 'user' ? 'user' : 'sia',
+                  'text': text.trim(),
+                  'at': at,
+                });
               }
             }
           }
@@ -257,7 +315,7 @@ class ApiSiaService {
     }
   }
 
-  /// Clears saved Dr. Docsy chat history: `DELETE /ai/history`
+  /// Clears saved Docsy chat history: `DELETE /ai/history`
   Future<bool> clearChatHistory() async {
     try {
       await _dio.delete('/ai/history', options: _authOptions());
@@ -346,7 +404,16 @@ class ApiSiaService {
     final data = e.response?.data;
     Object? code;
     if (data is Map) {
+      // The body nests everything under `error`, so the top-level lookups
+      // below never matched and every failure fell through to the generic
+      // message. Both shapes are read now.
       code = data['errorCode'];
+      final error = data['error'];
+      if (code == null && error is Map) {
+        code = error['code'];
+        final nested = error['details'];
+        if (code == null && nested is Map) code = nested['code'];
+      }
       final details = data['details'];
       if (code == null && details is Map) code = details['code'];
     }

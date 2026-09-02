@@ -5,7 +5,7 @@
   },
   "navHome": "Home",
   "navCommunity": "Community",
-  "navSia": "Dr. Docsy",
+  "navSia": "Docsy",
   "navStudio": "M Studio",
   "navPartner": "Partner",
   "actionSave": "Save",
@@ -28,8 +28,8 @@
   "stateNothingYet": "Nothing logged yet.",
   "stateNotSharedWithYou": "Not shared with you.",
   "stateCouldNotSave": "Could not save that. Please try again.",
-  "languageSheetTitle": "Dr. Docsy speaks",
-  "languageSheetExplainer": "Changes the language Dr. Docsy replies in. The rest of the app stays in English for now.",
+  "languageSheetTitle": "Docsy speaks",
+  "languageSheetExplainer": "Changes the language Docsy replies in. The rest of the app stays in English for now.",
   "privacyTitle": "Privacy & Sharing",
   "privacyWhatYouReceive": "WHAT YOU RECEIVE",
   "privacyPartnerDecides": "Your partner decides what reaches this device, one category at a time. They can change it whenever they like, and a change takes effect on your very next request.",
@@ -57,7 +57,7 @@
     }
   },
   "settingsTitle": "Settings & Privacy Center",
-  "settingsSiaAssistant": "Dr. Docsy AI Assistant",
+  "settingsSiaAssistant": "Docsy AI Assistant",
   "settingsSiaAssistantSub": "Typing suggestions & reflection companion",
   "settingsMemoryBooks": "Memory Books",
   "settingsMemoryBooksSub": "Weekly and monthly recap scrapbooks",
@@ -73,8 +73,8 @@
   "settingsLargeHandlesSub": "Enlarge corner touch handles for easier selection",
   "settingsDiagnostics": "Platform Diagnostics",
   "settingsDiagnosticsSub": "Inspect storage, cache, search index, and AI queue health",
-  "siaAsk": "Ask Dr. Docsy",
-  "siaThinking": "Dr. Docsy is thinking…",
+  "siaAsk": "Ask Docsy",
+  "siaThinking": "Typing....",
   "siaVoiceTranscribed": "Voice transcribed into the text field. Review and tap send.",
   "siaNoSpeechRecognised": "No speech could be recognised. Please try again.",
   "siaNoAudioRecorded": "No audio recorded. Please check microphone permissions.",
@@ -97,7 +97,7 @@
   "dashFlowLevel": "FLOW LEVEL",
   "dashNotesReflections": "NOTES & REFLECTIONS",
   "dashCheckIn": "Check in",
-  "dashSiaInsights": "DR. DOCSY INSIGHTS",
+  "dashSiaInsights": "DOCSY INSIGHTS",
   "dashHelpful": "Helpful",
   "dashNotUseful": "Not useful",
   "dashPatternsTitle": "CYCLE PATTERNS & INSIGHTS",
@@ -117,7 +117,7 @@
   "journalNewMemory": "New memory",
   "journalBackToHome": "Back to home",
   "journalReadingYourEntries": "Looking at what you have written…",
-  "journalNothingToReflect": "Nothing to reflect on yet. Write an entry and Dr. Docsy will read it back to you.",
+  "journalNothingToReflect": "Nothing to reflect on yet. Write an entry and Docsy will read it back to you.",
   "journalNoMemoriesFound": "No memories found yet",
   "journalNoSearchMatch": "No entries matched that search.",
   "journalRecordVoiceNote": "Record voice note",
@@ -132,7 +132,7 @@
   "journalSmartSearch": "Search & collections",
   "journalSmartSearchSub": "Search your entries by keyword and related words",
   "journalCloudAi": "Cloud AI",
-  "journalCloudAiSub": "Allow cloud processing for Dr. Docsy insights",
+  "journalCloudAiSub": "Allow cloud processing for Docsy insights",
   "journalCloseMemoryBook": "Close memory book",
   "journalSelectTemplate": "Select journal template",
   "journalCreateNew": "Create new journal",
@@ -149,7 +149,7 @@
   "partnerDisconnect": "Disconnect",
   "partnerNoMessages": "No messages yet",
   "partnerSayHello": "Say hello to start the conversation.",
-  "partnerSiaDecoding": "Dr. Docsy is decoding…",
+  "partnerSiaDecoding": "Docsy is decoding…",
   "partnerSuggestedReply": "Suggested reply",
   "partnerUseReply": "Use reply",
   "partnerDateIdeas": "Date ideas",
@@ -159,8 +159,8 @@
   "partnerNoLetters": "No letters yet. Write one and it will be kept here for both of you.",
   "partnerMemoryBook": "MEMORY BOOK",
   "partnerNoMemories": "Nothing here yet. Finish a shared activity together and it will be kept here.",
-  "partnerSiaAdviceTitle": "DR. DOCSY RELATIONSHIP ADVICE",
-  "partnerSiaAdviceExplainer": "Ask about something that is on your mind. Dr. Docsy only sees what your partner has chosen to share.",
+  "partnerSiaAdviceTitle": "DOCSY RELATIONSHIP ADVICE",
+  "partnerSiaAdviceExplainer": "Ask about something that is on your mind. Docsy only sees what your partner has chosen to share.",
   "partnerTryAgain": "Try again",
   "homeGreetingMorning": "Good morning, {name}",
   "@homeGreetingMorning": {
@@ -186,7 +186,7 @@
       }
     }
   },
-  "homeGreetingSubtitle": "How are you feeling today?",
+  "homeGreetingSubtitle": "Whatever today looks like, you don't have to do it alone.",
   "dashLogFirstCheckIn": "Log your first check-in",
   "dashAddCondition": "Add a condition",
   "onbContinue": "Continue",
@@ -196,7 +196,7 @@
   "onbCreatingSafeSpace": "Creating your safe space",
   "onbCuratingContent": "Curating wellness content",
   "onbCreatingInsights": "Creating your daily insights",
-  "onbPreparingDocsy": "Preparing Dr. Docsy",
+  "onbPreparingDocsy": "Preparing Docsy",
   "jrnCancel": "Cancel",
   "jrnShare": "Share",
   "jrnDelete": "Delete",
@@ -270,16 +270,16 @@
   "upFailedToLoadProfile": "Failed to load profile details.",
   "upCancel": "Cancel",
   "upSave": "Save",
-  "hDrDocsy": "Dr. Docsy",
+  "hDrDocsy": "Docsy",
   "hClose": "Close",
   "dsQuestionsToAsk": "Questions to ask",
   "umsdDailyUnifiedCheckIn": "Daily Unified Check-in",
   "umsdCheckInSavedAnd": "Check-in saved and synced to your live MongoDB profile! ✨",
-  "cYourCycleLengthIs": "Your cycle length is varying. Log your symptoms daily so Dr. Docsy can adjust predictions.",
+  "cYourCycleLengthIs": "Your cycle length is varying. Log your symptoms daily so Docsy can adjust predictions.",
   "cTrackingIsDisabledFocus": "Tracking is disabled. Focus on your daily energy, mood, and sleep.",
   "cYourRecommendationsAreAdapted": "Your recommendations are adapted to your current life stage.",
   "paTodaySNextStep": "TODAY\\'S NEXT STEP",
-  "smClearDrDocsyMemory": "Clear Dr. Docsy Memory",
+  "smClearDrDocsyMemory": "Clear Docsy Memory",
   "scClinicalAlignment": "Clinical Alignment",
   "scCurrentTrack": "CURRENT TRACK",
   "scNewTrack": "NEW TRACK",
@@ -353,7 +353,7 @@
   "phGotIt": "Got it",
   "phSeeHowICan": "See how I can help",
   "phAllTodaySActions": "All Today's Actions Completed! 🌸",
-  "phDrDocsy": "Dr. Docsy",
+  "phDrDocsy": "Docsy",
   "phNotSharedWithYou": "Not shared with you",
   "phConnectionEnded": "Connection ended",
   "phNothingSharedRightNow": "Nothing shared right now",
@@ -361,7 +361,7 @@
   "plPairingWithYourPartner": "Pairing with your partner enables live AI insights, phase tracking, and support advice on the Learn page.",
   "plSendInvite": "Send Invite",
   "plLearnDiscover": "Learn & Discover",
-  "plConnectWithYourPartner": "Connect with your partner to unlock personalized Dr. Docsy AI insights.",
+  "plConnectWithYourPartner": "Connect with your partner to unlock personalized Docsy AI insights.",
   "plUnderstandingEnergyFatigueShifts": "Understanding Energy & Fatigue Shifts",
   "plMindfulCommunicationPrinciples": "Mindful Communication Principles",
   "plDailyHydrationMetabolicBalance": "Daily Hydration & Metabolic Balance",
@@ -380,5 +380,41 @@
   "vnbVoiceReflection": "Voice Reflection",
   "vnbYourVoiceTranscriptWill": "Your voice transcript will appear here...",
   "gIdeasSubtitle": "Ready-made bouquets to start from.",
-  "jrnCouldNotAddPhoto": "That photo could not be added. Try another one."
+  "jrnCouldNotAddPhoto": "That photo could not be added. Try another one.",
+  "tourHomeBody": "Your day at a glance: cycle, check-ins and what to expect. Log how you feel here.",
+  "@tourHomeBody": {
+    "description": "First-run product tour."
+  },
+  "tourCommunityBody": "Questions and answers from other people going through the same thing.",
+  "@tourCommunityBody": {
+    "description": "First-run product tour."
+  },
+  "tourSiaBody": "Ask Docsy anything, by typing or by voice. She knows what you have logged.",
+  "@tourSiaBody": {
+    "description": "First-run product tour."
+  },
+  "tourStudioBody": "Your journal, guided recovery sessions and time capsules you write to your future self.",
+  "@tourStudioBody": {
+    "description": "First-run product tour."
+  },
+  "tourPartnerBody": "Invite a partner and choose exactly what they can see. Nothing is shared until you say so.",
+  "@tourPartnerBody": {
+    "description": "First-run product tour."
+  },
+  "tourSkip": "Skip",
+  "@tourSkip": {
+    "description": "First-run product tour."
+  },
+  "tourNext": "Next",
+  "@tourNext": {
+    "description": "First-run product tour."
+  },
+  "tourDone": "Got it",
+  "@tourDone": {
+    "description": "First-run product tour."
+  },
+  "upAnonymousProfile": "This was posted anonymously, so there is no profile to open. Whoever wrote it chose not to be named, and that stays their choice.",
+  "@upAnonymousProfile": {
+    "description": "Shown instead of a profile when a post has no author to show."
+  }
 }

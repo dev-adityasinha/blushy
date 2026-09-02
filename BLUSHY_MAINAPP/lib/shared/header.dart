@@ -7,9 +7,25 @@ import '../core/theme.dart' hide BlushyColors;
 
 import '../services/auth_storage.dart';
 import '../features/partner/presentation/partner_profile_screen.dart';
+import '../services/api_blushy_service.dart';
+import '../features/notifications/notification_inbox.dart';
+
+/// The size the header's leading text is set at, wordmark or tab name.
+///
+/// Shared so the two cannot drift: switching tabs should change the word, not
+/// the size of it.
+const double _headerLeadingSize = 22;
 
 class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
-  const BlushyHeader({super.key});
+  const BlushyHeader({super.key, this.title});
+
+  /// The tab name to show in place of the wordmark.
+  ///
+  /// Null on home, where the wordmark is the point. Everywhere else the
+  /// wordmark is the same on every tab and so says nothing about where you
+  /// are -- the tab name does, and the account and language controls stay put
+  /// either way.
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -21,45 +37,57 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Logo section with back button if pop is possible
-              Row(
-                children: [
-                  if (Navigator.canPop(context)) ...[
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded, color: BlushyColors.text, size: 22),
-                      onPressed: () => Navigator.pop(context),
-                      tooltip: 'Back',
-                    ),
-                    const SizedBox(width: 4),
-                  ],
-                  RichText(
-                    text: const TextSpan(
-                      style: TextStyle(
-                        fontFamily: 'Ada Hybrid',
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
+              // Expanded so a long tab name takes the room it needs and
+              // ellipsizes rather than overflowing into the controls. Several
+              // of the translated names are much longer than the English.
+              Expanded(
+                child: Row(
+                  children: [
+                    if (Navigator.canPop(context)) ...[
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_rounded, color: BlushyColors.text, size: 22),
+                        onPressed: () => Navigator.pop(context),
+                        tooltip: 'Back',
                       ),
-                      children: [
-                        TextSpan(
-                          text: 'BLUSHY',
-                          style: TextStyle(color: BlushyColors.primary),
+                      const SizedBox(width: 4),
+                    ],
+                    if (title == null)
+                      const _Wordmark()
+                    else
+                      Expanded(
+                        // The name is given to screen readers as written. The
+                        // caps are a visual treatment, and some readers spell
+                        // an uppercase word out letter by letter.
+                        child: Semantics(
+                          label: title!,
+                          excludeSemantics: true,
+                          child: Text(
+                            // A no-op for the Indic locales, which have no
+                            // case -- they render as they were written.
+                            title!.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: _headerLeadingSize,
+                              fontWeight: FontWeight.w700,
+                              // Spaced like the wordmark it stands in for;
+                              // caps at this weight set solid otherwise.
+                              letterSpacing: 1.5,
+                              color: BlushyColors.primary,
+                            ),
+                          ),
                         ),
-                        TextSpan(
-                          text: '.',
-                          style: TextStyle(color: BlushyColors.accent),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 12),
               
               // Language selector & Profile button
               Row(
                 children: [
                   // Language Selector
-                  // Sets the language Dr. Docsy replies in. This chip used to be a
+                  // Sets the language Docsy replies in. This chip used to be a
                   // no-op showing a fixed "EN".
                   ValueListenableBuilder<String>(
                     valueListenable: LanguagePreference.current,
@@ -70,7 +98,7 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           border: Border.all(color: BlushyColors.border),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           children: [
@@ -90,7 +118,12 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  
+
+                  // The way into the notification inbox. The server has been
+                  // recording these all along with nothing to open them.
+                  const _NotificationBell(),
+                  const SizedBox(width: 12),
+
                   // Profile Button
                   GestureDetector(
                     onTap: () {
@@ -130,7 +163,36 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(64.0);
 }
 
-/// Lets someone choose the language Dr. Docsy replies in.
+/// The BLUSHY. lockup, shown on home.
+class _Wordmark extends StatelessWidget {
+  const _Wordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: const TextSpan(
+        style: TextStyle(
+          fontFamily: 'Ada Hybrid',
+          fontSize: _headerLeadingSize,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.5,
+        ),
+        children: [
+          TextSpan(
+            text: 'BLUSHY',
+            style: TextStyle(color: BlushyColors.primary),
+          ),
+          TextSpan(
+            text: '.',
+            style: TextStyle(color: BlushyColors.accent),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Lets someone choose the language Docsy replies in.
 ///
 /// Only the languages the server actually has strings for are offered; adding
 /// more would silently fall back to English and look broken.
@@ -138,27 +200,33 @@ void _showLanguagePicker(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.white,
+    // Seven languages plus the heading do not fit a half-height sheet, which
+    // is what overflowed it. Scrollable and free to size itself instead.
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (sheetContext) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
             child: Text(
-              'Dr. Docsy speaks',
+              'App language',
               style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: Text(
-              // Says exactly what changes, so nobody expects the whole app to
-              // switch language.
-              'Changes the language Dr. Docsy replies in. The rest of the app stays in English for now.',
+              // This drives MaterialApp.locale, so it changes the whole app,
+              // not only Docsy. It used to say the opposite, which was true
+              // before the app itself was localised.
+              'Changes the language across the app, including how Docsy '
+              'replies. Anything not translated yet stays in English.',
               style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
             ),
           ),
@@ -175,8 +243,84 @@ void _showLanguagePicker(BuildContext context) {
             ),
           ),
           const SizedBox(height: 8),
-        ],
+          ],
+        ),
       ),
     ),
   );
+}
+
+/// The bell, with a dot when something is unread.
+///
+/// The count is fetched once when the header builds. It is deliberately not
+/// polled: a wrong-by-a-minute badge is better than a request every few
+/// seconds, and opening the inbox refreshes it anyway.
+class _NotificationBell extends StatefulWidget {
+  const _NotificationBell();
+
+  @override
+  State<_NotificationBell> createState() => _NotificationBellState();
+}
+
+class _NotificationBellState extends State<_NotificationBell> {
+  bool _hasUnread = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshUnread();
+  }
+
+  Future<void> _refreshUnread() async {
+    final result = await NotificationsApi.list(unreadOnly: true, limit: 1);
+    if (!mounted || result.isError) return;
+    setState(() => _hasUnread = (result.data ?? const []).isNotEmpty);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const NotificationInbox()),
+        );
+        // Opening the inbox marks everything read, so the dot should go.
+        if (mounted) _refreshUnread();
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: BlushyColors.border),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.notifications_none_rounded,
+              size: 16,
+              color: BlushyColors.text,
+            ),
+          ),
+          if (_hasUnread)
+            Positioned(
+              right: 1,
+              top: 1,
+              child: Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: BlushyColors.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

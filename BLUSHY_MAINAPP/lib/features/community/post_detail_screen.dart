@@ -255,7 +255,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6), width: 0.8),
         boxShadow: const [
           BoxShadow(
@@ -404,7 +404,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               // LIKE BUTTON
               InkWell(
                 onTap: () => _votePost(_post.userVote == 1 ? 0 : 1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                   child: Row(
@@ -435,7 +435,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               // DISLIKE BUTTON
               InkWell(
                 onTap: () => _votePost(_post.userVote == -1 ? 0 : -1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                   child: Row(

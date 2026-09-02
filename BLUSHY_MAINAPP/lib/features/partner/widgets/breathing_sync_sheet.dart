@@ -206,7 +206,7 @@ class _BreathingSyncSheetState extends State<BreathingSyncSheet>
                 backgroundColor: BlushyColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: _finished
                   ? () => Navigator.of(context).maybePop()

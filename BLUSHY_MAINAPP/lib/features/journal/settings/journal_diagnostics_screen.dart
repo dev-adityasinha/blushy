@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../theme/colors.dart';
 
 class JournalDiagnosticsScreen extends StatelessWidget {
   const JournalDiagnosticsScreen({super.key});
@@ -7,10 +8,10 @@ class JournalDiagnosticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         title: Text('Platform Diagnostics 🛠️', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFFFDFBF7),
+        backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
       body: ListView(
@@ -31,7 +32,7 @@ class JournalDiagnosticsScreen extends StatelessWidget {
   Widget _buildDiagRow(String label, String value, IconData icon) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: Icon(icon, color: const Color(0xFFD97706)),
         title: Text(label, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold)),

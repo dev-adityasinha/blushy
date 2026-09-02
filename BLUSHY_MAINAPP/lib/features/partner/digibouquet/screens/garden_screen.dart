@@ -338,7 +338,7 @@ class _GardenScreenState extends State<GardenScreen> {
                   backgroundColor: const Color(0xFFE8A0B4),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 onPressed: () {
@@ -384,7 +384,7 @@ class _GardenScreenState extends State<GardenScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
@@ -523,7 +523,7 @@ class _GardenScreenState extends State<GardenScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -539,7 +539,7 @@ class _GardenScreenState extends State<GardenScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE8A0B4),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 onPressed: () {

@@ -76,3 +76,34 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID_WEB
         sync: false
+
+      # Object storage for uploads. Without these the app writes to the
+      # instance's own disk, which is ephemeral here -- every uploaded image
+      # and voice note is lost on the next deploy or sleep-wake. Any
+      # S3-compatible provider works: AWS, Cloudflare R2, Backblaze B2,
+      # DigitalOcean Spaces, MinIO.
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      # Required for everything except AWS itself.
+      - key: S3_ENDPOINT
+        sync: false
+      # A CDN or custom domain in front of the bucket, when there is one.
+      - key: S3_PUBLIC_BASE_URL
+        sync: false
+
+      # Connection pool bounds. The cluster allows 500 connections in total, so
+      # the driver's default of 100 per process lets only five instances start.
+      # Unset uses the values in `utils/env.js`, which are sized for the current
+      # cluster plan; raise them together with the plan.
+      - key: MONGO_MAX_POOL_SIZE
+        sync: false
+      - key: MONGO_WAIT_QUEUE_TIMEOUT_MS
+        sync: false
+      - key: MONGO_MAX_IDLE_TIME_MS
+        sync: false

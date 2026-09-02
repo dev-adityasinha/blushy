@@ -132,6 +132,17 @@ async function finalizePendingSignup(record) {
   });
 
   await emailVerificationRepository.deleteByEmailHash(record.emailHash);
+
+  // Sent here rather than when the code was requested: this is the first
+  // moment an account exists. Awaited but never allowed to throw -- a welcome
+  // that does not arrive is not a reason to fail a signup that has already
+  // succeeded.
+  try {
+    await emailService.sendWelcome({ to: record.email, name: record.displayName ?? null });
+  } catch (error) {
+    logger.warn(`finalizePendingSignup: welcome email failed for ${record.email}: ${error?.message ?? error}`);
+  }
+
   const tokenVersion = user.tokenVersion ?? 1;
   const token = signAccessToken({ userId: user.user_id, tokenVersion });
   const refreshToken = signRefreshToken({ userId: user.user_id, tokenVersion });

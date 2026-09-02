@@ -43,7 +43,7 @@ class BlushyOSShell extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: BlushyColors.lutealSoft,
                   border: Border.all(color: BlushyColors.secondary.withValues(alpha: 0.3), width: 1),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -58,7 +58,7 @@ class BlushyOSShell extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Dr. Docsy Online',
+                      'Docsy Online',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontSize: 10,
                         color: BlushyColors.textDark,
@@ -82,7 +82,7 @@ class BlushyOSShell extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           decoration: BoxDecoration(
             color: BlushyColors.surface,
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: BlushyColors.border, width: 1.2),
             boxShadow: [
               BoxShadow(
@@ -98,7 +98,7 @@ class BlushyOSShell extends StatelessWidget {
               _buildNavItem(context, state, 0, 'Today'),
               _buildNavItem(context, state, 1, 'Journey'),
               _buildNavItem(context, state, 2, 'Explore'),
-              _buildNavItem(context, state, 3, 'Dr. Docsy'),
+              _buildNavItem(context, state, 3, 'Docsy'),
             ],
           ),
         ),

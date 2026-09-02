@@ -33,7 +33,7 @@ class BlushySiaMemorySheet extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Dr. Docsy Memory & Privacy',
+                'Docsy Memory & Privacy',
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -42,18 +42,18 @@ class BlushySiaMemorySheet extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Manage what Dr. Docsy remembers about your conversations and health context. You are always in control of your data.',
+                'Manage what Docsy remembers about your conversations and health context. You are always in control of your data.',
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   color: BlushyColors.secondaryText,
                 ),
               ),
               const SizedBox(height: 24),
-              _buildSwitchItem('Personalized Insights', 'Allow Dr. Docsy to use your logs to personalize suggestions.', true),
+              _buildSwitchItem('Personalized Insights', 'Allow Docsy to use your logs to personalize suggestions.', true),
               const SizedBox(height: 16),
-              _buildSwitchItem('Conversation Memory', 'Allow Dr. Docsy to remember past chats for context.', true),
+              _buildSwitchItem('Conversation Memory', 'Allow Docsy to remember past chats for context.', true),
               const SizedBox(height: 16),
-              _buildSwitchItem('Adaptive Greeting', 'Allow Dr. Docsy to adapt greetings based on daily wellbeing.', true),
+              _buildSwitchItem('Adaptive Greeting', 'Allow Docsy to adapt greetings based on daily wellbeing.', true),
               const SizedBox(height: 32),
               Center(
                 child: TextButton(

@@ -1,16 +1,27 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import multer from 'multer';
-import { fileTypeFromFile } from 'file-type';
+import path from 'node:path';
+import { fileTypeFromBuffer } from 'file-type';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadDir = path.resolve(__dirname, '../../uploads/community');
+import { storeUpload } from '../utils/objectStorage.js';
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+/**
+ * Uploads are held in memory, checked, then handed to storage.
+ *
+ * They used to be written straight to `uploads/` on the instance's own disk by
+ * multer. That disk is ephemeral on the host this runs on and no persistent
+ * disk is declared, so every file was deleted on the next deploy or
+ * sleep-wake while the database row kept pointing at it.
+ *
+ * Buffering first is what makes the destination a choice rather than a
+ * hard-coded path: `storeUpload` puts the bytes in a bucket when one is
+ * configured and in the local directory when it is not. The 8 MB limit below
+ * is what keeps "in memory" reasonable.
+ *
+ * After this middleware, `req.file` carries:
+ *   `storedUrl`  where to serve it from — absolute for a bucket, `/uploads/...`
+ *                for local
+ *   `storageKey` the key to delete it by
+ */
 
 const imageMimeTypes = new Set([
   'image/png',
@@ -22,27 +33,56 @@ const imageMimeTypes = new Set([
   'image/heif',
 ]);
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (_req, file, cb) => {
-    const extension = path.extname(file.originalname || '').toLowerCase();
-    const safeExt = extension.length > 0 ? extension : '.jpg';
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
-  },
-});
+const imageExtensions = new Set(['png', 'jpg', 'jpeg', 'webp', 'bmp', 'heic', 'heif']);
+const attachmentExtensions = new Set([
+  ...imageExtensions,
+  'aac', 'flac', 'm4a', 'mp3', 'mp4', 'ogg', 'wav', 'webm',
+]);
 
-function fileFilter(_req, file, cb) {
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+function imageFilter(_req, file, cb) {
   if (!imageMimeTypes.has(file.mimetype)) {
     cb(new Error('Only image files are allowed. GIF and video formats are not supported.'));
     return;
   }
-
   cb(null, true);
 }
 
-function withSignatureValidation(uploadMiddleware, allowedExtensions) {
+function attachmentFilter(_req, file, cb) {
+  const allowed = new Set([
+    ...imageMimeTypes,
+    'audio/aac', 'audio/flac', 'audio/m4a', 'audio/mpeg', 'audio/mp4',
+    'audio/ogg', 'audio/wav', 'audio/webm', 'audio/x-m4a',
+  ]);
+  if (!allowed.has(file.mimetype)) {
+    cb(new Error('Only supported image and audio files are allowed.'));
+    return;
+  }
+  cb(null, true);
+}
+
+function generatedName(file, fallbackExt) {
+  const extension = path.extname(file.originalname || '').toLowerCase();
+  const safeExt = extension.length > 0 ? extension : fallbackExt;
+  return `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`;
+}
+
+/**
+ * Checks the bytes against the declared type, then stores them.
+ *
+ * The signature check reads the buffer rather than a path: nothing has been
+ * written anywhere yet, which also means a file that fails it never lands in
+ * storage at all, rather than being written and then deleted.
+ */
+function withStorage(uploadMiddleware, allowedExtensions, folder, {
+  fallbackExt = '.jpg',
+  // Community and direct-message images were served from an absolute URL and
+  // partner attachments from a relative one. A bucket makes every URL absolute
+  // anyway; this keeps the local fallback shaped exactly as each caller's was,
+  // so nothing downstream sees a different kind of address than before.
+  absoluteWhenLocal = true,
+} = {}) {
   return (req, res, next) => {
     uploadMiddleware(req, res, async (error) => {
       if (error || !req.file) {
@@ -51,136 +91,61 @@ function withSignatureValidation(uploadMiddleware, allowedExtensions) {
       }
 
       try {
-        const detected = await fileTypeFromFile(req.file.path);
+        const detected = await fileTypeFromBuffer(req.file.buffer);
         if (!detected || !allowedExtensions.has(detected.ext)) {
-          await fs.promises.unlink(req.file.path).catch(() => {});
           next(new Error('Uploaded file content does not match an allowed file type.'));
           return;
         }
 
+        const filename = generatedName(req.file, fallbackExt);
+        const stored = await storeUpload({
+          folder,
+          filename,
+          buffer: req.file.buffer,
+          contentType: req.file.mimetype,
+        });
+
+        req.file.filename = filename;
+        req.file.storedUrl = stored.storage === 'local' && absoluteWhenLocal
+            ? `${req.protocol}://${req.get('host')}${stored.url}`
+            : stored.url;
+        req.file.storageKey = stored.key;
+        req.file.storageBackend = stored.storage;
+
         next();
       } catch (validationError) {
-        await fs.promises.unlink(req.file.path).catch(() => {});
         next(validationError);
       }
     });
   };
 }
 
-const imageExtensions = new Set(['png', 'jpg', 'jpeg', 'webp', 'bmp', 'heic', 'heif']);
-const attachmentExtensions = new Set([
-  ...imageExtensions,
-  'aac',
-  'flac',
-  'm4a',
-  'mp3',
-  'mp4',
-  'ogg',
-  'wav',
-  'webm',
-]);
+const memory = multer.memoryStorage();
 
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 8 * 1024 * 1024,
-  },
+const uploadImage = multer({
+  storage: memory,
+  fileFilter: imageFilter,
+  limits: { fileSize: MAX_UPLOAD_BYTES },
 });
 
-export const uploadCommunityImage = withSignatureValidation(upload.single('image'), imageExtensions);
-
-const uploadPostsDir = path.resolve(__dirname, '../../uploads/posts');
-if (!fs.existsSync(uploadPostsDir)) {
-  fs.mkdirSync(uploadPostsDir, { recursive: true });
-}
-
-const storagePosts = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadPostsDir);
-  },
-  filename: (_req, file, cb) => {
-    const extension = path.extname(file.originalname || '').toLowerCase();
-    const safeExt = extension.length > 0 ? extension : '.jpg';
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
-  },
+const uploadAttachment = multer({
+  storage: memory,
+  fileFilter: attachmentFilter,
+  limits: { fileSize: MAX_UPLOAD_BYTES },
 });
 
-const uploadPosts = multer({
-  storage: storagePosts,
-  fileFilter,
-  limits: {
-    fileSize: 8 * 1024 * 1024,
-  },
-});
+export const uploadCommunityImage =
+  withStorage(uploadImage.single('image'), imageExtensions, 'community');
 
-export const uploadPostImage = withSignatureValidation(uploadPosts.single('image'), imageExtensions);
+export const uploadPostImage =
+  withStorage(uploadImage.single('image'), imageExtensions, 'posts');
 
-const uploadDmsDir = path.resolve(__dirname, '../../uploads/direct_messages');
-if (!fs.existsSync(uploadDmsDir)) {
-  fs.mkdirSync(uploadDmsDir, { recursive: true });
-}
+export const uploadDirectMessageImage =
+  withStorage(uploadImage.single('image'), imageExtensions, 'direct_messages');
 
-const storageDms = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadDmsDir);
-  },
-  filename: (_req, file, cb) => {
-    const extension = path.extname(file.originalname || '').toLowerCase();
-    const safeExt = extension.length > 0 ? extension : '.jpg';
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
-  },
-});
-
-const uploadDms = multer({
-  storage: storageDms,
-  fileFilter,
-  limits: {
-    fileSize: 8 * 1024 * 1024,
-  },
-});
-
-export const uploadDirectMessageImage = withSignatureValidation(uploadDms.single('image'), imageExtensions);
-
-const uploadPartnerChatDir = path.resolve(__dirname, '../../uploads/partner_chat');
-if (!fs.existsSync(uploadPartnerChatDir)) {
-  fs.mkdirSync(uploadPartnerChatDir, { recursive: true });
-}
-
-const storagePartnerChat = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadPartnerChatDir);
-  },
-  filename: (_req, file, cb) => {
-    const extension = path.extname(file.originalname || '').toLowerCase();
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`);
-  },
-});
-
-const uploadPartnerChat = multer({
-  storage: storagePartnerChat,
-  fileFilter: (_req, file, cb) => {
-    const allowedMimeTypes = new Set([
-      ...imageMimeTypes,
-      'audio/aac',
-      'audio/flac',
-      'audio/m4a',
-      'audio/mpeg',
-      'audio/mp4',
-      'audio/ogg',
-      'audio/wav',
-      'audio/webm',
-      'audio/x-m4a',
-    ]);
-    if (!allowedMimeTypes.has(file.mimetype)) {
-      cb(new Error('Only supported image and audio files are allowed.'));
-      return;
-    }
-    cb(null, true);
-  },
-  limits: {
-    fileSize: 8 * 1024 * 1024,
-  },
-});
-
-export const uploadPartnerAttachment = withSignatureValidation(uploadPartnerChat.single('file'), attachmentExtensions);
+export const uploadPartnerAttachment = withStorage(
+  uploadAttachment.single('file'),
+  attachmentExtensions,
+  'partner_chat',
+  { fallbackExt: '', absoluteWhenLocal: false },
+);

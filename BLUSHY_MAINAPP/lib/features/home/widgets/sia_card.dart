@@ -12,7 +12,7 @@ class BlushySiaCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: BlushyColors.cardBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
         boxShadow: const [
           BoxShadow(
@@ -25,7 +25,7 @@ class BlushySiaCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Headline: Dr. Docsy noticed something
+          // Headline: Docsy noticed something
           Row(
             children: [
               Container(
@@ -38,7 +38,7 @@ class BlushySiaCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Dr. Docsy noticed increased fatigue',
+                'Docsy noticed increased fatigue',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -80,7 +80,7 @@ class BlushySiaCard extends StatelessWidget {
               const SizedBox(width: 8),
               _buildSmallActionButton(context, 'Recovery Plan', () {}, isPrimary: true),
               const SizedBox(width: 8),
-              _buildSmallActionButton(context, 'Talk to Dr. Docsy', () {}),
+              _buildSmallActionButton(context, 'Talk to Docsy', () {}),
             ],
           ),
         ],

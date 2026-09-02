@@ -21,7 +21,36 @@ if (env.dnsServers.length > 0) {
   console.log(`Using DNS servers: ${env.dnsServers.join(', ')}`);
 }
 
-const client = new MongoClient(env.mongodbUri);
+// Connection pool bounds.
+//
+// The driver's defaults are maxPoolSize 100, waitQueueTimeoutMS 0 and
+// maxIdleTimeMS 0, and all three are wrong for a shared cluster reached from
+// several small instances. Measured on this deployment: the cluster allows
+// **500 connections in total**, so at 100 per process a sixth instance cannot
+// connect at all -- it does not run slowly, it fails to start.
+//
+// Each is overridable, because the right numbers depend on the plan the
+// cluster is on and these are sized for the current one.
+const client = new MongoClient(env.mongodbUri, {
+  // How many queries one instance may run at once. 20 leaves room for 25
+  // instances inside 500. It is generous for the CPU an instance actually has:
+  // a Node process on a fraction of a core cannot usefully drive 100
+  // concurrent queries, so the extra 80 were never capacity, only claim.
+  maxPoolSize: env.mongoMaxPoolSize,
+
+  // What happens to a query that finds every connection busy. The default is
+  // to wait for ever, which turns a saturated pool into a hang with no error
+  // and no log -- and the AI routes here can hold a connection for tens of
+  // seconds, which is exactly when it would bite. A bounded wait makes the
+  // same situation a `MongoWaitQueueTimeoutError` that can be caught, logged
+  // and answered with a 503.
+  waitQueueTimeoutMS: env.mongoWaitQueueTimeoutMs,
+
+  // When an idle connection is handed back. The default keeps every connection
+  // opened during a burst for the lifetime of the process, so instances sitting
+  // idle overnight still hold the whole budget and a new instance cannot start.
+  maxIdleTimeMS: env.mongoMaxIdleTimeMs,
+});
 
 let connected = false;
 for (let attempt = 1; attempt <= 5; attempt++) {

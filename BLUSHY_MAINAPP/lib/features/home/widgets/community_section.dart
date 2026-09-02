@@ -102,13 +102,13 @@ class BlushyCommunitySection extends StatelessWidget {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         width: 290,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: BlushyColors.cardBg,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BlushyColors.border),
           boxShadow: const [
             BoxShadow(

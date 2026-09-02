@@ -40,7 +40,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
     {'title': 'Connecting with partner space...', 'done': false},
     {'title': 'Preparing support insights...', 'done': false},
     {'title': 'Setting up privacy controls...', 'done': false},
-    {'title': 'Dr. Docsy assistant ready...', 'done': false},
+    {'title': 'Docsy assistant ready...', 'done': false},
   ];
 
   @override
@@ -254,7 +254,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -289,7 +289,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
                   backgroundColor: BlushyColors.primary,
                   disabledBackgroundColor: BlushyColors.primary.withValues(alpha: 0.4),
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: Text(
@@ -318,7 +318,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
         decoration: BoxDecoration(
           color: isSelected ? BlushyColors.primary.withValues(alpha: 0.08) : Colors.white,
           border: Border.all(color: isSelected ? BlushyColors.primary : BlushyColors.border),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -349,7 +349,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
 
   Widget _buildPrivacyScreen() {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -374,7 +374,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
               ),
               const SizedBox(height: 24),
               Text(
-                "Everything she shares with you is controlled by her. You will not automatically see private metrics like symptoms, journal records, or private Dr. Docsy conversations.",
+                "Everything she shares with you is controlled by her. You will not automatically see private metrics like symptoms, journal records, or private Docsy conversations.",
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.8), height: 1.45),
               ),
@@ -384,7 +384,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: BlushyColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: Text(
@@ -401,7 +401,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
 
   Widget _buildBuildingScreen() {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -464,7 +464,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
 
   Widget _buildReadyScreen() {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6F0),
+      backgroundColor: BlushyColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -494,7 +494,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: BlushyColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: Text(

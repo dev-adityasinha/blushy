@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../services/journal_storage.dart';
+import '../../../theme/colors.dart';
 
 class VaultCollection {
   final String id;
@@ -80,10 +81,10 @@ class _MemoryVaultWidgetState extends State<MemoryVaultWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: BlushyColors.background,
       appBar: AppBar(
         title: Text('Memory Vault 🏆', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFFFDFBF7),
+        backgroundColor: BlushyColors.background,
         elevation: 0,
         actions: [
           IconButton(
@@ -116,7 +117,7 @@ class _MemoryVaultWidgetState extends State<MemoryVaultWidget> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: colColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: colColor.withValues(alpha: 0.6)),
                 boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
               ),

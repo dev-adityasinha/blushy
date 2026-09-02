@@ -40,7 +40,7 @@ class JourneyScreen extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: BlushyColors.surface,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: BlushyColors.border),
             ),
             child: Column(
@@ -168,7 +168,7 @@ class JourneyScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 30),
               alignment: Alignment.center,
               child: const Text(
-                'No journals logged yet. Speak to Dr. Docsy or write on the Today screen.',
+                'No journals logged yet. Speak to Docsy or write on the Today screen.',
                 style: TextStyle(color: BlushyColors.textMuted, fontSize: 13),
               ),
             )
@@ -185,7 +185,7 @@ class JourneyScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: BlushyColors.surface,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: Column(
@@ -245,7 +245,7 @@ class JourneyScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: BlushyColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Column(

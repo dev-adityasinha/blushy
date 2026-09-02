@@ -500,7 +500,7 @@ export async function sendPartnerMessage(req, res, next) {
     let imageUrl = null;
 
     if (req.file) {
-      const relativeUrl = `/uploads/partner_chat/${req.file.filename}`;
+      const relativeUrl = req.file.storedUrl;
       const mimetype = req.file.mimetype || '';
       const isAudio = mimetype.startsWith('audio/') ||
                       mimetype === 'video/webm' ||

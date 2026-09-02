@@ -219,7 +219,17 @@ async function reportPost(postId, userId, reason) {
   return true;
 }
 
-async function listFeed(userId, type = 'home') {
+/**
+ * Escapes a user's search text so it is matched literally.
+ *
+ * Without this, a stray `(` or `*` is read as a regular expression: the query
+ * either throws or quietly means something else than what was typed.
+ */
+function escapeForRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function listFeed(userId, type = 'home', { search = '' } = {}) {
   let query = { privacy: 'public' };
 
   // If feed is following, filter by followed user IDs
@@ -227,6 +237,43 @@ async function listFeed(userId, type = 'home') {
     const follows = await db.collection('user_follows').find({ follower_id: userId }).toArray();
     const followedIds = follows.map(f => f.following_id);
     query = { author_id: { $in: followedIds }, privacy: 'public' };
+  }
+
+  // Searching the whole feed rather than the page the app happens to hold.
+  // The client could only filter what it had already fetched, so anything
+  // past the first page was unfindable while people search hit the server.
+  const term = typeof search === 'string' ? search.trim() : '';
+  if (term.length > 0) {
+    const pattern = new RegExp(escapeForRegex(term), 'i');
+
+    // Author names live on the user, not the post, so matching by name means
+    // resolving the ids first. Anonymous posts are deliberately left out of
+    // this: their author is withheld everywhere else, and making them findable
+    // by that author's name would undo it.
+    // buildPostView shows `onboarding_answers.preferred_name`, so that is the
+    // name people actually see and the one worth matching. `display_name` is
+    // checked too for accounts that only ever set that.
+    const matchingAuthors = await findUserDocuments({
+      $or: [
+        { 'onboarding_answers.preferred_name': pattern },
+        { display_name: pattern },
+      ],
+    });
+    const matchingAuthorIds = matchingAuthors.map((a) => a.user_id).filter(Boolean);
+
+    const anyField = [
+      { title: pattern },
+      { text: pattern },
+      { tags: pattern },
+    ];
+    if (matchingAuthorIds.length > 0) {
+      anyField.push({
+        author_id: { $in: matchingAuthorIds },
+        anonymous: { $ne: true },
+      });
+    }
+
+    query = { ...query, $and: [...(query.$and ?? []), { $or: anyField }] };
   }
 
   let sortOption = { created_at: -1 };

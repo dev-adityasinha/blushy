@@ -300,7 +300,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
   }
 
   Color _getCurrentPhaseColor(String phaseName) {
-    if (phaseName.contains('Menstrual')) return const Color(0xFFDD0D22);
+    if (phaseName.contains('Menstrual')) return BlushyColors.primary;
     if (phaseName.contains('Follicular')) return const Color(0xFFFF9B9E);
     if (phaseName.contains('Ovulation')) return const Color(0xFFFFB800);
     return const Color(0xFF6F42F5); // Luteal
@@ -379,7 +379,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: BlushyColors.cardBg,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
             color: BlushyColors.shadow,
@@ -417,7 +417,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
                     decoration: BoxDecoration(
                       color: Colors.white,
                       border: Border.all(color: BlushyColors.border),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
@@ -513,7 +513,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
     switch(mode) {
       case CycleCardMode.predictable: return 'Your cycle journey';
       case CycleCardMode.variable: return 'Cycle variability detected';
-      case CycleCardMode.learning: return 'Dr. Docsy is learning your patterns';
+      case CycleCardMode.learning: return 'Docsy is learning your patterns';
       case CycleCardMode.wellbeing: return 'Daily Wellbeing';
       case CycleCardMode.lifeContext: return 'Life Stage Focus';
     }

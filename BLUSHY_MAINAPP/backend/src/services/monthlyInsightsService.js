@@ -150,7 +150,7 @@ export async function calculateMonthlyInsights(userId, options = {}) {
     .sort({ period_start_date: 1 })
     .toArray();
 
-  // 3. Query authenticated Dr. Docsy chat history in M-1 range
+  // 3. Query authenticated Docsy chat history in M-1 range
   const chatColl = isMan ? 'ai_chat_history_man' : 'ai_chat_history_woman';
   const chatDocs = await db.collection(chatColl)
     .find({
@@ -282,9 +282,9 @@ export async function calculateMonthlyInsights(userId, options = {}) {
     },
     {
       id: 'milestone_sia_engagement',
-      title: 'Dr. Docsy Wellness Conversations',
+      title: 'Docsy Wellness Conversations',
       description: siaConversationsCount > 0
-        ? `Engaged in ${siaConversationsCount} Dr. Docsy wellness sessions in ${monthName}.`
+        ? `Engaged in ${siaConversationsCount} Docsy wellness sessions in ${monthName}.`
         : `No wellness conversations logged in ${monthName}.`,
       sourceField: 'ai_chat_history_woman (distinct dates with >= 2 exchanges)',
       completionRule: 'siaConversationsCount >= 3',

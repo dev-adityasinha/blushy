@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/skeleton.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
 import '../../models/community_models.dart';
@@ -37,7 +38,19 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
     super.dispose();
   }
 
+  /// True when there is no author to look up.
+  ///
+  /// An anonymous post carries an empty authorId, so the fetch was always
+  /// going to come back empty. It read as "Failed to load profile details",
+  /// which says the app broke rather than that the poster chose not to be
+  /// named.
+  bool get _isAnonymous => widget.userId.trim().isEmpty;
+
   Future<void> _loadProfile() async {
+    if (_isAnonymous) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
     setState(() {
       _isLoading = true;
     });
@@ -152,19 +165,54 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
         bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
       ),
       child: _isLoading && _profile == null
+          // Shaped like the profile: an avatar, a name, a line of detail and
+          // the stat rows under it.
           ? const SizedBox(
               height: 250,
-              child: Center(
-                child: CircularProgressIndicator(color: BlushyColors.primary),
+              child: Shimmer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        SkeletonCircle(size: 56),
+                        SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SkeletonLine(widthFactor: 0.45, height: 15),
+                              SizedBox(height: 10),
+                              SkeletonLine(widthFactor: 0.7),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 28),
+                    SkeletonListRow(showTrailing: true),
+                    SkeletonListRow(showTrailing: true),
+                  ],
+                ),
               ),
             )
           : _profile == null
               ? SizedBox(
                   height: 200,
                   child: Center(
-                    child: Text(
-                      AppLocalizations.of(context).upFailedToLoadProfile,
-                      style: GoogleFonts.poppins(color: BlushyColors.secondaryText),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        _isAnonymous
+                            ? AppLocalizations.of(context).upAnonymousProfile
+                            : AppLocalizations.of(context).upFailedToLoadProfile,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          height: 1.5,
+                          color: BlushyColors.secondaryText,
+                        ),
+                      ),
                     ),
                   ),
                 )

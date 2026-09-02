@@ -10,7 +10,7 @@ import 'api_base_url.dart';
 /// against the live host: a first call hung past 90 seconds and the next
 /// answered in 18.3s, while a warm one returns in about a second. Whichever
 /// screen made that first call reported a request timeout — on the home page,
-/// Dr. Docsy insights and cycle patterns.
+/// Docsy insights and cycle patterns.
 ///
 /// Firing it at startup means the wait is spent on the launch screen, where
 /// nothing is blocked on it, instead of under a card the user is looking at.

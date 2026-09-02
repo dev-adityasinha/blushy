@@ -173,7 +173,7 @@ class AboutScreen extends StatelessWidget {
                         backgroundColor: const Color(0xFFE8A0B4),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
                       onPressed: () => showUpiPaymentDialog(context),
@@ -193,7 +193,7 @@ class AboutScreen extends StatelessWidget {
                         backgroundColor: const Color(0xFFE8A0B4),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
                       onPressed: () {
@@ -211,7 +211,7 @@ class AboutScreen extends StatelessWidget {
                         foregroundColor: isDark ? const Color(0xFFFADDE3) : const Color(0xFF5C3841),
                         side: BorderSide(color: isDark ? const Color(0xFF5C3841) : const Color(0xFFE6C5CC)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () => Navigator.pushNamed(context, '/garden'),
                       child: const Text('View Garden', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -239,7 +239,7 @@ class AboutScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: color ?? theme.cardColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: borderColor ?? theme.dividerColor.withValues(alpha: 0.3),
             ),
@@ -349,7 +349,7 @@ void showUpiPaymentDialog(BuildContext context) {
     context: context,
     builder: (context) {
       return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -393,7 +393,7 @@ void showUpiPaymentDialog(BuildContext context) {
               children: [
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () {
                     Clipboard.setData(const ClipboardData(text: upiId));
@@ -407,7 +407,7 @@ void showUpiPaymentDialog(BuildContext context) {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE8A0B4),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
                   onPressed: () async {

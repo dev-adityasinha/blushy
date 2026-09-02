@@ -12,7 +12,13 @@ class ApiCommunityService {
   final Dio _dio = Dio(BaseOptions(
     baseUrl: resolveApiBaseUrl(),
     connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 25),
+    // Long enough to absorb a cold start. The backend is on Render's free
+    // plan, which stops the instance once it goes idle; the request that wakes
+    // it waits for the boot, measured at 27s. Connecting is not what waits --
+    // Render's edge accepts immediately and holds the request while the
+    // instance comes up -- so this is the timeout that has to give, not
+    // connectTimeout above.
+    receiveTimeout: const Duration(seconds: 60),
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
