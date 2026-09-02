@@ -1,4 +1,4 @@
-import { db, findUserDocument } from '../utils/db.js';
+import { db, findUserDocuments } from '../utils/db.js';
 import { calculatePeriodPredictions } from './periodPredictionService.js';
 
 /**
@@ -68,37 +68,65 @@ export function classifyPostDeterministic(row) {
 /**
  * Helper to map MongoDB post row to API public response shape.
  */
-async function mapPersonalizedPostRow(row, viewerUserId = null) {
-  if (!row) return null;
+/**
+ * Maps a batch of posts into the shape the feed returns.
+ *
+ * Each post used to be mapped on its own, and every mapping made three round
+ * trips -- the viewer's vote, the author, the comment count -- with the author
+ * lookup itself reading two collections. The caller mapped ten at a time
+ * through `Promise.all`, so a single request issued about forty concurrent
+ * operations against a pool of twenty. One person opening this feed could hold
+ * every connection while the rest of the process waited: the time capsule
+ * scheduler failed with "Timed out while checking out a connection from
+ * connection pool" doing exactly that.
+ *
+ * The whole batch now costs three queries regardless of how many posts it
+ * holds, and they run together rather than per row.
+ */
+async function mapPersonalizedPostRows(rows, viewerUserId = null) {
+  const present = (rows ?? []).filter(Boolean);
+  if (present.length === 0) return [];
 
-  let userVote = 0;
-  if (viewerUserId) {
-    const voteDoc = await db.collection('post_votes').findOne({
-      user_id: viewerUserId,
-      target_id: row.post_id,
-    });
-    if (voteDoc) {
-      userVote = voteDoc.vote_value;
-    }
-  }
+  const postIds = [...new Set(present.map((r) => r.post_id).filter(Boolean))];
+  const authorIds = [...new Set(present.map((r) => r.author_id).filter(Boolean))];
 
-  const author = await findUserDocument({ user_id: row.author_id });
-  const displayName = author?.onboarding_answers?.preferred_name ?? 'Anonymous';
+  const [voteDocs, authors, commentCounts] = await Promise.all([
+    viewerUserId && postIds.length > 0
+      ? db.collection('post_votes')
+        .find({ user_id: viewerUserId, target_id: { $in: postIds } })
+        .toArray()
+      : [],
+    authorIds.length > 0
+      ? findUserDocuments({ user_id: { $in: authorIds } })
+      : [],
+    postIds.length > 0
+      ? db.collection('comments').aggregate([
+        { $match: { post_id: { $in: postIds } } },
+        { $group: { _id: '$post_id', count: { $sum: 1 } } },
+      ]).toArray()
+      : [],
+  ]);
 
-  const commentCount = await db.collection('comments').countDocuments({ post_id: row.post_id });
+  const voteByPost = new Map(voteDocs.map((v) => [v.target_id, v.vote_value]));
+  const authorById = new Map(authors.map((a) => [a.user_id, a]));
+  // A post with no comments has no group, so the lookup below defaults to 0
+  // rather than the count being absent.
+  const countByPost = new Map(commentCounts.map((c) => [c._id, c.count]));
 
-  return {
+  return present.map((row) => ({
     postId: row.post_id,
-    authorName: displayName,
+    authorName:
+      authorById.get(row.author_id)?.onboarding_answers?.preferred_name
+      ?? 'Anonymous',
     title: row.title ?? '',
     text: row.text ?? '',
     tags: Array.isArray(row.tags) ? row.tags : [],
     postType: classifyPostDeterministic(row),
     score: row.score ?? 0,
-    commentCount,
-    userVote,
+    commentCount: countByPost.get(row.post_id) ?? 0,
+    userVote: voteByPost.get(row.post_id) ?? 0,
     createdAt: new Date(row.created_at).toISOString(),
-  };
+  }));
 }
 
 /**
@@ -352,10 +380,14 @@ export async function getDashboardPersonalizedFeed(userId) {
   const finalTrending = trendingCandidates.slice(0, 10);
 
   // Map to public serialized items
-  const questions = await Promise.all(finalQuestions.map((p) => mapPersonalizedPostRow(p.post, userId)));
-  const stories = await Promise.all(finalStories.map((p) => mapPersonalizedPostRow(p.post, userId)));
-  const tips = await Promise.all(finalTips.map((p) => mapPersonalizedPostRow(p.post, userId)));
-  const trending = await Promise.all(finalTrending.map((p) => mapPersonalizedPostRow(p.post, userId)));
+  // Four batches rather than forty individual mappings, and the four run
+  // together because each is now a handful of queries instead of a swarm.
+  const [questions, stories, tips, trending] = await Promise.all([
+    mapPersonalizedPostRows(finalQuestions.map((p) => p.post), userId),
+    mapPersonalizedPostRows(finalStories.map((p) => p.post), userId),
+    mapPersonalizedPostRows(finalTips.map((p) => p.post), userId),
+    mapPersonalizedPostRows(finalTrending.map((p) => p.post), userId),
+  ]);
 
   return {
     isPersonalized,

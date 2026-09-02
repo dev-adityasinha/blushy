@@ -293,6 +293,42 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // shown back as a precise measurement.
   // ---------------------------------------------------------------------
 
+  /// The icon drawn for each glyph the option lists carry.
+  ///
+  /// These were emoji, painted with a fallback stack of system emoji fonts --
+  /// Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji. None of those exist
+  /// under CanvasKit, so on the web every mood in the check-in drew as a tofu
+  /// box: five identical empty squares where the faces should be. Icons ship
+  /// inside the app, so they render the same on a phone and in a browser.
+  ///
+  /// Keyed by the glyph rather than rewritten into the option lists, so the
+  /// stored label and the value written to `daily_checkin.json` are untouched
+  /// and a check-in saved before this still reads back correctly.
+  static const Map<String, IconData> _optionGlyphIcons = {
+    '\u{1F60A}': Icons.sentiment_very_satisfied_rounded, // happy
+    '\u{1F642}': Icons.sentiment_satisfied_rounded, // okay
+    '\u{1F60C}': Icons.self_improvement_rounded, // calm
+    '\u{1F616}': Icons.sentiment_very_dissatisfied_rounded, // cramps
+    '\u{1F971}': Icons.bedtime_rounded, // tired
+    '\u{1F624}': Icons.mood_bad_rounded, // irritable
+    '\u{1F630}': Icons.sentiment_dissatisfied_rounded, // anxious
+    '\u{1F634}': Icons.nights_stay_rounded, // sleepy
+    '\u{1F922}': Icons.sick_rounded, // nauseous
+    '\u{1F92F}': Icons.psychology_rounded, // overwhelmed
+    '\u{1F970}': Icons.favorite_rounded, // loved
+    '\u{1F97A}': Icons.sentiment_neutral_rounded, // low
+    '\u{2728}': Icons.auto_awesome_rounded,
+    '\u{1F33F}': Icons.spa_rounded,
+    '\u{1F3AD}': Icons.theater_comedy_rounded,
+    '\u{1F4AA}': Icons.fitness_center_rounded,
+    '\u{1F525}': Icons.local_fire_department_rounded,
+  };
+
+  /// Falls back to a neutral face rather than nothing, so an option added
+  /// later still draws something while it waits for an icon of its own.
+  static IconData _optionIcon(Object? glyph) =>
+      _optionGlyphIcons[glyph?.toString()] ?? Icons.sentiment_neutral_rounded;
+
   /// Writes one check-in answer where the rest of the app can find it again.
   ///
   /// The wellness selectors only called `setState`, so an answer lived until
@@ -775,6 +811,28 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   /// the last known real values instead of falling back to local arithmetic.
   CycleState? _lastKnownCycle;
 
+  /// Where the last fetched cycle is kept between runs.
+  static const String _cycleCacheFile = 'last_known_cycle.json';
+
+  /// Reads the cycle this device last saw, so the first frame of a cold start
+  /// has something true to show.
+  ///
+  /// Held only in memory before, which meant it was null on every launch:
+  /// the card opened on "Loading…" (and, before that was fixed, on "Cycle Day:
+  /// Not Logged") while the request went out, even for someone who has logged
+  /// periods for months. Storage is namespaced per user, so this cannot show
+  /// one person's cycle to another.
+  void _restoreLastKnownCycle() {
+    try {
+      final raw = BlushyStorage.read(_cycleCacheFile);
+      if (raw.isEmpty) return;
+      _lastKnownCycle = CycleState.fromJson(raw);
+    } catch (_) {
+      // A cache that cannot be read is not worth failing a launch over; the
+      // fetch already under way will replace it.
+    }
+  }
+
   Future<void> _loadCycleFromServer() async {
     final result = await CycleApi.current(
       timezone: DateTime.now().timeZoneName,
@@ -782,8 +840,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     if (!mounted) return;
     setState(() {
       _cycleResult = result;
-      if (result.isReady && result.data != null) {
+      // Any answer that carries a cycle is worth remembering, not only a
+      // `ready` one. The contract also returns `insufficientData` and `stale`
+      // with a real cycle attached, and someone who has logged a period or two
+      // gets exactly that -- so this remembered nothing for the people whose
+      // history is thinnest, which is precisely who benefits from not being
+      // shown a placeholder on every launch.
+      if (result.data != null) {
         _lastKnownCycle = result.data;
+        // Written after the state is set, not instead of it: the cache is a
+        // head start for the next launch, never the source this run reads.
+        try {
+          BlushyStorage.write(_cycleCacheFile, result.data!.toJson());
+        } catch (_) {}
       }
     });
   }
@@ -829,7 +898,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
     switch (_cycleResult.state) {
       case ApiState.loading:
-        return unavailable('loading', 'Loading…', 'Fetching your cycle.');
+        // A refresh must not blank a card that already has an answer.
+        //
+        // `_lastKnownCycle` is kept for exactly this, and the line above hands
+        // it over when the request has no data yet -- but this returned before
+        // reaching it. So every reload rendered "Cycle Day: Not Logged" for as
+        // long as the request took and then flipped back to the real day. On a
+        // cold backend that is seconds of the app saying nothing was logged
+        // while the period sat in the database the whole time.
+        if (cycle == null) {
+          return unavailable('loading', 'Loading…', 'Fetching your cycle.');
+        }
+        break;
 
       case ApiState.empty:
         // No period data at all. Never show a simulated cycle day here.
@@ -1005,6 +1085,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   @override
   void initState() {
     super.initState();
+    // Before the first build, so the opening frame can show the last known
+    // cycle rather than a placeholder that is replaced a second later.
+    _restoreLastKnownCycle();
     _periodConfirmationState = PeriodConfirmationState(
       hasLoggedPeriod: false,
       predictedStartDate: DateTime.now().add(const Duration(days: 9)),
@@ -3191,9 +3274,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              opt['icon'],
-                              style: const TextStyle(fontSize: 20),
+                            child: Icon(
+                              _optionIcon(opt['icon']),
+                              size: 20,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -3897,21 +3983,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
                   children: [
-                    // Row 1: Hero (12 columns)
                     GreetingCard(name: displayName),
                     const SizedBox(height: 24),
-                    const TodaysContextSection(),
+                    _buildMyFirstCycles(),
+                    const SizedBox(height: 24),
+                    _buildHowAreYouToday(),
                     const SizedBox(height: 24),
                     _buildLivingSiaInsights(),
                     const SizedBox(height: 24),
                     _buildLivingPatterns(),
-                    const SizedBox(height: 48),
-
-                    // Row 2: My First Cycles (12 columns)
-                    _buildMyFirstCycles(),
-                    const SizedBox(height: 48),
-
-                    // Row 3: Left content (8 columns) | Right sidebar (4 columns)
+                    const SizedBox(height: 24),
+                    const TodaysContextSection(),
+                    const SizedBox(height: 24),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -3921,8 +4004,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildHowAreYouToday(),
-                              const SizedBox(height: 48),
                               _buildStartedConnect(),
                               const SizedBox(height: 48),
                               _buildUnderstandMyCycle(),
@@ -3969,7 +4050,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final cycleData = _getDynamicCycleDates(_currentPc);
     final bool hasPeriodLogged = cycleData['isLogged'] == true;
     final String phaseText = hasPeriodLogged ? "${cycleData['phaseName']} Rhythm" : "Cycle Tracking";
-    final String dayText = hasPeriodLogged ? (cycleData['cycleDayText'] ?? "Cycle Tracking") : "Cycle Day: Not Logged";
+    // "Not logged" and "not fetched yet" are different things to be told, and
+    // this said the first for both: the data layer already distinguishes them
+    // and supplies "Loading…", which the `isLogged` branch threw away.
+    final bool isFetching = cycleData['state'] == 'loading';
+    final String dayText = hasPeriodLogged
+        ? (cycleData['cycleDayText'] ?? "Cycle Tracking")
+        : (isFetching ? "Loading…" : "Cycle Day: Not Logged");
     final String subtitleText = hasPeriodLogged 
         ? (cycleData['subtitle'] ?? "") 
         : "No period logged yet. Tap to set your last period start date.";
@@ -4577,9 +4664,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              opt['icon'],
-                              style: const TextStyle(fontSize: 20),
+                            child: Icon(
+                              _optionIcon(opt['icon']),
+                              size: 20,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -5432,17 +5522,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
                   children: [
-                    // Row 1: Docsy's Daily Brief (Hero)
                     GreetingCard(name: displayName),
-                    const SizedBox(height: 24),
-                    const TodaysContextSection(),
                     const SizedBox(height: 48),
-
-                    // Row 2: Today's Cycle
                     _buildLivingTodayCycle(),
                     const SizedBox(height: 48),
-
-                    // Row 3: Left content (8 columns) | Right sidebar (4 columns)
+                    _buildLivingCheckIn(),
+                    const SizedBox(height: 48),
+                    const TodaysContextSection(),
+                    const SizedBox(height: 48),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -5452,8 +5539,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildLivingCheckIn(),
-                              const SizedBox(height: 48),
                               _buildLivingSiaInsights(),
                             ],
                           ),
@@ -5761,9 +5846,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              opt['icon'],
-                              style: const TextStyle(fontSize: 20),
+                            child: Icon(
+                              _optionIcon(opt['icon']),
+                              size: 20,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -6859,21 +6947,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     controller: _hormonalHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      // Row 1: Docsy's Daily Brief (Hero)
                       GreetingCard(name: displayName),
                       const SizedBox(height: 24),
-                      const TodaysContextSection(),
+                      _buildHormonalCycleHealth(),
+                      const SizedBox(height: 24),
+                      _buildHormonalCheckIn(),
                       const SizedBox(height: 24),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-
-                      // Row 2: Cycle Health Tracking
-                      _buildHormonalCycleHealth(),
-                      const SizedBox(height: 48),
-
-                      // Row 3: Left content (8 columns) | Right sidebar (4 columns)
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -6883,8 +6968,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildHormonalCheckIn(),
-                                const SizedBox(height: 48),
                                 _buildHormonalSiaInsights(),
                                 const SizedBox(height: 32),
                                 _buildConditionProfileCard(),
@@ -7153,9 +7236,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              opt['icon'],
-                              style: const TextStyle(fontSize: 20),
+                            child: Icon(
+                              _optionIcon(opt['icon']),
+                              size: 20,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -7662,21 +7748,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     controller: _ttcHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      // Row 1: Hero
                       GreetingCard(name: displayName),
                       const SizedBox(height: 24),
-                      const TodaysContextSection(),
+                      _buildTtcTimeline(),
+                      const SizedBox(height: 24),
+                      _buildTtcCheckIn(),
                       const SizedBox(height: 24),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-
-                      // Row 2: Fertility Timeline (with Ovary Loop)
-                      _buildTtcTimeline(),
-                      const SizedBox(height: 48),
-
-                      // Row 3: Left content (8 cols) | Right sidebar (4 cols)
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -7686,8 +7769,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildTtcCheckIn(),
-                                const SizedBox(height: 48),
                                 _buildTtcInsights(),
                                 const SizedBox(height: 48),
                                 _buildTtcPartner(),
@@ -8004,9 +8085,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              opt['icon'],
-                              style: const TextStyle(fontSize: 20),
+                            child: Icon(
+                              _optionIcon(opt['icon']),
+                              size: 20,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -8638,17 +8722,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     controller: _pregnancyHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      // Row 1: Hero
                       GreetingCard(name: displayName),
                       const SizedBox(height: 24),
-                      const TodaysContextSection(),
+                      _buildPregnancyCheckIn(),
                       const SizedBox(height: 24),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-
-                      // Row 2: Baby & Journey Details
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -8675,8 +8758,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildPregnancyCheckIn(),
-                                const SizedBox(height: 48),
                                 _buildPregnancyInsights(),
                                 const SizedBox(height: 48),
                                 _buildPregnancyPartner(),
@@ -8813,9 +8894,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              opt['icon'],
-                              style: const TextStyle(fontSize: 20),
+                            child: Icon(
+                              _optionIcon(opt['icon']),
+                              size: 20,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -9300,21 +9384,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     controller: _postpartumHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      // Row 1: Hero
                       GreetingCard(name: displayName),
                       const SizedBox(height: 24),
-                      const TodaysContextSection(),
+                      _buildPostpartumRecoveryTimeline(),
+                      const SizedBox(height: 24),
+                      _buildPostpartumWellbeing(),
                       const SizedBox(height: 24),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-
-                      // Row 2: Recovery Timeline
-                      _buildPostpartumRecoveryTimeline(),
-                      const SizedBox(height: 48),
-
-                      // Row 3: Left Panel (8 cols) | Right Sidebar (4 cols)
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -9324,8 +9405,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildPostpartumWellbeing(),
-                                const SizedBox(height: 48),
                                 _buildPostpartumInsights(),
                                 const SizedBox(height: 48),
                                 _buildPostpartumCarePlan(),
@@ -9713,9 +9792,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              opt['icon'],
-                              style: const TextStyle(fontSize: 20),
+                            child: Icon(
+                              _optionIcon(opt['icon']),
+                              size: 20,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -10168,21 +10250,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     controller: _periHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      // Row 1: Hero
                       GreetingCard(name: displayName),
                       const SizedBox(height: 24),
-                      const TodaysContextSection(),
+                      _buildPeriChangingCycle(pc),
+                      const SizedBox(height: 24),
+                      _buildPeriWellbeing(),
                       const SizedBox(height: 24),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-
-                      // Row 2: Changing Cycle
-                      _buildPeriChangingCycle(pc),
-                      const SizedBox(height: 48),
-
-                      // Row 3: Left Panel (65% width) | Right Sidebar (35% width)
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -10192,8 +10271,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildPeriWellbeing(),
-                                const SizedBox(height: 48),
                                 _buildPeriInsights(),
                                 const SizedBox(height: 48),
                                 _buildPeriPatterns(),
@@ -10494,9 +10571,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              opt['icon'],
-                              style: const TextStyle(fontSize: 20),
+                            child: Icon(
+                              _optionIcon(opt['icon']),
+                              size: 20,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -11060,21 +11140,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     controller: _menoHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      // Row 1: Hero
                       GreetingCard(name: displayName),
                       const SizedBox(height: 24),
-                      const TodaysContextSection(),
+                      _buildMenoCheckIn(),
+                      const SizedBox(height: 24),
+                      _buildMenoWellbeing(),
                       const SizedBox(height: 24),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-
-                      // Row 2: Wellbeing Card
-                      _buildMenoWellbeing(),
-                      const SizedBox(height: 48),
-
-                      // Row 3: Left Panel (65% width) | Right Sidebar (35% width)
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -11084,8 +11161,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildMenoCheckIn(),
-                                const SizedBox(height: 48),
                                 _buildMenoInsights(),
                                 const SizedBox(height: 48),
                                 _buildMenoPatterns(),
@@ -11465,7 +11540,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _persistCheckinAnswer('mood', opt['label'].toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text("Logged Mood: ${opt['label']} ${opt['icon']}"),
+                          content: Text("Logged Mood: ${opt['label']}"),
                           duration: const Duration(seconds: 1),
                         ),
                       );
@@ -11484,13 +11559,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              opt['icon'],
-                              style: const TextStyle(
-                                fontSize: 20,
-                                color: Colors.black,
-                                fontFamilyFallback: ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],
-                              ),
+                            child: Icon(
+                              _optionIcon(opt['icon']),
+                              size: 20,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -11990,21 +12064,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     controller: _wellnessHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      // Row 1: Hero
                       GreetingCard(name: displayName),
                       const SizedBox(height: 24),
-                      const TodaysContextSection(),
+                      _buildWellnessCheckIn(),
+                      const SizedBox(height: 24),
+                      _buildWellnessDashboard(),
                       const SizedBox(height: 24),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-
-                      // Row 2: Dashboard Overview
-                      _buildWellnessDashboard(),
-                      const SizedBox(height: 48),
-
-                      // Row 3: Left Panel (65% width) | Right Sidebar (35% width)
+                      const SizedBox(height: 24),
+                      const TodaysContextSection(),
+                      const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -12014,8 +12085,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildWellnessCheckIn(),
-                                const SizedBox(height: 48),
                                 _buildWellnessInsights(),
                                 const SizedBox(height: 48),
                                 _buildWellnessHabitCards(),

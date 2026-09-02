@@ -337,6 +337,50 @@ class CycleState {
       restrictedMessage: json['message']?.toString(),
     );
   }
+
+  /// The same shape [CycleState.fromJson] reads, so a stored cycle is restored
+  /// by the parser that already exists rather than a second one written to
+  /// match it -- two parsers over one shape is how they drift apart.
+  ///
+  /// This is written to storage after every successful fetch so the card can
+  /// open on the last known day instead of "Loading…". The cycle it describes
+  /// is a few hours stale at worst, and is replaced as soon as the request it
+  /// sits in front of returns.
+  Map<String, dynamic> toJson() => {
+        'lifeStage': lifeStage,
+        'cycleTrackingAvailable': cycleTrackingAvailable,
+        'hasData': hasData,
+        'trackingState': trackingState,
+        'calculationVersion': calculationVersion,
+        'lateNotice': lateNotice,
+        'reason': restrictedReason,
+        'message': restrictedMessage,
+        'currentCycle': {
+          'currentCycleDay': currentCycleDay,
+          'phase': phase,
+          'cycleStartDate': cycleStartDate,
+          'isCurrentPeriod': isCurrentPeriod,
+          'isOverdue': isOverdue,
+          'daysOverdue': daysOverdue,
+        },
+        'prediction': {
+          'nextPeriodStartDate': nextPeriodStartDate,
+          'daysUntilNextPeriod': daysUntilNextPeriod,
+          'estimatedOvulationDate': estimatedOvulationDate,
+          'fertileWindowStart': fertileWindowStart,
+          'fertileWindowEnd': fertileWindowEnd,
+          'disclaimer': disclaimer,
+          'predictionRange': {
+            'earliestDate': predictionEarliest,
+            'latestDate': predictionLatest,
+          },
+        },
+        'dataSufficiency': {
+          'confidenceLevel': confidenceLevel,
+          'displayLabel': sufficiencyLabel,
+          'message': sufficiencyMessage,
+        },
+      };
 }
 
 /* ------------------------------------------------------------------ *

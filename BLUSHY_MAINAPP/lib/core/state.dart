@@ -429,6 +429,11 @@ class BlushyOSState extends ChangeNotifier {
         _onboardingStep = data['onboardingStep'] ?? 0;
         _argumentModeActive = data['argumentModeActive'] ?? false;
         _customAiBriefing = data['customAiBriefing'];
+        // Restored before anything can call updatePersonalContext, so a launch
+        // that changes nothing sends nothing. A body that failed to reach the
+        // server clears this, so a genuine retry is never suppressed.
+        final lastSynced = data['lastSyncedProfileJson'];
+        _lastSyncedProfileJson = lastSynced is String ? lastSynced : null;
         if (data['journals'] != null && data['journals'] is List) {
           final List<dynamic> rawJournals = data['journals'];
           _journals.clear();
@@ -972,6 +977,13 @@ class BlushyOSState extends ChangeNotifier {
         'isAuthenticated': _isAuthenticated,
         'onboardingCompleted': _onboardingCompleted,
         'onboardingStep': _onboardingStep,
+        // The body last sent to the server, kept so the "nothing changed"
+        // check below survives a restart. Held only in memory before, which
+        // meant it was empty on every launch and the first profile update --
+        // usually the sync applying what the server had just returned --
+        // posted the whole profile straight back. One redundant write per app
+        // open, of data the server already held.
+        'lastSyncedProfileJson': _lastSyncedProfileJson,
         'argumentModeActive': _argumentModeActive,
         'customAiBriefing': _customAiBriefing,
         'journals': _journals.map((j) => {
@@ -1059,6 +1071,11 @@ class BlushyOSState extends ChangeNotifier {
     _hasChosenExperience = false;
     _onboardingStep = 0;
     _argumentModeActive = false;
+    // The guard belongs to the account that just left. Storage is namespaced
+    // per user so the stored copy goes with them, but this field would carry
+    // over in memory and could suppress the next person's first profile write.
+    _lastSyncedProfileJson = null;
+    _profileSyncTimer?.cancel();
     _journals.clear();
     _siaMessages.clear();
     _personalContext = PersonalContext(
@@ -1240,12 +1257,20 @@ class BlushyOSState extends ChangeNotifier {
     final encoded = jsonEncode(payload);
     if (encoded == _lastSyncedProfileJson) return;
     _lastSyncedProfileJson = encoded;
+    // Written down here rather than relying on the `_saveState` in the caller,
+    // which runs before this and would persist the previous value -- leaving
+    // the guard empty on the next launch and posting the profile again.
+    _saveState();
 
     _profileSyncTimer?.cancel();
     _profileSyncTimer = Timer(const Duration(milliseconds: 400), () {
       ApiAuthService().saveOnboardingAnswers(payload).catchError((error) {
         // Let an identical retry through: this body never reached the server.
+        // Cleared on disk as well, or a failure followed by a restart would
+        // leave the guard holding a body the server never received and the
+        // retry would be skipped for good.
         _lastSyncedProfileJson = null;
+        _saveState();
         return <String, dynamic>{};
       });
     });

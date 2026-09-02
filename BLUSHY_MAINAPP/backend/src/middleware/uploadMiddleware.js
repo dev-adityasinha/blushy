@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileTypeFromBuffer } from 'file-type';
 
 import { storeUpload } from '../utils/objectStorage.js';
+import { createHttpError } from '../utils/httpError.js';
 
 /**
  * Uploads are held in memory, checked, then handed to storage.
@@ -43,7 +44,7 @@ const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 function imageFilter(_req, file, cb) {
   if (!imageMimeTypes.has(file.mimetype)) {
-    cb(new Error('Only image files are allowed. GIF and video formats are not supported.'));
+    cb(createHttpError(415, 'Only image files are allowed. GIF and video formats are not supported.'));
     return;
   }
   cb(null, true);
@@ -55,8 +56,11 @@ function attachmentFilter(_req, file, cb) {
     'audio/aac', 'audio/flac', 'audio/m4a', 'audio/mpeg', 'audio/mp4',
     'audio/ogg', 'audio/wav', 'audio/webm', 'audio/x-m4a',
   ]);
+  // 415 rather than a bare Error, which the handler renders as a 500. Sending
+  // the wrong kind of file is the caller's mistake, and reporting it as a
+  // server fault sends people looking for an outage that is not there.
   if (!allowed.has(file.mimetype)) {
-    cb(new Error('Only supported image and audio files are allowed.'));
+    cb(createHttpError(415, 'Only supported image and audio files are allowed.'));
     return;
   }
   cb(null, true);
@@ -93,7 +97,7 @@ function withStorage(uploadMiddleware, allowedExtensions, folder, {
       try {
         const detected = await fileTypeFromBuffer(req.file.buffer);
         if (!detected || !allowedExtensions.has(detected.ext)) {
-          next(new Error('Uploaded file content does not match an allowed file type.'));
+          next(createHttpError(415, 'Uploaded file content does not match an allowed file type.'));
           return;
         }
 
