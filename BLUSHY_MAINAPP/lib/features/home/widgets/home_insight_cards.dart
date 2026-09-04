@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../shared/blushy_surface.dart';
 import '../../../shared/section_heading.dart';
@@ -37,42 +38,27 @@ class DocsyInsightsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlushySurface(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeading(heading),
-          const SizedBox(height: BlushySpace.md),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 11,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Your home is built around you.',
-                        style: BlushyType.headline()),
-                    const SizedBox(height: BlushySpace.sm),
-                    Text(
-                      'We track your cycle, symptoms and mood to give you '
-                      'personalised insights.',
-                      style: BlushyType.body(),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: BlushySpace.sm),
-              const Expanded(
-                flex: 9,
-                child: SizedBox(height: 176, child: _Mascot()),
-              ),
-            ],
+          const SizedBox(height: BlushySpace.xs + 2),
+          Text(
+            note,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF7A6B72),
+              height: 1.4,
+            ),
           ),
-          const SizedBox(height: BlushySpace.md),
-          _NoteRow(icon: Icons.show_chart_rounded, text: note),
-          const SizedBox(height: BlushySpace.lg),
-          _ActionButton(label: actionLabel, onTap: onAction, filled: true),
+          const SizedBox(height: BlushySpace.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _ActionButton(label: actionLabel, onTap: onAction, filled: false),
+          ),
         ],
       ),
     );
@@ -104,7 +90,8 @@ class PatternsEmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlushySurface(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -112,43 +99,33 @@ class PatternsEmptyCard extends StatelessWidget {
             children: [
               Expanded(child: SectionHeading(heading)),
               IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 20),
-                color: BlushyColors.text,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                color: BlushyColors.primary,
                 tooltip: 'Recalculate',
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
-                  minWidth: BlushySpace.control,
-                  minHeight: BlushySpace.control,
+                  minWidth: 28,
+                  minHeight: 28,
                 ),
                 onPressed: onRefresh,
               ),
             ],
           ),
-          const SizedBox(height: BlushySpace.sm),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Expanded(
-                flex: 9,
-                child: SizedBox(height: 150, child: _ChartIllustration()),
-              ),
-              const SizedBox(width: BlushySpace.md),
-              Expanded(
-                flex: 11,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Patterns tell powerful stories.',
-                        style: BlushyType.headline()),
-                    const SizedBox(height: BlushySpace.sm),
-                    Text(note, style: BlushyType.body()),
-                  ],
-                ),
-              ),
-            ],
+          const SizedBox(height: BlushySpace.xs),
+          Text(
+            note,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF7A6B72),
+              height: 1.4,
+            ),
           ),
-          const SizedBox(height: BlushySpace.lg),
-          _ActionButton(label: actionLabel, onTap: onAction, filled: true),
+          const SizedBox(height: BlushySpace.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _ActionButton(label: actionLabel, onTap: onAction, filled: false),
+          ),
         ],
       ),
     );
@@ -164,24 +141,27 @@ class PrivacyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: BlushyColors.primary.withValues(alpha: 0.06),
+      color: const Color(0xFFF9F6F2),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
+        child: Container(
           padding: const EdgeInsets.all(BlushySpace.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFEAE3DC), width: 0.8),
+          ),
           child: Row(
             children: [
               Container(
                 width: BlushySpace.tile,
                 height: BlushySpace.tile,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
-                  boxShadow: BlushySurface.shadow,
                 ),
-                child: const Icon(Icons.shield_rounded,
+                child: const Icon(Icons.shield_outlined,
                     size: 18, color: BlushyColors.primary),
               ),
               const SizedBox(width: BlushySpace.md),
@@ -192,18 +172,24 @@ class PrivacyRow extends StatelessWidget {
                   children: [
                     Text(
                       'Your data is private and secure.',
-                      style: BlushyType.body(
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
                         color: BlushyColors.text,
-                        weight: FontWeight.w600,
                       ),
                     ),
-                    Text('Only you can see your insights.',
-                        style: BlushyType.caption()),
+                    Text(
+                      'Only you can see your insights.',
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: const Color(0xFF7A6B72),
+                      ),
+                    ),
                   ],
                 ),
               ),
               const Icon(Icons.chevron_right_rounded,
-                  size: 18, color: BlushyColors.primary),
+                  size: 18, color: Color(0xFFB5A9AF)),
             ],
           ),
         ),
@@ -223,16 +209,23 @@ class _NoteRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(BlushySpace.md),
       decoration: BoxDecoration(
-        color: BlushyColors.primary.withValues(alpha: 0.06),
+        color: const Color(0xFFFDFBF7),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEAE3DC), width: 0.8),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: BlushyColors.primary),
+          Icon(icon, size: 18, color: BlushyColors.primary),
           const SizedBox(width: BlushySpace.md),
-          Expanded(child: Text(text, style: BlushyType.caption(
-            color: BlushyColors.text,
-          ))),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                color: BlushyColors.text,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -260,35 +253,31 @@ class _ActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(17),
         child: Ink(
-          height: 44,
+          height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: filled ? BlushyColors.primary : BlushyColors.primary.withValues(alpha: 0.04),
+            color: filled ? BlushyColors.primary : Colors.white,
             border: filled
                 ? null
-                : Border.all(
-                    color: BlushyColors.primary.withValues(alpha: 0.35)),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: filled
-                ? [
-                    BoxShadow(
-                      color: BlushyColors.primary.withValues(alpha: 0.28),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ]
-                : null,
+                : Border.all(color: const Color(0xFFF7D8DD), width: 0.8),
+            borderRadius: BorderRadius.circular(17),
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 label,
-                style: BlushyType.body(color: foreground, weight: FontWeight.w600),
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: foreground,
+                ),
               ),
-              const SizedBox(width: BlushySpace.sm),
-              Icon(Icons.arrow_forward_rounded, size: 18, color: foreground),
+              const SizedBox(width: 4),
+              Icon(Icons.arrow_forward_rounded, size: 14, color: foreground),
             ],
           ),
         ),

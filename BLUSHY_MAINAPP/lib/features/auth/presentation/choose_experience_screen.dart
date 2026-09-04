@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/colors.dart';
+import '../../../theme/scale.dart';
 
 class ChooseExperienceScreen extends StatefulWidget {
   final VoidCallback onSelectForMe;
@@ -17,7 +17,8 @@ class ChooseExperienceScreen extends StatefulWidget {
 }
 
 class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
-  int _selectedOption = 0; // 0 for none, 1 for For Me, 2 for Partner
+  // Unselected (null) by default
+  int? _selectedOption; 
 
   @override
   Widget build(BuildContext context) {
@@ -27,217 +28,259 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+            constraints: const BoxConstraints(maxWidth: 380),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    "How would you like to use Blushy?",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                      color: BlushyColors.text,
-                      height: 1.25,
-                    ),
-                  ),
                   const SizedBox(height: 12),
-                  Text(
-                    "Choose the experience that's right for you.",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
-                      color: BlushyColors.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 36),
                   
-                  // Option 1: For Me
-                  GestureDetector(
-                    onTap: () => setState(() => _selectedOption = 1),
-                    child: AnimatedScale(
-                      scale: _selectedOption == 1 ? 1.02 : 1.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _selectedOption == 1
-                                ? BlushyColors.primary
-                                : BlushyColors.border,
-                            width: _selectedOption == 1 ? 2.0 : 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: _selectedOption == 1 
-                                  ? BlushyColors.primary.withValues(alpha: 0.08)
-                                  : BlushyColors.text.withValues(alpha: 0.03),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            )
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: _selectedOption == 1 
-                                        ? BlushyColors.primary.withValues(alpha: 0.1) 
-                                        : BlushyColors.background,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.person_rounded,
-                                    color: _selectedOption == 1 ? BlushyColors.primary : BlushyColors.secondaryText,
-                                    size: 24,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  "For Me",
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: BlushyColors.text,
-                                  ),
-                                ),
-                              ],
+                  // Brand Logo Wordmark Header Bar (44px height stack for exact position match across screens)
+                  SizedBox(
+                    height: 44,
+                    width: double.infinity,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        RichText(
+                          textAlign: TextAlign.center,
+                          text: const TextSpan(
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              fontStyle: FontStyle.normal,
+                              letterSpacing: 2.8,
+                              color: Color(0xFFE51937), // Crimson Red
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "I'm here to understand, track and care for my own health.",
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.manrope(
-                                fontSize: 13,
-                                color: BlushyColors.secondaryText,
-                                height: 1.4,
+                            children: [
+                              TextSpan(text: 'BLUSHY'),
+                              TextSpan(
+                                text: '.',
+                                style: TextStyle(
+                                  color: Color(0xFFFF5000), // Vibrant Orange Dot
+                                  fontWeight: FontWeight.w900,
+                                  fontStyle: FontStyle.normal,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 18),
 
-                  // Option 2: Support My Partner
-                  GestureDetector(
-                    onTap: () => setState(() => _selectedOption = 2),
-                    child: AnimatedScale(
-                      scale: _selectedOption == 2 ? 1.02 : 1.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _selectedOption == 2
-                                ? BlushyColors.primary
-                                : BlushyColors.border,
-                            width: _selectedOption == 2 ? 2.0 : 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: _selectedOption == 2 
-                                  ? BlushyColors.primary.withValues(alpha: 0.08)
-                                  : BlushyColors.text.withValues(alpha: 0.03),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            )
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: _selectedOption == 2 
-                                        ? BlushyColors.primary.withValues(alpha: 0.1) 
-                                        : BlushyColors.background,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.favorite_rounded,
-                                    color: _selectedOption == 2 ? BlushyColors.primary : BlushyColors.secondaryText,
-                                    size: 24,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  "Support My Partner",
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: BlushyColors.text,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              "I'm here to better understand and support my partner through every stage of her health journey.",
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.manrope(
-                                fontSize: 13,
-                                color: BlushyColors.secondaryText,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                  const Spacer(flex: 1),
+
+                  // Headline in Cormorant Garamond (32px, w700 Bold, NO Italics)
+                  const Text(
+                    "Choose your experience",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'CormorantGaramond',
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700, // Rich Bold Cormorant Garamond
+                      fontStyle: FontStyle.normal,
+                      letterSpacing: 0.4,
+                      height: 1.15,
+                      color: BlushyColors.text,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+
+                  const Text(
+                    "Select how you would like to use Blushy",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w400,
+                      fontStyle: FontStyle.normal,
+                      color: BlushyColors.secondaryText,
+                      letterSpacing: 0.25,
                     ),
                   ),
 
                   const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _selectedOption == 0
-                        ? null
-                        : () {
-                            if (_selectedOption == 1) {
-                              widget.onSelectForMe();
-                            } else {
-                              widget.onSelectPartner();
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary,
-                      disabledBackgroundColor: BlushyColors.primary.withValues(alpha: 0.4),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+
+                  // Option 1: For Myself
+                  _buildOptionCard(
+                    optionId: 1,
+                    title: "For Myself",
+                    subtitle: "Track, understand, and care for your personal wellness.",
+                    icon: Icons.person_outline_rounded,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Option 2: For My Partner (Dual Person Profile Icon)
+                  _buildOptionCard(
+                    optionId: 2,
+                    title: "For My Partner",
+                    subtitle: "Connect, understand, and support your partner's cycle.",
+                    icon: Icons.people_outline_rounded,
+                  ),
+
+                  const Spacer(flex: 2),
+
+                  // Primary Action Button (48px height pill)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _selectedOption == null
+                          ? null
+                          : () {
+                              if (_selectedOption == 1) {
+                                widget.onSelectForMe();
+                              } else if (_selectedOption == 2) {
+                                widget.onSelectPartner();
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _selectedOption == null
+                            ? const Color(0xFFEBE4DD)
+                            : BlushyColors.primary,
+                        foregroundColor: _selectedOption == null
+                            ? const Color(0xFF9E948E)
+                            : Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      child: Text(
+                        _selectedOption == null
+                            ? "Select an option"
+                            : "Continue",
+                        style: TextStyle(
+                          fontFamily: 'Manrope',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.normal,
+                          letterSpacing: 0.35,
+                          color: _selectedOption == null
+                              ? const Color(0xFF9E948E)
+                              : Colors.white,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      "Select & Proceed to Sign In",
-                      style: GoogleFonts.manrope(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionCard({
+    required int optionId,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    final isSelected = _selectedOption == optionId;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedOption = optionId),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+        decoration: BoxDecoration(
+          // Crisp White card background - Border ONLY gets highlighted
+          color: BlushyColors.cardBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? BlushyColors.primary : const Color(0xFFE6E0DA),
+            width: isSelected ? 1.8 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Icon Badge (36x36)
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? BlushyColors.primary.withValues(alpha: 0.1)
+                    : const Color(0xFFF6F2EE),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? BlushyColors.primary : const Color(0xFF7A6B72),
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 14),
+
+            // Card Text Content in Manrope Font
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      fontStyle: FontStyle.normal,
+                      color: isSelected ? BlushyColors.text : const Color(0xFF2D2529),
+                      letterSpacing: 0.35,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w400,
+                      fontStyle: FontStyle.normal,
+                      color: BlushyColors.secondaryText,
+                      height: 1.38,
+                      letterSpacing: 0.25,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+
+            const SizedBox(width: 12),
+
+            // Radio Indicator (22x22)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? BlushyColors.primary : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? BlushyColors.primary : const Color(0xFFD0C8C0),
+                  width: isSelected ? 0 : 1.4,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    )
+                  : null,
+            ),
+          ],
         ),
       ),
     );

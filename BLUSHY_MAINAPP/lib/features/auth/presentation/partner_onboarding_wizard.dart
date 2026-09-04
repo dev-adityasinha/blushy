@@ -349,53 +349,200 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
 
   Widget _buildPrivacyScreen() {
     return Scaffold(
-      backgroundColor: BlushyColors.background,
+      backgroundColor: const Color(0xFFFDFBF7),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 28, bottom: 20, left: 20, right: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 16),
+                      // Compact Luxury Soft Ambient Shield Icon Badge
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF4F1),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFF4DCD6), width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BlushyColors.primary.withValues(alpha: 0.1),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.shield_outlined,
+                          size: 26,
+                          color: BlushyColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Headline: Cormorant Garamond w700 (24px)
+                      Text(
+                        "Her privacy comes first.",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.normal,
+                          letterSpacing: 0.2,
+                          height: 1.15,
+                          color: const Color(0xFF2D2529),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Subtitle: Manrope w400 (12.5px)
+                      Text(
+                        "Partner mode is designed around trust and explicit consent. She stays in complete control of what she chooses to share with you.",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.manrope(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.15,
+                          height: 1.4,
+                          color: const Color(0xFF7A6B72),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 3 Compact Luxury Privacy Pillars Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFDF9),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFECE4DC), width: 1.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 14,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildPartnerPrivacyPillar(
+                              icon: Icons.mark_email_read_outlined,
+                              title: "Explicit Sharing",
+                              subtitle: "Only receive information she explicitly chooses to share.",
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 6),
+                              child: Divider(color: Color(0xFFF2ECE4), height: 1),
+                            ),
+                            _buildPartnerPrivacyPillar(
+                              icon: Icons.lock_person_outlined,
+                              title: "Private Conversations",
+                              subtitle: "Private logs and chats are never visible to partners.",
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 6),
+                              child: Divider(color: Color(0xFFF2ECE4), height: 1),
+                            ),
+                            _buildPartnerPrivacyPillar(
+                              icon: Icons.tune_rounded,
+                              title: "Her Choice, Any Time",
+                              subtitle: "She can adjust or pause partner sharing whenever she wants.",
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Compact Luxury Button (46px Pill)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: _startBuildingPhase,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BlushyColors.primary,
+                        elevation: 3,
+                        shadowColor: BlushyColors.primary.withValues(alpha: 0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(23),
+                        ),
+                      ),
+                      child: const Text(
+                        "I Understand & Continue",
+                        style: TextStyle(
+                          fontFamily: 'Manrope',
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.normal,
+                          letterSpacing: 0.3,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPartnerPrivacyPillar({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF4F1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 20, color: BlushyColors.primary),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Spacer(),
-              const Center(
-                child: Icon(Icons.shield_outlined, size: 72, color: BlushyColors.primary),
-              ),
-              const SizedBox(height: 32),
               Text(
-                "Her privacy comes first.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.manrope(fontSize: 32, fontWeight: FontWeight.bold, color: BlushyColors.text),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "She decides what you can see.\nYou'll only receive information and insights she's chosen to share.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.manrope(fontSize: 15, color: BlushyColors.secondaryText, height: 1.5),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                "Everything she shares with you is controlled by her. You will not automatically see private metrics like symptoms, journal records, or private Docsy conversations.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.8), height: 1.45),
-              ),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: _startBuildingPhase,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BlushyColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+                title,
+                style: GoogleFonts.manrope(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2D2529),
+                  letterSpacing: 0.15,
                 ),
-                child: Text(
-                  "Continue",
-                  style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF8A7C83),
+                  height: 1.35,
                 ),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../shared/blushy_surface.dart';
 import '../../../theme/colors.dart';
@@ -51,40 +52,44 @@ class GreetingHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final lead = leadOf(greeting, name);
     final hasName = lead != greeting;
+    final leadText = hasName ? (lead.endsWith(',') ? lead : '$lead,') : greeting;
+    final nameText = hasName ? '$name.' : '';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: BlushySpace.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // One line, always: the name in the brand red after the greeting.
-          // Scaled down rather than wrapped where a long name would not fit.
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: RichText(
-              maxLines: 1,
-              text: TextSpan(
-                style: BlushyType.display(),
-                children: [
-                  TextSpan(text: hasName ? '$lead ' : greeting),
-                  if (hasName)
-                    TextSpan(
-                      text: '$name.',
-                      style: BlushyType.display(color: BlushyColors.primary)
-                          .copyWith(fontStyle: FontStyle.italic),
-                    ),
-                ],
-              ),
+          Text(
+            leadText,
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 26,
+              fontWeight: FontWeight.w500,
+              color: BlushyColors.text,
+              height: 1.15,
             ),
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: BlushySpace.md),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 300),
-              child: Text(subtitle!, style: BlushyType.body()),
+          if (nameText.isNotEmpty)
+            Text(
+              nameText,
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 26,
+                fontWeight: FontWeight.w500,
+                fontStyle: FontStyle.italic,
+                color: BlushyColors.primary,
+                height: 1.15,
+              ),
             ),
-          ],
+          const SizedBox(height: BlushySpace.xs + 2),
+          Text(
+            subtitle ?? "Whatever today looks like, you don't have to do it alone.",
+            style: GoogleFonts.manrope(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF7A6B72),
+              height: 1.45,
+            ),
+          ),
         ],
       ),
     );
@@ -208,34 +213,45 @@ class _Ready extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // The calendar sits up on the eyebrow's line, small, so the headline
-        // below has the card's whole width to itself.
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(child: Text('YOUR CYCLE', style: BlushyType.eyebrow())),
+            Text(
+              'YOUR CYCLE',
+              style: GoogleFonts.manrope(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.4,
+                color: BlushyColors.primary,
+              ),
+            ),
             if (card.onCalendar != null)
-              // Icon only: a calendar glyph beside a cycle needs no caption.
-              // The label is kept for screen readers.
-              Semantics(
-                button: true,
-                label: 'Calendar',
-                child: Material(
-                  color: Colors.transparent,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    onTap: card.onCalendar,
-                    customBorder: const CircleBorder(),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.fromBorderSide(
-                            BorderSide(color: BlushyColors.border)),
+              InkWell(
+                onTap: card.onCalendar,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFF3D5D8), width: 1.0),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_today_outlined, size: 12, color: BlushyColors.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Calendar',
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: BlushyColors.primary,
+                        ),
                       ),
-                      child: const Icon(Icons.calendar_today_outlined,
-                          size: 14, color: BlushyColors.primary),
-                    ),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.chevron_right_rounded, size: 14, color: BlushyColors.primary),
+                    ],
                   ),
                 ),
               ),
@@ -244,19 +260,20 @@ class _Ready extends StatelessWidget {
         const SizedBox(height: BlushySpace.xs),
         Row(
           children: [
-            // Plain text at its own width, with the dot right after it;
-            // nothing here is stretched, so the words take only their room.
             Flexible(
               child: Text(
                 phase == null ? 'Your cycle' : '${phase.label} phase',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: BlushyType.headline(),
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: BlushyColors.text,
+                ),
               ),
             ),
             if (phase != null) ...[
-              const SizedBox(width: BlushySpace.sm),
-              // Colour paired with the words, never alone.
+              const SizedBox(width: BlushySpace.xs + 2),
               Container(
                 width: 8,
                 height: 8,
@@ -269,13 +286,17 @@ class _Ready extends StatelessWidget {
           ],
         ),
         if (day != null && length != null)
-          Text('Day $day of $length',
-              maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: BlushyType.body()),
+          Text(
+            'Day $day of $length',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.manrope(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF7A6B72),
+            ),
+          ),
         const SizedBox(height: BlushySpace.lg),
-        // The tracker: the drawn outline with the cycle traced along the
-        // tube and today marked on it. It reads the cycle from the app state
-        // itself, so the card and the drawing cannot disagree about the day.
         const Center(
           child: SizedBox(
             width: 260,
@@ -285,14 +306,18 @@ class _Ready extends StatelessWidget {
         ),
         const SizedBox(height: BlushySpace.md),
         Text(
-          card.caveat ?? phase?.insight ?? '',
+          card.caveat ?? phase?.insight ?? 'You may be feeling a little more inward today.',
           textAlign: TextAlign.center,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: BlushyType.caption(color: BlushyColors.text),
+          style: GoogleFonts.manrope(
+            fontSize: 12.5,
+            fontStyle: FontStyle.italic,
+            color: BlushyColors.text,
+            height: 1.4,
+          ),
         ),
         const SizedBox(height: BlushySpace.md),
-        // One line, four phases, sized to fit the card's width.
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Row(
@@ -307,7 +332,14 @@ class _Ready extends StatelessWidget {
                   decoration: BoxDecoration(color: kind.color, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: BlushySpace.xs),
-                Text(kind.label, style: BlushyType.micro(color: BlushyColors.text, weight: FontWeight.w500)),
+                Text(
+                  kind.label,
+                  style: GoogleFonts.manrope(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF7A6B72),
+                  ),
+                ),
               ],
             ],
           ),
@@ -321,12 +353,17 @@ class _Ready extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: BlushySpace.md),
               child: Row(
                 children: [
-                  // Docsy's own mark: the row opens her.
                   const DocsyStar(size: 16, color: BlushyColors.primary),
                   const SizedBox(width: BlushySpace.md),
                   Expanded(
-                    child: Text('Insights for your phase',
-                        style: BlushyType.body(color: BlushyColors.text)),
+                    child: Text(
+                      'Insights for your phase',
+                      style: GoogleFonts.manrope(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: BlushyColors.text,
+                      ),
+                    ),
                   ),
                   const Icon(Icons.chevron_right_rounded,
                       size: 20, color: BlushyColors.secondaryText),
@@ -575,9 +612,17 @@ class RecentlySurface extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: BlushySpace.xs),
-          child: Text('RECENTLY', style: BlushyType.eyebrow()),
+          child: Text(
+            'RECENTLY',
+            style: GoogleFonts.manrope(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.4,
+              color: BlushyColors.primary,
+            ),
+          ),
         ),
-        const SizedBox(height: BlushySpace.md),
+        const SizedBox(height: BlushySpace.xs + 2),
         BlushySurface(
           padding: const EdgeInsets.symmetric(vertical: BlushySpace.xs),
           child: items.isEmpty
@@ -599,7 +644,7 @@ class RecentlySurface extends StatelessWidget {
                           icon: Icons.edit_note_rounded,
                           label: 'Log today',
                           onTap: onEmptyAction!,
-                          filled: true,
+                          filled: false,
                         ),
                       ],
                     ],
@@ -628,39 +673,78 @@ class _RecentRow extends StatelessWidget {
 
   final RecentItem item;
 
+  Color _badgeBg(String title) {
+    final t = title.toLowerCase();
+    if (t.contains('period')) return const Color(0xFFFDF2F4);
+    if (t.contains('symptom')) return const Color(0xFFFDF6F0);
+    return const Color(0xFFFDF8EE);
+  }
+
+  Border _badgeBorder(String title) {
+    final t = title.toLowerCase();
+    if (t.contains('period')) return Border.all(color: const Color(0xFFF7D8DD), width: 0.8);
+    if (t.contains('symptom')) return Border.all(color: const Color(0xFFF9E4DA), width: 0.8);
+    return Border.all(color: const Color(0xFFFBE6CE), width: 0.8);
+  }
+
+  Color _iconColor(String title) {
+    final t = title.toLowerCase();
+    if (t.contains('period')) return BlushyColors.primary;
+    if (t.contains('symptom')) return const Color(0xFFE06D53);
+    return const Color(0xFFE59239);
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: item.onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: BlushySpace.lg, vertical: BlushySpace.lg),
+            horizontal: BlushySpace.lg, vertical: BlushySpace.md),
         child: Row(
           children: [
             Container(
-              width: BlushySpace.tile,
-              height: BlushySpace.tile,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: BlushyColors.primary.withValues(alpha: 0.08),
+                color: _badgeBg(item.title),
+                border: _badgeBorder(item.title),
               ),
-              child: Icon(item.icon, size: BlushySpace.iconTile, color: BlushyColors.primary),
+              child: Icon(item.icon, size: 16, color: _iconColor(item.title)),
             ),
             const SizedBox(width: BlushySpace.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.title, style: BlushyType.heading()),
-                  Text(item.value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: BlushyType.caption()),
+                  Text(
+                    item.title,
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: BlushyColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    item.value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF7A6B72),
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: BlushySpace.iconChevron, color: BlushyColors.secondaryText),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: Color(0xFFB5A9AF),
+            ),
           ],
         ),
       ),

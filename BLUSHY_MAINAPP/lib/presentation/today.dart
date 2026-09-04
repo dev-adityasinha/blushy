@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
+import '../theme/scale.dart';
 import '../core/state.dart';
 import '../services/html_audio_helper.dart';
 import '../services/api_sia_service.dart';
@@ -120,15 +121,38 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Greeting & Phase Ledger
-          Text(
-            '${_getTimeBasedGreetingPrefix()}, ${state.personalContext.userName ?? "there"}',
-            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-              fontSize: 34,
-              letterSpacing: -1.0,
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '${_getTimeBasedGreetingPrefix()},\n',
+                  style: BlushyType.display().copyWith(
+                    fontSize: 38,
+                    color: BlushyColors.text,
+                    height: 1.1,
+                  ),
+                ),
+                TextSpan(
+                  text: '${state.personalContext.userName ?? "there"}.',
+                  style: BlushyType.display().copyWith(
+                    fontSize: 38,
+                    fontStyle: FontStyle.italic,
+                    color: BlushyColors.primary,
+                    height: 1.1,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+          Text(
+            "Whatever today looks like,\nyou don't have to do it alone.",
+            style: BlushyType.body().copyWith(
+              fontSize: 14.5,
+              height: 1.45,
+              color: BlushyColors.secondaryText,
+            ),
+          ),
           Row(
             children: [
               Container(

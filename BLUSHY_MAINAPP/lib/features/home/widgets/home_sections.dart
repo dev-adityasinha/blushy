@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../shared/blushy_surface.dart';
 import '../../../shared/section_heading.dart';
@@ -779,15 +780,18 @@ class LogSymptomsBanner extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: BlushyType.heading(
+                        style: GoogleFonts.manrope(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                           color: Colors.white,
-                          weight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         subtitle,
-                        style: BlushyType.caption(
-                          color: Colors.white.withValues(alpha: 0.88),
+                        style: GoogleFonts.manrope(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                     ],

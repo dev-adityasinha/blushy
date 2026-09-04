@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,7 @@ import '../../../services/auth_storage.dart';
 import '../../legal/legal_documents_screen.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../theme/colors.dart';
+import '../../../theme/scale.dart';
 
 enum AuthFormMode { login, signup }
 
@@ -227,79 +229,160 @@ class _SignupScreenState extends State<SignupScreen> {
   /// Before this, verification silently flipped the app into an authenticated
   /// state with no confirmation of any kind, so a successful signup and a
   /// failed one looked identical.
+  /// Confirms the account was created, then sends the user to the login tab.
+  /// Confirms the account was created, then seamlessly logs the user in.
   Future<void> _onAccountCreated(String email) async {
-    AuthStorage.clearSession();
-
-    await showDialog<void>(
+    await showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: BlushyColors.background,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: Color(0xFFEAF7EE),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check_rounded, color: Color(0xFF2E7D4F), size: 30),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Account created',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.instrumentSerif(
-                fontSize: 21,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF2D2529),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '$email is verified and ready.\n'
-                  'Sign in to start your journey.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72)),
-            ),
-            const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BlushyColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(
-                  AppLocalizations.of(context).sGoToSignIn,
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return const SizedBox();
+      },
+      transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+        final curve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: FadeTransition(
+            opacity: curve,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.88, end: 1.0).animate(curve),
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Container(
+                  width: double.infinity,
+                  constraints: const BoxConstraints(maxWidth: 340),
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFDF9), // Luxury warm background
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: const Color(0xFFECE4DC), width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 36,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Success Badge with soft pulse ring
+                      Container(
+                        width: 68,
+                        height: 68,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5EB),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFC3E7CB), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2B7A4B).withValues(alpha: 0.15),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          color: Color(0xFF2B7A4B),
+                          size: 34,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Headline (Cormorant Garamond, 28px, Bold)
+                      const Text(
+                        'Account verified!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'CormorantGaramond',
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.normal,
+                          letterSpacing: 0.4,
+                          height: 1.15,
+                          color: Color(0xFF2D2529),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Subtitle with email highlight
+                      RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0.25,
+                            height: 1.45,
+                            color: Color(0xFF7A6B72),
+                          ),
+                          children: [
+                            TextSpan(
+                              text: email,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2D2529),
+                              ),
+                            ),
+                            const TextSpan(
+                              text: ' is verified and ready.\nWelcome to your wellness space.',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+
+                      // Seamless Start Journey button (48px pill)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: BlushyColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          child: const Text(
+                            "Start your journey",
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              fontStyle: FontStyle.normal,
+                              letterSpacing: 0.35,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
 
     if (!mounted) return;
 
-    // The email carries over so the only thing left to type is the password.
-    setState(() {
-      _mode = AuthFormMode.login;
-      _emailController.text = email;
-      _passwordController.clear();
-      _errorMessage = null;
-      _successMessage = 'Account created. Sign in to continue.';
-    });
+    // Auto-Login: User session is already saved in AuthStorage by verifyCode.
+    // Seamlessly transition the user straight into the app!
+    final state = BlushyOSProvider.of(context);
+    final onboardingCompleted = AuthStorage.isOnboardingCompleted();
+    state.setAuthenticated(true, onboardingCompleted: onboardingCompleted);
   }
 
   Future<void> _showOtpVerificationDialog(String email) async {
@@ -308,160 +391,243 @@ class _SignupScreenState extends State<SignupScreen> {
     String? dialogError;
     bool isVerifying = false;
 
-    await showDialog(
+    await showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              backgroundColor: BlushyColors.background,
-              title: Text(
-                'Enter Verification Code',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.instrumentSerif(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2D2529),
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'We sent a 6-digit code to:\n$email',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72)),
-                    ),
-                    const SizedBox(height: 20),
-                    if (dialogError != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF0F0),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          dialogError!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.manrope(fontSize: 12, color: Colors.red.shade800),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: List.generate(6, (index) {
-                        return SizedBox(
-                          width: 40,
-                          height: 48,
-                          child: TextField(
-                            controller: controllers[index],
-                            focusNode: focusNodes[index],
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            maxLength: 1,
-                            style: GoogleFonts.manrope(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF2D2529),
-                            ),
-                            decoration: InputDecoration(
-                              counterText: '',
-                              contentPadding: EdgeInsets.zero,
-                              filled: true,
-                              fillColor: Colors.white,
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: BlushyColors.border),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: BlushyColors.primary, width: 2),
-                              ),
-                            ),
-                            onChanged: (val) {
-                              if (val.isNotEmpty && index < 5) {
-                                focusNodes[index + 1].requestFocus();
-                              } else if (val.isEmpty && index > 0) {
-                                focusNodes[index - 1].requestFocus();
-                              }
-                            },
-                          ),
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return const SizedBox();
+      },
+      transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+        final curve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: FadeTransition(
+            opacity: curve,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.88, end: 1.0).animate(curve),
+              child: StatefulBuilder(
+                builder: (context, setDialogState) {
+                  return Dialog(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    child: Container(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BlushyColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: isVerifying
-                            ? null
-                            : () async {
-                                final code = controllers.map((c) => c.text).join();
-                                if (code.length < 6) {
-                                  setDialogState(() {
-                                    dialogError = 'Please enter all 6 digits.';
-                                  });
-                                  return;
-                                }
+                      constraints: const BoxConstraints(maxWidth: 360),
+                      padding: const EdgeInsets.all(26),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFDF9),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(color: const Color(0xFFECE4DC), width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 36,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Enter Verification Code',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'CormorantGaramond',
+                                fontSize: 26,
+                                fontWeight: FontWeight.w700,
+                                fontStyle: FontStyle.normal,
+                                letterSpacing: 0.4,
+                                color: Color(0xFF2D2529),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
 
-                                setDialogState(() {
-                                  isVerifying = true;
-                                  dialogError = null;
-                                });
+                            RichText(
+                              textAlign: TextAlign.center,
+                              text: TextSpan(
+                                style: const TextStyle(
+                                  fontFamily: 'Manrope',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: 0.25,
+                                  height: 1.4,
+                                  color: Color(0xFF7A6B72),
+                                ),
+                                children: [
+                                  const TextSpan(text: 'We sent a 6-digit code to:\n'),
+                                  TextSpan(
+                                    text: email,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF2D2529),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 22),
 
-                                try {
-                                  await _apiAuthService.verifyCode(email, code);
-                                  // `mounted` covers this.context, which the
-                                  // dialog's own context.mounted does not.
-                                  if (context.mounted && mounted) {
-                                    Navigator.of(dialogContext).pop();
-                                    await _onAccountCreated(email);
-                                  }
-                                } catch (e) {
-                                  setDialogState(() {
-                                    dialogError = ApiAuthService.cleanErrorMessage(e);
-                                    isVerifying = false;
-                                  });
-                                }
-                              },
-                        child: isVerifying
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : Text(
-                                AppLocalizations.of(context).sVerifyCode,
-                                style: GoogleFonts.manrope(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                            if (dialogError != null) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF0F0),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFFFC0C0)),
+                                ),
+                                child: Text(
+                                  dialogError!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Manrope',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0.15,
+                                    color: Colors.red.shade800,
+                                  ),
                                 ),
                               ),
+                              const SizedBox(height: 18),
+                            ],
+
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: List.generate(6, (index) {
+                                return SizedBox(
+                                  width: 44,
+                                  height: 52,
+                                  child: TextField(
+                                    controller: controllers[index],
+                                    focusNode: focusNodes[index],
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    maxLength: 1,
+                                    style: const TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.4,
+                                      color: Color(0xFF2D2529),
+                                    ),
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      contentPadding: EdgeInsets.zero,
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: const BorderSide(color: Color(0xFFE6E0DA), width: 1.2),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: const BorderSide(color: BlushyColors.primary, width: 2.0),
+                                      ),
+                                    ),
+                                    onChanged: (val) {
+                                      if (val.isNotEmpty && index < 5) {
+                                        focusNodes[index + 1].requestFocus();
+                                      } else if (val.isEmpty && index > 0) {
+                                        focusNodes[index - 1].requestFocus();
+                                      }
+                                    },
+                                  ),
+                                );
+                              }),
+                            ),
+                            const SizedBox(height: 24),
+
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: BlushyColors.primary,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                ),
+                                onPressed: isVerifying
+                                    ? null
+                                    : () async {
+                                        final code = controllers.map((c) => c.text).join();
+                                        if (code.length < 6) {
+                                          setDialogState(() {
+                                            dialogError = 'Please enter all 6 digits.';
+                                          });
+                                          return;
+                                        }
+
+                                        setDialogState(() {
+                                          isVerifying = true;
+                                          dialogError = null;
+                                        });
+
+                                        try {
+                                          await _apiAuthService.verifyCode(email, code);
+                                          if (context.mounted && mounted) {
+                                            Navigator.of(dialogContext).pop();
+                                            await _onAccountCreated(email);
+                                          }
+                                        } catch (e) {
+                                          setDialogState(() {
+                                            dialogError = ApiAuthService.cleanErrorMessage(e);
+                                            isVerifying = false;
+                                          });
+                                        }
+                                      },
+                                child: isVerifying
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        AppLocalizations.of(context).sVerifyCode,
+                                        style: const TextStyle(
+                                          fontFamily: 'Manrope',
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          fontStyle: FontStyle.normal,
+                                          letterSpacing: 0.35,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            TextButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontFamily: 'Manrope',
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.25,
+                                  color: Color(0xFF7A6B72),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: Text(
-                        'Cancel',
-                        style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72)),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );
@@ -471,7 +637,6 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     const primaryColor = BlushyColors.primary;
     const bgPinkColor = BlushyColors.background;
-    const cardSelectedBg = Color(0xFFFDF2F2);
     const borderColor = BlushyColors.border;
     const textDark = Color(0xFF2D2529);
     const textMuted = Color(0xFF7A6B72);
@@ -481,148 +646,165 @@ class _SignupScreenState extends State<SignupScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
+              constraints: const BoxConstraints(maxWidth: 380),
               // The fields have to sit in one group for the phone to
               // treat them as a single credential worth saving.
               child: AutofillGroup(
                 child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Back button to return to Choose Experience screen
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: () {
-                          final state = BlushyOSProvider.of(context);
-                          state.resetChosenExperience();
-                        },
-                        icon: const Icon(Icons.arrow_back, size: 18, color: textMuted),
-                        label: Text(
-                          'Back to experience choice',
-                          style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 12),
 
-                    // Top Tab Switcher: Log In | Create Account
-                    Container(
-                      height: 48,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: BlushyColors.border,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _switchMode(AuthFormMode.login),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                decoration: BoxDecoration(
-                                  color: _mode == AuthFormMode.login ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: _mode == AuthFormMode.login
-                                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                                      : [],
+                      // Brand Logo Wordmark Header Bar (44px height stack, exact match with choose_experience_screen)
+                      SizedBox(
+                        height: 44,
+                        width: double.infinity,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Positioned(
+                              left: 0,
+                              child: IconButton(
+                                onPressed: () {
+                                  final state = BlushyOSProvider.of(context);
+                                  state.resetChosenExperience();
+                                },
+                                icon: const Icon(Icons.arrow_back_rounded, size: 22, color: textDark),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                splashRadius: 20,
+                              ),
+                            ),
+                            RichText(
+                              textAlign: TextAlign.center,
+                              text: const TextSpan(
+                                style: TextStyle(
+                                  fontFamily: 'Manrope',
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800,
+                                  fontStyle: FontStyle.normal,
+                                  letterSpacing: 2.8,
+                                  color: Color(0xFFE51937),
                                 ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'Log In',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: _mode == AuthFormMode.login ? primaryColor : textMuted,
+                                children: [
+                                  TextSpan(text: 'BLUSHY'),
+                                  TextSpan(
+                                    text: '.',
+                                    style: TextStyle(
+                                      color: Color(0xFFFF5000),
+                                      fontWeight: FontWeight.w900,
+                                      fontStyle: FontStyle.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Top Tab Switcher: Log In | Create Account
+                      Container(
+                        height: 44,
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFE8E2),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _switchMode(AuthFormMode.login),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  decoration: BoxDecoration(
+                                    color: _mode == AuthFormMode.login ? Colors.white : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(19),
+                                    boxShadow: _mode == AuthFormMode.login
+                                        ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                                        : [],
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'Log In',
+                                    style: TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.25,
+                                      color: _mode == AuthFormMode.login ? primaryColor : textMuted,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _switchMode(AuthFormMode.signup),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                decoration: BoxDecoration(
-                                  color: _mode == AuthFormMode.signup ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: _mode == AuthFormMode.signup
-                                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                                      : [],
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'Create Account',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: _mode == AuthFormMode.signup ? primaryColor : textMuted,
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _switchMode(AuthFormMode.signup),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  decoration: BoxDecoration(
+                                    color: _mode == AuthFormMode.signup ? Colors.white : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(19),
+                                    boxShadow: _mode == AuthFormMode.signup
+                                        ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                                        : [],
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'Create Account',
+                                    style: TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.25,
+                                      color: _mode == AuthFormMode.signup ? primaryColor : textMuted,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Header Title
-                    Text(
-                      _mode == AuthFormMode.signup ? 'Join the Blushy family' : 'Welcome back, lovely',
-                      style: GoogleFonts.instrumentSerif(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _mode == AuthFormMode.signup ? 'Create an account in seconds' : 'Sign in to continue your journey',
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        color: textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: cardSelectedBg,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _selectedRole == UserRole.woman ? Icons.favorite : Icons.handshake,
-                                size: 14,
-                                color: primaryColor,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _selectedRole == UserRole.woman ? 'Primary Account (Woman)' : 'Support Account (Man)',
-                                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: primaryColor),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: () {
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Header Title (Cormorant Garamond, 32px, w700 Bold, NO Italics)
+                      Text(
+                        _mode == AuthFormMode.signup ? 'Create account' : 'Welcome back',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'CormorantGaramond',
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700, // Rich Bold Cormorant Garamond
+                          fontStyle: FontStyle.normal,
+                          letterSpacing: 0.4,
+                          height: 1.15,
+                          color: textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _mode == AuthFormMode.signup ? 'Begin your wellness journey' : 'Sign in to your Blushy account',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'Manrope',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.25,
+                          color: textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () {
                             final state = BlushyOSProvider.of(context);
                             final targetRole = _selectedRole == UserRole.woman ? 'partner' : 'woman';
                             state.setSelectedRole(targetRole);
@@ -631,19 +813,40 @@ class _SignupScreenState extends State<SignupScreen> {
                               _errorMessage = null;
                             });
                           },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            _selectedRole == UserRole.woman ? 'Switch to Partner' : 'Switch to Woman',
-                            style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: primaryColor),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: primaryColor.withValues(alpha: 0.25)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _selectedRole == UserRole.woman ? Icons.person_outline_rounded : Icons.people_outline_rounded,
+                                  size: 14,
+                                  color: primaryColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _selectedRole == UserRole.woman ? 'Woman Experience' : 'Partner Experience',
+                                  style: const TextStyle(
+                                    fontFamily: 'Manrope',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.25,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(Icons.swap_horiz_rounded, size: 13, color: primaryColor.withValues(alpha: 0.6)),
+                              ],
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
+                      ),
+                      const SizedBox(height: 18),
 
                     // Error Banner
                     if (_errorMessage != null) ...[
@@ -665,7 +868,14 @@ class _SignupScreenState extends State<SignupScreen> {
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFFE53935), height: 1.4, fontWeight: FontWeight.w500),
+                                    style: const TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 12,
+                                      color: Color(0xFFE53935),
+                                      height: 1.4,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.15,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -688,9 +898,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.3)),
                                   ),
-                                  child: Text(
+                                  child: const Text(
                                     '👉 Switch to Woman Experience',
-                                    style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFE53935)),
+                                    style: TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.2,
+                                      color: Color(0xFFE53935),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -712,9 +928,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.3)),
                                   ),
-                                  child: Text(
+                                  child: const Text(
                                     '👉 Switch to Partner Experience',
-                                    style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFE53935)),
+                                    style: TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.2,
+                                      color: Color(0xFFE53935),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -736,7 +958,13 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: Text(
                           _successMessage!,
-                          style: GoogleFonts.manrope(fontSize: 12, color: Colors.green.shade800, height: 1.4),
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 12,
+                            color: Colors.green.shade800,
+                            height: 1.4,
+                            letterSpacing: 0.15,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -748,7 +976,12 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _nameController,
-                        style: GoogleFonts.manrope(fontSize: 14, color: textDark),
+                        style: const TextStyle(
+                          fontFamily: 'Manrope',
+                          fontSize: 13.5,
+                          color: textDark,
+                          letterSpacing: 0.2,
+                        ),
                         decoration: _buildInputDecoration('Your name', Icons.person_outline),
                         validator: (val) {
                           if (_mode == AuthFormMode.signup && (val == null || val.trim().isEmpty)) {
@@ -757,10 +990,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
                     ],
-
-
 
                     // Email Field
                     _buildFieldLabel('Email'),
@@ -772,7 +1003,12 @@ class _SignupScreenState extends State<SignupScreen> {
                         AutofillHints.username,
                         AutofillHints.email,
                       ],
-                      style: GoogleFonts.manrope(fontSize: 14, color: textDark),
+                      style: const TextStyle(
+                        fontFamily: 'Manrope',
+                        fontSize: 13.5,
+                        color: textDark,
+                        letterSpacing: 0.2,
+                      ),
                       decoration: _buildInputDecoration('you@example.com', Icons.mail_outline),
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) return 'Email is required';
@@ -780,7 +1016,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
 
                     // Phone Number Field (Signup mode only)
                     if (_mode == AuthFormMode.signup) ...[
@@ -793,7 +1029,12 @@ class _SignupScreenState extends State<SignupScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(10),
                         ],
-                        style: GoogleFonts.manrope(fontSize: 14, color: textDark),
+                        style: const TextStyle(
+                          fontFamily: 'Manrope',
+                          fontSize: 13.5,
+                          color: textDark,
+                          letterSpacing: 0.2,
+                        ),
                         decoration: _buildInputDecoration('10-digit mobile number', Icons.phone_outlined).copyWith(
                           prefixIcon: Padding(
                             padding: const EdgeInsets.only(left: 14, right: 8),
@@ -802,12 +1043,14 @@ class _SignupScreenState extends State<SignupScreen> {
                               children: [
                                 const Icon(Icons.phone_outlined, size: 18, color: Color(0xFFA5959C)),
                                 const SizedBox(width: 6),
-                                Text(
+                                const Text(
                                   '+91',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    fontFamily: 'Manrope',
+                                    fontSize: 13.5,
                                     fontWeight: FontWeight.w600,
                                     color: textDark,
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
                                 Container(
@@ -832,7 +1075,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
                     ],
 
                     // Password Field Header (with Forgot password? link in Login mode)
@@ -842,10 +1085,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         _buildFieldLabel('Password'),
                         if (_mode == AuthFormMode.login)
                           GestureDetector(
-                            // This used to show "Password reset link sent to
-                            // your email." and send nothing at all, so the
-                            // wait was for an email that was never coming.
-                            // It opens the flow that actually requests one.
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -861,9 +1100,11 @@ class _SignupScreenState extends State<SignupScreen> {
                             },
                             child: Text(
                               AppLocalizations.of(context).sForgotPassword,
-                              style: GoogleFonts.manrope(
+                              style: const TextStyle(
+                                fontFamily: 'Manrope',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
                                 color: primaryColor,
                               ),
                             ),
@@ -874,14 +1115,17 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      // newPassword on signup, so the manager offers to
-                      // generate and save one rather than filling an old one.
                       autofillHints: [
                         _mode == AuthFormMode.signup
                             ? AutofillHints.newPassword
                             : AutofillHints.password,
                       ],
-                      style: GoogleFonts.manrope(fontSize: 14, color: textDark),
+                      style: const TextStyle(
+                        fontFamily: 'Manrope',
+                        fontSize: 13.5,
+                        color: textDark,
+                        letterSpacing: 0.2,
+                      ),
                       decoration: _buildInputDecoration('Minimum 8 characters', Icons.lock_outline).copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -899,9 +1143,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 4),
 
-                    // Handing the pair to the phone's password manager, which
-                    // is what fills them in next time. The app itself never
-                    // keeps the password.
                     Row(
                       children: [
                         SizedBox(
@@ -919,10 +1160,13 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: GestureDetector(
                             onTap: () =>
                                 setState(() => _savePassword = !_savePassword),
-                            child: Text(
+                            child: const Text(
                               'Save my password on this device',
-                              style: GoogleFonts.manrope(
+                              style: TextStyle(
+                                fontFamily: 'Manrope',
                                 fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                letterSpacing: 0.2,
                                 color: textMuted,
                               ),
                             ),
@@ -952,14 +1196,24 @@ class _SignupScreenState extends State<SignupScreen> {
                               child: Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Text(AppLocalizations.of(context).sIAgreeToThe, style: GoogleFonts.manrope(fontSize: 12, color: textDark)),
+                                  Text(
+                                    AppLocalizations.of(context).sIAgreeToThe,
+                                    style: const TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 12,
+                                      color: textDark,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
                                   GestureDetector(
                                     onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
                                     child: Text(
                                       AppLocalizations.of(context).sTermsConditions,
-                                      style: GoogleFonts.manrope(
+                                      style: const TextStyle(
+                                        fontFamily: 'Manrope',
                                         fontSize: 12,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.2,
                                         color: primaryColor,
                                         decoration: TextDecoration.underline,
                                       ),
@@ -974,40 +1228,41 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 20),
                     ],
 
-                    // Primary Submit Button: Sign in ✨ / Send verification link
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [BlushyColors.primary, Color(0xFFE52035)],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: primaryColor.withValues(alpha: 0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
+                    // Primary Submit Button (48px height pill, matching choose_experience_screen)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
                       child: ElevatedButton(
                         onPressed: _isSubmitting ? null : _handleSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: const Color(0xFFE5DFD9),
+                          disabledForegroundColor: const Color(0xFF9E948E),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
                         ),
                         child: _isSubmitting
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : Text(
-                                _mode == AuthFormMode.signup ? 'Send verification link' : 'Sign in',
-                                style: GoogleFonts.manrope(
+                                _mode == AuthFormMode.signup
+                                    ? 'Send verification link'
+                                    : 'Sign in',
+                                style: const TextStyle(
+                                  fontFamily: 'Manrope',
                                   fontSize: 15,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
+                                  fontStyle: FontStyle.normal,
+                                  letterSpacing: 0.35,
                                   color: Colors.white,
                                 ),
                               ),
@@ -1023,72 +1278,126 @@ class _SignupScreenState extends State<SignupScreen> {
                           color: const Color(0xFFFDF2F2),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
+                        child: const Text(
                           "Signup requires email verification. Check your inbox. If you haven't received the email, you can verify it below.",
-                          style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.4),
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 11,
+                            color: textMuted,
+                            height: 1.4,
+                            letterSpacing: 0.15,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
                     ],
 
                     // OR Divider
-                    Row(
+                    const Row(
                       children: [
-                        const Expanded(child: Divider(color: borderColor)),
+                        Expanded(child: Divider(color: borderColor)),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('OR', style: GoogleFonts.manrope(fontSize: 11, color: textMuted)),
-                        ),
-                        const Expanded(child: Divider(color: borderColor)),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Continue with Google Button
-                    OutlinedButton(
-                      onPressed: _isSubmitting ? null : _handleGoogleSignIn,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(color: borderColor),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        backgroundColor: Colors.white,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.login, size: 18, color: primaryColor),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Continue with Google',
-                            style: GoogleFonts.manrope(
-                              fontSize: 13,
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'OR',
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: primaryColor,
+                              letterSpacing: 0.5,
+                              color: textMuted,
                             ),
                           ),
-                        ],
+                        ),
+                        Expanded(child: Divider(color: borderColor)),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Continue with Google Button (48px height pill, matching premium design system)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: _isSubmitting ? null : _handleGoogleSignIn,
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0xFFE6E0DA), width: 1.2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.login_rounded, size: 18, color: primaryColor),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Continue with Google',
+                              style: TextStyle(
+                                fontFamily: 'Manrope',
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w600,
+                                fontStyle: FontStyle.normal,
+                                letterSpacing: 0.3,
+                                color: textDark,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
                     // Footers
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('By continuing, you agree to our ', style: GoogleFonts.manrope(fontSize: 11, color: textMuted)),
+                        const Text(
+                          'By continuing, you agree to our ',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 11,
+                            color: textMuted,
+                            letterSpacing: 0.15,
+                          ),
+                        ),
                         GestureDetector(
                           onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
                           child: Text(
                             AppLocalizations.of(context).sTerms,
-                            style: GoogleFonts.manrope(fontSize: 11, color: primaryColor, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+                            style: const TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 11,
+                              color: primaryColor,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.15,
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
                         ),
-                        Text(' & ', style: GoogleFonts.manrope(fontSize: 11, color: textMuted)),
+                        const Text(
+                          ' & ',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 11,
+                            color: textMuted,
+                            letterSpacing: 0.15,
+                          ),
+                        ),
                         GestureDetector(
                           onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.privacyPolicy),
                           child: Text(
                             AppLocalizations.of(context).sPrivacyPolicy,
-                            style: GoogleFonts.manrope(fontSize: 11, color: primaryColor, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+                            style: const TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 11,
+                              color: primaryColor,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.15,
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
                         ),
                       ],
@@ -1101,15 +1410,22 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         Text(
                           _mode == AuthFormMode.login ? 'New to Blushy? ' : 'Already have an account? ',
-                          style: GoogleFonts.manrope(fontSize: 13, color: textMuted),
+                          style: const TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 13,
+                            color: textMuted,
+                            letterSpacing: 0.15,
+                          ),
                         ),
                         GestureDetector(
                           onTap: () => _switchMode(_mode == AuthFormMode.login ? AuthFormMode.signup : AuthFormMode.login),
                           child: Text(
                             _mode == AuthFormMode.login ? 'Create one' : 'Log in',
-                            style: GoogleFonts.manrope(
+                            style: const TextStyle(
+                              fontFamily: 'Manrope',
                               fontSize: 13,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
                               color: primaryColor,
                             ),
                           ),
@@ -1130,10 +1446,12 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget _buildFieldLabel(String label) {
     return Text(
       label,
-      style: GoogleFonts.manrope(
-        fontSize: 13,
+      style: const TextStyle(
+        fontFamily: 'Manrope',
+        fontSize: 12.5,
         fontWeight: FontWeight.w600,
-        color: const Color(0xFF2D2529),
+        letterSpacing: 0.2,
+        color: Color(0xFF2D2529),
       ),
     );
   }
@@ -1141,11 +1459,16 @@ class _SignupScreenState extends State<SignupScreen> {
   InputDecoration _buildInputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFFA5959C)),
+      hintStyle: const TextStyle(
+        fontFamily: 'Manrope',
+        fontSize: 13,
+        color: Color(0xFFA5959C),
+        letterSpacing: 0.2,
+      ),
       prefixIcon: Icon(icon, size: 18, color: const Color(0xFFA5959C)),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: BlushyColors.border),

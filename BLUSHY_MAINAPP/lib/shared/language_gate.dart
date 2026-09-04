@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../core/theme.dart' hide BlushyColors;
 import '../services/language_preference.dart';
 import '../theme/colors.dart';
+import '../theme/scale.dart';
 
 /// Asks for a language once, before anything else the app shows.
 ///
@@ -44,9 +45,6 @@ class LanguageChoiceScreen extends StatelessWidget {
 
   final VoidCallback onDone;
 
-  /// The English name beside each native one. A user who has the app in a
-  /// language they did not intend needs to find their way back out, and the
-  /// script they can read may not be the script the row is written in.
   static const Map<String, String> _englishNames = {
     'en': 'English',
     'hi': 'Hindi',
@@ -67,19 +65,18 @@ class LanguageChoiceScreen extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: const BoxConstraints(maxWidth: 460),
             child: Column(
               children: [
-                const SizedBox(height: 24),
-                // The wordmark stays in Latin script in every language: it is
-                // the product's name, not a translatable string.
+                const SizedBox(height: 28),
+                // BLUSHY. Logo Wordmark
                 RichText(
                   text: const TextSpan(
                     style: TextStyle(
-                      fontFamily: 'Ada Hybrid',
-                      fontSize: 30,
+                      fontFamily: 'Manrope',
+                      fontSize: 26,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 2,
+                      letterSpacing: 1.5,
                       color: BlushyColors.primary,
                     ),
                     children: [
@@ -91,16 +88,16 @@ class LanguageChoiceScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
                   child: Column(
                     children: [
                       Text(
                         t.languageChoiceTitle,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 22,
+                        style: BlushyType.headline().copyWith(
+                          fontSize: 24,
                           fontWeight: FontWeight.w700,
                           color: BlushyColors.text,
                         ),
@@ -109,23 +106,23 @@ class LanguageChoiceScreen extends StatelessWidget {
                       Text(
                         t.languageChoiceSubtitle,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: BlushyType.body().copyWith(
                           fontSize: 14,
-                          height: 1.4,
+                          height: 1.45,
                           color: BlushyColors.secondaryText,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Expanded(
                   child: ValueListenableBuilder<String>(
                     valueListenable: LanguagePreference.current,
                     builder: (context, selected, _) => ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       itemCount: codes.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final code = codes[index];
                         return _LanguageTile(
@@ -139,30 +136,29 @@ class LanguageChoiceScreen extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                   child: SizedBox(
                     width: double.infinity,
-                    child: FilledButton(
+                    height: 52,
+                    child: ElevatedButton(
                       onPressed: () {
-                        // English is the default, so a user who wants English
-                        // may never tap a row. Confirming is what records the
-                        // choice, and it is what stops the screen returning.
                         LanguagePreference.set(LanguagePreference.code);
                         onDone();
                       },
-                      style: FilledButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
                         backgroundColor: BlushyColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(BlushyTheme.radius),
+                          borderRadius: BorderRadius.circular(28),
                         ),
                       ),
                       child: Text(
                         t.languageChoiceContinue,
-                        style: const TextStyle(
+                        style: BlushyType.heading().copyWith(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -192,49 +188,76 @@ class _LanguageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: selected ? BlushyColors.primary.withValues(alpha: 0.06) : BlushyColors.cardBg,
-      borderRadius: BorderRadius.circular(BlushyTheme.radius),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(BlushyTheme.radius),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(BlushyTheme.radius),
-            border: Border.all(
-              color: selected ? BlushyColors.primary : BlushyColors.border,
-              width: selected ? 1.6 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      nativeName,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: BlushyColors.text,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      englishName,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: BlushyColors.secondaryText,
-                      ),
-                    ),
-                  ],
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: selected
+            ? const Color(0xFFFBEBEA)
+            : BlushyColors.cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: selected ? BlushyColors.primary : BlushyColors.border,
+          width: selected ? 1.8 : 1.0,
+        ),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: BlushyColors.primary.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-              if (selected)
-                const Icon(Icons.check_circle, color: BlushyColors.primary, size: 22),
-            ],
+              ]
+            : [],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nativeName,
+                        style: BlushyType.heading().copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: BlushyColors.text,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        englishName,
+                        style: BlushyType.caption().copyWith(
+                          fontSize: 13,
+                          color: BlushyColors.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (selected)
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: BlushyColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 15,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

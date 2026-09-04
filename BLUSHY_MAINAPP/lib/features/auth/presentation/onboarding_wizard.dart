@@ -5,6 +5,7 @@ import '../../../core/storage.dart';
 import '../../../core/state.dart';
 import '../../../core/cycle_calculator.dart';
 import '../../../theme/colors.dart';
+import '../../../theme/scale.dart';
 import '../../../services/api_auth_service.dart';
 import '../../legal/legal_documents_screen.dart';
 import '../../../services/api_blushy_service.dart';
@@ -677,112 +678,314 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   // --- 1. PRIVACY & CONSENT SCREEN ---
   Widget _buildPrivacyScreen() {
     return Scaffold(
-      backgroundColor: BlushyColors.background,
+      backgroundColor: const Color(0xFFFDFBF7),
       body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
+        child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
+            constraints: const BoxConstraints(maxWidth: 420),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 36),
+              padding: const EdgeInsets.only(top: 28, bottom: 20, left: 20, right: 20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Spacer(),
-                  const Center(
-                    child: Icon(Icons.lock_person_outlined, size: 72, color: BlushyColors.primary),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 16),
+                      // Compact Luxury Soft Ambient Shield Icon Badge
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF4F1),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFF4DCD6), width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BlushyColors.primary.withValues(alpha: 0.1),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.shield_outlined,
+                          size: 26,
+                          color: BlushyColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Headline: Cormorant Garamond w700 (24px)
+                      Text(
+                        "Your health. Your privacy.",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.normal,
+                          letterSpacing: 0.2,
+                          height: 1.15,
+                          color: const Color(0xFF2D2529),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Subtitle: Manrope w400 (12.5px)
+                      Text(
+                        "Blushy is built as your private wellness space. Everything you share is protected with local device encryption and under your absolute control.",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.manrope(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.15,
+                          height: 1.4,
+                          color: const Color(0xFF7A6B72),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 3 Compact Luxury Privacy Pillars Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFDF9),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFECE4DC), width: 1.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 14,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildPrivacyPillar(
+                              icon: Icons.lock_outline_rounded,
+                              title: "On-Device Encryption",
+                              subtitle: "Sensitive logs encrypted locally before storing.",
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 6),
+                              child: Divider(color: Color(0xFFF2ECE4), height: 1),
+                            ),
+                            _buildPrivacyPillar(
+                              icon: Icons.phonelink_erase_rounded,
+                              title: "Zero Data Selling",
+                              subtitle: "We never monetize or share your health records.",
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 6),
+                              child: Divider(color: Color(0xFFF2ECE4), height: 1),
+                            ),
+                            _buildPrivacyPillar(
+                              icon: Icons.admin_panel_settings_outlined,
+                              title: "Complete Sovereignty",
+                              subtitle: "Export or delete your data whenever you choose.",
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 28),
-                  Text(
-                    "Your health. Your privacy.",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(fontSize: 36, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    "Everything you share helps Blushy personalize your wellness companion experience. We use local encryption, we never sell your personal health records, and you are always in complete control.",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText, height: 1.5),
-                  ),
-                  const Spacer(),
-                  CheckboxListTile(
-                    title: Row(
-                      children: [
-                        Text(AppLocalizations.of(context).oIAgreeToThe, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
-                        GestureDetector(
-                          onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.privacyPolicy),
+
+                  // Bottom Controls (Checkboxes + CTA)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildInteractiveCheckTile(
+                        titlePrefix: AppLocalizations.of(context).oIAgreeToThe,
+                        linkText: AppLocalizations.of(context).oPrivacyPolicy,
+                        isChecked: _agreePrivacy,
+                        onTapLink: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.privacyPolicy),
+                        onChanged: (val) {
+                          setState(() {
+                            _agreePrivacy = val;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+
+                      _buildInteractiveCheckTile(
+                        titlePrefix: AppLocalizations.of(context).oIAgreeToThe,
+                        linkText: AppLocalizations.of(context).oTermsOfService,
+                        isChecked: _agreeTerms,
+                        onTapLink: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
+                        onChanged: (val) {
+                          setState(() {
+                            _agreeTerms = val;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Compact Luxury Button (46px Pill)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: ElevatedButton(
+                          onPressed: (_agreePrivacy && _agreeTerms)
+                              ? () {
+                                  setState(() {
+                                    _phase = OnboardingPhase.questions;
+                                  });
+                                  _saveProgress();
+                                }
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: BlushyColors.primary,
+                            disabledBackgroundColor: const Color(0xFFEFE9E4),
+                            disabledForegroundColor: const Color(0xFFAFA59E),
+                            elevation: (_agreePrivacy && _agreeTerms) ? 3 : 0,
+                            shadowColor: BlushyColors.primary.withValues(alpha: 0.3),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(23),
+                            ),
+                          ),
                           child: Text(
-                            AppLocalizations.of(context).oPrivacyPolicy,
-                            style: GoogleFonts.manrope(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: BlushyColors.primary,
-                              decoration: TextDecoration.underline,
+                            "Agree & Continue",
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              fontStyle: FontStyle.normal,
+                              letterSpacing: 0.3,
+                              color: (_agreePrivacy && _agreeTerms) ? Colors.white : const Color(0xFFAFA59E),
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    value: _agreePrivacy,
-                    activeColor: BlushyColors.primary,
-                    onChanged: (val) {
-                      setState(() {
-                        _agreePrivacy = val ?? false;
-                      });
-                    },
-                  ),
-                  CheckboxListTile(
-                    title: Row(
-                      children: [
-                        Text(AppLocalizations.of(context).oIAgreeToThe, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
-                        GestureDetector(
-                          onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
-                          child: Text(
-                            AppLocalizations.of(context).oTermsOfService,
-                            style: GoogleFonts.manrope(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: BlushyColors.primary,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    value: _agreeTerms,
-                    activeColor: BlushyColors.primary,
-                    onChanged: (val) {
-                      setState(() {
-                        _agreeTerms = val ?? false;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: (_agreePrivacy && _agreeTerms)
-                        ? () {
-                            setState(() {
-                              _phase = OnboardingPhase.questions;
-                            });
-                            _saveProgress();
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary,
-                      disabledBackgroundColor: const Color(0x1F2E2623),
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      "Continue to Onboarding",
-                      style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrivacyPillar({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF4F1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 16, color: BlushyColors.primary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.manrope(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2D2529),
+                  letterSpacing: 0.1,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                subtitle,
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF8A7C83),
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInteractiveCheckTile({
+    required String titlePrefix,
+    required String linkText,
+    required bool isChecked,
+    required VoidCallback onTapLink,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return InkWell(
+      onTap: () => onChanged(!isChecked),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isChecked ? const Color(0xFFFFF9F8) : const Color(0xFFFFFDF9),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isChecked ? BlushyColors.primary.withValues(alpha: 0.5) : const Color(0xFFECE4DC),
+            width: isChecked ? 1.3 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: isChecked ? BlushyColors.primary : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: isChecked ? BlushyColors.primary : const Color(0xFFC8BEB7),
+                  width: 1.4,
+                ),
+              ),
+              child: isChecked
+                  ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    titlePrefix,
+                    style: const TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF3D3237),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: onTapLink,
+                    child: Text(
+                      linkText,
+                      style: const TextStyle(
+                        fontFamily: 'Manrope',
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: BlushyColors.primary,
+                        decoration: TextDecoration.underline,
+                        decorationColor: BlushyColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -796,18 +999,23 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       children: [
         Text(
           stepLabel.toUpperCase(),
+          textAlign: TextAlign.center,
           style: GoogleFonts.manrope(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
             color: BlushyColors.secondaryText,
-            letterSpacing: 2.0,
+            letterSpacing: 1.4,
           ),
         ),
         const SizedBox(height: 12),
         Container(
-          width: 240,
-          height: 1,
-          color: BlushyColors.border,
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 360),
+          height: 2,
+          decoration: BoxDecoration(
+            color: BlushyColors.border,
+            borderRadius: BorderRadius.circular(1),
+          ),
           alignment: Alignment.centerLeft,
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0.0, end: progress),
@@ -817,8 +1025,11 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
               return FractionallySizedBox(
                 widthFactor: val,
                 child: Container(
-                  height: 1,
-                  color: BlushyColors.primary,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: BlushyColors.primary,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
                 ),
               );
             },
@@ -836,26 +1047,28 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
         Text(
           title,
           textAlign: TextAlign.center,
-          style: GoogleFonts.manrope(
-            fontSize: 42,
-            fontWeight: FontWeight.w500,
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            fontStyle: FontStyle.normal,
             color: BlushyColors.text,
-            height: 1.15,
+            height: 1.18,
           ),
         ),
         if (description.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             description,
             textAlign: TextAlign.center,
             style: GoogleFonts.manrope(
-              fontSize: 15,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w500,
               color: BlushyColors.secondaryText,
-              height: 1.4,
+              height: 1.45,
             ),
           ),
         ],
-        const SizedBox(height: 48),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -916,13 +1129,13 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 900),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 36),
+              padding: const EdgeInsets.only(left: 20, right: 20, top: 36, bottom: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   _buildPremiumProgressHeader(progress, stepLabel),
-                  const SizedBox(height: 56),
+                  const SizedBox(height: 32),
 
                   // 2. MAIN INPUT VIEW WITH FADE/SLIDE TRANSITIONS
                   Expanded(
@@ -982,133 +1195,148 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     );
   }
 
-  // --- 3. BUILDING YOUR BLUSHY SCREEN ---
+  // --- 3. BUILDING SCREEN ---
   Widget _buildBuildingScreen() {
     final listItems = [
-      "Understanding your health journey",
-      "Personalizing your dashboard",
-      AppLocalizations.of(context).onbPreparingDocsy,
-      AppLocalizations.of(context).onbCreatingInsights,
-      AppLocalizations.of(context).onbCuratingContent,
-      AppLocalizations.of(context).onbCreatingSafeSpace
+      "Securing your privacy vault",
+      "Personalizing cycle & body rhythm models",
+      "Initializing Docsy AI companion context",
+      "Preparing daily wellness recommendations",
+      "Setting up your personal dashboard"
     ];
 
     return Scaffold(
-      backgroundColor: BlushyColors.background,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  "Creating your wellness space...",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.manrope(fontSize: 32, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                ),
-                const SizedBox(height: 36),
-                
-                // Checklist items with staggering checks
-                ...List.generate(listItems.length, (idx) {
-                  final isDone = _buildingChecks[idx];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isDone ? Icons.check_circle : Icons.radio_button_off,
-                          color: isDone ? BlushyColors.primary : BlushyColors.secondaryText.withValues(alpha: 0.4),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 14),
-                        Text(
-                          listItems[idx],
-                          style: GoogleFonts.manrope(
-                            fontSize: 13, 
-                            color: isDone ? BlushyColors.text : BlushyColors.secondaryText.withValues(alpha: 0.6),
-                            fontWeight: isDone ? FontWeight.w600 : FontWeight.normal
-                          ),
+      backgroundColor: const Color(0xFFFDFBF7),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 36.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Ambient pulse icon badge
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF4F1),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFF4DCD6), width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: BlushyColors.primary.withValues(alpha: 0.12),
+                          blurRadius: 24,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                  );
-                }),
-                const SizedBox(height: 48),
-
-                // Linear progress indicator
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: _buildingProgress,
-                    minHeight: 6,
-                    backgroundColor: const Color(0x1F2E2623),
-                    valueColor: AlwaysStoppedAnimation<Color>(BlushyColors.primary),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "${(_buildingProgress * 100).toInt()}%",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --- 4. DR. DOCSY WELCOME SCREEN ---
-  Widget _buildSiaWelcomeScreen() {
-    return Scaffold(
-      backgroundColor: BlushyColors.background,
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.center,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 36.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Center(
-                    child: Icon(Icons.auto_awesome, size: 72, color: BlushyColors.primary),
-                  ),
-                  const SizedBox(height: 36),
-                  Text(
-                    "Hi, ${_profile.preferredName}.\nI'm Docsy.",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(fontSize: 42, fontWeight: FontWeight.w300, color: BlushyColors.text, height: 1.1),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 34,
+                      color: BlushyColors.primary,
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    "I'll learn alongside you and adapt as your needs change.\n\nSome days I'll help you understand your body. Some days I'll remind you to care for yourself. Some days I'll simply listen.\n\nWelcome to Blushy.",
+
+                  const Text(
+                    "Creating your wellness space...",
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText, height: 1.6),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _phase = OnboardingPhase.ready;
-                      });
-                      _saveProgress();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
+                    style: TextStyle(
+                      fontFamily: 'CormorantGaramond',
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      fontStyle: FontStyle.normal,
+                      letterSpacing: 0.3,
+                      height: 1.15,
+                      color: Color(0xFF2D2529),
                     ),
-                    child: Text(
-                      "Start My Journey",
-                      style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Checklist Container
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFDF9),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: const Color(0xFFECE4DC), width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: List.generate(listItems.length, (idx) {
+                        final isDone = _buildingChecks[idx];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: isDone ? BlushyColors.primary : Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDone ? BlushyColors.primary : const Color(0xFFD6CBC3),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: isDone
+                                    ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                                    : null,
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  listItems[idx],
+                                  style: TextStyle(
+                                    fontFamily: 'Manrope',
+                                    fontSize: 13,
+                                    color: isDone ? const Color(0xFF2D2529) : const Color(0xFF8A7C83),
+                                    fontWeight: isDone ? FontWeight.w700 : FontWeight.w400,
+                                    letterSpacing: 0.15,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+
+                  // Linear progress indicator
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: _buildingProgress,
+                      minHeight: 6,
+                      backgroundColor: const Color(0xFFECE4DC),
+                      valueColor: AlwaysStoppedAnimation<Color>(BlushyColors.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "${(_buildingProgress * 100).toInt()}%",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: BlushyColors.primary,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],
@@ -1120,84 +1348,463 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     );
   }
 
-  // --- 5. YOUR BLUSHY IS READY SCREEN ---
-  Widget _buildReadyScreen() {
-    final readyCards = [
-      "Personalized Home",
-      "AI Companion Ready",
-      "Daily Insights Prepared",
-      "Journal Ready",
-      "Community Matched",
-      "Wellness Timeline Created"
-    ];
+  String _toTitleCase(String input) {
+    if (input.trim().isEmpty) return '';
+    return input.trim().split(RegExp(r'\s+')).map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
+  // --- 4. DR. DOCSY WELCOME SCREEN ---
+  Widget _buildSiaWelcomeScreen() {
+    final String rawName = _profile.preferredName.trim();
+    final String formattedName = rawName.isNotEmpty ? _toTitleCase(rawName) : 'there';
 
     return Scaffold(
-      backgroundColor: BlushyColors.background,
+      backgroundColor: const Color(0xFFFDFBF7),
       body: SafeArea(
-        child: Align(
-          alignment: Alignment.center,
+        child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(maxWidth: 420),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 36.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Spacer(),
-                  Text(
-                    "Your Blushy is Ready",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(fontSize: 38, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "We've prepared your personal wellness space.",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText),
-                  ),
-                  const SizedBox(height: 36),
-                  
-                  // Setup highlights grid
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: readyCards.map((card) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  // Top Section: Sparkle Badge, Title, and Promise Card
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 16),
+                      // Soft Glowing Sparkle Badge
+                      Container(
+                        width: 64,
+                        height: 64,
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0x1F2E2623)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.check, size: 14, color: BlushyColors.success),
-                            const SizedBox(width: 8),
-                            Text(
-                              card,
-                              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                          color: const Color(0xFFFFF4F1),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFF4DCD6), width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BlushyColors.primary.withValues(alpha: 0.15),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                      );
-                    }).toList(),
+                        child: const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 30,
+                          color: BlushyColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Headline: Cormorant Garamond w700 Title Case
+                      Text(
+                        "Hi, $formattedName.\nI'm Docsy.",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.normal,
+                          letterSpacing: 0.2,
+                          height: 1.15,
+                          color: const Color(0xFF2D2529),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Your private wellness companion",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.manrope(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF8A7C83),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Sanctuary Promises Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFDF9),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFECE4DC), width: 1.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildWelcomePromiseRow(
+                              icon: Icons.psychology_outlined,
+                              title: "Adapts To You",
+                              subtitle: "Learns alongside your logs and adapts as your body's rhythm changes.",
+                            ),
+                            const SizedBox(height: 14),
+                            _buildWelcomePromiseRow(
+                              icon: Icons.favorite_border_rounded,
+                              title: "Daily Wellness Care",
+                              subtitle: "Helps you understand your body, symptoms, and self-care daily.",
+                            ),
+                            const SizedBox(height: 14),
+                            _buildWelcomePromiseRow(
+                              icon: Icons.sanitizer_outlined,
+                              title: "Private & Confidential",
+                              subtitle: "A safe space to reflect without judgment.",
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: _finishOnboarding,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      "Enter Blushy",
-                      style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
+
+                  // Bottom Section: CTA Pill Button and Security Note
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _phase = OnboardingPhase.ready;
+                            });
+                            _saveProgress();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: BlushyColors.primary,
+                            elevation: 3,
+                            shadowColor: BlushyColors.primary.withValues(alpha: 0.3),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                          child: Text(
+                            "Start My Journey",
+                            style: GoogleFonts.manrope(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              fontStyle: FontStyle.normal,
+                              letterSpacing: 0.35,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.lock_outline_rounded, size: 12, color: Color(0xFF9E8A94)),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Encrypted locally on your device",
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF9E8A94),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomePromiseRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF4F1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: BlushyColors.primary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2D2529),
+                  letterSpacing: 0.1,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: GoogleFonts.manrope(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF7A6B72),
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- 5. YOUR BLUSHY IS READY SCREEN ---
+  Widget _buildReadyScreen() {
+    final readyItems = [
+      {
+        'icon': Icons.home_outlined,
+        'title': 'Personalized Home',
+        'subtitle': 'Customized layout',
+      },
+      {
+        'icon': Icons.auto_awesome_rounded,
+        'title': 'Dr. Docsy AI',
+        'subtitle': 'Companion ready',
+      },
+      {
+        'icon': Icons.insights_rounded,
+        'title': 'Daily Insights',
+        'subtitle': 'Rhythm tailored',
+      },
+      {
+        'icon': Icons.book_outlined,
+        'title': 'Private Journal',
+        'subtitle': 'Encrypted & secure',
+      },
+      {
+        'icon': Icons.people_outline_rounded,
+        'title': 'Community Circle',
+        'subtitle': 'Matched support',
+      },
+      {
+        'icon': Icons.timeline_rounded,
+        'title': 'Cycle Timeline',
+        'subtitle': 'Tracking active',
+      },
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFFDFBF7),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Top Section: Check Badge, Title, and 2-Column Grid
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 16),
+                      // Soft Glowing Check Badge
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF4F1),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFF4DCD6), width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BlushyColors.primary.withValues(alpha: 0.15),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          size: 32,
+                          color: BlushyColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      Text(
+                        "Your Blushy is Ready",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.normal,
+                          letterSpacing: 0.2,
+                          height: 1.15,
+                          color: const Color(0xFF2D2529),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Everything is tailored around your personal rhythm.",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.manrope(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF8A7C83),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 2-Column Grid of 6 Feature Cards
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 2.2,
+                        ),
+                        itemCount: readyItems.length,
+                        itemBuilder: (context, index) {
+                          final item = readyItems[index];
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFDF9),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFECE4DC), width: 1.0),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF4F1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    item['icon'] as IconData,
+                                    size: 16,
+                                    color: BlushyColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item['title'] as String,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF2D2529),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 1),
+                                      Text(
+                                        item['subtitle'] as String,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w400,
+                                          color: const Color(0xFF8A7C83),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 14,
+                                  color: Color(0xFF2B7A4B),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+
+                  // Bottom Section CTA
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: _finishOnboarding,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: BlushyColors.primary,
+                            elevation: 3,
+                            shadowColor: BlushyColors.primary.withValues(alpha: 0.3),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                          child: Text(
+                            "Enter Blushy",
+                            style: GoogleFonts.manrope(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              fontStyle: FontStyle.normal,
+                              letterSpacing: 0.35,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Tap to enter your personal wellness space",
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF9E8A94),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   ),
                 ],
               ),

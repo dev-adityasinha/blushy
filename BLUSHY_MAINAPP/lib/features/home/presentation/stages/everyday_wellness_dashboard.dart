@@ -47,6 +47,7 @@ import '../../widgets/home_hero.dart';
 import '../../widgets/greeting_card.dart' show GreetingCard;
 import '../../widgets/home_insight_cards.dart';
 import '../../widgets/monthly_journey_card.dart';
+import '../../widgets/auto_carousel_cards.dart';
 import '../../../../theme/scale.dart';
 
 String _getTimeBasedGreetingPrefix() {
@@ -2288,6 +2289,33 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
   }
 
   Widget _buildUnifiedMultiSiaInsights(List<String> stages) {
+    const whenEmptyDocsy = 'Docsy has not noticed anything in your logs yet.';
+    const whenInsufficientDocsy =
+        'Once you have logged a few days, Docsy will start sharing what it notices.';
+    const whenEmptyPatterns = 'Nothing stands out in your logs yet.';
+    const whenInsufficientPatterns =
+        'Keep logging for a couple of weeks and Blushy will start showing what it notices.';
+
+    if (_patternsAreEmpty) {
+      return AutoCarouselCards(
+        cards: [
+          DocsyInsightsCard(
+            heading: AppLocalizations.of(context).dashSiaInsights,
+            note: _patternsEmptyNote(whenEmptyDocsy, whenInsufficientDocsy),
+            actionLabel: AppLocalizations.of(context).dashLogTodayCheckIn,
+            onAction: _scrollToCheckIn,
+          ),
+          PatternsEmptyCard(
+            heading: AppLocalizations.of(context).dashPatternsTitle,
+            note: _patternsEmptyNote(whenEmptyPatterns, whenInsufficientPatterns),
+            actionLabel: AppLocalizations.of(context).dashLogTodayCheckIn,
+            onAction: _scrollToCheckIn,
+            onRefresh: () => _loadPatterns(refresh: true),
+          ),
+        ],
+        height: 130.0,
+      );
+    }
     return _buildLivingSiaInsights();
   }
 
@@ -2456,12 +2484,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                   _buildLivingCheckIn(),
                   SizedBox(height: isMobile ? 32 : 48),
 
-                  // 5. COMBINED DOCSY INSIGHTS
+                  // 5. COMBINED INSIGHTS & PATTERNS (Auto-Carousel)
                   _buildUnifiedMultiSiaInsights(stages),
-                  SizedBox(height: isMobile ? 32 : 48),
-
-                  // 6. SINGLE MERGED CYCLE PATTERNS & INSIGHTS
-                  _buildLivingPatterns(),
                   SizedBox(height: isMobile ? 32 : 48),
 
                   // 7. STAGE-SPECIFIC DISTINCT MODULES (Focus headers are placed at the start only)
@@ -2498,27 +2522,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
 
   // --- SECTION 1: DOCSY'S DAILY LETTER (HERO) ---
   Widget _buildSiasDailyLetter(String name) {
-    return _buildUnifiedHeroCard(
-      category: "Docsy's Daily Note",
-      title: "${_getTimeBasedGreetingPrefix()}, $name",
-      subtitle:
-          "Growing up happens one step at a time. You don't have to know everything today. We'll learn together.",
-      primaryBtnText: "Ask Docsy",
-      onPrimaryTap: () => _openAskSiaChat(context, null),
-      secondaryBtnText: "Continue Learning",
-      onSecondaryTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context).dashScrollDownContinueLearning,
-            ),
-            backgroundColor: BlushyColors.primary,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      },
-    );
+    return _buildLivingTodayCycle();
   }
 
   // --- SECTION 2: CONTINUE LEARNING ---
@@ -3943,220 +3947,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
 
   // --- SECTION 2: MY FIRST CYCLES (Featuring Ovary loop tracker BlushyCycleCard) ---
   Widget _buildMyFirstCycles() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeading("MY FIRST CYCLES"),
-              const SizedBox(height: 6),
-              Text(
-                AppLocalizations.of(context).dashLearningCycleCompanion,
-                style: GoogleFonts.manrope(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        final curPc = BlushyOSProvider.of(
-                          context,
-                        ).personalContext;
-                        final DateTime? pStart = curPc.lastPeriodStart;
-                        final int cycleDay = (pStart != null)
-                            ? (DateTime.now().difference(pStart).inDays + 1)
-                            : (curPc.cycleDay ?? 1);
-                        final int daysAgo = (pStart != null)
-                            ? DateTime.now().difference(pStart).inDays
-                            : (cycleDay > 0 ? cycleDay - 1 : 0);
-                        final bool hasData =
-                            pStart != null ||
-                            (curPc.cycleDay != null && curPc.cycleDay! > 0);
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              hasData
-                                  ? "Day $cycleDay of Cycle"
-                                  : "Cycle Tracking",
-                              style: GoogleFonts.manrope(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: BlushyColors.text,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              hasData
-                                  ? "$daysAgo days since last period start"
-                                  : "No period logged yet",
-                              style: GoogleFonts.manrope(
-                                fontSize: 12,
-                                color: BlushyColors.secondaryText,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => _showLogPeriodBottomSheet(context),
-                    icon: const Icon(
-                      Icons.edit,
-                      color: BlushyColors.primary,
-                      size: 20,
-                    ),
-                    tooltip: AppLocalizations.of(context).dashLogPeriod,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // Ovary tracker shape (BlushyCycleCard)
-              const Center(
-                child: SizedBox(
-                  width: 260,
-                  height: 95,
-                  child: BlushyCycleCard(purePainterMode: true),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Color Indicators
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildStartedLegendDot("Menstrual", BlushyColors.primary),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800)),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Luteal", BlushyColors.accent),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // Calendar Preview of the last 30 days
-              Text(
-                AppLocalizations.of(context).dashPastDays,
-                style: GoogleFonts.manrope(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 36,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: 30,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 6),
-                  itemBuilder: (context, index) {
-                    final int day = index + 1;
-                    final curPc = BlushyOSProvider.of(context).personalContext;
-                    final int activeCycleDay = (curPc.lastPeriodStart != null)
-                        ? (DateTime.now()
-                                  .difference(curPc.lastPeriodStart!)
-                                  .inDays +
-                              1)
-                        : (curPc.cycleDay ?? 1);
-                    final bool isMenstrual = day <= activeCycleDay && day <= 5;
-                    return Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: isMenstrual
-                            ? BlushyColors.primary
-                            : const Color(0xFFF9F6F0),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: BlushyColors.border,
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          day.toString(),
-                          style: GoogleFonts.manrope(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: isMenstrual
-                                ? Colors.white
-                                : BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Irregular cycles reassurance note
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDFBF7),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: BlushyColors.border, width: 0.8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      size: 18,
-                      color: BlushyColors.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        AppLocalizations.of(context).dashSCompletelyNormalFirst,
-                        style: GoogleFonts.manrope(
-                          fontSize: 12,
-                          color: BlushyColors.secondaryText,
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    return _buildLivingTodayCycle();
   }
 
   Widget _buildStartedLegendDot(String label, Color color) {
@@ -5252,37 +5043,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
     final bool hasPeriodLogged = cycleData['isLogged'] == true;
 
     final pc = _currentPc;
-    final wb = BlushyOSProvider.of(context).wellbeingState;
-    final checkinData = BlushyStorage.read('daily_checkin.json');
-    final String? savedMood = checkinData['feeling'] ?? checkinData['mood'];
-    final String? savedEnergy = checkinData['energy'];
-    final String? savedSleep = checkinData['sleep'];
-    final String? savedStress = checkinData['stress'];
-    final String? savedWater = checkinData['water'];
-    final String? savedExercise = checkinData['exercise'];
-    final String? savedFlow = checkinData['flow'];
-    final String? savedPain = checkinData['pain'];
-
-    final String energyVal =
-        _selectedEnergy ??
-        savedEnergy ??
-        (wb.energy != null ? "Level ${wb.energy}/10" : "Not Logged Today");
-    final String moodVal =
-        _selectedFeeling ??
-        savedMood ??
-        (wb.mood != null
-            ? (wb.symptoms.isNotEmpty
-                  ? wb.symptoms.first
-                  : "Level ${wb.mood}/10")
-            : "Not Logged Today");
-    final String sleepVal = _livingSleep ?? savedSleep ?? "Not Logged Today";
-    final String stressVal = _livingStress ?? savedStress ?? "Not Logged Today";
-    final String hydrationVal =
-        _livingWater ?? savedWater ?? "Not Logged Today";
-    final String exerciseVal =
-        _livingExercise ?? savedExercise ?? "Not Logged Today";
-    final String flowVal = _livingFlow ?? savedFlow ?? "Not Logged Today";
-    final String painVal = _livingPain ?? savedPain ?? "Not Logged Today";
 
     // The wash begins at the top of the section, behind the heading as well as
     // the cycle, and fades into the page colour before the section ends. Only
@@ -5356,65 +5116,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
         RecentlySurface(
           items: _recentItems(heroState),
           onEmptyAction: _openSymptomSheet,
-        ),
-        const SizedBox(height: BlushySpace.betweenCards),
-        LogSymptomsBanner(
-          title: hasPeriodLogged
-              ? "Log Today's Symptoms"
-              : 'Log Period Start Date',
-          subtitle: hasPeriodLogged
-              ? 'Track how you feel and take care'
-              : 'Everything on this page is counted from it',
-          onTap: () {
-            if (!hasPeriodLogged) {
-              _showLogPeriodBottomSheet(context);
-            } else {
-              _openSymptomSheet();
-            }
-          },
-        ),
-        const SizedBox(height: BlushySpace.betweenSections),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: BlushySpace.xs),
-          child: SectionHeading(
-            AppLocalizations.of(context).dashTodaySLoggedSignals,
-            icon: Icons.monitor_heart_outlined,
-          ),
-        ),
-        const SizedBox(height: BlushySpace.md),
-        LoggedSignalsCard(
-          // Opens the same sheet the banner does. That sheet is where the day
-          // arrows live, so it is already the full log -- a second screen
-          // showing the same thing is how the two drift apart.
-          footer: _ViewFullLogButton(onTap: _openSymptomSheet),
-          signals: [
-            _signal('Energy', energyVal, BlushyColors.primary,
-                Icons.bolt_rounded),
-            _signal('Mood', moodVal, BlushyColors.accent,
-                Icons.sentiment_satisfied_rounded),
-            if (_isMetricSelected(
-                pc, ['flow', 'period', 'bleeding', 'spotting']))
-              _signal('Flow', flowVal, BlushyColors.secondary,
-                  Icons.water_drop_rounded),
-            if (_isMetricSelected(
-                pc, ['pain', 'cramps', 'headache', 'back pain']))
-              _signal('Pain', painVal, BlushyColors.primary,
-                  Icons.flash_on_rounded),
-            if (_isMetricSelected(
-                pc, ['sleep', 'insomnia', 'rest', 'fatigue']))
-              _signal('Sleep', sleepVal, BlushyColors.secondary,
-                  Icons.bedtime_rounded),
-            if (_isMetricSelected(
-                pc, ['stress', 'anxiety', 'mood swings', 'mental health']))
-              _signal('Stress', stressVal, BlushyColors.accent,
-                  Icons.spa_rounded),
-            _signal('Hydration', hydrationVal, BlushyColors.secondary,
-                Icons.local_drink_rounded),
-            if (_isMetricSelected(pc,
-                ['exercise', 'workout', 'fitness', 'activity', 'walk']))
-              _signal('Movement', exerciseVal, BlushyColors.accent,
-                  Icons.directions_run_rounded),
-          ],
         ),
       ],
     );
@@ -6153,9 +5854,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
             if (insights.isEmpty) {
               return _buildPatternsPlaceholder(whenEmpty);
             }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: insights.map(_buildInsightCard).toList(),
+            if (insights.length == 1) {
+              return _buildInsightCard(insights.first);
+            }
+            return AutoCarouselCards(
+              cards: insights.map(_buildInsightCard).toList(),
+              height: 200.0,
             );
           },
         ),
@@ -6166,18 +5870,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
   Widget _buildPatternsPlaceholder(String message) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(BlushySpace.md),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BlushyColors.border, width: 0.8),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF7D8DD), width: 0.8),
       ),
       child: Text(
         message,
         style: GoogleFonts.manrope(
-          fontSize: 13,
-          color: BlushyColors.secondaryText,
-          height: 1.5,
+          fontSize: 12,
+          color: const Color(0xFF7A6B72),
+          height: 1.4,
         ),
       ),
     );
@@ -6198,121 +5902,111 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
       insightIcon = Icons.analytics_rounded;
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BlushyColors.border, width: 0.8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(insightIcon, size: 18, color: BlushyColors.primary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          insight.title.toUpperCase(),
-                          style: GoogleFonts.manrope(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.primary,
-                            letterSpacing: 1.0,
-                          ),
+    return Container(
+      padding: const EdgeInsets.all(BlushySpace.md),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF7D8DD), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(insightIcon, size: 16, color: BlushyColors.primary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        insight.title.toUpperCase(),
+                        style: GoogleFonts.manrope(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: BlushyColors.primary,
+                          letterSpacing: 1.4,
                         ),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9F6F2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFEAE3DC), width: 0.6),
+                ),
+                child: Text(
+                  _strengthLabel(insight),
+                  style: GoogleFonts.manrope(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: BlushyColors.secondaryText,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: BlushyColors.taupe,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _strengthLabel(insight),
-                    style: GoogleFonts.manrope(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                      color: BlushyColors.secondaryText,
-                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            insight.description,
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontStyle: FontStyle.italic,
+              color: BlushyColors.text,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _evidenceLine(insight),
+            style: GoogleFonts.manrope(
+              fontSize: 11.5,
+              color: const Color(0xFF7A6B72),
+              height: 1.4,
+            ),
+          ),
+          const Spacer(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () => _markInsightNotUseful(insight),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 24),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  AppLocalizations.of(context).dashNotUseful,
+                  style: GoogleFonts.manrope(
+                    fontSize: 11,
+                    color: BlushyColors.secondaryText,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Observational wording produced by the pattern engine.
-            Text(
-              insight.description,
-              style: GoogleFonts.manrope(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: BlushyColors.text,
               ),
-            ),
-            const SizedBox(height: 8),
-            // Real evidence: how many of the logs this was derived from.
-            Text(
-              _evidenceLine(insight),
-              style: GoogleFonts.manrope(
-                fontSize: 11,
-                color: BlushyColors.secondaryText,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              AppLocalizations.of(context).dashPatternNotDiagnosis,
-              style: GoogleFonts.manrope(
-                fontSize: 10,
-                color: BlushyColors.secondaryText,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => _markInsightNotUseful(insight),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 28),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context).dashNotUseful,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11,
-                      color: BlushyColors.secondaryText,
-                    ),
+              if (insight.generatedAt != null)
+                Text(
+                  _relativeTime(insight.generatedAt!),
+                  style: GoogleFonts.manrope(
+                    fontSize: 9.5,
+                    color: BlushyColors.secondaryText.withValues(alpha: 0.8),
+                    fontStyle: FontStyle.italic,
                   ),
                 ),
-                if (insight.generatedAt != null)
-                  Text(
-                    _relativeTime(insight.generatedAt!),
-                    style: GoogleFonts.manrope(
-                      fontSize: 9,
-                      color: BlushyColors.secondaryText.withValues(alpha: 0.8),
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -6505,201 +6199,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
 
   // --- SECTION 2: MY CYCLE HEALTH (Irregular tracking metrics & Ovary shape) ---
   Widget _buildHormonalCycleHealth() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeading("MY CYCLE HEALTH"),
-              const SizedBox(height: 6),
-              Text(
-                AppLocalizations.of(context).dashHormonalRhythmTracker,
-                style: GoogleFonts.manrope(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Builder(
-                builder: (context) {
-                  final cycleData = _getDynamicCycleDates(pc);
-
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    cycleData['cycleDayText'] as String,
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: BlushyColors.text,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    cycleData['subtitle'] as String,
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 12,
-                                      color: BlushyColors.secondaryText,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.edit,
-                                color: BlushyColors.primary,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                _showLogPeriodBottomSheet(context);
-                              },
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              splashRadius: 20,
-                              tooltip: "Log / Edit Period Date",
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // Ovary tracker shape (BlushyCycleCard)
-              const Center(
-                child: SizedBox(
-                  width: 260,
-                  height: 95,
-                  child: BlushyCycleCard(purePainterMode: true),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Color Indicators
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildStartedLegendDot("Menstrual", BlushyColors.primary),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800)),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Luteal", BlushyColors.accent),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // Recent Cycle History horizontal blocks
-              Text(
-                AppLocalizations.of(context).dashRecentCycleHistory,
-                style: GoogleFonts.manrope(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const RealCycleHistory(),
-              const SizedBox(height: 28),
-
-              // Educational explanation cards instead of direct prediction certainty
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDFBF7),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: BlushyColors.border, width: 0.8),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.info_outline,
-                          size: 18,
-                          color: BlushyColors.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            // Read "between 38 and 71 days" for everyone. Both
-                            // numbers were literals, shown as her own history.
-                            "Cycle length varies for many people, and the history above is drawn from what you have logged.",
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
-                              color: BlushyColors.secondaryText,
-                              height: 1.45,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 20, color: Color(0xFFE5DDD5)),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_month_outlined,
-                          size: 18,
-                          color: BlushyColors.warning,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            AppLocalizations.of(
-                              context,
-                            ).dashNextPeriodMayArrive,
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
-                              color: BlushyColors.secondaryText,
-                              height: 1.45,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    return _buildLivingTodayCycle();
   }
 
   Widget _buildMetricLabel(String title, String val) {
@@ -7019,110 +6519,105 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
       },
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeading("UNDERSTANDING MY PATTERNS"),
-              const SizedBox(height: 4),
-              Text(
-                AppLocalizations.of(context).dashAiGeneratedTrendsAcross,
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
-                  color: BlushyColors.secondaryText,
-                ),
-              ),
-            ],
-          ),
+    final cards = patternCards.map((card) {
+      return Container(
+        padding: const EdgeInsets.all(BlushySpace.md),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFF7D8DD), width: 0.8),
         ),
-        const SizedBox(height: 16),
-        ...patternCards.map((card) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: BlushyColors.border, width: 0.8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    card['title']!,
-                    style: GoogleFonts.manrope(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: BlushyColors.primary,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    card['desc']!,
-                    style: GoogleFonts.manrope(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: BlushyColors.text,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    card['detail']!,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11,
-                      color: BlushyColors.secondaryText,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => _openAskSiaChat(
-                          context,
-                          "Explain this pattern: ${card['title']}",
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context).dashAskDocsy,
-                          style: GoogleFonts.manrope(
-                            fontSize: 11,
-                            color: BlushyColors.primary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton(
-                        onPressed: () {
-                          _showArticleDialog(
-                            context,
-                            card['title']!,
-                            "Clinical observation maps: ${card['detail']}",
-                          );
-                        },
-                        child: Text(
-                          AppLocalizations.of(context).dashWhyMatters,
-                          style: GoogleFonts.manrope(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              card['title']!.toUpperCase(),
+              style: GoogleFonts.manrope(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                color: BlushyColors.primary,
+                letterSpacing: 1.4,
               ),
             ),
-          );
-        }),
-      ],
+            const SizedBox(height: 6),
+            Text(
+              card['desc']!,
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontStyle: FontStyle.italic,
+                color: BlushyColors.text,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              card['detail']!,
+              style: GoogleFonts.manrope(
+                fontSize: 11.5,
+                color: const Color(0xFF7A6B72),
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => _openAskSiaChat(
+                    context,
+                    "Explain this pattern: ${card['title']}",
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context).dashAskDocsy,
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: BlushyColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {
+                    _showArticleDialog(
+                      context,
+                      card['title']!,
+                      "Clinical observation maps: ${card['detail']}",
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context).dashWhyMatters,
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }).toList();
+
+    return AutoCarouselCards(
+      categoryEyebrow: "UNDERSTANDING MY PATTERNS",
+      cards: cards,
+      height: 195.0,
     );
   }
 
@@ -7148,11 +6643,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
         ),
         const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(BlushySpace.md),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFF7D8DD), width: 0.8),
           ),
           child: ApiStateCard<CarePlan>(
             result: _carePlanResult,
@@ -7837,183 +7332,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
 
   // --- SECTION 2: FERTILITY TIMELINE (Reuses Ovary tracker & metrics) ---
   Widget _buildTtcTimeline() {
-    final pc = BlushyOSProvider.of(context).personalContext;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeading("FERTILITY TIMELINE"),
-              const SizedBox(height: 6),
-              Text(
-                AppLocalizations.of(context).dashFertilityJourney,
-                style: GoogleFonts.manrope(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Builder(
-            builder: (context) {
-              final cycleData = _getDynamicCycleDates(pc);
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    cycleData['cycleDayText'] as String,
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: BlushyColors.text,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    cycleData['subtitle'] as String,
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 12,
-                                      color: BlushyColors.secondaryText,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.edit,
-                                color: BlushyColors.primary,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                _showLogPeriodBottomSheet(context);
-                              },
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              splashRadius: 20,
-                              tooltip: "Log / Edit Period Date",
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      OutlinedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.of(
-                                  context,
-                                ).dashOvulationLoggedSuccessfully,
-                              ),
-                            ),
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: BlushyColors.primary,
-                          side: const BorderSide(color: BlushyColors.primary),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context).dashLogOvulation,
-                          style: GoogleFonts.manrope(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Ovary tracker shape
-                  const Center(
-                    child: SizedBox(
-                      width: 260,
-                      height: 95,
-                      child: BlushyCycleCard(purePainterMode: true),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Color Indicators
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildStartedLegendDot("Menstrual", BlushyColors.primary),
-                      const SizedBox(width: 14),
-                      _buildStartedLegendDot(
-                        "Follicular",
-                        const Color(0xFFFF9B9E),
-                      ),
-                      const SizedBox(width: 14),
-                      _buildStartedLegendDot(
-                        "Ovulation",
-                        const Color(0xFFFFB800),
-                      ),
-                      const SizedBox(width: 14),
-                      _buildStartedLegendDot("Luteal", BlushyColors.accent),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Timeline Metrics Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildMetricLabel(
-                        "Fertile Window",
-                        cycleData['fertileWindow'] as String,
-                      ),
-                      _buildMetricLabel(
-                        "Expected Period",
-                        cycleData['expectedPeriod'] as String,
-                      ),
-                      _buildMetricLabel(
-                        "Rec. Test Day",
-                        cycleData['recTestDay'] as String,
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ],
-    );
+    return _buildLivingTodayCycle();
   }
 
   // --- SECTION 3: TODAY'S CHECK-IN ---
@@ -9145,6 +8464,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
+                      _buildLivingTodayCycle(),
+                      const SizedBox(height: 32),
                       _buildPregnancyBabyThisWeek(),
                       const SizedBox(height: 32),
                       _buildPregnancyCheckIn(),
@@ -9994,6 +9315,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
+                      _buildLivingTodayCycle(),
+                      const SizedBox(height: 32),
                       _buildPostpartumRecoveryTimeline(),
                       const SizedBox(height: 32),
                       _buildPostpartumWellbeing(),
@@ -10149,314 +9472,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
 
   // --- SECTION 2: MY CHANGING CYCLE ---
   Widget _buildPeriChangingCycle(PersonalContext pc) {
-    // These two lines read "Cycle Day 47" and "Last Period: 47 Days Ago" for
-    // everyone, regardless of what they had logged. `pc` was already in scope
-    // and carries the real dates; nothing was reading it.
-    final DateTime? periStart = pc.lastPeriodStart;
-    final int? periDaysSince = periStart == null
-        ? null
-        : DateTime.now().difference(periStart).inDays;
-    final List<int> recentCycles = [31, 45, 62, 39, 54];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeading("MY CHANGING CYCLE"),
-              const SizedBox(height: 6),
-              Text(
-                AppLocalizations.of(context).dashTransitionTrackingHistory,
-                style: GoogleFonts.manrope(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                periDaysSince == null
-                                    ? "Cycle day not known yet"
-                                    : "Cycle Day ${periDaysSince + 1}",
-                                style: GoogleFonts.manrope(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: BlushyColors.text,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                periDaysSince == null
-                                    // Saying so beats inventing a number for
-                                    // someone tracking an irregular cycle.
-                                    ? "Log a period start date to see this"
-                                    : "Last period: $periDaysSince days ago",
-                                style: GoogleFonts.manrope(
-                                  fontSize: 12,
-                                  color: BlushyColors.secondaryText,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.edit,
-                            color: BlushyColors.primary,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            _showLogPeriodBottomSheet(context);
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          splashRadius: 20,
-                          tooltip: "Log / Edit Period Date",
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: BlushyColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      // "Highly Variable" was asserted to everyone. It is a
-                      // description of her cycle, and nothing had measured it.
-                      periDaysSince == null ? "Tracking" : "In transition",
-                      style: GoogleFonts.manrope(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // REUSE OUR BEAUTIFUL PERIOD TRACKER LOOP
-              Center(
-                child: Column(
-                  children: [
-                    Text(
-                      periDaysSince == null ? "—" : "Day ${periDaysSince + 1}",
-                      style: GoogleFonts.manrope(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.text,
-                      ),
-                    ),
-                    Text(
-                      // Naming a phase during perimenopause needs data nobody
-                      // has here, so it says what it actually knows.
-                      periDaysSince == null
-                          ? "No period logged yet"
-                          : "Since your last logged period",
-                      style: GoogleFonts.manrope(
-                        fontSize: 11,
-                        color: BlushyColors.secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const SizedBox(
-                      width: 260,
-                      height: 95,
-                      child: BlushyCycleCard(purePainterMode: true),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Ovary Legend/Color Indicators
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildStartedLegendDot("Period", const Color(0xFFC78280)),
-                  const SizedBox(width: 12),
-                  _buildStartedLegendDot("Follicular", const Color(0xFFE2B7A8)),
-                  const SizedBox(width: 12),
-                  _buildStartedLegendDot(
-                    "Luteal/Late",
-                    const Color(0xFFE8987E),
-                  ),
-                ],
-              ),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              Text(
-                AppLocalizations.of(context).dashRecentCycleHistory,
-                style: GoogleFonts.manrope(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: BlushyColors.secondaryText,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 48,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: recentCycles.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final cycleLen = recentCycles[index];
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: BlushyColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: BlushyColors.border,
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          "$cycleLen Days",
-                          style: GoogleFonts.manrope(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // The four figures here were literals presented as her own
-              // cycle statistics. The history above is computed from real logs.
-              const RealCycleHistory(),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDFBF7),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFF3E4DD),
-                    width: 0.8,
-                  ),
-                ),
-                child: Text(
-                  // This claimed to have noticed a trend across her recent
-                  // months. Nothing had analysed anything; it was a fixed
-                  // sentence shown to everyone in this stage.
-                  "Cycles often become less predictable during the perimenopause transition. What you log here builds your own picture over time.",
-                  style: GoogleFonts.manrope(
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                    color: BlushyColors.secondaryText,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Opens the real logging sheet. This used to show
-                        // "Period Logged (Simulated)" and record nothing.
-                        _showLogPeriodBottomSheet(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: BlushyColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context).dashLogPeriod,
-                        style: GoogleFonts.manrope(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        _showArticleDialog(
-                          context,
-                          "Full Cycle History",
-                          "Detailed logs of all tracked cycles: \n- June 2026: 54 Days\n- April 2026: 39 Days\n- Feb 2026: 62 Days\n- Dec 2025: 45 Days\n- Oct 2025: 31 Days",
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context).dashViewFullHistory,
-                        style: GoogleFonts.manrope(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    return _buildLivingTodayCycle();
   }
 
   // --- SECTION 3: TODAY'S CHECK-IN ---
@@ -11106,129 +10122,104 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
       },
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeading("LONG-TERM WELLNESS"),
-              const SizedBox(height: 6),
-              Text(
-                AppLocalizations.of(context).dashEmpoweredPostMenopauseWellness,
-                style: GoogleFonts.manrope(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
+    final cards = wellnessCards.map((card) {
+      return Container(
+        padding: const EdgeInsets.all(BlushySpace.md),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFF7D8DD), width: 0.8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              card['title']!.toUpperCase(),
+              style: GoogleFonts.manrope(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                color: BlushyColors.primary,
+                letterSpacing: 1.4,
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          // Sized for the UI face at its current size and leading; the
-          // cards' columns overflowed the old height by up to 90px.
-          height: 320,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: wellnessCards.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              final card = wellnessCards[index];
-              return Container(
-                width: 280,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: BlushyColors.border, width: 0.8),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              card['desc']!,
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontStyle: FontStyle.italic,
+                color: BlushyColors.text,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              card['detail']!,
+              style: GoogleFonts.manrope(
+                fontSize: 11.5,
+                color: const Color(0xFF7A6B72),
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    _showArticleDialog(
+                      context,
+                      card['title']!,
+                      card['detail']!,
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context).dashLearnMore,
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.primary,
+                    ),
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      card['title']!.toUpperCase(),
-                      style: GoogleFonts.manrope(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.primary,
-                        letterSpacing: 1.0,
-                      ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () => _openAskSiaChat(
+                    context,
+                    "Tell me about my ${card['title']}",
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context).dashAskDocsy,
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      color: BlushyColors.primary,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      card['desc']!,
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.text,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      AppLocalizations.of(
-                        context,
-                      ).dashWhyMattersEncouragesSustainable,
-                      style: GoogleFonts.manrope(
-                        fontSize: 11,
-                        color: BlushyColors.secondaryText,
-                      ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: TextButton(
-                            onPressed: () {
-                              _showArticleDialog(
-                                context,
-                                card['title']!,
-                                card['detail']!,
-                              );
-                            },
-                            child: Text(
-                              AppLocalizations.of(context).dashLearnMore,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.manrope(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: BlushyColors.primary,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Flexible(
-                          child: TextButton(
-                            onPressed: () => _openAskSiaChat(
-                              context,
-                              "Tell me about my ${card['title']}",
-                            ),
-                            child: Text(
-                              AppLocalizations.of(context).dashAskDocsy,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.manrope(
-                                fontSize: 12,
-                                color: BlushyColors.primary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              );
-            },
-          ),
+              ],
+            ),
+          ],
         ),
-      ],
+      );
+    }).toList();
+
+    return AutoCarouselCards(
+      categoryEyebrow: "LONG-TERM WELLNESS",
+      cards: cards,
+      height: 195.0,
     );
   }
 
@@ -11433,6 +10424,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
+                      _buildLivingTodayCycle(),
+                      const SizedBox(height: 32),
                       _buildMenoCheckIn(),
                       const SizedBox(height: 32),
                       _buildMenoWellbeing(),
@@ -12048,106 +11041,85 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
       }
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeading("MY HABITS"),
-              const SizedBox(height: 6),
-              Text(
-                AppLocalizations.of(context).dashAiGeneratedHabitInsights,
-                style: GoogleFonts.manrope(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
+    final cards = habitCards.map((card) {
+      return Container(
+        padding: const EdgeInsets.all(BlushySpace.md),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFF7D8DD), width: 0.8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              card['title']!.toUpperCase(),
+              style: GoogleFonts.manrope(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                color: BlushyColors.primary,
+                letterSpacing: 1.4,
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 300,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: habitCards.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              final card = habitCards[index];
-              return Container(
-                width: 280,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: BlushyColors.border, width: 0.8),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              card['desc']!,
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontStyle: FontStyle.italic,
+                color: BlushyColors.text,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              card['detail']!,
+              style: GoogleFonts.manrope(
+                fontSize: 11.5,
+                color: const Color(0xFF7A6B72),
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    _showArticleDialog(
+                      context,
+                      card['title']!,
+                      card['detail']!,
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context).dashLearnMore,
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.primary,
+                    ),
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      card['title']!.toUpperCase(),
-                      style: GoogleFonts.manrope(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.primary,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      card['desc']!,
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.text,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      AppLocalizations.of(
-                        context,
-                      ).dashWhyMattersSupportsOverall,
-                      style: GoogleFonts.manrope(
-                        fontSize: 11,
-                        color: BlushyColors.secondaryText,
-                      ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            _showArticleDialog(
-                              context,
-                              card['title']!,
-                              card['detail']!,
-                            );
-                          },
-                          child: Text(
-                            AppLocalizations.of(context).dashLearnMore,
-                            style: GoogleFonts.manrope(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: BlushyColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+              ],
+            ),
+          ],
         ),
-      ],
+      );
+    }).toList();
+
+    return AutoCarouselCards(
+      categoryEyebrow: "MY HABITS",
+      cards: cards,
+      height: 195.0,
     );
   }
 
@@ -12194,7 +11166,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     children: [
                       _buildBranchSwitcher(state),
                       const SizedBox(height: 32),
-                      _buildWellnessCheckIn(),
+                      _buildLivingTodayCycle(),
                       const SizedBox(height: 32),
                       _buildWellnessDashboard(),
                       const SizedBox(height: 32),

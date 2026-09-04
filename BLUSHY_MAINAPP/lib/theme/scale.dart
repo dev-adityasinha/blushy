@@ -15,91 +15,112 @@ import 'colors.dart';
 /// regular, because the serif carries the weight itself; Manrope for
 /// everything read as interface.
 abstract final class BlushyType {
-  /// The editorial headline: the greeting.
+  /// The brand wordmark logo style (BLUSHY.) - Straight, non-italic, heavy bold
+  static TextStyle brandLogo({Color color = BlushyColors.primary, double fontSize = 26}) =>
+      GoogleFonts.manrope(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w800,
+        fontStyle: FontStyle.normal,
+        letterSpacing: 2.8,
+        color: color,
+      );
+
+  /// The editorial display: main greetings & primary page headers (32 px, Bold Garamond w700).
   static TextStyle display({Color color = BlushyColors.text}) =>
-      GoogleFonts.instrumentSerif(
-        fontSize: 28,
-        fontWeight: FontWeight.w400,
-        height: 1.1,
-        color: color,
-      );
-
-  /// A major section's title, in the display face.
-  static TextStyle headline({Color color = BlushyColors.text}) =>
-      GoogleFonts.instrumentSerif(
-        fontSize: 22,
-        fontWeight: FontWeight.w400,
+      GoogleFonts.cormorantGaramond(
+        fontSize: 32,
+        fontWeight: FontWeight.w700,
+        fontStyle: FontStyle.normal,
         height: 1.15,
+        letterSpacing: 0.4,
         color: color,
       );
 
-  /// A card's title, in the display face.
+  /// Major section titles in Garamond (28 px, Bold Garamond w700).
+  static TextStyle headline({Color color = BlushyColors.text}) =>
+      GoogleFonts.cormorantGaramond(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        fontStyle: FontStyle.normal,
+        height: 1.18,
+        letterSpacing: 0.4,
+        color: color,
+      );
+
+  /// Card titles & key UI headers in Manrope (15.5 px Bold with generous spacing).
   static TextStyle title({Color color = BlushyColors.text}) =>
-      GoogleFonts.instrumentSerif(
-        fontSize: 18,
-        fontWeight: FontWeight.w400,
-        height: 1.2,
+      GoogleFonts.manrope(
+        fontSize: 15.5,
+        fontWeight: FontWeight.w700,
+        fontStyle: FontStyle.normal,
+        height: 1.3,
+        letterSpacing: 0.35,
         color: color,
       );
 
-  /// A row label, a name, a button.
+  /// Row labels, buttons, interactive elements (14.5 px Bold with generous spacing).
   static TextStyle heading({
     Color color = BlushyColors.text,
-    FontWeight weight = FontWeight.w600,
+    FontWeight weight = FontWeight.w700,
   }) =>
       GoogleFonts.manrope(
-        fontSize: 14,
+        fontSize: 14.5,
         fontWeight: weight,
-        height: 1.4,
+        fontStyle: FontStyle.normal,
+        height: 1.35,
+        letterSpacing: 0.35,
         color: color,
       );
 
-  /// Running text.
+  /// Running body text & card subtitles in Manrope (13.5 px with airy spacing).
   static TextStyle body({
     Color color = BlushyColors.secondaryText,
     FontWeight weight = FontWeight.w400,
   }) =>
       GoogleFonts.manrope(
-        fontSize: 13,
+        fontSize: 13.5,
         fontWeight: weight,
-        height: 1.55,
+        fontStyle: FontStyle.normal,
+        height: 1.45,
+        letterSpacing: 0.25,
         color: color,
       );
 
-  /// Taglines, timestamps, day ranges, the small line under a title.
+  /// Taglines, timestamps, captions in Manrope (12.5 px with airy spacing).
   static TextStyle caption({
     Color color = BlushyColors.secondaryText,
     FontWeight weight = FontWeight.w400,
   }) =>
       GoogleFonts.manrope(
-        fontSize: 11.5,
+        fontSize: 12.5,
         fontWeight: weight,
-        height: 1.45,
+        fontStyle: FontStyle.normal,
+        height: 1.4,
+        letterSpacing: 0.25,
         color: color,
       );
 
-  /// A section eyebrow: uppercase, spaced.
-  ///
-  /// Spaced less than the classic eyebrow. At this size, two points of
-  /// tracking made the longer headings run off the line.
+  /// Section eyebrows: uppercase, clean tracking (9.5 px).
   static TextStyle eyebrow({Color color = BlushyColors.primary}) =>
       GoogleFonts.manrope(
-        fontSize: 10.5,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 1.8,
+        fontSize: 9.5,
+        fontWeight: FontWeight.w800,
+        fontStyle: FontStyle.normal,
+        letterSpacing: 1.4,
         height: 1.2,
         color: color,
       );
 
-  /// The smallest thing set in type: a chip, a nav label.
+  /// The smallest UI element (11 px).
   static TextStyle micro({
     Color color = BlushyColors.secondaryText,
     FontWeight weight = FontWeight.w600,
-    double letterSpacing = 0,
+    double letterSpacing = 0.3,
   }) =>
       GoogleFonts.manrope(
         fontSize: 11,
         fontWeight: weight,
+        fontStyle: FontStyle.normal,
         letterSpacing: letterSpacing,
         height: 1.2,
         color: color,

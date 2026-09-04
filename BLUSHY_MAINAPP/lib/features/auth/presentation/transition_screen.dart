@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/state.dart';
 import '../../../theme/colors.dart';
+import '../../../theme/scale.dart';
 import 'dart:async';
 
 class TransitionScreen extends StatefulWidget {
@@ -38,30 +39,61 @@ class _TransitionScreenState extends State<TransitionScreen> {
     });
   }
 
-
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: BlushyColors.background,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            CircularProgressIndicator(
-              color: BlushyColors.primary,
-            ),
-            SizedBox(height: 24),
-            Text(
-              'Building your Blushy space...',
-              style: TextStyle(
-                fontFamily: 'Georgia',
-                fontSize: 20,
-                color: BlushyColors.text,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              RichText(
+                text: const TextSpan(
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                    color: BlushyColors.primary,
+                  ),
+                  children: [
+                    TextSpan(text: 'BLUSHY'),
+                    TextSpan(
+                      text: '.',
+                      style: TextStyle(color: BlushyColors.accent),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 36),
+              const SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  color: BlushyColors.primary,
+                  strokeWidth: 2.5,
+                ),
+              ),
+              const SizedBox(height: 28),
+              Text(
+                'Building your Blushy space...',
+                style: BlushyType.headline().copyWith(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w400,
+                  color: BlushyColors.text,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Curating your personalized wellness rhythm',
+                style: BlushyType.body().copyWith(
+                  fontSize: 14,
+                  color: BlushyColors.secondaryText,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
