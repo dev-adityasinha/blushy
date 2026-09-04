@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:blushy_life_app/core/state.dart';
-import 'package:blushy_life_app/features/journal/journal_screen.dart';
 import 'package:blushy_life_app/features/m_studio/m_studio_screen.dart';
 import 'package:blushy_life_app/l10n/app_localizations.dart';
 import 'package:blushy_life_app/services/auth_storage.dart';
@@ -95,10 +94,6 @@ void main() {
         'Recovery',
         'Time Capsules',
         'Bouquet',
-        'Smart Calendar & Map',
-        'Smart AI Search',
-        'Memory Vault',
-        'Reflective Content Garden',
       ]) {
         expect(find.text(section), findsOneWidget, reason: section);
       }
@@ -106,6 +101,19 @@ void main() {
       // Both moved inside Journal.
       expect(find.text('Reflection'), findsNothing);
       expect(find.text('Scrapbook'), findsNothing);
+
+      // These four were taken off the hub. They are still in the app, reached
+      // from inside Journal, which is where the writing they read lives -- so
+      // the check is that the hub no longer offers them, not that they are
+      // gone.
+      for (final removed in const [
+        'Smart Calendar & Map',
+        'Smart AI Search',
+        'Memory Vault',
+        'Reflective Content Garden',
+      ]) {
+        expect(find.text(removed), findsNothing, reason: removed);
+      }
     });
   });
 
@@ -120,8 +128,10 @@ void main() {
     });
   });
 
-  testWidgets('opening Journal pushes its own screen, and back returns',
-      (tester) async {
+  testWidgets('opening Journal goes straight to the writing', (tester) async {
+    // It used to open a hub of two cards -- Reflection and Scrapbook -- so
+    // opening the journal meant choosing between two things before writing
+    // anything. Both are gone; this is the guard that they stay gone.
     await withTestImages(() async {
       await _open(tester);
 
@@ -130,22 +140,12 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
       }
 
-      // Two ways in, each holding what belongs to it.
-      expect(find.text('Reflection'), findsOneWidget);
-      expect(find.text('Scrapbook'), findsOneWidget);
+      expect(find.text('Reflection'), findsNothing);
+      expect(find.text('Scrapbook'), findsNothing);
 
-      await tester.tap(find.text('Reflection'));
-      for (var i = 0; i < 3; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-      expect(find.text('Create Reflection'), findsOneWidget);
-      expect(find.text('Record & Transcribe'), findsOneWidget);
-      expect(find.text('Journal Insights Dashboard'), findsOneWidget);
-
-      await tester.pageBack();
-      for (var i = 0; i < 2; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
+      // The journal itself: what is in it, and a button to write the next one.
+      expect(find.byType(FloatingActionButton), findsOneWidget,
+          reason: 'the round button is how a new entry is started');
 
       // A pushed route, so the hub is no longer on screen behind it.
       expect(find.text('Recovery'), findsNothing);
@@ -164,81 +164,9 @@ void main() {
     });
   });
 
-  testWidgets('Create Reflection picks a template; Create Scrapbook opens the '
-      'scrapbook', (tester) async {
-    await withTestImages(() async {
-      await _open(tester);
-
-      await tester.tap(find.text('Journal'));
-      for (var i = 0; i < 3; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-
-      // Reflection: the template picker, then the writing page.
-      await tester.tap(find.text('Reflection'));
-      for (var i = 0; i < 2; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-      await tester.tap(find.text('Create Reflection'));
-      await tester.pumpAndSettle();
-      expect(find.text('Start a reflection'), findsOneWidget);
-      expect(find.text('Daily Reflection'), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      for (var i = 0; i < 3; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-      while (tester.takeException() != null) {}
-    });
-  });
-
-  testWidgets('Reflection does not carry the scrapbook underneath it',
-      (tester) async {
-    // The journal used to be embedded here in a 650px box, so the brown diary
-    // sat at the bottom of the page and came back when returning from an entry.
-    await withTestImages(() async {
-      await _open(tester);
-
-      await tester.tap(find.text('Journal'));
-      for (var i = 0; i < 3; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-      await tester.tap(find.text('Reflection'));
-      for (var i = 0; i < 3; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-
-      expect(find.text('Create Reflection'), findsOneWidget);
-      expect(find.text('History'), findsOneWidget,
-          reason: 'what was written, and when');
-      expect(find.byType(BlushyJournalScreen), findsNothing,
-          reason: 'the journal opens on its own screen, not inside this one');
-
-      await tester.tap(find.text('History'));
-      for (var i = 0; i < 3; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-      // Nothing written yet, said plainly rather than shown as an empty list.
-      expect(find.text('No reflections yet.'), findsOneWidget);
-      await tester.pageBack();
-      for (var i = 0; i < 2; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-
-      // Search moved up to the hub, so it is not one of these options.
-      expect(find.text('Smart AI Search'), findsNothing);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      for (var i = 0; i < 3; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-      while (tester.takeException() != null) {}
-    });
-  });
-
   testWidgets('the insights dashboard belongs to Journal alone', (tester) async {
     // Every section that was not Journal, Recovery or Time Capsules used to
-    // fall through to the journal page -- so Scrapbook and Smart Calendar
+    // fall through to the journal page -- so Smart Calendar
     // rendered the journal, and its cards appeared under all of them.
     await withTestImages(() async {
       await _open(tester);

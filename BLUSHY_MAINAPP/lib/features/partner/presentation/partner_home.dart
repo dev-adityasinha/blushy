@@ -282,7 +282,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     Expanded(
                       child: Text(
                         dialogTitle,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: BlushyColors.text,
@@ -300,7 +300,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       padding: const EdgeInsets.only(bottom: 12.0),
                       child: Text(
                         dynamicNeeds['message'].toString(),
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 13,
                           color: BlushyColors.text.withValues(alpha: 0.7),
                         ),
@@ -310,7 +310,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemCount: customNeedsList.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFE8DFD8)),
+                      separatorBuilder: (context, index) => const Divider(height: 1, color: BlushyColors.border),
                       itemBuilder: (context, index) {
                         final item = customNeedsList[index];
                         final String label = (item is Map ? item['label'] : null) ?? item.toString();
@@ -322,7 +322,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                           contentPadding: const EdgeInsets.symmetric(vertical: 4),
                           title: Text(
                             label,
-                            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                            style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
                           ),
                           subtitle: (source != null || category != null)
                               ? Padding(
@@ -334,11 +334,11 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                           decoration: BoxDecoration(
                                             color: BlushyColors.primary.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(20),
                                           ),
                                           child: Text(
                                             category,
-                                            style: GoogleFonts.poppins(
+                                            style: GoogleFonts.manrope(height: 1.5, 
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
                                               color: BlushyColors.primary,
@@ -350,7 +350,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                                         Expanded(
                                           child: Text(
                                             source,
-                                            style: GoogleFonts.poppins(
+                                            style: GoogleFonts.manrope(height: 1.5, 
                                               fontSize: 11,
                                               color: Colors.grey.shade600,
                                             ),
@@ -377,15 +377,9 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      color: BlushyColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,10 +389,10 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFE8F5E9),
+                                color: BlushyColors.successSoft,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.spa, size: 24, color: Color(0xFF2E7D32)),
+                              child: const Icon(Icons.spa, size: 24, color: BlushyColors.success),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -407,15 +401,15 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                                 children: [
                                   Text(
                                     isUserWoman ? "He's feeling peaceful" : "She's feeling peaceful",
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(height: 1.5, 
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF2E7D32),
+                                      color: BlushyColors.success,
                                     ),
                                   ),
                                   Text(
                                     "No distress or special needs logged",
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(height: 1.5, 
                                       fontSize: 12,
                                       color: Colors.grey.shade600,
                                     ),
@@ -431,7 +425,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                               (isUserWoman
                                   ? "He hasn't logged any discomfort or asked for specific help recently."
                                   : "She hasn't logged any discomfort or asked for specific help recently."),
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 13,
                             height: 1.4,
                             color: BlushyColors.text.withValues(alpha: 0.85),
@@ -442,8 +436,8 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: BlushyColors.background,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE8DFD8)),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: BlushyColors.border),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,7 +448,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                                 child: Text(
                                   dynamicNeeds['tip']?.toString() ??
                                       "Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     height: 1.4,
                                     color: BlushyColors.text,
@@ -478,7 +472,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     ),
                     child: Text(
                       AppLocalizations.of(context).phGotIt,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ]
@@ -486,7 +480,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 else ...[
                   Text(
                     AppLocalizations.of(context).phHereAreGeneralWays,
-                    style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 13, color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 8),
                   Flexible(
@@ -495,7 +489,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       children: (isUserWoman ? _defaultManNeeds : _defaultWomanNeeds).map((need) {
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: Text(need["label"]!, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
+                          title: Text(need["label"]!, style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600)),
                           trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: BlushyColors.primary),
                           onTap: () {
                             Navigator.pop(context);
@@ -520,12 +514,12 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text(tip, style: GoogleFonts.poppins(fontSize: 14, height: 1.5, color: BlushyColors.text)),
+        title: Text(title, style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
+        content: Text(tip, style: GoogleFonts.manrope(fontSize: 14, height: 1.5, color: BlushyColors.text)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).phGotIt, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+            child: Text(AppLocalizations.of(context).phGotIt, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
           ),
         ],
       ),
@@ -588,7 +582,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         children: [
           Text(
             "US",
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(height: 1.5, 
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: BlushyColors.secondaryText,
@@ -665,16 +659,16 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BlushyColors.border, width: 0.8),
+          color: BlushyColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: BlushyColors.border, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title.toUpperCase(),
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(height: 1.5, 
                 fontSize: 9,
                 fontWeight: FontWeight.bold,
                 color: BlushyColors.primary,
@@ -689,7 +683,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
                   text,
-                  style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text, height: 1.45),
+                  style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.text, height: 1.45),
                 ),
               );
             }),
@@ -738,8 +732,8 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFFFDF6F0),
-          borderRadius: BorderRadius.circular(12),
+          color: BlushyColors.background,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.35), width: 1),
         ),
         child: Column(
@@ -752,7 +746,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 Expanded(
                   child: Text(
                     request.label ?? 'She asked for something',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(height: 1.5, 
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.primary,
@@ -764,7 +758,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
             const SizedBox(height: 8),
             Text(
               request.message,
-              style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text, height: 1.45),
+              style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.text, height: 1.45),
             ),
             const SizedBox(height: 12),
             Row(
@@ -775,7 +769,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
                     child: Text(
                       "I have seen this",
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.primary),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.primary),
                     ),
                   ),
                 if (!acknowledged) const SizedBox(width: 16),
@@ -784,7 +778,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                   style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
                   child: Text(
                     "Done",
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(height: 1.5, 
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.primary,
@@ -804,9 +798,9 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BlushyColors.border, width: 0.8),
+        color: BlushyColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: BlushyColors.border, width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -819,7 +813,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(height: 1.5, 
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: BlushyColors.text,
@@ -828,7 +822,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 const SizedBox(height: 6),
                 Text(
                   body,
-                  style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
+                  style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
                 ),
               ],
             ),
@@ -966,14 +960,14 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     children: [
                       Text(
                         isConnected ? "Good morning, partner" : "Partner Dashboard",
-                        style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 26, fontWeight: FontWeight.bold, color: BlushyColors.text),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         isConnected
                             ? "Connected with $partnerName • Live insights enabled"
                             : "Here's how you can show up and support today.",
-                        style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
                       ),
                     ],
                   ),
@@ -992,9 +986,9 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24.0),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3FAF6),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFD6F1DF)),
+                  color: BlushyColors.successSoft,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: BlushyColors.successSoft),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1005,19 +999,19 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         const SizedBox(width: 8),
                         Text(
                           "Docsy noticed something",
-                          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.success),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.success),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(
                       siaHeadline,
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text, height: 1.3),
+                      style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text, height: 1.3),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       siaSubtext,
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -1030,7 +1024,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       ),
                       child: Text(
                         AppLocalizations.of(context).phSeeHowICan,
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
                   ],
@@ -1048,26 +1042,26 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 children: [
                   Text(
                     "Today's Support Actions",
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                   ),
                   if (actionItems.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: isAllCompleted
-                            ? const Color(0xFFE8F5E9)
+                            ? BlushyColors.successSoft
                             : BlushyColors.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         isAllCompleted
                             ? "All Done 🎉"
                             : "$completedCount/${actionItems.length} Done",
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: isAllCompleted
-                              ? const Color(0xFF2E7D32)
+                              ? BlushyColors.success
                               : BlushyColors.primary,
                         ),
                       ),
@@ -1082,23 +1076,17 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFA5D6A7)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF2E7D32).withValues(alpha: 0.08),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                          color: BlushyColors.successSoft,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: BlushyColors.success),
+
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: const BoxDecoration(
-                                color: Color(0xFF2E7D32),
+                                color: BlushyColors.success,
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.celebration_rounded, color: Colors.white, size: 20),
@@ -1110,17 +1098,17 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                                 children: [
                                   Text(
                                     AppLocalizations.of(context).phAllTodaySActions,
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(height: 1.5, 
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1B5E20),
+                                      color: BlushyColors.success,
                                     ),
                                   ),
                                   Text(
                                     "You showed up for her today. Tending to your relationship garden keeps love strong.",
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(height: 1.5, 
                                       fontSize: 12,
-                                      color: const Color(0xFF2E7D32),
+                                      color: BlushyColors.success,
                                     ),
                                   ),
                                 ],
@@ -1153,7 +1141,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         ),
                         child: Text(
                           "I want to help",
-                          style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.primary),
                         ),
                       ),
                     ),
@@ -1162,14 +1150,14 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     // A Little Context
                     Text(
                       "Understanding Her Stage",
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        color: BlushyColors.surface,
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: BlushyColors.border),
                       ),
                       child: Column(
@@ -1177,19 +1165,19 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                         children: [
                           Text(
                             "ACTIVE STAGE: ${stageDetails.formatPartnerSubLabel(connectedDateRaw).toUpperCase()}",
-                            style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
+                            style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             "Supporting her through ${stageDetails.displayName}",
-                            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                            style: GoogleFonts.manrope(height: 1.5, fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             stageDetails.gardenQuote.isNotEmpty
                                 ? stageDetails.gardenQuote
                                 : "Understanding her cycle rhythms helps foster deeper mutual empathy and harmony.",
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
+                            style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
                           ),
                         ],
                       ),
@@ -1213,7 +1201,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         },
         label: Text(
           AppLocalizations.of(context).phDrDocsy,
-          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+          style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
         ),
         icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
       ),
@@ -1236,21 +1224,12 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isCompleted ? const Color(0xFFF1F8F4) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isCompleted ? BlushyColors.successSoft : BlushyColors.surface,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isCompleted ? const Color(0xFFC8E6C9) : BlushyColors.border,
+            color: isCompleted ? BlushyColors.successSoft : BlushyColors.border,
             width: isCompleted ? 1.5 : 1.0,
           ),
-          boxShadow: isCompleted
-              ? []
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1259,7 +1238,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
               padding: const EdgeInsets.only(top: 2.0),
               child: Icon(
                 isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                color: isCompleted ? const Color(0xFF2E7D32) : BlushyColors.secondaryText,
+                color: isCompleted ? BlushyColors.success : BlushyColors.secondaryText,
                 size: 22,
               ),
             ),
@@ -1273,12 +1252,12 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                       Expanded(
                         child: Text(
                           title,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(height: 1.5, 
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: isCompleted ? const Color(0xFF2E7D32) : BlushyColors.text,
+                            color: isCompleted ? BlushyColors.success : BlushyColors.text,
                             decoration: isCompleted ? TextDecoration.lineThrough : null,
-                            decorationColor: const Color(0xFF2E7D32),
+                            decorationColor: BlushyColors.success,
                             decorationThickness: 2.0,
                           ),
                         ),
@@ -1288,16 +1267,16 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: isCompleted
-                                ? const Color(0xFFE8F5E9)
+                                ? BlushyColors.successSoft
                                 : BlushyColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             category,
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(height: 1.5, 
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: isCompleted ? const Color(0xFF2E7D32) : BlushyColors.primary,
+                              color: isCompleted ? BlushyColors.success : BlushyColors.primary,
                             ),
                           ),
                         ),
@@ -1306,7 +1285,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 12,
                       color: isCompleted ? Colors.grey.shade500 : BlushyColors.secondaryText,
                       decoration: isCompleted ? TextDecoration.lineThrough : null,
@@ -1335,8 +1314,8 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: BlushyColors.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Column(
@@ -1348,7 +1327,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: BlushyColors.secondaryText.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(Icons.lock_outline_rounded,
                     color: BlushyColors.secondaryText, size: 22),
@@ -1360,7 +1339,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                   children: [
                     Text(
                       "$partnerName's Cycle & Mood",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: BlushyColors.text,
@@ -1368,7 +1347,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     ),
                     Text(
                       AppLocalizations.of(context).phNotSharedWithYou,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: BlushyColors.secondaryText,
@@ -1385,18 +1364,18 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: BlushyColors.background,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 'Mood shared today: $mood',
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.text),
               ),
             ),
           ],
           const SizedBox(height: 14),
           Text(
             'They choose what to share, and can change it at any time.',
-            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+            style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
           ),
         ],
       ),
@@ -1416,7 +1395,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
     final int? cycleDay = (rawDay is int) ? rawDay : int.tryParse(rawDay?.toString() ?? '');
     final String? mood = moodData?['mood']?.toString() ?? moodData?['notes']?.toString();
 
-    Color phaseColor = const Color(0xFFE8A0B4);
+    Color phaseColor = BlushyColors.secondary;
     IconData phaseIcon = Icons.spa_rounded;
     String phaseDescription = "Her natural energy and creativity are building up. Great time for shared plans and active dates together.";
     String phaseEmoji = "🌿";
@@ -1429,21 +1408,21 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
         phaseDescription = "Energy is lower. She may experience fatigue or cramps. Offer warmth, rest, and handle dinner tonight.";
         break;
       case 'follicular':
-        phaseColor = const Color(0xFF10B981);
+        phaseColor = BlushyColors.success;
         phaseIcon = Icons.nature_rounded;
         phaseEmoji = "🌱";
         phaseDescription = "Estrogen is rising. Her focus and mood are high. Great time to try new activities together.";
         break;
       case 'ovulation':
       case 'fertile':
-        phaseColor = const Color(0xFFF59E0B);
+        phaseColor = BlushyColors.accent;
         phaseIcon = Icons.wb_sunny_rounded;
         phaseEmoji = "✨";
         phaseDescription = "Peak energy and social confidence. Perfect for meaningful dates, deep conversations, and quality time.";
         break;
       case 'luteal':
       case 'pms':
-        phaseColor = const Color(0xFF8B5CF6);
+        phaseColor = BlushyColors.accent;
         phaseIcon = Icons.nightlight_round;
         phaseEmoji = "🌙";
         phaseDescription = "Progesterone is high. She might feel sensitive, tired, or crave quiet. Extra patience and reassurance are key.";
@@ -1454,16 +1433,10 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: BlushyColors.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: BlushyColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1477,7 +1450,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: phaseColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(phaseIcon, color: phaseColor, size: 22),
                   ),
@@ -1487,11 +1460,11 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                     children: [
                       Text(
                         "$partnerName's Cycle & Mood",
-                        style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
                       ),
                       Text(
                         cycleDay != null ? "Day $cycleDay • $phase Phase $phaseEmoji" : "$phase Phase $phaseEmoji",
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: phaseColor),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w600, color: phaseColor),
                       ),
                     ],
                   ),
@@ -1502,13 +1475,13 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: BlushyColors.background,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: BlushyColors.border),
                   ),
                   child: Row(
                     children: [
                       const Text("Mood: ", style: TextStyle(fontSize: 10, color: BlushyColors.secondaryText)),
-                      Text(mood, style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                      Text(mood, style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.text)),
                     ],
                   ),
                 ),
@@ -1519,7 +1492,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: phaseColor.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1529,7 +1502,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen> {
                 Expanded(
                   child: Text(
                     phaseDescription,
-                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, height: 1.4),
+                    style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.text, height: 1.4),
                   ),
                 ),
               ],

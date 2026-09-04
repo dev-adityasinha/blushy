@@ -360,7 +360,7 @@ class _TodayBriefingScreenState extends State<TodayBriefingScreen> {
                       onPressed: _toggleVoiceRecording,
                       icon: Icon(
                         _isListeningVoice ? Icons.stop_rounded : Icons.mic_rounded,
-                        color: _isListeningVoice ? Colors.white : const Color(0xFF6F42F5),
+                        color: _isListeningVoice ? Colors.white : BlushyColors.primary,
                       ),
                       style: IconButton.styleFrom(
                         backgroundColor: _isListeningVoice ? BlushyColors.primary : const Color(0xFFF3E8FF),

@@ -8,9 +8,10 @@ import '../core/storage.dart';
 /// changed. The backend has always accepted a `languageCode` on chat and has
 /// reviewed strings for each language below, so this makes the chip real.
 ///
-/// Deliberately scoped to Docsy rather than the whole interface: the app's own
-/// copy has no translations, and switching the chrome to Hindi while every
-/// label stayed English would be worse than leaving it alone.
+/// Now drives the whole interface as well as Docsy: [current] is what
+/// `MaterialApp.locale` reads, so changing it re-renders every localised
+/// string, and it rides along on each request to Docsy so replies come back in
+/// the same language.
 class LanguagePreference {
   const LanguagePreference._();
 
@@ -34,6 +35,14 @@ class LanguagePreference {
   static final ValueNotifier<String> current = ValueNotifier<String>(fallback);
 
   static String get code => current.value;
+
+  /// Whether the user has ever picked a language.
+  ///
+  /// Distinct from `code == 'en'`: someone who chose English and someone who
+  /// has not chosen at all look identical in [current], and only the second
+  /// should be asked. Kept in memory rather than re-read, so the picker cannot
+  /// reappear mid-session if storage becomes unreadable.
+  static bool hasChosen = false;
 
   static String labelFor(String code) => supported[code] ?? supported[fallback]!;
 
@@ -62,6 +71,7 @@ class LanguagePreference {
       final code = stored['languageCode']?.toString();
       if (code != null && supported.containsKey(code)) {
         current.value = code;
+        hasChosen = true;
       }
     } catch (_) {
       // A missing or unreadable preference is just English.
@@ -71,6 +81,7 @@ class LanguagePreference {
   static Future<void> set(String code) async {
     if (!supported.containsKey(code)) return;
     current.value = code;
+    hasChosen = true;
     try {
       BlushyStorage.write(_key, {'languageCode': code});
     } catch (_) {

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:blushy_life_app/features/home/checkin_event_mapper.dart';
+import 'package:blushy_life_app/features/home/checkin_vocabulary.dart';
 
 /// The daily check-in selectors offer buckets, not exact values. These tests
 /// pin the mapping onto the backend event scales, and pin the two behaviours
@@ -18,20 +19,41 @@ void main() {
           const CheckinEvent(eventType: 'mood_logged', payload: {'mood': 'irritable'}));
     });
 
-    test('symptoms in the mood selector become symptom_logged, not a mood', () {
-      final cramps = CheckinEventMapper.map('mood', 'Cramps');
-      expect(cramps!.eventType, 'symptom_logged');
-      expect(cramps.payload['symptom'], 'cramps');
-
-      final tired = CheckinEventMapper.map('mood', 'Tired');
-      expect(tired!.eventType, 'symptom_logged');
-      expect(tired.payload['symptom'], 'tiredness');
+    test('the mood selector no longer carries symptoms', () {
+      // 'Cramps' and 'Tired' used to be mood options that mapped to
+      // `symptom_logged`. Choosing one recorded no mood at all, and because a
+      // check-in answer is one value per metric it also erased a mood already
+      // picked that day -- so "happy but cramping" was unsayable.
+      expect(CheckinEventMapper.map('mood', 'Cramps'), isNull);
+      expect(CheckinEventMapper.map('mood', 'Tired'), isNull);
     });
 
-    test('every mood option the dashboard offers is mapped', () {
-      for (final label in ['Happy', 'Okay', 'Cramps', 'Tired', 'Irritable']) {
-        expect(CheckinEventMapper.map('mood', label), isNotNull, reason: '$label is unmapped');
+    test('every mood option the dashboard offers is a mood', () {
+      for (final label in CheckinVocabulary.mood) {
+        final event = CheckinEventMapper.map('mood', label);
+        expect(event, isNotNull, reason: '$label is unmapped');
+        expect(event!.eventType, 'mood_logged',
+            reason: '$label is offered as a mood, so it must record as one');
       }
+    });
+
+    test('symptom chips record as symptoms, keeping the wording tapped', () {
+      final cramps = CheckinEventMapper.map('symptom', 'Cramps')!;
+      expect(cramps.eventType, 'symptom_logged');
+      expect(cramps.payload['symptom'], 'cramps');
+      expect(cramps.payload['reportedAs'], 'Cramps');
+
+      final bloating = CheckinEventMapper.map('symptom', 'Bloating')!;
+      expect(bloating.eventType, 'symptom_logged');
+      expect(bloating.payload['symptom'], 'bloating');
+    });
+
+    test('"Everything is fine" is not recorded as a symptom', () {
+      // Recording it would put a symptom she does not have into the timeline,
+      // the doctor summary and Docsy's context.
+      expect(CheckinEventMapper.map('symptom', 'Everything is fine'), isNull);
+      expect(
+          CheckinVocabulary.isUnrecorded('symptom', 'Everything is fine'), isTrue);
     });
   });
 
@@ -89,14 +111,20 @@ void main() {
     });
 
     test('every selector option the dashboard offers is mapped', () {
+      // Hand-maintained, and that is how the gap happened: this listed the
+      // cycle dashboards' labels only, so the everyday wellness selector's
+      // own vocabulary went unmapped and was silently dropped while this test
+      // stayed green -- all three sleep ranges, two of three movement options,
+      // and the half-litre hydration step. Anything a selector can render goes
+      // here, whichever dashboard renders it.
       const options = {
         'energy': ['High', 'Medium', 'Low'],
         'flow': ['Light', 'Medium', 'Heavy'],
         'pain': ['None', 'Mild', 'Severe'],
-        'sleep': ['<6h', '6-8h', '>8h'],
+        'sleep': ['<6h', '6-8h', '>8h', '6-7h', '7-8h', '8h+'],
         'stress': ['Low', 'Moderate', 'High'],
-        'water': ['1L', '2L', '3L'],
-        'exercise': ['Active', 'Light', 'None'],
+        'water': ['1L', '2L', '3L', '2.5L'],
+        'exercise': ['Active', 'Light', 'None', 'Workout', 'Walk'],
       };
 
       options.forEach((metric, values) {
@@ -105,6 +133,45 @@ void main() {
               reason: '$metric "$value" is unmapped');
         }
       });
+    });
+  });
+
+  group('fertility selectors', () {
+    test('cervical mucus becomes the observation the server accepts', () {
+      final e = CheckinEventMapper.map('cervical_mucus', 'Eggwhite')!;
+      expect(e.eventType, 'cervical_mucus_logged');
+      // The card says one word, the server calls it egg_white.
+      expect(e.payload['observation'], 'egg_white');
+      expect(e.payload['reportedAs'], 'Eggwhite');
+
+      expect(CheckinEventMapper.map('cervical_mucus', 'Dry')!.payload['observation'], 'dry');
+    });
+
+    test('an LH result becomes the result the server accepts', () {
+      final e = CheckinEventMapper.map('lh_test', 'Peak')!;
+      expect(e.eventType, 'lh_test_logged');
+      expect(e.payload['result'], 'peak');
+      expect(e.payload['reportedAs'], 'Peak');
+    });
+
+    test('both reverse to the word on the card', () {
+      for (final label in ['Dry', 'Sticky', 'Creamy', 'Eggwhite']) {
+        final e = CheckinEventMapper.map('cervical_mucus', label)!;
+        final back = CheckinEventMapper.reverse(e.eventType, e.payload)!;
+        expect(back.key, 'cervical_mucus');
+        expect(back.value, label);
+      }
+      for (final label in ['Low', 'High', 'Peak']) {
+        final e = CheckinEventMapper.map('lh_test', label)!;
+        expect(CheckinEventMapper.reverse(e.eventType, e.payload)!.value, label);
+      }
+    });
+
+    test('an older row without reportedAs still reverses', () {
+      expect(CheckinEventMapper.reverse(
+          'cervical_mucus_logged', {'observation': 'egg_white'})!.value, 'Eggwhite');
+      expect(CheckinEventMapper.reverse(
+          'lh_test_logged', {'result': 'peak'})!.value, 'Peak');
     });
   });
 
@@ -122,14 +189,15 @@ void main() {
       // This is what makes a check-in made on one device show as selected on
       // another: the stored event maps back to the exact label the card renders.
       const options = {
-        'mood': ['Happy', 'Okay', 'Cramps', 'Tired', 'Irritable'],
+        'mood': ['Happy', 'Okay', 'Calm', 'Low', 'Irritable'],
+        'symptom': ['Cramps', 'Headache', 'Backache', 'Dry eyes', 'Bloating'],
         'energy': ['High', 'Medium', 'Low'],
         'flow': ['Light', 'Medium', 'Heavy'],
         'pain': ['None', 'Mild', 'Severe'],
-        'sleep': ['<6h', '6-8h', '>8h'],
+        'sleep': ['<6h', '6-8h', '>8h', '6-7h', '7-8h', '8h+'],
         'stress': ['Low', 'Moderate', 'High'],
-        'water': ['1L', '2L', '3L'],
-        'exercise': ['Active', 'Light', 'None'],
+        'water': ['1L', '2L', '3L', '2.5L'],
+        'exercise': ['Active', 'Light', 'None', 'Workout', 'Walk'],
       };
 
       options.forEach((metric, values) {
@@ -145,13 +213,26 @@ void main() {
       });
     });
 
-    test('a symptom logged from the mood selector reverses back to the mood card', () {
-      final event = CheckinEventMapper.map('mood', 'Cramps')!;
-      expect(event.eventType, 'symptom_logged');
-
+    test('a symptom reverses back to the symptoms sheet, not the mood card', () {
+      final event = CheckinEventMapper.map('symptom', 'Cramps')!;
       final back = CheckinEventMapper.reverse(event.eventType, event.payload)!;
-      expect(back.key, 'mood');
+      expect(back.key, 'symptom');
       expect(back.value, 'Cramps');
+    });
+
+    test('each symptom reverses on its own, so a day can hold several', () {
+      // The restore path accumulates on this metric instead of overwriting;
+      // last-wins would leave exactly one chip selected out of however many
+      // she tapped.
+      final picked = ['Cramps', 'Headache', 'Fatigue'];
+      final restored = <String>{};
+      for (final label in picked) {
+        final event = CheckinEventMapper.map('symptom', label)!;
+        final back = CheckinEventMapper.reverse(event.eventType, event.payload)!;
+        expect(back.key, 'symptom');
+        restored.add(back.value);
+      }
+      expect(restored, picked.toSet());
     });
 
     test('events written before reportedAs existed still reverse by value', () {
@@ -163,9 +244,13 @@ void main() {
     });
 
     test('a value between buckets is left unmapped rather than snapped', () {
-      // An exact sleep entry of 6.5h is not any of the three buckets, so no
-      // chip is shown as selected instead of the nearest one being guessed.
-      expect(CheckinEventMapper.reverse('sleep_logged', {'durationHours': 6.5}), isNull);
+      // 6.2h is not any bucket, so no chip is shown as selected instead of the
+      // nearest one being guessed.
+      //
+      // This used 6.5h until the everyday wellness labels were added, which
+      // made 6.5 the value behind "6-7h" -- a real bucket, and no longer an
+      // example of the thing being tested.
+      expect(CheckinEventMapper.reverse('sleep_logged', {'durationHours': 6.2}), isNull);
       expect(CheckinEventMapper.reverse('energy_logged', {'level': 4}), isNull);
     });
 
@@ -181,7 +266,9 @@ void main() {
       expect(CheckinEventMapper.reverse('period_logged', {'startDate': '2026-08-29'}), isNull);
       expect(CheckinEventMapper.reverse('journal_created', {'text': 'x'}), isNull);
       expect(CheckinEventMapper.reverse('mood_logged', {'mood': 'awful'}), isNull);
-      expect(CheckinEventMapper.reverse('symptom_logged', {'symptom': 'headache'}), isNull);
+      // A symptom no chip offers. 'headache' is a chip now, so it is no
+      // longer the example of one this card does not show.
+      expect(CheckinEventMapper.reverse('symptom_logged', {'symptom': 'dizziness'}), isNull);
     });
   });
 

@@ -109,7 +109,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         ),
         title: Text(
           'Create a Post',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontWeight: FontWeight.w700,
             fontSize: 16,
             color: BlushyColors.text,
@@ -140,7 +140,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     )
                   : Text(
                       AppLocalizations.of(context).cpPublish,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -159,14 +159,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               TextField(
                 controller: _titleController,
                 maxLines: null,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.text,
                 ),
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context).cpAnInterestingTitle,
-                  hintStyle: GoogleFonts.poppins(
+                  hintStyle: GoogleFonts.manrope(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: BlushyColors.secondaryText.withValues(alpha: 0.4),
@@ -181,14 +181,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 controller: _bodyController,
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 14.5,
                   color: BlushyColors.text,
                   height: 1.5,
                 ),
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context).cpShareYourThoughtsExperiences,
-                  hintStyle: GoogleFonts.poppins(
+                  hintStyle: GoogleFonts.manrope(
                     fontSize: 14.5,
                     color: BlushyColors.secondaryText.withValues(alpha: 0.4),
                   ),
@@ -200,7 +200,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               // Flairs / Tags Input
               Text(
                 'Add Flairs / Tags',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.secondaryText,
@@ -219,10 +219,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       child: TextField(
                         controller: _tagController,
                         onSubmitted: (_) => _addTag(),
-                        style: GoogleFonts.poppins(fontSize: 13.5, color: BlushyColors.text),
+                        style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.text),
                         decoration: InputDecoration(
                           hintText: AppLocalizations.of(context).cpEGLutealMoodswings,
-                          hintStyle: GoogleFonts.poppins(
+                          hintStyle: GoogleFonts.manrope(
                             fontSize: 12.5, 
                             color: BlushyColors.secondaryText.withValues(alpha: 0.5),
                           ),
@@ -257,7 +257,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   return InputChip(
                     label: Text(
                       tag,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: BlushyColors.secondaryText,

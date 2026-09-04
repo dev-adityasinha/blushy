@@ -33,32 +33,10 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Top aesthetic banner (Pinterest/Unsplash mix)
-                  Container(
-                    height: 180,
-                    margin: const EdgeInsets.only(bottom: 32),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                          "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
-                        ),
-                        fit: BoxFit.cover,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: BlushyColors.text.withValues(alpha: 0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                  ),
-
                   Text(
                     "How would you like to use Blushy?",
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.text,
@@ -69,7 +47,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                   Text(
                     "Choose the experience that's right for you.",
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 14,
                       color: BlushyColors.secondaryText,
                     ),
@@ -105,9 +83,10 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                           ],
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(8),
@@ -126,7 +105,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                                 const SizedBox(width: 12),
                                 Text(
                                   "For Me",
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: BlushyColors.text,
@@ -137,7 +116,8 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                             const SizedBox(height: 12),
                             Text(
                               "I'm here to understand, track and care for my own health.",
-                              style: GoogleFonts.poppins(
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.manrope(
                                 fontSize: 13,
                                 color: BlushyColors.secondaryText,
                                 height: 1.4,
@@ -179,9 +159,10 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                           ],
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(8),
@@ -200,7 +181,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                                 const SizedBox(width: 12),
                                 Text(
                                   "Support My Partner",
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: BlushyColors.text,
@@ -211,7 +192,8 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                             const SizedBox(height: 12),
                             Text(
                               "I'm here to better understand and support my partner through every stage of her health journey.",
-                              style: GoogleFonts.poppins(
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.manrope(
                                 fontSize: 13,
                                 color: BlushyColors.secondaryText,
                                 height: 1.4,
@@ -245,7 +227,7 @@ class _ChooseExperienceScreenState extends State<ChooseExperienceScreen> {
                     ),
                     child: Text(
                       "Select & Proceed to Sign In",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,

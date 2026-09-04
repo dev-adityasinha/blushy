@@ -147,13 +147,13 @@ class _BreathingSyncSheetState extends State<BreathingSyncSheet>
         children: [
           Text(
             'Breathing sync',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700),
+            style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
             'Four seconds in, hold, four out, hold. Follow the circle together.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+            style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
           ),
           const SizedBox(height: 28),
           SizedBox(
@@ -183,7 +183,7 @@ class _BreathingSyncSheetState extends State<BreathingSyncSheet>
           const SizedBox(height: 20),
           Text(
             _finished ? 'Done' : (_running ? _phaseLabel : 'Ready when you are'),
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 20,
               fontWeight: FontWeight.w600,
               color: BlushyColors.text,
@@ -192,7 +192,7 @@ class _BreathingSyncSheetState extends State<BreathingSyncSheet>
           const SizedBox(height: 4),
           Text(
             _finished ? 'Two minutes together.' : _remaining,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13,
               color: BlushyColors.secondaryText,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -213,7 +213,7 @@ class _BreathingSyncSheetState extends State<BreathingSyncSheet>
                   : (_running ? _stop : _start),
               child: Text(
                 _finished ? 'Close' : (_running ? 'Pause' : 'Start'),
-                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
               ),
             ),
           ),

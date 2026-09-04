@@ -27,6 +27,12 @@ class ApiStateCard<T> extends StatelessWidget {
   final String restrictedMessage;
 
   final String? emptyActionLabel;
+
+  /// Action label for `insufficient_data`. Falls back to [emptyActionLabel],
+  /// but the two states need different words: "log your first" is wrong for
+  /// someone who has logged and simply needs more days behind them.
+  final String? insufficientDataActionLabel;
+
   final VoidCallback? onEmptyAction;
   final Future<void> Function()? onRetry;
 
@@ -45,6 +51,7 @@ class ApiStateCard<T> extends StatelessWidget {
     this.insufficientDataMessage = 'Not enough data yet to show this.',
     this.restrictedMessage = 'This has not been shared with you.',
     this.emptyActionLabel,
+    this.insufficientDataActionLabel,
     this.onEmptyAction,
     this.onRetry,
     this.loadingPlaceholder,
@@ -114,7 +121,7 @@ class ApiStateCard<T> extends StatelessWidget {
         return _MessageBody(
           icon: Icons.timeline_outlined,
           message: insufficientDataMessage,
-          actionLabel: emptyActionLabel,
+          actionLabel: insufficientDataActionLabel ?? emptyActionLabel,
           onAction: _wrapEmptyAction,
         );
 

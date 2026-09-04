@@ -611,6 +611,23 @@ async function resetPasswordWithEmail(payload, context = {}) {
 
   logger.info(`Password reset completed for ${email} from ${context.ip ?? 'unknown-ip'}`);
 
+  // Tells her the password changed. This is the only signal an account taken
+  // over through this path would ever produce, so it is sent after the change
+  // has actually been written -- and a delivery failure must not roll it back
+  // or report failure, because the password really has been reset by then.
+  try {
+    await emailService.sendPasswordChanged({
+      to: email,
+      when: new Date(),
+      ip: context.ip ?? null,
+    });
+  } catch (error) {
+    logger.error(`Failed to send the password-changed notice for ${email}`, {
+      message: error?.message,
+      name: error?.name,
+    });
+  }
+
   return {
     message: !storedPhone && providedPhone
       ? 'Password reset successful. Phone number saved to your account.'

@@ -121,7 +121,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
         iconTheme: const IconThemeData(color: BlushyColors.dark),
         title: Text(
           'Privacy & Sharing',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: BlushyColors.text,
@@ -138,8 +138,8 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      color: BlushyColors.surface,
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: Row(
@@ -153,7 +153,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
                             'Your partner decides what reaches this device, one category at a '
                             'time. They can change it whenever they like, and a change takes '
                             'effect on your very next request.',
-                            style: GoogleFonts.poppins(fontSize: 12, height: 1.5),
+                            style: GoogleFonts.manrope(fontSize: 12, height: 1.5),
                           ),
                         ),
                       ],
@@ -163,13 +163,13 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
                     const SizedBox(height: 12),
                     Text(
                       _error!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.primary),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.primary),
                     ),
                   ],
                   const SizedBox(height: 24),
                   Text(
                     'WHAT YOU RECEIVE',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(height: 1.5, 
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
@@ -180,7 +180,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
                   if (_matrix.isEmpty)
                     Text(
                       'No sharing categories available.',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 12, color: BlushyColors.secondaryText),
                     )
                   else
@@ -190,7 +190,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
                     'Nothing here is a live feed of their records. Blushy only ever sends the '
                     'categories above, and never their journal, their messages with Docsy, or '
                     'anything they have not turned on.',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 11,
                       height: 1.5,
                       color: BlushyColors.secondaryText,
@@ -246,8 +246,8 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: BlushyColors.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Row(
@@ -256,7 +256,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
           Icon(
             shared ? Icons.check_circle_rounded : Icons.remove_circle_outline_rounded,
             size: 18,
-            color: shared ? const Color(0xFF10B981) : BlushyColors.secondaryText,
+            color: shared ? BlushyColors.success : BlushyColors.secondaryText,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -265,7 +265,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
               children: [
                 Text(
                   permission.label,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(height: 1.5, 
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: BlushyColors.text,
@@ -278,7 +278,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
                   shared
                       ? (permission.example ?? 'Shared with you.')
                       : 'Not shared with you.',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(height: 1.5, 
                     fontSize: 11,
                     color: BlushyColors.secondaryText,
                   ),
@@ -289,16 +289,16 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
           if (shared)
             Text(
               'On',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(height: 1.5, 
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF10B981),
+                color: BlushyColors.success,
               ),
             )
           else if (permission.alwaysOn)
             Text(
               'Off',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(height: 1.5, 
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: BlushyColors.secondaryText,
@@ -313,7 +313,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
           else if (_pendingRequests.contains(permission.key))
             Text(
               'Asked',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(height: 1.5, 
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: BlushyColors.secondaryText,
@@ -329,7 +329,7 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
               ),
               child: Text(
                 'Ask',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(height: 1.5, 
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.primary,

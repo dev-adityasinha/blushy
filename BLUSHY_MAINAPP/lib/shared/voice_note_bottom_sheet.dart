@@ -271,7 +271,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                   const SizedBox(width: 8),
                   Text(
                     "Voice Reflection",
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.text,
@@ -317,7 +317,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                   const SizedBox(height: 16),
                   Text(
                     "Recording user voice...",
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: BlushyColors.primary,
@@ -326,7 +326,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                   const SizedBox(height: 6),
                   Text(
                     _formatTimer(_seconds),
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.text,
@@ -356,7 +356,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                     icon: const Icon(Icons.stop_rounded, color: Colors.white, size: 18),
                     label: Text(
                       "Stop Recording",
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+                      style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.redAccent,
@@ -370,7 +370,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                   const SizedBox(height: 16),
                   Text(
                     "Transcribing your voice reflection...",
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 14,
                       color: BlushyColors.secondaryText,
                     ),
@@ -383,7 +383,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                       const SizedBox(width: 8),
                       Text(
                         "Voice Recording Captured (${_formatTimer(_seconds)})",
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: BlushyColors.text,
@@ -395,7 +395,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                   TextField(
                     controller: _noteController,
                     maxLines: 3,
-                    style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.text),
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context).vnbYourVoiceTranscriptWill,
                       filled: true,
@@ -441,7 +441,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                             fit: BoxFit.scaleDown,
                             child: Text(
                               "Save Reflection",
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+                              style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: Colors.white),
                             ),
                           ),
                           style: ElevatedButton.styleFrom(

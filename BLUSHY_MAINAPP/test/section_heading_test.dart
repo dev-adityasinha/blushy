@@ -3,75 +3,74 @@ import 'package:blushy_life_app/theme/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Dashboard headings, and the answer to "why are you asking me this?"
+/// One heading style for every section.
 ///
-/// The home tab asks for moods, symptoms, sleep and cycle dates, and no
-/// heading said what any of it was for. Several also use words -- luteal,
-/// follicular, rhythm -- that mean nothing unless you already know them.
-Widget _host(String title) => MaterialApp(
-      home: Scaffold(body: Center(child: SectionHeading(title))),
+/// The heading used to carry an info button that opened a "why this is
+/// here" sheet. That went, by decision: the headings are red, larger, and
+/// plain, with an optional mark before the words.
+Widget _host(Widget child) => MaterialApp(
+      home: Scaffold(body: Padding(padding: const EdgeInsets.all(16), child: child)),
     );
 
 void main() {
-  testWidgets('a heading is red, with an info button', (tester) async {
-    await tester.pumpWidget(_host('TODAY\'S CHECK-IN'));
-    await tester.pumpAndSettle();
+  testWidgets('a heading is red, with no info button', (tester) async {
+    await tester.pumpWidget(_host(const SectionHeading("TODAY'S CHECK-IN")));
+    await tester.pump();
 
-    final text = tester.widget<Text>(find.text('TODAY\'S CHECK-IN'));
+    final text = tester.widget<Text>(find.text("TODAY'S CHECK-IN"));
     expect(text.style?.color, BlushyColors.primary);
-    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.info_outline_rounded), findsNothing,
+        reason: 'the (i) was removed from every header');
+    expect(find.byType(InkWell), findsNothing,
+        reason: 'nothing on a heading is tappable');
   });
 
-  testWidgets('tapping it says why that section exists', (tester) async {
-    await tester.pumpWidget(_host('TODAY\'S CHECK-IN'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byIcon(Icons.info_outline_rounded));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Why this is here'), findsOneWidget);
-    expect(find.textContaining('what the rest of the app is built on'),
-        findsOneWidget);
-  });
-
-  testWidgets('cycle sections also explain the words they use', (tester) async {
-    await tester.pumpWidget(_host('MY CYCLE HEALTH'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byIcon(Icons.info_outline_rounded));
-    await tester.pumpAndSettle();
-
-    expect(find.text('What the words mean'), findsOneWidget);
-    expect(find.text('Follicular phase'), findsOneWidget);
-    expect(find.text('Luteal phase'), findsOneWidget);
-    expect(find.text('Cycle rhythm'), findsOneWidget);
-  });
-
-  testWidgets('a section with no cycle words does not show the glossary',
+  testWidgets('every heading has a mark, chosen from its words',
       (tester) async {
-    await tester.pumpWidget(_host('LEARN'));
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(_host(const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeading('CHECK IN'),
+        SectionHeading('CYCLE PATTERNS & INSIGHTS'),
+        SectionHeading('SOMETHING NEW ENTIRELY'),
+      ],
+    )));
+    await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.info_outline_rounded));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Why this is here'), findsOneWidget);
-    expect(find.text('What the words mean'), findsNothing);
+    expect(find.byIcon(Icons.fact_check_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.insights_rounded), findsOneWidget);
+    // Unmatched words still get a mark, so no heading is the odd one out.
+    expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+    expect(find.byType(Icon), findsNWidgets(3));
   });
 
-  test('every heading on the dashboard resolves to a reason', () {
-    // Grouped by what the section asks for, so a stage-specific title still
-    // lands on an answer rather than falling through to nothing.
-    for (final title in const [
-      'CONTINUE LEARNING', 'CURIOUS TODAY', 'CONNECT', 'GROWING JOURNEY',
-      'MY FIRST CYCLES', 'UNDERSTAND MY CYCLE', "TODAY'S CYCLE", 'CHECK IN',
-      'MY CYCLE HEALTH', "TODAY'S CHECK-IN", 'FOR YOUR NEXT APPOINTMENT',
-      'UNDERSTANDING MY PATTERNS', 'LEARN', 'FERTILITY TIMELINE',
-      'PARTNER MODE', 'BABY THIS WEEK', 'BABY PREPARATION', 'PARTNER & FAMILY',
-      "TODAY'S WELLBEING", 'BABY & YOU', 'MY CHANGING CYCLE', 'MY WELLBEING',
-      'LONG-TERM WELLNESS', 'MY WELLNESS', 'MY HABITS', "TODAY'S CONTEXT",
-    ]) {
-      expect(SectionHeading(title).runtimeType, SectionHeading, reason: title);
-    }
+  test('the same kind of section gets the same mark on every stage', () {
+    expect(SectionHeading.iconFor("TODAY'S CHECK-IN"),
+        SectionHeading.iconFor('CHECK IN'));
+    expect(SectionHeading.iconFor('MY CYCLE HEALTH'),
+        isNot(SectionHeading.iconFor('UNDERSTANDING MY PATTERNS')),
+        reason: 'different kinds of section get different marks');
+  });
+
+  testWidgets('a mark passed in wins over the rule', (tester) async {
+    await tester.pumpWidget(_host(const SectionHeading(
+      "TODAY'S LOGGED SIGNALS",
+      icon: Icons.monitor_heart_outlined,
+    )));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.monitor_heart_outlined), findsOneWidget);
+    final icon = tester.widget<Icon>(find.byIcon(Icons.monitor_heart_outlined));
+    expect(icon.color, BlushyColors.primary, reason: 'the mark is red too');
+  });
+
+  testWidgets('a long heading ellipsizes instead of overflowing',
+      (tester) async {
+    await tester.pumpWidget(_host(const SizedBox(
+      width: 120,
+      child: SectionHeading('A VERY LONG HEADING THAT CANNOT FIT HERE'),
+    )));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
   });
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/colors.dart';
 import '../l10n/app_localizations.dart';
 import '../core/theme.dart' hide BlushyColors;
+import 'blushy_surface.dart';
+import '../theme/scale.dart';
+import 'docsy_star.dart';
 
 /// Five destinations, with Docsy raised in the middle.
 ///
@@ -55,28 +57,25 @@ class BlushyBottomNavigation extends StatelessWidget {
     // thing worth translating.
     final t = AppLocalizations.of(context);
     final labels = labelsFor(t);
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: BlushyColors.border, width: 1),
+    // Edge to edge with large rounded top corners, as on the reference: the
+    // surface rises from the bottom of the screen, and Docsy's circle sits
+    // up over its edge.
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: BlushyColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(top: BlushySurface.edge),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 12,
-            offset: Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: BlushyTheme.getPagePadding(context),
-            vertical: 8.0,
-          ),
-          child: Row(
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: BlushyTheme.getPagePadding(context),
+              vertical: BlushySpace.sm,
+            ),
+            child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Expanded(child: _buildNavItem(0, labels[0], Icons.home_rounded)),
@@ -86,10 +85,28 @@ class BlushyBottomNavigation extends StatelessWidget {
               Expanded(child: _buildNavItem(4, labels[4], Icons.favorite_border_rounded)),
             ],
           ),
+          ),
         ),
       ),
     );
   }
+
+  /// The dot under the tab you are on.
+  ///
+  /// The colour of the label already says which tab is active, and colour
+  /// alone is the one signal a red-green colourblind user cannot read. The
+  /// dot is the second signal.
+  static Widget _activeDot(bool isActive) => Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Container(
+          width: 4,
+          height: 4,
+          decoration: BoxDecoration(
+            color: isActive ? BlushyColors.primary : Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+        ),
+      );
 
   Widget _buildSiaItem(String siaLabel) {
     final isActive = currentIndex == siaIndex;
@@ -107,50 +124,59 @@ class BlushyBottomNavigation extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedContainer(
+            // Laid out at 34 but painted at 52: the circle overhangs the bar's
+            // top edge, as on the reference, without making the bar taller.
+            SizedBox(
+              height: 34,
+              child: OverflowBox(
+                maxHeight: 52,
+                maxWidth: 52,
+                alignment: Alignment.bottomCenter,
+                child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              width: 38,
-              height: 38,
+              width: 52,
+              height: 52,
+              // Solid red, always -- Docsy is the product's primary action,
+              // and the reference keeps her circle red on every tab. A soft
+              // red glow lifts it off the bar.
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isActive ? BlushyColors.primary : BlushyColors.lutealSoft,
-                border: Border.all(
-                  color: isActive ? BlushyColors.primary : BlushyColors.secondary,
-                  width: 1.4,
-                ),
-                boxShadow: isActive
-                    ? [
-                        BoxShadow(
-                          color: BlushyColors.primary.withValues(alpha: 0.28),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : const [],
+                color: BlushyColors.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: BlushyColors.primary.withValues(alpha: 0.30),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Icon(
-                Icons.auto_awesome_motion_rounded,
-                size: 20,
-                color: isActive ? Colors.white : BlushyColors.primary,
+              // A single four-point star with softly concave sides, drawn to
+              // the reference. Not a Material icon: the sparkle glyphs are
+              // clusters, and the nearest one is what M Studio already uses.
+              child: const Center(
+                child: CustomPaint(
+                  size: Size(26, 26),
+                  painter: DocsyStarPainter(color: Colors.white),
+                ),
+              ),
+                ),
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: BlushySpace.xs),
             Text(
               // Was a hardcoded literal while `siaLabel` fed only the Semantics
               // label, so screen readers got the translated name and everyone
               // looking at the screen got English. The name is also longer than
               // it was, so overflow is spelled out rather than left to clip.
               siaLabel,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
+              style: BlushyType.micro(
                 color: isActive ? BlushyColors.primary : const Color(0xFF9E9A96),
-                letterSpacing: -0.2,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
             ),
+            _activeDot(isActive),
           ],
         ),
       ),
@@ -175,24 +201,25 @@ class BlushyBottomNavigation extends StatelessWidget {
             Icon(
               icon,
               color: isActive ? BlushyColors.primary : const Color(0xFF9E9A96),
-              size: 22,
+              size: 20,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: BlushySpace.xs),
             Text(
               label,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
+              style: BlushyType.micro(
                 color: isActive ? BlushyColors.primary : const Color(0xFF9E9A96),
-                letterSpacing: -0.2,
+                weight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
               maxLines: 1,
               overflow: TextOverflow.visible,
               textAlign: TextAlign.center,
             ),
+            _activeDot(isActive),
           ],
         ),
       ),
     );
   }
 }
+
+/// The Docsy star: four points, sides curving gently inward, filled white.

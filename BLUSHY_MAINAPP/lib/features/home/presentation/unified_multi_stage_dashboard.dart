@@ -273,7 +273,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
             children: [
               Text(
                 "Good day, $displayName ✨",
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.text,
@@ -291,7 +291,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                     const SizedBox(width: 5),
                     Text(
                       "UNIFIED FEED",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: BlushyColors.primary,
@@ -306,7 +306,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
           const SizedBox(height: 6),
           Text(
             "Synthesizing live data across your ${widget.activeStages.length} active focus topics.",
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13,
               color: BlushyColors.secondaryText,
             ),
@@ -344,7 +344,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
               const SizedBox(width: 6),
               Text(
                 title,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: BlushyColors.text,
@@ -395,7 +395,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                   const SizedBox(width: 8),
                   Text(
                     "Unified Cycle & Body Monitor",
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: BlushyColors.text,
@@ -411,7 +411,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                 ),
                 child: Text(
                   _isLoadingLive ? "SYNCING..." : "LIVE MONGODB SYNC",
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     color: BlushyColors.primary,
@@ -430,11 +430,11 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                 children: [
                   Text(
                     hasPeriodStart ? "Day $currentDay of $cycleLength" : "Cycle Tracking",
-                    style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w700, color: BlushyColors.text),
                   ),
                   Text(
                     currentPhase,
-                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.primary),
+                    style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.primary),
                   ),
                 ],
               ),
@@ -448,7 +448,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                   ),
                   child: Text(
                     "Fertile Window Open",
-                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFE65100)),
+                    style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFE65100)),
                   ),
                 ),
             ],
@@ -473,7 +473,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                 const SizedBox(width: 8),
                 Text(
                   "Gestational Week ${((280 - pc.dueDate!.difference(DateTime.now()).inDays) / 7).clamp(1, 40).toInt()} • Maternity Track Active",
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                  style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text),
                 ),
               ],
             ),
@@ -514,7 +514,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
               const SizedBox(width: 12),
               Text(
                 "Docsy's Cross-Topic Synthesis",
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.text,
@@ -525,7 +525,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
           const SizedBox(height: 12),
           Text(
             _generateCombinedInsightText(),
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13,
               height: 1.5,
               color: BlushyColors.text,
@@ -588,7 +588,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
             children: [
               Text(
                 AppLocalizations.of(context).umsdDailyUnifiedCheckIn,
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text),
+                style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text),
               ),
               if (_symptomLoggedToday)
                 Container(
@@ -599,7 +599,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                   ),
                   child: Text(
                     "LOGGED TODAY",
-                    style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF2E7D32)),
+                    style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF2E7D32)),
                   ),
                 ),
             ],
@@ -607,7 +607,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
           const SizedBox(height: 14),
           Text(
             "Mood & Energy State:",
-            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+            style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
           ),
           const SizedBox(height: 8),
           Row(
@@ -644,7 +644,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
           const SizedBox(height: 16),
           Text(
             "Log symptoms across all active topics:",
-            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+            style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -654,7 +654,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
               final isSelected = _loggedSymptoms.contains(symptom);
               return FilterChip(
                 label: Text(symptom),
-                labelStyle: GoogleFonts.poppins(
+                labelStyle: GoogleFonts.manrope(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected ? Colors.white : BlushyColors.text,
@@ -713,7 +713,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context).umsdCheckInSavedAnd,
-                      style: GoogleFonts.poppins(),
+                      style: GoogleFonts.manrope(),
                     ),
                     backgroundColor: BlushyColors.primary,
                     duration: const Duration(seconds: 2),
@@ -728,7 +728,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
               ),
               child: Text(
                 "Save Today's Check-in",
-                style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
           ),
@@ -754,7 +754,7 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
               const SizedBox(width: 8),
               Text(
                 "Integrated Guidance & Protocols",
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text),
+                style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text),
               ),
             ],
           ),
@@ -788,11 +788,11 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
                         children: [
                           Text(
                             title,
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: BlushyColors.text),
+                            style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700, color: BlushyColors.text),
                           ),
                           Text(
                             _getStageShortSummary(stageKey),
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                            style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
                           ),
                         ],
                       ),
@@ -853,12 +853,12 @@ class _UnifiedMultiStageDashboardState extends State<UnifiedMultiStageDashboard>
           children: [
             Text(
               label,
-              style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: BlushyColors.text),
+              style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: BlushyColors.text),
             ),
           ],
         ),

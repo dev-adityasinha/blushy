@@ -266,6 +266,7 @@ function buildSystemPrompt({ role, user, languageCode, aiContext }) {
   const captureSummary = typeof aiContext?.captureSummary === 'string' ? aiContext.captureSummary.trim() : '';
   const medicalReportSummary = typeof aiContext?.medicalReportSummary === 'string' ? aiContext.medicalReportSummary.trim() : '';
   const journalSummary = typeof aiContext?.journalSummary === 'string' ? aiContext.journalSummary.trim() : '';
+  const dailyLogSummary = typeof aiContext?.dailyLogSummary === 'string' ? aiContext.dailyLogSummary.trim() : '';
 
   const currentDate = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Kolkata',
@@ -345,6 +346,14 @@ function buildSystemPrompt({ role, user, languageCode, aiContext }) {
     predictionSummary.length > 0 ? `CYCLE, PERIOD & USER PREDICTION CONTEXT:\n${predictionSummary}` : '',
     healthInsightsSummary.length > 0 ? `CRITICAL HEALTH CONTEXT: ${healthInsightsSummary}. Use this to give targeted, personalized voice & chat support.` : '',
     journalSummary.length > 0 ? `USER JOURNALS & RECENT REFLECTIONS: ${journalSummary}. Reference her feelings, moods, and journal entries naturally when relevant.` : '',
+    // Her own entries, restated. Naming them back is what makes a reply feel
+    // like it is about her week rather than about women in general -- but they
+    // are observations, not findings: any pattern across them is computed by
+    // the pattern engine, which needs six paired observations before it will
+    // say anything, and this must not be used to shortcut that.
+    dailyLogSummary.length > 0
+      ? `HER DAILY CHECK-IN AND SYMPTOM LOGS: ${dailyLogSummary}. Refer to these specifically when they are relevant. Do NOT draw your own correlations between them or claim one causes another -- describe only what she recorded, and leave patterns to the insights above.`
+      : 'HER DAILY CHECK-IN AND SYMPTOM LOGS: nothing logged in the last week. Do not assume that means she felt fine; if it matters to the answer, ask.',
     medicalReportSummary.length > 0 ? `MEDICAL DOCUMENT CONTEXT: ${medicalReportSummary}. Acknowledge it supportively.` : '',
     captureSummary.length > 0 ? `Recent user updates: ${captureSummary}. Reference naturally.` : '',
     onboardingSummary.length > 0 ? `User profile & onboarding answers: ${onboardingSummary}.` : '',

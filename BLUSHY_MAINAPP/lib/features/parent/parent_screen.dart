@@ -70,17 +70,17 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
                 // Editorial Title
                 Text(
                   "PARENT MODE",
-                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.4),
+                  style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.4),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "Supporting Her",
-                  style: GoogleFonts.poppins(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                  style: GoogleFonts.manrope(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "Guides, conversation starters, and period basics for mothers and guardians.",
-                  style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText, height: 1.45),
+                  style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText, height: 1.45),
                 ),
                 const SizedBox(height: 20),
 
@@ -99,7 +99,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
                           selected: isActive,
                           selectedColor: BlushyColors.primary.withValues(alpha: 0.12),
                           backgroundColor: Colors.white,
-                          labelStyle: GoogleFonts.poppins(
+                          labelStyle: GoogleFonts.manrope(
                             fontSize: 12,
                             fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                             color: isActive ? BlushyColors.primary : BlushyColors.text,
@@ -163,17 +163,17 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
             children: [
               Text(
                 "MILESTONES",
-                style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.1),
+                style: GoogleFonts.manrope(fontSize: 8, fontWeight: FontWeight.w900, color: BlushyColors.primary, letterSpacing: 1.1),
               ),
               const SizedBox(height: 12),
               Text(
                 "Cycle Setup in Progress",
-                style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.bold, color: BlushyColors.text),
               ),
               const SizedBox(height: 6),
               Text(
                 "Your daughter is currently tracking cycle rhythms and logs. Docsy provides supportive insights to keep her prepared.",
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
+                style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
               ),
             ],
           ),
@@ -183,7 +183,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
         // Helpful Article links
         Text(
           "HELPFUL ARTICLES",
-          style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
+          style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
         ),
         const SizedBox(height: 12),
         ...[
@@ -202,9 +202,9 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(art['title']!, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text)),
+                  child: Text(art['title']!, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text)),
                 ),
-                Text(art['time']!, style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText)),
+                Text(art['time']!, style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText)),
               ],
             ),
           );
@@ -227,7 +227,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
       children: [
         Text(
           AppLocalizations.of(context).pPreparingHerEmergencySchool,
-          style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
+          style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
         ),
         const SizedBox(height: 16),
         ...list.map((item) {
@@ -242,9 +242,9 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item['title']!, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                      Text(item['title']!, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text)),
                       const SizedBox(height: 2),
-                      Text(item['desc']!, style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
+                      Text(item['desc']!, style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText)),
                     ],
                   ),
                 ),
@@ -263,7 +263,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
       children: [
         Text(
           AppLocalizations.of(context).pConversationStarters,
-          style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
+          style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
         ),
         const SizedBox(height: 12),
         ..._starters.map((starter) {
@@ -277,7 +277,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
             ),
             child: Text(
               starter,
-              style: GoogleFonts.poppins(fontSize: 18, color: BlushyColors.text, fontStyle: FontStyle.italic, height: 1.3),
+              style: GoogleFonts.manrope(fontSize: 18, color: BlushyColors.text, fontStyle: FontStyle.italic, height: 1.3),
             ),
           );
         }),
@@ -292,7 +292,7 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
       children: [
         Text(
           AppLocalizations.of(context).pParentFrequentQuestions,
-          style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
+          style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w900, color: BlushyColors.secondaryText, letterSpacing: 1.1),
         ),
         const SizedBox(height: 12),
         ..._faqs.asMap().entries.map((entry) {
@@ -317,11 +317,11 @@ class _BlushyParentScreenState extends State<BlushyParentScreen> {
                   }
                 });
               },
-              title: Text(faq['q']!, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+              title: Text(faq['q']!, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text)),
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
-                  child: Text(faq['a']!, style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45)),
+                  child: Text(faq['a']!, style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45)),
                 )
               ],
             ),

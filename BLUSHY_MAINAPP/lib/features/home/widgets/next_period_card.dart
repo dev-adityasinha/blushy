@@ -57,7 +57,7 @@ class BlushyNextPeriodCard extends StatelessWidget {
         children: [
           Text(
             header,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: BlushyColors.secondaryText,
@@ -67,7 +67,7 @@ class BlushyNextPeriodCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: BlushyColors.text,
@@ -77,7 +77,7 @@ class BlushyNextPeriodCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             description,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13,
               color: BlushyColors.secondaryText,
               height: 1.4,
@@ -96,7 +96,7 @@ class BlushyNextPeriodCard extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 buttonText,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,

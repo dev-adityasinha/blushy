@@ -72,7 +72,7 @@ class _TimeCapsuleWidgetState extends State<TimeCapsuleWidget> with SingleTicker
                 children: [
                   Icon(val < 0.6 ? Icons.lock_clock_rounded : Icons.lock_open_rounded, color: const Color(0xFFD97706), size: 36),
                   const SizedBox(height: 8),
-                  Text(val < 0.6 ? 'Untying Ceremonial Ribbon...' : item.title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(val < 0.6 ? 'Untying Ceremonial Ribbon...' : item.title, style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               content: val > 0.6
@@ -94,7 +94,7 @@ class _TimeCapsuleWidgetState extends State<TimeCapsuleWidget> with SingleTicker
     return Scaffold(
       backgroundColor: BlushyColors.background,
       appBar: AppBar(
-        title: Text('Memory Time Capsule ⌛', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        title: Text('Memory Time Capsule ⌛', style: GoogleFonts.instrumentSerif(fontWeight: FontWeight.bold)),
         backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
@@ -110,8 +110,8 @@ class _TimeCapsuleWidgetState extends State<TimeCapsuleWidget> with SingleTicker
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
               leading: Icon(canUnlock ? Icons.mark_email_read_rounded : Icons.lock_rounded, color: canUnlock ? const Color(0xFF10B981) : const Color(0xFFD97706)),
-              title: Text(item.title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-              subtitle: Text(canUnlock ? 'Ready for Ceremonial Unlock!' : 'Locked until ${item.unlockDate.toString().substring(0, 10)}', style: GoogleFonts.poppins(fontSize: 11)),
+              title: Text(item.title, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: Text(canUnlock ? 'Ready for Ceremonial Unlock!' : 'Locked until ${item.unlockDate.toString().substring(0, 10)}', style: GoogleFonts.manrope(fontSize: 11)),
               trailing: ElevatedButton(
                 onPressed: canUnlock ? () => _ceremonialUnlock(item) : null,
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706)),

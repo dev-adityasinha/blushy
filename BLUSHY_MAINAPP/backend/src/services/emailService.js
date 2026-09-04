@@ -231,6 +231,64 @@ async function sendPartnerInvite({ to, senderName, inviteUrl = null }) {
  * Failure is swallowed by the caller: a welcome that does not arrive is not a
  * reason to fail a signup that has already succeeded.
  */
+async function sendPasswordChanged({ to, when = null, ip = null }) {
+  const subject = 'Your Blushy password was changed';
+
+  // Said plainly and early. Someone who did not do this needs to know in the
+  // first line, not after two paragraphs of reassurance.
+  const stamp = when instanceof Date && !Number.isNaN(when.getTime())
+    ? when.toUTCString()
+    : null;
+
+  const detail = [
+    stamp ? `When: ${stamp}` : null,
+    // Only when we have one, and never framed as a location: an IP is not a
+    // place, and telling someone their account was accessed from a city we
+    // guessed would be worse than saying nothing.
+    ip ? `Request came from: ${ip}` : null,
+  ].filter(Boolean);
+
+  const text = [
+    'Your Blushy password was just changed.',
+    '',
+    'If this was you, there is nothing to do.',
+    '',
+    'If it was not you, someone else may have access to your email inbox as',
+    'well as your account. Reset your password again straight away, and change',
+    'your email password too.',
+    ...(detail.length > 0 ? ['', ...detail] : []),
+    '',
+    'You have been signed out everywhere as a precaution.',
+    '',
+    'The Blushy family',
+  ].join('\n');
+
+  const html = `
+  <div style="font-family:Arial,sans-serif;line-height:1.6;color:#2b2b2b;max-width:500px;margin:0 auto;padding:24px;border:1px solid #f5d6de;border-radius:12px;background-color:#fff7f9;">
+    <h2 style="margin:0 0 12px;color:#f76b8a;font-size:20px;">Your password was changed</h2>
+    <p style="font-size:14px;color:#555;margin:0 0 16px;">
+      Your Blushy password was just changed. If this was you, there is nothing to do.
+    </p>
+    <p style="font-size:14px;color:#8a3d3d;background:#fdecec;border-radius:8px;padding:12px;margin:0 0 16px;">
+      <strong>If it was not you</strong>, someone else may have access to your email
+      inbox as well as your account. Reset your password again straight away, and
+      change your email password too.
+    </p>
+    ${detail.length > 0 ? `<p style="font-size:13px;color:#777;margin:0 0 16px;">${detail.join('<br>')}</p>` : ''}
+    <p style="font-size:13px;color:#777;margin:0;">
+      You have been signed out everywhere as a precaution.
+    </p>
+  </div>`;
+
+  return deliver({
+    to,
+    subject,
+    text,
+    html,
+    devLogLine: `[email] password changed notice for ${to}`,
+  });
+}
+
 async function sendWelcome({ to, name = null }) {
   const who = name && name.trim().length > 0 ? name.trim() : 'you';
   const greeting = who === 'you' ? 'Welcome to Blushy' : `Welcome to Blushy, ${who}`;
@@ -350,4 +408,5 @@ export const emailService = {
   sendVerificationLink,
   sendPartnerInvite,
   sendWelcome,
+  sendPasswordChanged,
 };

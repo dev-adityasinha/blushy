@@ -10,7 +10,7 @@ class JournalDiagnosticsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: BlushyColors.background,
       appBar: AppBar(
-        title: Text('Platform Diagnostics 🛠️', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        title: Text('Platform Diagnostics 🛠️', style: GoogleFonts.instrumentSerif(fontWeight: FontWeight.bold)),
         backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
@@ -35,8 +35,8 @@ class JournalDiagnosticsScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: Icon(icon, color: const Color(0xFFD97706)),
-        title: Text(label, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold)),
-        subtitle: Text(value, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[700])),
+        title: Text(label, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold)),
+        subtitle: Text(value, style: GoogleFonts.manrope(fontSize: 11, color: Colors.grey[700])),
       ),
     );
   }

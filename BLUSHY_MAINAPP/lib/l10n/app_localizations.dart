@@ -2201,6 +2201,660 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This was posted anonymously, so there is no profile to open. Whoever wrote it chose not to be named, and that stays their choice.'**
   String get upAnonymousProfile;
+
+  /// No description provided for @dashFocusTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'FOCUS TOPIC'**
+  String get dashFocusTopic;
+
+  /// No description provided for @dashScrollDownContinueLearning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll down to Continue Learning section'**
+  String get dashScrollDownContinueLearning;
+
+  /// No description provided for @dashSmallLessonsDesignedStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Small lessons designed for your stage.'**
+  String get dashSmallLessonsDesignedStage;
+
+  /// No description provided for @dashDailyDiscovery.
+  ///
+  /// In en, this message translates to:
+  /// **'DAILY DISCOVERY'**
+  String get dashDailyDiscovery;
+
+  /// No description provided for @dashSweatGlandsBecomeMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweat glands become more active during puberty. Drinking plenty of water and washing daily helps keep you fresh, confident, and clean.'**
+  String get dashSweatGlandsBecomeMore;
+
+  /// No description provided for @dashRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get dashRead;
+
+  /// No description provided for @dashLinkCopiedShareFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied to share with family!'**
+  String get dashLinkCopiedShareFamily;
+
+  /// No description provided for @dashQuestionsGirlsOftenAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions Girls Often Ask'**
+  String get dashQuestionsGirlsOftenAsk;
+
+  /// No description provided for @dashGirls.
+  ///
+  /// In en, this message translates to:
+  /// **'Girls'**
+  String get dashGirls;
+
+  /// No description provided for @dashGrowingTogether.
+  ///
+  /// In en, this message translates to:
+  /// **'Growing Together'**
+  String get dashGrowingTogether;
+
+  /// No description provided for @dashSupportiveCommunityPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Supportive Community Preview'**
+  String get dashSupportiveCommunityPreview;
+
+  /// No description provided for @dashHowDoITrack.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I track if I haven\'t got my period yet?'**
+  String get dashHowDoITrack;
+
+  /// No description provided for @dashCanFocusLearningDischarge.
+  ///
+  /// In en, this message translates to:
+  /// **'You can focus on learning, discharge changes and kits here! Docsy helps guide you.'**
+  String get dashCanFocusLearningDischarge;
+
+  /// No description provided for @dashReadWhatOthersAre.
+  ///
+  /// In en, this message translates to:
+  /// **'Read what others are sharing'**
+  String get dashReadWhatOthersAre;
+
+  /// No description provided for @dashRealConversationsFromCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Real conversations from the community, not examples.'**
+  String get dashRealConversationsFromCommunity;
+
+  /// No description provided for @dashRedirectingCommunitySpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirecting to Community Space...'**
+  String get dashRedirectingCommunitySpace;
+
+  /// No description provided for @dashJoinCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Community'**
+  String get dashJoinCommunity;
+
+  /// No description provided for @dashSharedReading.
+  ///
+  /// In en, this message translates to:
+  /// **'SHARED READING'**
+  String get dashSharedReading;
+
+  /// No description provided for @dashShareArticlesAboutGrowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Share articles about growing up with your parent safely.'**
+  String get dashShareArticlesAboutGrowing;
+
+  /// No description provided for @dashArticleSharedParentAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Article shared with Parent account!'**
+  String get dashArticleSharedParentAccount;
+
+  /// No description provided for @dashSendParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to Parent'**
+  String get dashSendParent;
+
+  /// No description provided for @dashOpeningSharedLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening Shared Library...'**
+  String get dashOpeningSharedLibrary;
+
+  /// No description provided for @dashSharedLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared Library'**
+  String get dashSharedLibrary;
+
+  /// No description provided for @dashLetSTalkWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'LET\'S TALK • WEEKLY PROMPT'**
+  String get dashLetSTalkWeekly;
+
+  /// No description provided for @dashFirstPeriodKitChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'FIRST PERIOD KIT CHECKLIST'**
+  String get dashFirstPeriodKitChecklist;
+
+  /// No description provided for @dashSharedJourney.
+  ///
+  /// In en, this message translates to:
+  /// **'SHARED JOURNEY'**
+  String get dashSharedJourney;
+
+  /// No description provided for @dashDisplayLearningProgressCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Display learning progress completed together. The child decides what is visible.'**
+  String get dashDisplayLearningProgressCompleted;
+
+  /// No description provided for @dashLearningCycleCompanion.
+  ///
+  /// In en, this message translates to:
+  /// **'Your learning cycle companion.'**
+  String get dashLearningCycleCompanion;
+
+  /// No description provided for @dashPastDays.
+  ///
+  /// In en, this message translates to:
+  /// **'PAST 30 DAYS'**
+  String get dashPastDays;
+
+  /// No description provided for @dashSCompletelyNormalFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s completely normal for your first few cycles to be irregular. Your body is gently finding its own natural rhythm.'**
+  String get dashSCompletelyNormalFirst;
+
+  /// No description provided for @dashVoiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Note'**
+  String get dashVoiceNote;
+
+  /// No description provided for @dashMStudio.
+  ///
+  /// In en, this message translates to:
+  /// **'M Studio'**
+  String get dashMStudio;
+
+  /// No description provided for @dashCommunityDiscussionsStories.
+  ///
+  /// In en, this message translates to:
+  /// **'Community Discussions & Stories'**
+  String get dashCommunityDiscussionsStories;
+
+  /// No description provided for @dashQuestionsPeopleAreAsking.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions people are asking'**
+  String get dashQuestionsPeopleAreAsking;
+
+  /// No description provided for @dashOpenCommunityReadReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the community to read and reply.'**
+  String get dashOpenCommunityReadReply;
+
+  /// No description provided for @dashTipsPeopleAreSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips people are sharing'**
+  String get dashTipsPeopleAreSharing;
+
+  /// No description provided for @dashOpenDiscussions.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Discussions'**
+  String get dashOpenDiscussions;
+
+  /// No description provided for @dashSharedReadingParentResources.
+  ///
+  /// In en, this message translates to:
+  /// **'SHARED READING & PARENT RESOURCES'**
+  String get dashSharedReadingParentResources;
+
+  /// No description provided for @dashSendCycleArticlesParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Send cycle articles to parent or consult conversation guides.'**
+  String get dashSendCycleArticlesParent;
+
+  /// No description provided for @dashArticleSharedParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Article shared with Parent!'**
+  String get dashArticleSharedParent;
+
+  /// No description provided for @dashShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get dashShare;
+
+  /// No description provided for @dashOpeningParentResourceLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening Parent Resource library...'**
+  String get dashOpeningParentResourceLibrary;
+
+  /// No description provided for @dashGuides.
+  ///
+  /// In en, this message translates to:
+  /// **'Guides'**
+  String get dashGuides;
+
+  /// No description provided for @dashConversationPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'CONVERSATION PROMPT'**
+  String get dashConversationPrompt;
+
+  /// No description provided for @dashFirstPeriodKitStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'FIRST PERIOD KIT STATUS'**
+  String get dashFirstPeriodKitStatus;
+
+  /// No description provided for @dashDocsySafetyParentNever.
+  ///
+  /// In en, this message translates to:
+  /// **' Docsy Safety: Your parent never has access to your private chat logs, notes, or moods.'**
+  String get dashDocsySafetyParentNever;
+
+  /// No description provided for @dashTodaySLoggedSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'TODAY\'S LOGGED SIGNALS'**
+  String get dashTodaySLoggedSignals;
+
+  /// No description provided for @dashLogEditPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Log / Edit Period'**
+  String get dashLogEditPeriod;
+
+  /// No description provided for @dashConfirmCorrectPeriodStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm or correct your period start and end dates below.'**
+  String get dashConfirmCorrectPeriodStart;
+
+  /// No description provided for @dashPeriodStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'PERIOD START DATE'**
+  String get dashPeriodStartDate;
+
+  /// No description provided for @dashPeriodEndDateOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'PERIOD END DATE (OPTIONAL)'**
+  String get dashPeriodEndDateOptional;
+
+  /// No description provided for @dashCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get dashCancel;
+
+  /// No description provided for @dashSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get dashSave;
+
+  /// No description provided for @dashExplainInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain Insight'**
+  String get dashExplainInsight;
+
+  /// No description provided for @dashDocsySReflection.
+  ///
+  /// In en, this message translates to:
+  /// **'DOCSY\'S REFLECTION'**
+  String get dashDocsySReflection;
+
+  /// No description provided for @dashHormonalRhythmTracker.
+  ///
+  /// In en, this message translates to:
+  /// **'Hormonal Rhythm Tracker'**
+  String get dashHormonalRhythmTracker;
+
+  /// No description provided for @dashRecentCycleHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'RECENT CYCLE HISTORY'**
+  String get dashRecentCycleHistory;
+
+  /// No description provided for @dashNextPeriodMayArrive.
+  ///
+  /// In en, this message translates to:
+  /// **'Your next period may arrive within the next few weeks. Because your cycles vary, this is only an estimate.'**
+  String get dashNextPeriodMayArrive;
+
+  /// No description provided for @dashWeightOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'WEIGHT (OPTIONAL)'**
+  String get dashWeightOptional;
+
+  /// No description provided for @dashFromLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'FROM YOUR LOGS'**
+  String get dashFromLogs;
+
+  /// No description provided for @dashBlushyCanPullTogether.
+  ///
+  /// In en, this message translates to:
+  /// **'Blushy can pull together what you have logged over a date range you choose. You decide what stays in before you share it.'**
+  String get dashBlushyCanPullTogether;
+
+  /// No description provided for @dashRecordWhatReportedWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'A record of what you reported and what the app noticed. Not a diagnosis.'**
+  String get dashRecordWhatReportedWhat;
+
+  /// No description provided for @dashAiGeneratedTrendsAcross.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated trends across multiple cycle logs'**
+  String get dashAiGeneratedTrendsAcross;
+
+  /// No description provided for @dashAskDocsy.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Docsy'**
+  String get dashAskDocsy;
+
+  /// No description provided for @dashWhyMatters.
+  ///
+  /// In en, this message translates to:
+  /// **'Why This Matters'**
+  String get dashWhyMatters;
+
+  /// No description provided for @dashPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get dashPriority;
+
+  /// No description provided for @dashReviewedGuidance.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed guidance'**
+  String get dashReviewedGuidance;
+
+  /// No description provided for @dashDerived.
+  ///
+  /// In en, this message translates to:
+  /// **'Derived'**
+  String get dashDerived;
+
+  /// No description provided for @dashFertilityJourney.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Fertility Journey'**
+  String get dashFertilityJourney;
+
+  /// No description provided for @dashOvulationLoggedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Ovulation logged successfully!'**
+  String get dashOvulationLoggedSuccessfully;
+
+  /// No description provided for @dashLogOvulation.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Ovulation'**
+  String get dashLogOvulation;
+
+  /// No description provided for @dashBasalBodyTemperatureBbt.
+  ///
+  /// In en, this message translates to:
+  /// **'BASAL BODY TEMPERATURE (BBT)'**
+  String get dashBasalBodyTemperatureBbt;
+
+  /// No description provided for @dashNotesMStudio.
+  ///
+  /// In en, this message translates to:
+  /// **'NOTES & M STUDIO'**
+  String get dashNotesMStudio;
+
+  /// No description provided for @dashTtcMStudioEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'TTC M Studio Entry'**
+  String get dashTtcMStudioEntry;
+
+  /// No description provided for @dashSharedTimelineReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared Timeline & Reminders'**
+  String get dashSharedTimelineReminders;
+
+  /// No description provided for @dashEncouragingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Encouraging Message:'**
+  String get dashEncouragingMessage;
+
+  /// No description provided for @dashPartnerTasksConversationStarters.
+  ///
+  /// In en, this message translates to:
+  /// **'PARTNER TASKS & CONVERSATION STARTERS'**
+  String get dashPartnerTasksConversationStarters;
+
+  /// No description provided for @dashLearnMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn More'**
+  String get dashLearnMore;
+
+  /// No description provided for @dashKickCountDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'KICK COUNT (DAILY)'**
+  String get dashKickCountDaily;
+
+  /// No description provided for @dashOptionalHealthData.
+  ///
+  /// In en, this message translates to:
+  /// **'OPTIONAL HEALTH DATA'**
+  String get dashOptionalHealthData;
+
+  /// No description provided for @dashLogBloodPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Blood Pressure'**
+  String get dashLogBloodPressure;
+
+  /// No description provided for @dashBloodPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Blood Pressure'**
+  String get dashBloodPressure;
+
+  /// No description provided for @dashLogBloodSugar.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Blood Sugar'**
+  String get dashLogBloodSugar;
+
+  /// No description provided for @dashBloodSugar.
+  ///
+  /// In en, this message translates to:
+  /// **'Blood Sugar'**
+  String get dashBloodSugar;
+
+  /// No description provided for @dashPregnancyMStudioEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Pregnancy M Studio Entry'**
+  String get dashPregnancyMStudioEntry;
+
+  /// No description provided for @dashPregnancyPrepLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Pregnancy Prep & Lists'**
+  String get dashPregnancyPrepLists;
+
+  /// No description provided for @dashSharedPregnancyTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared Pregnancy Timeline'**
+  String get dashSharedPregnancyTimeline;
+
+  /// No description provided for @dashCoordinatedChecklistsTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinated Checklists & Tasks:'**
+  String get dashCoordinatedChecklistsTasks;
+
+  /// No description provided for @dashPostpartumMStudioEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Postpartum M Studio Entry'**
+  String get dashPostpartumMStudioEntry;
+
+  /// No description provided for @dashMotherBabyCoordinatedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Mother-Baby Coordinated Tasks'**
+  String get dashMotherBabyCoordinatedTasks;
+
+  /// No description provided for @dashTransitionTrackingHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Transition Tracking & History'**
+  String get dashTransitionTrackingHistory;
+
+  /// No description provided for @dashViewFullHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'View Full History'**
+  String get dashViewFullHistory;
+
+  /// No description provided for @dashMStudioReflection.
+  ///
+  /// In en, this message translates to:
+  /// **'M Studio Reflection'**
+  String get dashMStudioReflection;
+
+  /// No description provided for @dashLongTermWellnessOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-Term Wellness Overview'**
+  String get dashLongTermWellnessOverview;
+
+  /// No description provided for @dashTodaySCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Check-In'**
+  String get dashTodaySCheck;
+
+  /// No description provided for @dashViewHealthHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'View Health History'**
+  String get dashViewHealthHistory;
+
+  /// No description provided for @dashBloodPressureOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'BLOOD PRESSURE (OPTIONAL)'**
+  String get dashBloodPressureOptional;
+
+  /// No description provided for @dashEmpoweredPostMenopauseWellness.
+  ///
+  /// In en, this message translates to:
+  /// **'EMPOWERED POST-MENOPAUSE WELLNESS CARDS'**
+  String get dashEmpoweredPostMenopauseWellness;
+
+  /// No description provided for @dashWhyMattersEncouragesSustainable.
+  ///
+  /// In en, this message translates to:
+  /// **'Why This Matters: Encourages sustainable heart, joint and bone vitalities.'**
+  String get dashWhyMattersEncouragesSustainable;
+
+  /// No description provided for @dashDailyLifestyleOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Lifestyle Overview'**
+  String get dashDailyLifestyleOverview;
+
+  /// No description provided for @dashCycleOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'CYCLE OVERVIEW'**
+  String get dashCycleOverview;
+
+  /// No description provided for @dashViewWellnessHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'View Wellness History'**
+  String get dashViewWellnessHistory;
+
+  /// No description provided for @dashRecordCurrentWeightKg.
+  ///
+  /// In en, this message translates to:
+  /// **'Record your current weight in kg to track trends over time.'**
+  String get dashRecordCurrentWeightKg;
+
+  /// No description provided for @dashAiGeneratedHabitInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-Generated Habit Insights'**
+  String get dashAiGeneratedHabitInsights;
+
+  /// No description provided for @dashWhyMattersSupportsOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Why This Matters: Supports overall physical health and emotional vitality.'**
+  String get dashWhyMattersSupportsOverall;
+
+  /// Heading of the first-run language picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your language'**
+  String get languageChoiceTitle;
+
+  /// Explains that the choice covers both the interface and Docsy.
+  ///
+  /// In en, this message translates to:
+  /// **'Blushy and Docsy will speak this language. You can change it any time in Settings.'**
+  String get languageChoiceSubtitle;
+
+  /// Confirms the language and leaves the picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get languageChoiceContinue;
+
+  /// Action on an insight that needs more days of data, where the user has already logged at least once.
+  ///
+  /// In en, this message translates to:
+  /// **'Log today\'s check-in'**
+  String get dashLogTodayCheckIn;
 }
 
 class _AppLocalizationsDelegate

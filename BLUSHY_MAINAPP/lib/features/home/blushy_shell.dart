@@ -9,6 +9,9 @@ import '../m_studio/m_studio_screen.dart';
 import '../sia/sia_screen.dart';
 import '../partner/partner_screen.dart';
 import '../../core/state.dart';
+import 'dart:async';
+
+import '../../services/daily_rollover.dart';
 import '../../services/offline_event_queue.dart';
 import '../../services/sia_dashboard_service.dart';
 import 'home_screen.dart';
@@ -85,6 +88,40 @@ class _BlushyOSShellState extends State<BlushyOSShell>
       if (!mounted || TourPreferences.hasSeenTour()) return;
       setState(() => _showTour = true);
     });
+
+    _scheduleMidnightRollover();
+  }
+
+  /// Ends the day while she is still looking at it.
+  ///
+  /// App start and resume cover the two common ways a day turns over, but
+  /// neither fires when the app is left open and untouched across midnight --
+  /// and the check-in would then keep showing yesterday until she touched
+  /// something.
+  ///
+  /// One shot rather than periodic, rescheduled each time it fires: a periodic
+  /// timer drifts against the clock, and a pending periodic timer is what
+  /// makes widget tests fail on teardown. Cancelled in [dispose], so it cannot
+  /// outlive the tree that owns it.
+  void _scheduleMidnightRollover() {
+    _midnightTimer?.cancel();
+    _midnightTimer = Timer(
+      DailyRollover.untilNextMidnight(DateTime.now()),
+      () async {
+        if (!mounted) return;
+        final rolled = await DailyRollover.runIfNeeded();
+        if (!mounted) return;
+        // The next one, whether or not this one had anything to do: the app
+        // may sit open for days.
+        _scheduleMidnightRollover();
+        if (!rolled) return;
+        // The check-in is rendered from the day's file, so it has to be told.
+        setState(() {});
+        SiaDashboardService().syncAllDashboardsFromBackend(
+          state: BlushyOSProvider.of(context),
+        );
+      },
+    );
   }
 
   /// The five stops, in the order the tabs appear.
@@ -122,6 +159,7 @@ class _BlushyOSShellState extends State<BlushyOSShell>
   void dispose() {
     BlushyShellTabs.requested.removeListener(_onTabRequested);
     WidgetsBinding.instance.removeObserver(this);
+    _midnightTimer?.cancel();
     _tabFade.dispose();
     super.dispose();
   }
@@ -152,7 +190,14 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     }
   }
 
+  /// Fires once at the next local midnight, then reschedules itself.
+  Timer? _midnightTimer;
+
   Future<void> _flushPendingWrites() async {
+    // Resuming the next morning is the usual way a day turns over while the
+    // app is installed, so this is checked before the flush rather than
+    // waiting for a screen to notice.
+    await DailyRollover.runIfNeeded();
     await OfflineEventQueue.instance.load();
     final result = await OfflineEventQueue.instance.flush();
     if (!mounted || !result.didAnything) return;

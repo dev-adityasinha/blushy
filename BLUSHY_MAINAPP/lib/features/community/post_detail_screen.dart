@@ -7,6 +7,10 @@ import '../../services/auth_storage.dart';
 import 'user_profile_sheet.dart';
 import 'moderation_widgets.dart';
 import '../../l10n/app_localizations.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../shared/blushy_surface.dart';
+import '../../theme/scale.dart';
+import 'post_card_parts.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final CommunityPost post;
@@ -142,16 +146,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.of(context).pdDeleteComment, style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
-        content: Text(AppLocalizations.of(context).pdAreYouSureYou, style: GoogleFonts.poppins()),
+        title: Text(AppLocalizations.of(context).pdDeleteComment, style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+        content: Text(AppLocalizations.of(context).pdAreYouSureYou, style: GoogleFonts.manrope()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(AppLocalizations.of(context).pdCancel, style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
+            child: Text(AppLocalizations.of(context).pdCancel, style: GoogleFonts.manrope(color: BlushyColors.secondaryText)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(AppLocalizations.of(context).pdDelete, style: GoogleFonts.poppins(color: BlushyColors.primary)),
+            child: Text(AppLocalizations.of(context).pdDelete, style: GoogleFonts.manrope(color: BlushyColors.primary)),
           ),
         ],
       ),
@@ -187,7 +191,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         ),
         title: Text(
           'Discussion',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontWeight: FontWeight.w700,
             fontSize: 16,
             color: BlushyColors.text,
@@ -226,7 +230,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 40.0),
                           child: Text(
                             'No comments yet. Be the first to reply!',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(height: 1.5, 
                               color: BlushyColors.secondaryText,
                               fontSize: 13,
                             ),
@@ -251,228 +255,84 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget _buildPostDetailCard() {
     final isOwnPost = _post.authorId == _currentUserId;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6), width: 0.8),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x042E2623),
-            offset: Offset(0, 4),
-            blurRadius: 12,
-          ),
-        ],
-      ),
+    // The same card as the feed, from the same parts. The only things that
+    // differ are what this page knows and the feed does not: the live
+    // comment count, and the delete control on your own post.
+    return BlushySurface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Author & Metadata
           Row(
             children: [
-              GestureDetector(
+              PostAvatar(
+                name: _post.authorName,
                 onTap: () => _showProfile(_post.authorId),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF5EFE6),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    _post.authorName.isNotEmpty ? _post.authorName[0].toUpperCase() : 'U',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      color: BlushyColors.text,
-                    ),
-                  ),
-                ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: BlushySpace.md),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () => _showProfile(_post.authorId),
-                      child: Text(
-                        _post.authorName,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: BlushyColors.text,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      _timeAgo(_post.createdAt),
-                      style: GoogleFonts.poppins(
-                        fontSize: 10.5,
-                        color: BlushyColors.secondaryText.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
+                child: PostByline(
+                  name: _post.authorName,
+                  timeAgo: _timeAgo(_post.createdAt),
+                  onTap: () => _showProfile(_post.authorId),
                 ),
               ),
               if (isOwnPost)
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: BlushyColors.primary, size: 20),
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: Text(AppLocalizations.of(context).pdDeletePost, style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
-                        content: Text(AppLocalizations.of(context).pdAreYouSureYou2, style: GoogleFonts.poppins()),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: Text(AppLocalizations.of(context).pdCancel, style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: Text(AppLocalizations.of(context).pdDelete, style: GoogleFonts.poppins(color: BlushyColors.primary)),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (confirm == true) {
-                      final success = await _redditService.deletePost(_post.postId);
-                      if (success && mounted) {
-                        Navigator.pop(context, true);
-                      }
-                    }
-                  },
-                )
+                  icon: const Icon(Icons.delete_outline_rounded,
+                      color: BlushyColors.primary, size: 20),
+                  tooltip: AppLocalizations.of(context).pdDeletePost,
+                  onPressed: _confirmDelete,
+                ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          // Title & Body
-          Text(
-            _post.title,
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.text,
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _post.text,
-            style: GoogleFonts.poppins(
-              fontSize: 13.5,
-              color: BlushyColors.text.withValues(alpha: 0.85),
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Tags
-          if (_post.tags.isNotEmpty) ...[
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: _post.tags.map((tag) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5EFE6),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    tag,
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: BlushyColors.secondaryText,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
+          const SizedBox(height: BlushySpace.md),
+          Text(_post.title, style: BlushyType.heading(weight: FontWeight.w700)),
+          if (_post.text.isNotEmpty) ...[
+            const SizedBox(height: BlushySpace.sm),
+            Text(_post.text, style: BlushyType.body(color: BlushyColors.text)),
           ],
-
-          // Footer voting and engagement count (Heart Like, Dislike, and Comment)
+          ModerationNotice(notice: _post.moderationNotice),
+          if (_post.tags.isNotEmpty) ...[
+            const SizedBox(height: BlushySpace.lg),
+            Wrap(
+              spacing: BlushySpace.sm,
+              runSpacing: BlushySpace.sm,
+              children: [for (final tag in _post.tags) PostTagPill(tag)],
+            ),
+          ],
+          const SizedBox(height: BlushySpace.lg),
           Row(
             children: [
-              // LIKE BUTTON
-              InkWell(
+              PostActionPill(
+                icon: _post.userVote == 1
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                // The server's score is the count. The old fallback invented
+                // a 1 whenever the viewer had voted, even at score 0.
+                label: '${_post.score < 0 ? 0 : _post.score}',
+                tinted: true,
                 onTap: () => _votePost(_post.userVote == 1 ? 0 : 1),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _post.userVote == 1 ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                        size: 22,
-                        color: const Color(0xFFE11D48),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        // The server's score is the count. The old fallback invented a 1
-                        // whenever the viewer had voted, even at score 0.
-                        '${_post.score < 0 ? 0 : _post.score}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF1E1E1E),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
-              const SizedBox(width: 20),
-
-              // DISLIKE BUTTON
-              InkWell(
+              const SizedBox(width: BlushySpace.sm),
+              PostActionPill(
+                icon: Icons.chat_bubble_outline_rounded,
+                label: '${_comments.length}',
+              ),
+              const SizedBox(width: BlushySpace.sm),
+              PostActionPill(
+                icon: _post.userVote == -1
+                    ? Icons.thumb_down_rounded
+                    : Icons.thumb_down_outlined,
                 onTap: () => _votePost(_post.userVote == -1 ? 0 : -1),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _post.userVote == -1 ? Icons.thumb_down_rounded : Icons.thumb_down_outlined,
-                        size: 20,
-                        color: _post.userVote == -1 ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
-                      ),
-                    ],
-                  ),
-                ),
               ),
-              const SizedBox(width: 20),
-
-              // COMMENT COUNT
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 20,
-                      color: Color(0xFF4A4A4A),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${_comments.length}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-                  ],
+              const Spacer(),
+              PostActionPill(
+                icon: Icons.ios_share_rounded,
+                onTap: () => Share.share(
+                  _post.text.isEmpty
+                      ? _post.title
+                      : '${_post.title}\n\n${_post.text}',
+                  subject: _post.title,
                 ),
               ),
             ],
@@ -482,13 +342,45 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
+  /// Asks before deleting your own post, then leaves the page if it went.
+  Future<void> _confirmDelete() async {
+    final t = AppLocalizations.of(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.pdDeletePost,
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+        content: Text(t.pdAreYouSureYou2, style: GoogleFonts.manrope()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t.pdCancel,
+                style: GoogleFonts.manrope(color: BlushyColors.secondaryText)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t.pdDelete,
+                style: GoogleFonts.manrope(color: BlushyColors.primary)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final success = await _redditService.deletePost(_post.postId);
+      if (success && mounted) {
+        Navigator.pop(context, true);
+      }
+    }
+  }
+
   Widget _buildCommentsHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           AppLocalizations.of(context).pdComments,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: BlushyColors.text,
@@ -515,7 +407,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     : _commentSort == 'new'
                         ? 'New'
                         : 'Controversial',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(height: 1.5, 
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: BlushyColors.primary,
@@ -591,7 +483,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   Expanded(
                     child: Text(
                       'Replying to @${_replyTarget!.authorName}',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: BlushyColors.primary,
@@ -624,10 +516,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     focusNode: _focusNode,
                     minLines: 1,
                     maxLines: 4,
-                    style: GoogleFonts.poppins(fontSize: 13.5, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 13.5, color: BlushyColors.text),
                     decoration: InputDecoration(
                       hintText: _replyTarget != null ? 'Write a reply...' : 'Add a comment...',
-                      hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
+                      hintStyle: GoogleFonts.manrope(height: 1.5, fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -741,7 +633,7 @@ class _CommentWidget extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Text(
                       isDeleted ? '?' : (comment.authorName.isNotEmpty ? comment.authorName[0].toUpperCase() : 'U'),
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontWeight: FontWeight.w700,
                         fontSize: 9,
                         color: BlushyColors.text,
@@ -753,7 +645,7 @@ class _CommentWidget extends StatelessWidget {
                     onTap: isDeleted ? null : () => onAuthorTap(comment.authorId),
                     child: Text(
                       isDeleted ? '[deleted]' : comment.authorName,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: isDeleted ? BlushyColors.secondaryText : BlushyColors.text,
@@ -763,7 +655,7 @@ class _CommentWidget extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     _timeAgoFormatted(comment.createdAt),
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(height: 1.5, 
                       fontSize: 10,
                       color: BlushyColors.secondaryText.withValues(alpha: 0.6),
                     ),
@@ -781,7 +673,7 @@ class _CommentWidget extends StatelessWidget {
               // Comment text
               Text(
                 comment.text,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 13,
                   color: isDeleted ? BlushyColors.secondaryText : BlushyColors.text,
                   height: 1.45,
@@ -809,10 +701,10 @@ class _CommentWidget extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 6.0),
                       child: Text(
                         '${comment.score}',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: comment.userVote != 0 ? BlushyColors.primary : comment.userVote == -1 ? const Color(0xFF6F42F5) : BlushyColors.text,
+                          color: comment.userVote != 0 ? BlushyColors.primary : comment.userVote == -1 ? BlushyColors.accent : BlushyColors.text,
                         ),
                       ),
                     ),
@@ -821,7 +713,7 @@ class _CommentWidget extends StatelessWidget {
                       child: Icon(
                         Icons.arrow_downward_rounded,
                         size: 16,
-                        color: comment.userVote == -1 ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
+                        color: comment.userVote == -1 ? BlushyColors.accent : BlushyColors.secondaryText,
                       ),
                     ),
                     const SizedBox(width: 20),
@@ -835,7 +727,7 @@ class _CommentWidget extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             'Reply',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(height: 1.5, 
                               fontSize: 10.5,
                               fontWeight: FontWeight.w500,
                               color: BlushyColors.secondaryText,

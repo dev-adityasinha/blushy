@@ -2,19 +2,17 @@ import 'package:flutter/material.dart';
 import '../../shared/skeleton.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
+import '../../shared/blushy_surface.dart';
+import '../../theme/scale.dart';
 import '../../services/api_blushy_service.dart';
 import 'recovery_session_player.dart';
 import '../../core/theme.dart' hide BlushyColors;
 import '../../core/storage.dart';
 import '../journal/journal_screen.dart';
+import '../journal/notes/notes_journal_screen.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../journal/calendar/memory_map.dart';
-import '../journal/insights/achievement_garden.dart';
-import '../journal/vault/year_in_review.dart';
-import '../journal/vault/memory_vault.dart';
 import '../../services/journal_storage.dart';
-import '../journal/insights/journal_dashboard.dart';
 import 'dart:convert';
 import '../partner/digibouquet/state/bouquet_state.dart';
 import '../partner/digibouquet/screens/home_screen.dart' show HomeScreen;
@@ -43,54 +41,43 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
   VoidCallback? _refreshOpenSection;
 
   /// The hub, in the order it is shown.
+  ///
+  /// Smart Calendar & Map, Smart AI Search, Memory Vault and the Reflective
+  /// Content Garden used to sit here too. They were removed from the hub, not
+  /// from the app: all four are still reached from inside the Journal, which
+  /// is where the writing they read actually lives.
   static const List<Map<String, dynamic>> _sections = [
     {
       'title': 'Journal',
-      'sub': 'Write, record and look back',
+      // The kind of thing this is, not a second title. Four cards that all
+      // start with a bold noun are hard to tell apart at a glance; the chip is
+      // what separates writing from resting from saving.
+      'kind': 'WRITE & REFLECT',
+      'sub': 'Write, record and look back on your thoughts and feelings.',
       'icon': Icons.auto_stories_rounded,
-      'tint': Color(0xFFFDF2F2),
+      'accent': BlushyColors.primary,
     },
     {
       'title': 'Recovery',
-      'sub': 'Guided sessions for how you feel now',
+      'kind': 'HEAL & RECHARGE',
+      'sub': 'Guided sessions to help you feel better, anytime.',
       'icon': Icons.spa_rounded,
-      'tint': Color(0xFFF3FAF6),
+      'accent': BlushyColors.secondary,
     },
     {
       'title': 'Time Capsules',
-      'sub': 'Letters that unseal later',
-      'icon': Icons.hourglass_empty_rounded,
-      'tint': Color(0xFFFFF9F2),
+      'kind': 'SAVE FOR LATER',
+      'sub': 'Write letters to your future self and unseal them later.',
+      'icon': Icons.hourglass_bottom_rounded,
+      'accent': BlushyColors.accent,
     },
     {
       'title': 'Bouquet',
-      'sub': 'Arrange one and share it as an image',
+      'kind': 'CREATE & SHARE',
+      'sub': 'Arrange a bouquet that reflects how you feel and share it as '
+          'an image.',
       'icon': Icons.local_florist_rounded,
-      'tint': Color(0xFFFDF2F2),
-    },
-    {
-      'title': 'Smart Calendar & Map',
-      'sub': 'Mood grid and the places behind it',
-      'icon': Icons.calendar_month_rounded,
-      'tint': Color(0xFFF3FAF6),
-    },
-    {
-      'title': 'Smart AI Search',
-      'sub': 'Search across everything you have written',
-      'icon': Icons.search_rounded,
-      'tint': Color(0xFFF3EEFA),
-    },
-    {
-      'title': 'Memory Vault',
-      'sub': 'Starred memories and collections',
-      'icon': Icons.military_tech_rounded,
-      'tint': Color(0xFFFFF9F2),
-    },
-    {
-      'title': 'Reflective Content Garden',
-      'sub': 'Grows with how much you reflect',
-      'icon': Icons.eco_rounded,
-      'tint': Color(0xFFF3FAF6),
+      'accent': BlushyColors.primary,
     },
   ];
 
@@ -277,13 +264,80 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final section in _sections)
-          _buildWorkspaceActionCard(
-            title: section['title'] as String,
-            sub: section['sub'] as String,
-            icon: section['icon'] as IconData,
-            onTap: () => _openStudioSection(section['title'] as String),
+          Padding(
+            padding: const EdgeInsets.only(bottom: BlushySpace.betweenCards),
+            child: _buildStudioHubCard(section),
           ),
       ],
+    );
+  }
+
+  /// One area of the studio, as a card.
+  ///
+  /// The generic action card is still used inside the sections; this one is
+  /// only for the hub, where four cards sit together and each needs to be
+  /// recognisable before it is read.
+  Widget _buildStudioHubCard(Map<String, dynamic> section) {
+    final accent = section['accent'] as Color;
+    final title = section['title'] as String;
+
+    return BlushySurface(
+      padding: const EdgeInsets.fromLTRB(
+          BlushySpace.lg, BlushySpace.lg, BlushySpace.md, BlushySpace.lg),
+      accent: accent,
+      onTap: () => _openStudioSection(title),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(section['icon'] as IconData, size: 26, color: accent),
+          ),
+          const SizedBox(width: BlushySpace.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: BlushySpace.sm, vertical: BlushySpace.xs),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    section['kind'] as String,
+                    style: BlushyType.micro(
+                      color: accent,
+                      weight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: BlushySpace.md),
+                Text(title, style: BlushyType.title()),
+                const SizedBox(height: BlushySpace.sm),
+                Text(section['sub'] as String, style: BlushyType.body()),
+              ],
+            ),
+          ),
+          const SizedBox(width: BlushySpace.sm),
+          Container(
+            width: BlushySpace.control,
+            height: BlushySpace.control,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.chevron_right_rounded, size: BlushySpace.iconChevron, color: accent),
+          ),
+        ],
+      ),
     );
   }
 
@@ -299,7 +353,10 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
 
     switch (title) {
       case 'Journal':
-        await push(const _JournalSectionScreen());
+        // Straight into the writing. This used to open a hub of two cards,
+        // Reflection and Scrapbook, so opening the journal meant choosing
+        // between two things before writing anything.
+        await push(const NotesJournalScreen());
       case 'Recovery':
         await push(_StudioSectionScreen(
           title: 'Recovery',
@@ -331,20 +388,6 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
             ),
           ),
         );
-      case 'Smart Calendar & Map':
-        await push(const MemoryMapWidget());
-      case 'Smart AI Search':
-        await push(const _JournalActionScreen(action: _JournalAction.search));
-      case 'Reflective Content Garden':
-        final entries = await JournalStorage().loadEntries('default_user');
-        if (!mounted) return;
-        await push(AchievementGardenWidget.fromEntries(entries));
-      case 'Memory Vault':
-        // The vault reads saved entries, which live in JournalStorage rather
-        // than in the journal screen's own list.
-        final entries = await JournalStorage().loadEntries('default_user');
-        if (!mounted) return;
-        await push(MemoryVaultWidget(entries: entries, onEntryTap: (e) {}));
     }
   }
 
@@ -373,7 +416,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
         const SizedBox(height: 8),
         Text(
           'GUIDED SESSIONS',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 9,
             fontWeight: FontWeight.w700,
             color: BlushyColors.secondaryText,
@@ -383,7 +426,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
         const SizedBox(height: 4),
         Text(
           'Relaxation techniques you can follow along with. Not medical treatment.',
-          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 14),
         if (_sessionsLoading)
@@ -409,7 +452,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
               // approved them, rather than being invented to fill the tab.
               'No sessions available yet. They appear here once they have been reviewed.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
             ),
           )
         else
@@ -460,13 +503,13 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                           children: [
                             Text(
                               session['title']?.toString() ?? '',
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                   fontSize: 13, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               session['summary']?.toString() ?? '',
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                   fontSize: 11, color: BlushyColors.secondaryText),
                             ),
                             const SizedBox(height: 4),
@@ -476,7 +519,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                               done > 0
                                   ? '$minutes min • done $done ${done == 1 ? 'time' : 'times'}'
                                   : '$minutes min',
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: BlushyColors.primary,
@@ -547,7 +590,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
         const SizedBox(height: 24),
         Text(
           'ACTIVE SEALED CAPSULES',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 9,
             fontWeight: FontWeight.w700,
             color: BlushyColors.secondaryText,
@@ -575,7 +618,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
             child: Text(
               'Nothing sealed yet. Write something for a day you choose, and it stays closed until then.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
             ),
           )
         else
@@ -605,7 +648,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                           children: [
                             Text(
                               cap['title']?.toString() ?? '',
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                   fontSize: 12, fontWeight: FontWeight.w700),
                             ),
                             Text(
@@ -616,7 +659,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                                       ? 'Sealed'
                                       : 'Opens ${deliverAt.day}/${deliverAt.month}/${deliverAt.year}')
                                   : (opened ? 'Opened • tap to read again' : 'Ready • tap to open'),
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                   fontSize: 10, color: BlushyColors.secondaryText),
                             ),
                           ],
@@ -707,7 +750,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Text(
               AppLocalizations.of(context).msNewTimeCapsule,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+              style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -741,13 +784,13 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                     const SizedBox(height: 8),
                     Text(
                       error!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.primary),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.primary),
                     ),
                   ],
                   const SizedBox(height: 8),
                   Text(
                     'Once sealed it stays closed until that date, on any device you sign in to.',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(height: 1.5, 
                       fontSize: 11,
                       color: BlushyColors.secondaryText,
                     ),
@@ -791,16 +834,10 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: BlushyColors.surface,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: BlushyColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: BlushyColors.text.withValues(alpha: 0.03),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+
         ),
         clipBehavior: Clip.antiAlias,
         child: IntrinsicHeight(
@@ -832,12 +869,12 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                           children: [
                             Text(
                               title,
-                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: BlushyColors.text),
+                              style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.w700, color: BlushyColors.text),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               sub,
-                              style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                              style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
                             ),
                           ],
                         ),
@@ -855,9 +892,9 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
 
   Widget _buildJournalEditor() {
     Color paperColor = BlushyColors.background;
-    if (_editorTheme == 'Gratitude') paperColor = const Color(0xFFFFFDF9);
-    if (_editorTheme == 'Pink Self-Love') paperColor = const Color(0xFFFFF0F2);
-    if (_editorTheme == 'Travel') paperColor = const Color(0xFFF5EFE6);
+    if (_editorTheme == 'Gratitude') paperColor = BlushyColors.background;
+    if (_editorTheme == 'Pink Self-Love') paperColor = Color.lerp(BlushyColors.background, BlushyColors.secondary, 0.18)!;
+    if (_editorTheme == 'Travel') paperColor = BlushyColors.taupe;
 
     return Scaffold(
       backgroundColor: paperColor,
@@ -870,7 +907,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
         ),
         title: Text(
           _activeJournalTemplate,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: BlushyColors.text,
@@ -896,7 +933,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
             },
             child: Text(
               AppLocalizations.of(context).msSave,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: BlushyColors.primary),
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: BlushyColors.primary),
             ),
           ),
         ],
@@ -917,7 +954,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                   TextField(
                     controller: _editorController,
                     maxLines: null,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 14,
                       color: BlushyColors.text,
                       height: 1.6,
@@ -951,8 +988,8 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6F42F5),
-                      borderRadius: BorderRadius.circular(12),
+                      color: BlushyColors.primary,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       children: [
@@ -960,7 +997,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
                         const SizedBox(width: 6),
                         Text(
                           'AI Decorate',
-                          style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
                         ),
                       ],
                     ),
@@ -986,19 +1023,19 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFE8DCC4),
+              color: BlushyColors.clay,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text('️ Paris Stamp', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700)),
+            child: Text('️ Paris Stamp', style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFD3E4CD),
+              color: BlushyColors.success.withValues(alpha: 0.28),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(' Beach Sticker', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700)),
+            child: Text(' Beach Sticker', style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1013,13 +1050,13 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEFBE7),
+              color: BlushyColors.background,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: BlushyColors.secondary),
             ),
             child: Text(
               ' Floral Divider',
-              style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.warning),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.warning),
             ),
           ),
         ],
@@ -1035,10 +1072,10 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF0F2),
+              color: Color.lerp(BlushyColors.background, BlushyColors.secondary, 0.18)!,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(' Self Love Sticker', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
+            child: Text(' Self Love Sticker', style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
           ),
         ],
       ),
@@ -1089,7 +1126,7 @@ class _StudioSectionScreenState extends State<_StudioSectionScreen> {
         iconTheme: const IconThemeData(color: BlushyColors.text),
         title: Text(
           widget.title,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: BlushyColors.text,
@@ -1110,313 +1147,14 @@ class _StudioSectionScreenState extends State<_StudioSectionScreen> {
 
 /// The Journal section: two ways in, Reflection and Scrapbook.
 ///
-/// It used to be a flat list of six cards over an embedded journal, mixing
-/// creating an entry with looking back at a year of them.
-class _JournalSectionScreen extends StatelessWidget {
-  const _JournalSectionScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BlushyColors.background,
-      appBar: _studioAppBar(context, 'Journal'),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.symmetric(
-            horizontal: BlushyTheme.getPagePadding(context),
-            vertical: 16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _studioCard(
-                title: 'Reflection',
-                sub: 'Write, record and search what you have written',
-                icon: Icons.edit_note_rounded,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const _ReflectionSectionScreen(),
-                  ),
-                ),
-              ),
-              _studioCard(
-                title: 'Scrapbook',
-                sub: 'Build a page, or look back at the year',
-                icon: Icons.auto_stories_rounded,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const _ScrapbookSectionScreen(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Lets someone pick a template, and returns the one they chose.
 ///
-/// The journal has its own picker, but that one creates the entry itself.
-/// This returns the name so the caller can open it on a screen of its own.
-Future<String?> _pickTemplate(BuildContext context, String heading) {
-  final templates = journalTemplatesForUser(context);
-
-  return showModalBottomSheet<String>(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (sheetContext) => Material(
-      color: Colors.white,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                heading,
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: BlushyColors.text,
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (final template in templates)
-                ListTile(
-                  leading: const Icon(Icons.star_outline_rounded,
-                      color: BlushyColors.primary),
-                  title: Text(
-                    template,
-                    style: GoogleFonts.poppins(
-                        fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                  onTap: () => Navigator.of(sheetContext).pop(template),
-                ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-/// Opens the picker, then the chosen template on its own screen.
-Future<void> _createFromTemplate(BuildContext context, String heading) async {
-  final template = await _pickTemplate(context, heading);
-  if (template == null || !context.mounted) return;
-  await Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => _JournalActionScreen(
-        action: _JournalAction.writeTemplate,
-        templateName: template,
-      ),
-    ),
-  );
-}
-
 /// Writing and recording entries.
 ///
-/// The journal used to be embedded here in a 650px box, which is why the brown
-/// diary appeared at the bottom of this page and again when coming back from
-/// an entry. Each option opens the journal on its own screen instead.
-class _ReflectionSectionScreen extends StatelessWidget {
-  const _ReflectionSectionScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BlushyColors.background,
-      appBar: _studioAppBar(context, 'Reflection'),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.symmetric(
-            horizontal: BlushyTheme.getPagePadding(context),
-            vertical: 16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _studioCard(
-                title: 'Create Reflection',
-                sub: 'Choose a template, then write',
-                icon: Icons.edit_note_rounded,
-                onTap: () => _createFromTemplate(context, 'Start a reflection'),
-              ),
-              _studioCard(
-                title: 'Record & Transcribe',
-                sub: 'Speak and let Docsy write it down',
-                icon: Icons.mic_none_rounded,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const _JournalActionScreen(
-                      action: _JournalAction.record,
-                    ),
-                  ),
-                ),
-              ),
-              _studioCard(
-                title: 'History',
-                sub: 'Every reflection, by the date it was written',
-                icon: Icons.history_rounded,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const _JournalHistoryScreen(scrapbooks: false),
-                  ),
-                ),
-              ),
-              _studioCard(
-                title: 'Journal Insights Dashboard',
-                sub: 'Writing statistics, word count and active hours',
-                icon: Icons.analytics_rounded,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const JournalDashboardWidget(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Building a scrapbook page, and looking back at a year of them.
-class _ScrapbookSectionScreen extends StatelessWidget {
-  const _ScrapbookSectionScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BlushyColors.background,
-      appBar: _studioAppBar(context, 'Scrapbook'),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.symmetric(
-            horizontal: BlushyTheme.getPagePadding(context),
-            vertical: 16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _studioCard(
-                title: 'Create Scrapbook',
-                sub: 'A blank page, with stickers, tape and photo frames',
-                icon: Icons.add_photo_alternate_rounded,
-                // A blank canvas rather than a prompt sheet: the prompts are
-                // what make Reflection a thing to answer.
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const _JournalActionScreen(
-                      action: _JournalAction.scrapbook,
-                    ),
-                  ),
-                ),
-              ),
-              _studioCard(
-                title: 'History',
-                sub: 'Every scrapbook page, by the date it was made',
-                icon: Icons.history_rounded,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const _JournalHistoryScreen(scrapbooks: true),
-                  ),
-                ),
-              ),
-              _studioCard(
-                title: 'Year in Review Scrapbook',
-                sub: 'A guided multi-page recap of the year',
-                icon: Icons.history_edu_rounded,
-                onTap: () async {
-                  final entries =
-                      await JournalStorage().loadEntries('default_user');
-                  if (!context.mounted) return;
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => YearInReviewScrapbook(
-                        entries: entries,
-                        year: DateTime.now().year,
-                        onClose: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// The journal on its own screen, optionally opening straight into something.
 ///
 /// Each value opens the journal straight into one thing.
 ///
-/// There is deliberately no "just show the journal" value: that landed on the
-/// decorative cover screen, whose only action was to reveal the same journal
-/// Reflection opens, and whose cover and desk choices were never saved.
-enum _JournalAction { scrapbook, writeTemplate, record, search }
-
-class _JournalActionScreen extends StatefulWidget {
-  const _JournalActionScreen({required this.action, this.templateName});
-
-  final _JournalAction action;
-
-  /// The template to start on, when the action is [_JournalAction.writeTemplate].
-  final String? templateName;
-
-  @override
-  State<_JournalActionScreen> createState() => _JournalActionScreenState();
-}
-
-class _JournalActionScreenState extends State<_JournalActionScreen> {
-  final GlobalKey<BlushyJournalScreenState> _journalKey =
-      GlobalKey<BlushyJournalScreenState>();
-
-  @override
-  void initState() {
-    super.initState();
-    // The journal has no state to act on until it has been laid out.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final journal = _journalKey.currentState;
-      if (journal == null) return;
-
-      switch (widget.action) {
-        case _JournalAction.scrapbook:
-          journal.openScrapbookCanvas();
-        case _JournalAction.writeTemplate:
-          final template = widget.templateName;
-          if (template == null) {
-            journal.openWriteReflection();
-          } else {
-            journal.openTemplate(template);
-          }
-        case _JournalAction.record:
-          journal.openRecordAndTranscribe();
-        case _JournalAction.search:
-          journal.openSmartSearch();
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlushyJournalScreen(key: _journalKey);
-  }
-}
-
 /// The bar every studio screen wears.
 AppBar _studioAppBar(BuildContext context, String title) {
   return AppBar(
@@ -1425,63 +1163,10 @@ AppBar _studioAppBar(BuildContext context, String title) {
     iconTheme: const IconThemeData(color: BlushyColors.text),
     title: Text(
       title,
-      style: GoogleFonts.poppins(
+      style: GoogleFonts.manrope(height: 1.5, 
         fontSize: 16,
         fontWeight: FontWeight.w700,
         color: BlushyColors.text,
-      ),
-    ),
-  );
-}
-
-/// One option inside a studio section.
-Widget _studioCard({
-  required String title,
-  required String sub,
-  required IconData icon,
-  required VoidCallback onTap,
-}) {
-  return InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BlushyColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFDF2F2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 16, color: BlushyColors.primary),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.text)),
-                const SizedBox(height: 3),
-                Text(sub,
-                    style: GoogleFonts.poppins(
-                        fontSize: 10, color: BlushyColors.secondaryText)),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right_rounded,
-              size: 18, color: BlushyColors.secondaryText),
-        ],
       ),
     ),
   );
@@ -1562,7 +1247,7 @@ class _JournalHistoryScreenState extends State<_JournalHistoryScreen> {
                         ? 'No scrapbook pages yet.'
                         : 'No reflections yet.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(height: 1.5, 
                       fontSize: 13,
                       color: BlushyColors.secondaryText,
                     ),
@@ -1585,8 +1270,8 @@ class _JournalHistoryScreenState extends State<_JournalHistoryScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    color: BlushyColors.surface,
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: BlushyColors.border),
                   ),
                   child: Row(
@@ -1599,7 +1284,7 @@ class _JournalHistoryScreenState extends State<_JournalHistoryScreen> {
                               entry.title.trim().isEmpty
                                   ? 'Untitled'
                                   : entry.title.trim(),
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: BlushyColors.text,
@@ -1612,7 +1297,7 @@ class _JournalHistoryScreenState extends State<_JournalHistoryScreen> {
                                   // unreadable date still belongs in the list.
                                   ? 'Date unknown'
                                   : '${date.day} ${_months[date.month - 1]} ${date.year}',
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                 fontSize: 11,
                                 color: BlushyColors.secondaryText,
                               ),

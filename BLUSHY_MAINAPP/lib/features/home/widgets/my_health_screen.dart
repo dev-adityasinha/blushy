@@ -184,7 +184,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                 Expanded(
                   child: Text(
                     'Failed to save changes. Please try again.',
-                    style: GoogleFonts.poppins(fontSize: 13),
+                    style: GoogleFonts.manrope(fontSize: 13),
                   ),
                 ),
               ],
@@ -221,7 +221,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
           'Account Settings',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontWeight: FontWeight.bold,
             color: BlushyColors.text,
             fontSize: 20,
@@ -438,7 +438,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                       child: Text(
                         'Sign Out',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -522,13 +522,13 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: BlushyColors.text)),
                     const SizedBox(height: 3),
                     Text(subtitle,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                             fontSize: 10, color: BlushyColors.secondaryText)),
                   ],
                 ),
@@ -696,7 +696,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                       final isSelected = pc.medicalConditions.contains(cond);
                       return CheckboxListTile(
                         activeColor: BlushyColors.primary,
-                        title: Text(cond, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
+                        title: Text(cond, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
                         value: isSelected,
                         onChanged: (val) {
                           final newConds = Set<String>.from(pc.medicalConditions);
@@ -733,7 +733,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                       final isSelected = pc.userGoals.contains(goal);
                       return CheckboxListTile(
                         activeColor: BlushyColors.primary,
-                        title: Text(goal, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
+                        title: Text(goal, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
                         value: isSelected,
                         onChanged: (val) {
                           final newGoals = Set<String>.from(pc.userGoals);
@@ -770,7 +770,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                       final isSelected = pc.userSymptoms.contains(symptom);
                       return CheckboxListTile(
                         activeColor: BlushyColors.primary,
-                        title: Text(symptom, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
+                        title: Text(symptom, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
                         value: isSelected,
                         onChanged: (val) {
                           final newSymptoms = Set<String>.from(pc.userSymptoms);
@@ -804,7 +804,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                           final med = pc.medications[idx];
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: Text(med.name, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                            title: Text(med.name, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: BlushyColors.text)),
                             subtitle: Text(med.notes ?? med.category ?? 'Notes not added'),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete_outline, color: BlushyColors.primary),
@@ -842,8 +842,8 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                   _buildCard([
                     SwitchListTile(
                       activeThumbColor: BlushyColors.primary,
-                      title: Text('Docsy Memory Enabled', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
-                      subtitle: Text('Allow Docsy to learn from your interactions over time.', style: GoogleFonts.poppins(fontSize: 12)),
+                      title: Text('Docsy Memory Enabled', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
+                      subtitle: Text('Allow Docsy to learn from your interactions over time.', style: GoogleFonts.manrope(fontSize: 12)),
                       value: pc.preferences.wantsSiaMemory,
                       onChanged: (val) {
                         final newPrefs = UserPreferences(
@@ -873,9 +873,9 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                     ListTile(
                       leading: const Icon(Icons.settings_rounded, color: BlushyColors.primary),
                       title: Text('Settings & Privacy Center',
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
+                          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
                       subtitle: Text('Subsystem flags, diagnostics & accessibility',
-                          style: GoogleFonts.poppins(fontSize: 12)),
+                          style: GoogleFonts.manrope(fontSize: 12)),
                       trailing: const Icon(Icons.chevron_right_rounded, color: BlushyColors.secondaryText),
                       onTap: () => Navigator.push(
                         context,
@@ -886,9 +886,9 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                     ListTile(
                       leading: const Icon(Icons.palette_rounded, color: BlushyColors.primary),
                       title: Text('Modular Theme Marketplace',
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
+                          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
                       subtitle: Text('Mix & match covers, paper, fonts & audio',
-                          style: GoogleFonts.poppins(fontSize: 12)),
+                          style: GoogleFonts.manrope(fontSize: 12)),
                       trailing: const Icon(Icons.chevron_right_rounded, color: BlushyColors.secondaryText),
                       onTap: () => Navigator.push(
                         context,
@@ -971,7 +971,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Text(
             "Add Medication / Supplement",
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 22),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 22),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -995,7 +995,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), 
-              child: Text("Cancel", style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
+              child: Text("Cancel", style: GoogleFonts.manrope(color: BlushyColors.secondaryText)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -1040,7 +1040,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
             const SizedBox(width: 6),
             Text(
               'Saving...',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: BlushyColors.secondaryText,
@@ -1060,7 +1060,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
             const SizedBox(width: 6),
             Text(
               'Saved',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF43A047),
@@ -1077,7 +1077,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
             const SizedBox(width: 6),
             Text(
               'Error',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFFD32F2F),
@@ -1094,7 +1094,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
             const SizedBox(width: 5),
             Text(
               'Autosaved',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: BlushyColors.secondaryText.withValues(alpha: 0.5),
@@ -1169,10 +1169,10 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: BlushyColors.text),
+      style: GoogleFonts.manrope(color: BlushyColors.text),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText),
+        labelStyle: GoogleFonts.manrope(color: BlushyColors.secondaryText),
         filled: true,
         fillColor: BlushyColors.background.withValues(alpha: 0.5),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: BlushyColors.border)),
@@ -1185,7 +1185,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: BlushyColors.text)),
+        Text(label, style: GoogleFonts.manrope(fontWeight: FontWeight.w600, color: BlushyColors.text)),
         OutlinedButton(
           onPressed: () async {
             final picked = await showDatePicker(
@@ -1202,7 +1202,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
           ),
           child: Text(
             value == null ? 'Select Date' : '${value.year}-${value.month}-${value.day}',
-            style: GoogleFonts.poppins(color: BlushyColors.primary, fontWeight: FontWeight.bold),
+            style: GoogleFonts.manrope(color: BlushyColors.primary, fontWeight: FontWeight.bold),
           ),
         )
       ],
@@ -1213,7 +1213,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: BlushyColors.text)),
+        Text(label, style: GoogleFonts.manrope(fontWeight: FontWeight.w600, color: BlushyColors.text)),
         DropdownButton<T>(
           value: value,
           underline: const SizedBox.shrink(),
@@ -1234,7 +1234,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
+        style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14),
       ),
     );
   }
@@ -1311,7 +1311,7 @@ class _AccountSectionScreenState extends State<_AccountSectionScreen> {
         iconTheme: const IconThemeData(color: BlushyColors.text),
         title: Text(
           widget.title,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: BlushyColors.text,
@@ -1326,7 +1326,7 @@ class _AccountSectionScreenState extends State<_AccountSectionScreen> {
               }),
               child: Text(
                 'Edit',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.primary,
                 ),
@@ -1341,7 +1341,7 @@ class _AccountSectionScreenState extends State<_AccountSectionScreen> {
               }),
               child: Text(
                 'Cancel',
-                style: GoogleFonts.poppins(color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(color: BlushyColors.secondaryText),
               ),
             ),
             TextButton(
@@ -1359,7 +1359,7 @@ class _AccountSectionScreenState extends State<_AccountSectionScreen> {
               },
               child: Text(
                 'Save',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.primary,
                 ),
@@ -1482,7 +1482,7 @@ class _AccountFaqScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: BlushyColors.text),
         title: Text(
           'FAQ',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: BlushyColors.text,
@@ -1516,7 +1516,7 @@ class _AccountFaqScreen extends StatelessWidget {
                 child: ExpansionTile(
                   title: Text(
                     question,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: BlushyColors.text,
@@ -1528,7 +1528,7 @@ class _AccountFaqScreen extends StatelessWidget {
                   children: [
                     Text(
                       answer,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 12,
                         height: 1.55,
                         color: BlushyColors.secondaryText,

@@ -5,6 +5,7 @@ import 'scrapbook_item_renderers.dart';
 import 'ambient_effects_overlay.dart';
 import 'engine/scrapbook_animation_engine.dart';
 import 'engine/micro_interaction_manager.dart';
+import '../../theme/colors.dart';
 
 class ScrapbookCanvasWidget extends StatefulWidget {
   final List<ScrapbookItem> items;
@@ -249,7 +250,7 @@ class _ScrapbookCanvasWidgetState extends State<ScrapbookCanvasWidget> {
                                       final newRotation = item.rotation + details.delta.dx * 0.02;
                                       widget.onItemUpdate(item.copyWith(rotation: newRotation));
                                     },
-                                    child: _buildHandleBadge(Icons.rotate_right_rounded, const Color(0xFF8B5CF6)),
+                                    child: _buildHandleBadge(Icons.rotate_right_rounded, BlushyColors.accent),
                                   ),
                                 ),
 

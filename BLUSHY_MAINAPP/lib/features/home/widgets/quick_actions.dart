@@ -22,7 +22,7 @@ class BlushyQuickActions extends StatelessWidget {
           // Header
           Text(
             'SUGGESTED ACTIONS',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: BlushyColors.secondaryText,
@@ -73,7 +73,7 @@ class BlushyQuickActions extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
                 color: BlushyColors.text,

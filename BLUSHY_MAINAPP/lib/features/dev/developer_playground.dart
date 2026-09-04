@@ -51,7 +51,7 @@ class DeveloperPlaygroundScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           "Developer Playground",
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.text),
+          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: BlushyColors.text),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -241,7 +241,7 @@ class DeveloperPlaygroundScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12.0, top: 8.0),
       child: Text(
         title,
-        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.2),
+        style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.2),
       ),
     );
   }
@@ -267,7 +267,7 @@ class DeveloperPlaygroundScreen extends StatelessWidget {
           children: [
             Text(
               label,
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+              style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const Icon(Icons.arrow_forward_ios, size: 14, color: BlushyColors.secondaryText),
           ],

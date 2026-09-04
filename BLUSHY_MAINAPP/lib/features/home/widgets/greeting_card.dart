@@ -49,7 +49,7 @@ class GreetingCard extends StatelessWidget {
         children: [
           Text(
             greeting,
-            style: GoogleFonts.playfairDisplay(
+            style: GoogleFonts.instrumentSerif(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -58,7 +58,7 @@ class GreetingCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             t.homeGreetingSubtitle,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13,
               color: BlushyColors.secondaryText,
             ),

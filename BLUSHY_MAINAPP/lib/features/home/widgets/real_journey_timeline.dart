@@ -75,7 +75,7 @@ class _RealJourneyTimelineState extends State<RealJourneyTimeline> {
             Expanded(
               child: Text(
                 widget.title,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: BlushyColors.text,
@@ -136,7 +136,7 @@ class _RealJourneyTimelineState extends State<RealJourneyTimeline> {
               children: [
                 Text(
                   _formatDate(entry.date),
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
@@ -146,7 +146,7 @@ class _RealJourneyTimelineState extends State<RealJourneyTimeline> {
                 const SizedBox(height: 2),
                 Text(
                   entry.displayText,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                     height: 1.35,
@@ -158,7 +158,7 @@ class _RealJourneyTimelineState extends State<RealJourneyTimeline> {
                 if (entry.source.isNotEmpty)
                   Text(
                     entry.source == 'manual' ? 'You logged this' : 'Source: ${entry.source}',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 11,
                       color: BlushyColors.secondaryText,
                     ),
@@ -185,7 +185,7 @@ class _RealJourneyTimelineState extends State<RealJourneyTimeline> {
         children: [
           Text(
             headline,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -194,7 +194,7 @@ class _RealJourneyTimelineState extends State<RealJourneyTimeline> {
           const SizedBox(height: 6),
           Text(
             body,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 12.5,
               height: 1.5,
               color: BlushyColors.secondaryText,

@@ -111,24 +111,24 @@ Future<bool> transitionLifeStage(
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text('Move to $stageTitle?',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
         content: Text(
           result.errorMessage ??
               'This changes the guidance and reminders you see. You can change '
                   'it back whenever you like.',
-          style: GoogleFonts.poppins(fontSize: 14),
+          style: GoogleFonts.manrope(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
             child: Text('Not now',
-                style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
+                style: GoogleFonts.manrope(color: BlushyColors.secondaryText)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(backgroundColor: BlushyColors.primary),
             child: Text('Yes, move',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                     fontWeight: FontWeight.bold, color: Colors.white)),
           ),
         ],
@@ -205,7 +205,7 @@ class LifeStageSelectorCard extends StatelessWidget {
               children: [
                 Text(
                   "CURRENT LIFE STAGE",
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
@@ -220,7 +220,7 @@ class LifeStageSelectorCard extends StatelessWidget {
                   ),
                   child: Text(
                     "${activeStages.length} ACTIVE",
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: BlushyColors.primary,
@@ -234,7 +234,7 @@ class LifeStageSelectorCard extends StatelessWidget {
             padding: const EdgeInsets.only(left: 4, bottom: 14),
             child: Text(
               "Select your primary life stage or combine multiple topics in your unified dashboard.",
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 12,
                 color: BlushyColors.secondaryText.withValues(alpha: 0.85),
               ),
@@ -300,7 +300,7 @@ class LifeStageSelectorCard extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('At least one life stage must remain active. Select another stage to switch.'),
-                            backgroundColor: Color(0xFF6F42F5),
+                            backgroundColor: BlushyColors.primary,
                             duration: Duration(seconds: 2),
                           ),
                         );
@@ -404,7 +404,7 @@ class LifeStageSelectorCard extends StatelessWidget {
                                   Flexible(
                                     child: Text(
                                       stage.title,
-                                      style: GoogleFonts.poppins(
+                                      style: GoogleFonts.manrope(
                                         fontSize: 14,
                                         fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                                         color: BlushyColors.text,
@@ -422,7 +422,7 @@ class LifeStageSelectorCard extends StatelessWidget {
                                       ),
                                       child: Text(
                                         "ONBOARDING",
-                                        style: GoogleFonts.poppins(
+                                        style: GoogleFonts.manrope(
                                           fontSize: 9,
                                           fontWeight: FontWeight.w700,
                                           color: const Color(0xFF2E7D32),
@@ -441,7 +441,7 @@ class LifeStageSelectorCard extends StatelessWidget {
                                       ),
                                       child: Text(
                                         "ACTIVE",
-                                        style: GoogleFonts.poppins(
+                                        style: GoogleFonts.manrope(
                                           fontSize: 9,
                                           fontWeight: FontWeight.w700,
                                           color: BlushyColors.primary,
@@ -455,7 +455,7 @@ class LifeStageSelectorCard extends StatelessWidget {
                               const SizedBox(height: 3),
                               Text(
                                 stage.description,
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   color: BlushyColors.secondaryText,
                                 ),
@@ -493,7 +493,7 @@ class LifeStageSelectorCard extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Text(
                                     "Edit",
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       color: BlushyColors.primary,

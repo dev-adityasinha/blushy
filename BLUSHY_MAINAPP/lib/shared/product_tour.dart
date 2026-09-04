@@ -283,7 +283,7 @@ class _TourCard extends StatelessWidget {
           children: [
             Text(
               step.title,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: BlushyColors.text,
@@ -292,7 +292,7 @@ class _TourCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               step.body,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 13,
                 height: 1.5,
                 color: BlushyColors.secondaryText,
@@ -303,7 +303,7 @@ class _TourCard extends StatelessWidget {
               children: [
                 Text(
                   '$position / $total',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: BlushyColors.secondaryText,
@@ -314,7 +314,7 @@ class _TourCard extends StatelessWidget {
                   onPressed: onSkip,
                   child: Text(
                     skipLabel,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 13,
                       color: BlushyColors.secondaryText,
                     ),
@@ -334,7 +334,7 @@ class _TourCard extends StatelessWidget {
                   ),
                   child: Text(
                     actionLabel,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),

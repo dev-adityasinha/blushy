@@ -304,6 +304,42 @@ export async function calculatePeriodPredictions(userId, options = {}) {
     sufficiencyMessage = 'Estimated fertile window range. Irregular patterns make exact timing variable.';
   }
 
+  // Hormonal contraception suppresses ovulation, so there is no fertile window
+  // to estimate and the bleed is a withdrawal bleed rather than a period the
+  // cycle model describes.
+  //
+  // The question was asked at onboarding -- "Are you using hormonal
+  // contraception?" -- with the subtitle "Contraception influences cycle
+  // symptoms and bleeding patterns", and the answer was then read by nothing
+  // at all. Someone on an implant was shown an ovulation date and a fertile
+  // window calculated as though she were cycling, which is the one place this
+  // app must not guess.
+  //
+  // The dates themselves still come from what she logs; only the ovulation
+  // half is withheld, and it is said plainly rather than silently blanked.
+  // Two screens write this one key with different vocabularies, so both are
+  // listed. The signup wizard asks "Are you currently using hormonal
+  // contraception?" and stores Yes/No; the stage questionnaire asks which
+  // method and stores its name. Handling only one set would have left the
+  // answer ignored for everyone who came through the other screen -- and the
+  // wizard is the one every new account goes through.
+  const HORMONAL_CONTRACEPTION = new Set([
+    'Yes',                    // signup wizard
+    'Birth control pill',     // stage questionnaire
+    'Hormonal IUD / Implant',
+  ]);
+  const onHormonalContraception =
+    HORMONAL_CONTRACEPTION.has(onboardingAnswers.contraception_choice);
+
+  if (onHormonalContraception && trackingState !== 'no_data') {
+    confidenceLevel = 'low_hormonal_contraception';
+    displayLabel = 'On hormonal contraception';
+    sufficiencyMessage =
+      'Hormonal contraception usually stops ovulation, so no fertile window is '
+      + 'estimated. Bleeding on it is a withdrawal bleed, and its timing comes '
+      + 'from the method rather than from a cycle.';
+  }
+
   // The latest known confirmed period start date
   const latestConfirmedPeriodStartDate = chronDates[chronDates.length - 1];
 
@@ -377,10 +413,14 @@ export async function calculatePeriodPredictions(userId, options = {}) {
         varianceDays,
       },
       daysUntilNextPeriod,
-      estimatedOvulationDate: isOverdue ? null : isoDate(ovulationDate),
-      fertileWindowStart: isOverdue ? null : isoDate(fertileWindowStart),
-      fertileWindowEnd: isOverdue ? null : isoDate(fertileWindowEnd),
-      isOvulationSupported: !isOverdue,
+      // Withheld on hormonal contraception; see the note above.
+      estimatedOvulationDate:
+        isOverdue || onHormonalContraception ? null : isoDate(ovulationDate),
+      fertileWindowStart:
+        isOverdue || onHormonalContraception ? null : isoDate(fertileWindowStart),
+      fertileWindowEnd:
+        isOverdue || onHormonalContraception ? null : isoDate(fertileWindowEnd),
+      isOvulationSupported: !isOverdue && !onHormonalContraception,
       disclaimer: periodPredictionConfig.disclaimerText,
     },
     dataSufficiency: {

@@ -132,7 +132,7 @@ async function mapPersonalizedPostRows(rows, viewerUserId = null) {
 /**
  * Calculate deterministic relevance score for a post given user signals.
  */
-function calculateRelevanceScore(post, userSignals) {
+export function calculateRelevanceScore(post, userSignals) {
   let score = 0;
   const postTags = (post.tags || []).map((t) => String(t).toLowerCase());
   const postText = `${post.title || ''} ${post.text || ''}`.toLowerCase();
@@ -205,7 +205,7 @@ function calculateRelevanceScore(post, userSignals) {
 /**
  * Gathers user signals strictly scoped to the authenticated user ID.
  */
-async function getUserSignals(userId) {
+export async function getUserSignals(userId) {
   const isMan = await db.collection('users_man').findOne({ user_id: userId });
   const userColl = isMan ? 'users_man' : 'users_woman';
   const dailyColl = isMan ? 'user_daily_logs_man' : 'user_daily_logs_woman';

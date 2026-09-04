@@ -40,7 +40,7 @@ class _MemoryMapWidgetState extends State<MemoryMapWidget> {
     return Scaffold(
       backgroundColor: const Color(0xFFE0F2FE),
       appBar: AppBar(
-        title: Text('Interactive Memory Map 📍', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        title: Text('Interactive Memory Map 📍', style: GoogleFonts.instrumentSerif(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFFE0F2FE),
         elevation: 0,
         actions: [
@@ -78,7 +78,7 @@ class _MemoryMapWidgetState extends State<MemoryMapWidget> {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: Text(pin.title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
+                        title: Text(pin.title, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold)),
                         content: Text('${pin.cityName}\n\n"${pin.previewSnippet}"', style: GoogleFonts.caveat(fontSize: 18)),
                       ),
                     );
@@ -91,7 +91,7 @@ class _MemoryMapWidgetState extends State<MemoryMapWidget> {
                         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]),
                         child: Text(
                           _locationPrivacy == LocationPrivacyMode.approximateCity ? pin.cityName : '${pin.cityName} (13.08° N)',
-                          style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
+                          style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF0369A1)),
                         ),
                       ),
                       const Icon(Icons.location_on_rounded, color: Color(0xFFEF4444), size: 28),
@@ -106,7 +106,7 @@ class _MemoryMapWidgetState extends State<MemoryMapWidget> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                child: Text('Location features are currently turned OFF for privacy.', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
+                child: Text('Location features are currently turned OFF for privacy.', style: GoogleFonts.manrope(fontSize: 12, color: Colors.grey[700])),
               ),
             ),
         ],

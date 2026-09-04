@@ -16,7 +16,11 @@ import '../../../../shared/voice_note_bottom_sheet.dart';
 import '../../../../services/api_auth_service.dart';
 import '../../../../core/stage_conflict_engine.dart';
 import '../../models.dart';
+import '../../widgets/checkin_card_stack.dart';
 import '../../widgets/cycle_card.dart';
+import '../../widgets/metric_trend_chart.dart';
+import '../../widgets/numeric_metric_sheet.dart';
+import '../../widgets/symptom_log_sheet.dart';
 import '../../widgets/real_insights_list.dart';
 import '../../widgets/real_cycle_history.dart';
 import '../../widgets/real_journey_timeline.dart';
@@ -25,19 +29,30 @@ import '../../../../services/api_blushy_service.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../services/auth_storage.dart';
 import '../../checkin_event_mapper.dart';
+import '../../checkin_followups.dart';
+import '../../checkin_vocabulary.dart';
+import '../../symptom_categories.dart';
+import '../../symptom_category_preference.dart';
+import '../../../../services/daily_rollover.dart';
 import '../../../../services/offline_event_queue.dart';
 import '../../../../shared/api_state_card.dart';
 import '../doctor_summary_screen.dart';
 import '../../../../models/blushy_models.dart';
-import '../../../../services/api_insights_service.dart';
 import '../../../sia/sia_screen.dart';
 import '../../home_screen.dart';
-import '../../widgets/greeting_card.dart';
 import '../../../../shared/section_heading.dart';
 import '../../blushy_shell.dart';
+import '../../widgets/home_sections.dart';
+import '../../widgets/home_hero.dart';
+import '../../widgets/greeting_card.dart' show GreetingCard;
+import '../../widgets/home_insight_cards.dart';
+import '../../widgets/monthly_journey_card.dart';
+import '../../../../theme/scale.dart';
 
 String _getTimeBasedGreetingPrefix() {
-  final istNow = DateTime.now().toUtc().add(const Duration(hours: 5, minutes: 30));
+  final istNow = DateTime.now().toUtc().add(
+    const Duration(hours: 5, minutes: 30),
+  );
   final hour = istNow.hour;
   if (hour < 12) {
     return "Good Morning";
@@ -60,10 +75,12 @@ class EverydayWellnessDashboard extends StatefulWidget {
   });
 
   @override
-  State<EverydayWellnessDashboard> createState() => _EverydayWellnessDashboardState();
+  State<EverydayWellnessDashboard> createState() =>
+      _EverydayWellnessDashboardState();
 }
 
-class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> with SingleTickerProviderStateMixin {
+class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _animController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -72,10 +89,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     GlobalKey<ScaffoldState>? scaffoldKey,
   }) {
     if (widget.isNested) {
-      return Container(
-        color: BlushyColors.background,
-        child: child,
-      );
+      return Container(color: BlushyColors.background, child: child);
     }
     return Scaffold(
       key: scaffoldKey,
@@ -84,8 +98,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  ScrollPhysics get _effectiveScrollPhysics =>
-      widget.isNested ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics();
+  ScrollPhysics get _effectiveScrollPhysics => widget.isNested
+      ? const NeverScrollableScrollPhysics()
+      : const BouncingScrollPhysics();
 
   bool get _effectiveShrinkWrap => widget.isNested;
 
@@ -98,8 +113,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // Onboarding answers state
   Map<String, dynamic> _onboardingData = {};
-  
-
 
   // firstPeriodNotStarted interactive states
   final List<String> _lessons = [
@@ -161,6 +174,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // hormonalHealth interactive states
   String _hormonalDiscoverTopic = 'Understanding PCOS';
   final Set<String> _hormonalSavedArticles = {};
+
   /// Metrics she has changed in this session.
   ///
   /// Switching tabs triggers a full backend sync, and the sync re-applied the
@@ -181,29 +195,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   String? _hormonalAcne;
   String? _hormonalHeadache;
   String? _hormonalMedication;
-  String? _hormonalPain;
-  String? _hormonalCramps;
-  String? _hormonalFlow;
-  String? _hormonalExercise;
 
   // tryingToConceive interactive states
   String _ttcDiscoverTopic = 'Understanding Ovulation';
   final Set<String> _ttcSavedArticles = {};
   String? _ttcCervicalMucus;
   String? _ttcLhTest;
-  double? _ttcBbt;
-  String? _ttcIntercourse;
-  String? _ttcExercise;
-  String? _ttcVitamins;
 
   // pregnancy interactive states
   String _pregnancyDiscoverTopic = 'Baby Development';
   final Set<String> _pregnancySavedArticles = {};
   String? _pregnancyBabyMovement;
-  int? _pregnancyKickCount;
-  String? _pregnancyContractions;
-  String? _pregnancyExercise;
-  String? _pregnancyVitamins;
 
   // postpartum interactive states
   String _postpartumDiscoverTopic = 'Physical Recovery';
@@ -222,11 +224,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   String? _periVaginalDryness;
   String? _periHotFlashes;
   String? _periNightSweats;
-  String? _periBrainFog;
-  String? _periHormoneTherapy;
-  String? _periFlow;
-  String? _periWater;
-  String? _periExercise;
 
   late PeriodConfirmationState _periodConfirmationState;
 
@@ -238,15 +235,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   String? _menoHeartHealth;
   String? _menoHotFlashes;
   String? _menoNightSweats;
-  String? _menoJointPain;
-  String? _menoHormoneTherapy;
-  String? _menoStrength;
-  String? _menoWalking;
-  String? _menoWater;
 
   // everydayWellness interactive states
   String? _wellnessExercise;
-  String? _wellnessMeditation;
   String? _wellnessSleep;
   String? _wellnessStress;
   String? _wellnessWater;
@@ -341,8 +332,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   /// The living selectors already did all four of these steps inline, once per
   /// metric. This is that same sequence in one place.
   void _persistCheckinAnswer(String key, String value) {
-    final checkin =
-        Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
+    final checkin = Map<String, dynamic>.from(
+      BlushyStorage.read('daily_checkin.json'),
+    );
     checkin[key] = value;
     // Mood is read back under both names; the restore path tries each.
     if (key == 'mood') checkin['feeling'] = value;
@@ -357,10 +349,608 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     // re-apply the stored server value on top of it.
     _userEditedMetrics.add('daily_$key');
 
-    ApiAuthService().saveOnboardingAnswers({
-      'daily_$key': value,
-      'daily_checkin': checkin,
-    }).catchError((_) => <String, dynamic>{});
+    ApiAuthService()
+        .saveOnboardingAnswers({'daily_$key': value, 'daily_checkin': checkin})
+        .catchError((_) => <String, dynamic>{});
+  }
+
+  /// Recent readings per numeric metric, oldest first, for the trend chart.
+  final Map<String, List<MetricReading>> _metricHistory = {};
+
+  /// Today's value for a numeric metric, or null.
+  double? _numericValue(String key) {
+    final raw = BlushyStorage.read('daily_checkin.json')[key];
+    if (raw is num) return raw.toDouble();
+    if (raw is String) return double.tryParse(raw);
+    return null;
+  }
+
+  /// Loads the last month of readings so the sheet opens with a trend.
+  ///
+  /// Best-effort: the sheet is useful without it, so a failure leaves the
+  /// chart empty rather than blocking entry.
+  Future<void> _loadMetricHistory(NumericMetric metric) async {
+    final result = await EventsApi.list(
+      eventTypes: [metric.eventType],
+      from: DateTime.now().subtract(const Duration(days: 30)),
+      limit: 60,
+    );
+    if (!mounted || !result.isReady || result.data == null) return;
+
+    final readings = <MetricReading>[];
+    // The API returns newest first; a trend line reads the other way.
+    for (final event in result.data!.reversed) {
+      final raw = event.payload[metric.payloadKey];
+      if (raw is num) {
+        readings.add(
+          MetricReading(day: event.timestamp, value: raw.toDouble()),
+        );
+      }
+    }
+    if (!mounted) return;
+    setState(() => _metricHistory[metric.key] = readings);
+  }
+
+  void _persistNumericMetric(NumericMetric metric, double value) {
+    final checkin = Map<String, dynamic>.from(
+      BlushyStorage.read('daily_checkin.json'),
+    );
+    checkin[metric.key] = value;
+    checkin['date'] = DateTime.now().toIso8601String();
+    BlushyStorage.write('daily_checkin.json', checkin);
+
+    _recordNumericEvent(metric, value);
+    _userEditedMetrics.add('daily_${metric.key}');
+
+    ApiAuthService()
+        .saveOnboardingAnswers({
+          'daily_${metric.key}': value,
+          'daily_checkin': checkin,
+        })
+        .catchError((_) => <String, dynamic>{});
+  }
+
+  Future<void> _recordNumericEvent(NumericMetric metric, double value) async {
+    final clientEventId = CheckinEventMapper.idempotencyKey(
+      userId: AuthStorage.getUserId() ?? 'anon',
+      metric: metric.key,
+      day: DateTime.now(),
+    );
+    final payload = {metric.payloadKey: value};
+
+    final result = await EventsApi.log(
+      eventType: metric.eventType,
+      payload: payload,
+      clientEventId: clientEventId,
+    );
+
+    if (result.state == ApiState.offline || result.state == ApiState.error) {
+      await OfflineEventQueue.instance.enqueue(
+        eventType: metric.eventType,
+        payload: payload,
+        clientEventId: clientEventId,
+      );
+    }
+  }
+
+  /// Opens the entry sheet for one numeric metric.
+  Future<void> _openNumericMetric(NumericMetric metric) async {
+    // Fetched on open rather than on build: the chart is only ever seen here,
+    // and every dashboard would otherwise pay for two requests it may not use.
+    unawaited(_loadMetricHistory(metric));
+    await NumericMetricSheet.show(
+      context,
+      metric: metric,
+      initialValue: _numericValue(metric.key),
+      history: _metricHistory[metric.key] ?? const [],
+      onSave: (value) => _persistNumericMetric(metric, value),
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// The life stage the dashboard is rendering.
+  ///
+  /// The precedence is the one the stage switch has always used: an explicit
+  /// key from the caller, then the first active stage, then the stored profile
+  /// or onboarding answers. Declared once so the symptoms sheet cannot resolve
+  /// it differently and offer a set of groups that does not match the stage.
+  String _resolveStageKey(PersonalContext pc) {
+    if (widget.stageKey != null && widget.stageKey!.isNotEmpty) {
+      return widget.stageKey!;
+    }
+    final active = pc.activeLifeStages.isNotEmpty
+        ? pc.activeLifeStages.first
+        : null;
+    return (active ??
+            (pc.lifeStage ??
+                _onboardingData['lifeStage'] ??
+                _onboardingData['life_stage'] ??
+                _onboardingData['stage'] ??
+                'firstPeriodNotStarted'))
+        .toString()
+        .trim();
+  }
+
+  /// Today's check-in.
+  ///
+  /// It used to be seven builders of fixed selectors -- mood, energy, flow,
+  /// pain, sleep, stress, water, movement, and whatever else that stage
+  /// tracked. Those all live in the symptoms sheet now, reached from Today's
+  /// Cycle, so there is one place to log.
+  ///
+  /// What is left here is what today's entries earn: the follow-up questions
+  /// generated from what she logged. Log nothing and this is a prompt rather
+  /// than a form.
+  Widget _buildCheckIn() {
+    final followUps = _buildGeneratedFollowUps();
+
+    return Column(
+      key: _checkInKey,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: SectionHeading("CHECK IN"),
+        ),
+        const SizedBox(height: BlushySpace.xs),
+        // No panel. The check-in sits on the page like the sections around it
+        // -- the white card with a border was the only thing making it look
+        // like a separate surface.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Shown when something just logged matched a reviewed red flag
+              // rule, so the reviewed instruction replaces the usual
+              // confirmation rather than sitting alongside it.
+              if (_checkinSafety != null)
+                _buildCheckinSafetyBanner(_checkinSafety!),
+              if (_loggedSymptoms.isEmpty)
+                _buildCheckinPrompt()
+              else if (followUps is SizedBox)
+                // She logged, but nothing she logged has a follow-up rule.
+                Text(
+                  'Logged for today. Nothing further to ask.',
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    color: BlushyColors.secondaryText,
+                  ),
+                )
+              else
+                followUps,
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Shown before anything is logged, pointing at the one place to do it.
+  Widget _buildCheckinPrompt() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Nothing logged yet today.',
+          style: GoogleFonts.manrope(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: BlushyColors.text,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Log today\'s symptoms and this fills in with what is worth asking.',
+          style: GoogleFonts.manrope(
+            fontSize: 12,
+            height: 1.4,
+            color: BlushyColors.secondaryText,
+          ),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: _openSymptomSheet,
+            style: FilledButton.styleFrom(
+              backgroundColor: BlushyColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              "Log today's symptoms",
+              style: GoogleFonts.manrope(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The questions today's symptoms earn, if any.
+  ///
+  /// Empty on a day with nothing logged, so the check-in stays as short as it
+  /// was. The rules are in [CheckinFollowUps] rather than here so they can be
+  /// tested without building this widget.
+  Widget _buildGeneratedFollowUps() {
+    // Answered cards leave the deck. They used to stay, with a tick on the
+    // chip, and come round again on every swipe -- which read as the app not
+    // having heard the answer.
+    final cards = CheckinFollowUps.forSymptoms(_loggedLabels)
+        .where((card) => !_followUpAnswered(card))
+        .toList();
+    if (cards.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.zero,
+      child: CheckinCardStack(
+        cards: cards,
+        // Read at build rather than captured once, so answering a card shows
+        // on it straight away instead of on the next rebuild.
+        answerFor: _answerFor,
+        onAnswer: _answerFollowUp,
+      ),
+    );
+  }
+
+  /// Removes today's events of the given types: from the offline queue if
+  /// they never left the device, and from the server if they did.
+  ///
+  /// The server's delete is soft and drops the event from every listing, so
+  /// the sparkline, the patterns and Docsy's context stop seeing it -- the
+  /// same as if it had not been logged. With no connection the delete is
+  /// queued and runs on the next flush, ahead of any queued logs.
+  Future<void> _deleteLoggedEvents(Set<String> eventTypes) async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    for (final type in eventTypes) {
+      await OfflineEventQueue.instance.removeWhere(eventType: type, day: now);
+    }
+
+    final listed = await EventsApi.list(
+      eventTypes: eventTypes.toList(),
+      from: startOfDay,
+      to: endOfDay,
+      limit: 100,
+    );
+    if (!listed.isReady || listed.data == null) {
+      // No connection: the removal waits in the queue and runs on the next
+      // flush, against only the events stamped before now.
+      for (final type in eventTypes) {
+        await OfflineEventQueue.instance.enqueueDelete(
+          eventType: type,
+          day: now,
+          before: now,
+        );
+      }
+      return;
+    }
+    for (final event in listed.data!) {
+      final result = await EventsApi.delete(event.eventId);
+      if (!result.isReady) {
+        // Lost the connection part way: queue the rest rather than leave
+        // half the day deleted.
+        await OfflineEventQueue.instance.enqueueDelete(
+          eventType: event.eventType,
+          day: now,
+          before: now,
+        );
+      }
+    }
+  }
+
+  /// What was answered on a card today, or null.
+  String? _answerFor(CheckinFollowUp card) =>
+      BlushyStorage.read('daily_checkin.json')[card.metric]?.toString();
+
+  /// Records a follow-up answer as an ordinary check-in answer.
+  ///
+  /// It writes the same metric the check-in card for that metric writes, so
+  /// there is one series per metric rather than a parallel one -- and so the
+  /// pattern engine cannot tell, and must not tell, which surface produced it.
+  void _answerFollowUp(CheckinFollowUp card, String value) {
+    _persistCheckinAnswer(card.metric, value);
+    // Remembered by the card's id, not by its metric having a value: the
+    // cards write the same metrics the sheet does, so "the metric has a
+    // value" meant "the sheet was used", and every card vanished.
+    final checkin = Map<String, dynamic>.from(
+      BlushyStorage.read('daily_checkin.json'),
+    );
+    final answered = <String>{
+      ...((checkin['answered_followups'] as List?)?.map((e) => e.toString()) ?? const <String>[]),
+      card.id,
+    };
+    checkin['answered_followups'] = answered.toList();
+    BlushyStorage.write('daily_checkin.json', checkin);
+    setState(() {});
+  }
+
+  /// Whether [card] was answered today.
+  bool _followUpAnswered(CheckinFollowUp card) {
+    final raw = BlushyStorage.read('daily_checkin.json')['answered_followups'];
+    return raw is List && raw.contains(card.id);
+  }
+
+  /// What was logged on an earlier day, for the sheet's back arrow.
+  ///
+  /// Today lives on the device; an earlier day exists only as stored events,
+  /// so it is fetched and turned back into the words she tapped. An empty set
+  /// is a real answer -- the sheet says nothing was logged rather than showing
+  /// an empty form that looks like it failed to load.
+  Future<Set<String>> _loadLoggedDay(DateTime day) async {
+    final start = DateTime(day.year, day.month, day.day);
+    final end = start.add(const Duration(days: 1));
+
+    final result = await EventsApi.list(
+      eventTypes: const [
+        'mood_logged',
+        'symptom_logged',
+        'energy_logged',
+        'sleep_logged',
+        'stress_logged',
+        'hydration_logged',
+        'pain_logged',
+        'flow_logged',
+        'activity_logged',
+        'cervical_mucus_logged',
+        'lh_test_logged',
+        'sexual_activity_logged',
+        'pregnancy_test_logged',
+        'feeding_logged',
+        'hot_flash_logged',
+        'recovery_metric_logged',
+        'medication_logged',
+      ],
+      from: start,
+      to: end,
+      limit: 200,
+    );
+
+    if (!result.isReady || result.data == null) return <String>{};
+
+    final keys = <String>{};
+    for (final event in result.data!) {
+      final mapped = CheckinEventMapper.reverse(event.eventType, event.payload);
+      if (mapped == null) continue;
+      // Back to the group that recorded it, by metric and word together, so
+      // yesterday's "Low" lands on the chip it was tapped on.
+      final owner = SymptomCategories.all.cast<SymptomCategory?>().firstWhere(
+        (c) => c!.metric == mapped.key && c.options.contains(mapped.value),
+        orElse: () => null,
+      );
+      keys.add(owner == null
+          ? mapped.value
+          : SymptomKey.qualify(owner.id, mapped.value));
+    }
+    return keys;
+  }
+
+  /// Today's symptoms, read back from storage.
+  /// Everything logged today, as the sheet's own keys.
+  ///
+  /// The flat symptom list, plus each single-answer metric's stored pick --
+  /// energy "Low", pain "Severe" -- each qualified with its group, so the
+  /// sheet reopens with them selected and "Low" lands on the right chip.
+  Set<String> get _loggedSymptoms {
+    final checkin = BlushyStorage.read('daily_checkin.json');
+    final out = <String>{};
+
+    final raw = checkin['symptom'];
+    if (raw is List) {
+      out.addAll(raw.map((e) => SymptomKey.normalise(e.toString())));
+    }
+
+    for (final category in SymptomCategories.all) {
+      if (category.multiSelect) continue;
+      final pick = checkin[category.metric];
+      if (pick is String && category.options.contains(pick)) {
+        out.add(SymptomKey.qualify(category.id, pick));
+      }
+    }
+    return out;
+  }
+
+  /// The same, as bare words, for the follow-up rules.
+  Set<String> get _loggedLabels => _loggedSymptoms.map(SymptomKey.label).toSet();
+
+  /// Opens the one logging surface.
+  ///
+  /// Reached from the "Log Today's Symptoms" button in Today's Cycle. There
+  /// was briefly a second button under the check-in as well; two entry points
+  /// to one sheet is one too many.
+  Future<void> _openSymptomSheet() async {
+    await SymptomLogSheet.show(
+      context,
+      initialSelection: _loggedSymptoms,
+      onSave: _persistCheckinSymptoms,
+      // Weight and basal temperature are rows on the same sheet, saved on the
+      // same confirm rather than through a second dialog.
+      initialNumeric: {
+        for (final id in const ['weight', 'bbt'])
+          if (_numericValue(id) != null) id: _numericValue(id)!,
+      },
+      onSaveNumeric: (readings) {
+        readings.forEach((id, value) {
+          _persistNumericMetric(
+            id == 'bbt' ? NumericMetric.bbt : NumericMetric.weight,
+            value,
+          );
+        });
+      },
+      // The steppers enter today's reading; this opens its history.
+      onOpenTrend: (id) => _openNumericMetric(
+        id == 'bbt' ? NumericMetric.bbt : NumericMetric.weight,
+      ),
+      // Decides which groups she is offered at all.
+      stage: _resolveStageKey(BlushyOSProvider.of(context).personalContext),
+      onLoadDay: _loadLoggedDay,
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// Stores everything she picked on the symptoms sheet.
+  ///
+  /// The whole selection is one list, but the options in it do not share a
+  /// metric: a flow level is `flow_logged`, a mucus observation is
+  /// `cervical_mucus_logged`, an ovulation result is `lh_test_logged`, and a
+  /// blood clot is a symptom even though it sits under the flow heading. Each
+  /// option is routed by [SymptomCategory.metricFor] rather than all of them
+  /// being posted as symptoms, which would have put a fertility reading and a
+  /// flow level into the timeline as words.
+  ///
+  /// Separate from [_persistCheckinAnswer] because the selection is a list:
+  /// these co-occur, and the single-value path would let each one erase the
+  /// last. Symptoms used to ride the mood selector for exactly that reason,
+  /// which meant "happy but cramping" could not be recorded.
+  void _persistCheckinSymptoms(Set<String> incoming) {
+    // A category switched off is not collected. Filtered here as well as in
+    // the sheet because this is the last point before the request.
+    final selected = SymptomCategoryPreference.filter(incoming);
+
+    final checkin = Map<String, dynamic>.from(
+      BlushyStorage.read('daily_checkin.json'),
+    );
+
+    // Each selection is `categoryId/label`, so the group is read from the
+    // key rather than guessed from the word. Guessing was the bug: "Medium"
+    // belongs to energy and to flow, and the guess always said energy, so a
+    // flow of Medium was stored as an energy of Medium and the flow row
+    // stayed "Not Logged Today".
+    //
+    // Stored under each option's own metric as well as in the flat list.
+    // Today's Cycle reads `checkin['pain']`, `checkin['flow']` and the rest,
+    // and so do the three restore paths.
+    final byMetric = <String, List<String>>{};
+    final categoryOf = <String, SymptomCategory>{};
+    for (final key in selected) {
+      final category = SymptomKey.category(key);
+      final label = SymptomKey.label(key);
+      final metric = category?.metricFor(label) ??
+          (CheckinVocabulary.isUnrecorded('symptom', label) ? 'symptom' : null);
+      if (metric == null) continue;
+      byMetric.putIfAbsent(metric, () => <String>[]).add(label);
+      if (category != null) categoryOf.putIfAbsent(metric, () => category);
+    }
+    byMetric.forEach((metric, labels) {
+      final multi = categoryOf[metric]?.multiSelect ?? true;
+      // One answer a day stores the answer; a multi-select stores the set.
+      checkin[metric] = multi ? labels : labels.first;
+      if (metric == 'mood') checkin['feeling'] = labels.first;
+    });
+    checkin['symptom'] = byMetric['symptom'] ?? const <String>[];
+
+    // A one-answer pick she took off the sheet is cleared, not kept. Only
+    // groups she was actually offered can be cleared this way: a group her
+    // switches hide is not on the sheet, so its absence says nothing.
+    final cleared = <String>{};
+    // The stored event type for each cleared metric, so its event can go
+    // with it. Read off the mapper with one of the group's own options
+    // rather than kept as a second table of types.
+    final clearedTypes = <String, String>{};
+    for (final category in SymptomCategoryPreference.enabledFor(
+      _resolveStageKey(_currentPc),
+    )) {
+      if (category.multiSelect || category.isNumeric) continue;
+      final metric = category.metric;
+      if (byMetric.containsKey(metric) || !checkin.containsKey(metric)) continue;
+      checkin.remove(metric);
+      if (metric == 'mood') checkin.remove('feeling');
+      cleared.add(metric);
+      final type = category.options.isEmpty
+          ? null
+          : CheckinEventMapper.map(metric, category.options.first)?.eventType;
+      if (type != null) clearedTypes[metric] = type;
+    }
+    if (clearedTypes.isNotEmpty) {
+      unawaited(_deleteLoggedEvents(clearedTypes.values.toSet()));
+    }
+
+    checkin['date'] = DateTime.now().toIso8601String();
+    BlushyStorage.write('daily_checkin.json', checkin);
+
+    // The rows read the in-memory field before storage (`_livingPain ??
+    // savedPain`), and the inline check-in sets both. This path set only
+    // storage, so a field restored at startup from an earlier check-in kept
+    // masking whatever was just saved here: the row said "Mild" for the rest
+    // of the session while storage and the server both said "Severe".
+    if (mounted) {
+      setState(() {
+        String? single(String metric) {
+          final v = checkin[metric];
+          return v is String ? v : null;
+        }
+
+        bool touched(String metric) =>
+            byMetric.containsKey(metric) || cleared.contains(metric);
+
+        if (touched('mood')) _selectedFeeling = single('mood');
+        if (touched('energy')) _selectedEnergy = single('energy');
+        if (touched('sleep')) _livingSleep = single('sleep');
+        if (touched('stress')) _livingStress = single('stress');
+        if (touched('water')) _livingWater = single('water');
+        if (touched('exercise')) _livingExercise = single('exercise');
+        if (touched('flow')) _livingFlow = single('flow');
+        if (touched('pain')) _livingPain = single('pain');
+      });
+    }
+
+    for (final key in selected) {
+      final category = SymptomKey.category(key);
+      final label = SymptomKey.label(key);
+      final metric = category?.metricFor(label);
+      // "Everything is fine" is stored above but deliberately not sent; see
+      // CheckinVocabulary.unrecorded.
+      if (metric == null || CheckinVocabulary.isUnrecorded(metric, label)) {
+        continue;
+      }
+      // The variant keeps one idempotency key per option per day. Without it
+      // every option on the sheet would collide on its metric's key and the
+      // server would keep whichever arrived first.
+      _recordCheckinEvent(metric, label, variant: label);
+    }
+
+    _userEditedMetrics.add('daily_symptom');
+    for (final metric in byMetric.keys) {
+      _userEditedMetrics.add('daily_$metric');
+    }
+    for (final metric in cleared) {
+      _userEditedMetrics.add('daily_$metric');
+    }
+
+    ApiAuthService()
+        .saveOnboardingAnswers({
+          // Sent with every save so the server's copy cannot fall behind the
+          // switches, whichever device she changed them on.
+          ...SymptomCategoryPreference.exclusionsForSync(),
+          'daily_symptom': byMetric['symptom'] ?? const <String>[],
+          for (final entry in byMetric.entries)
+            'daily_${entry.key}': entry.value.length == 1
+                ? entry.value.first
+                : entry.value,
+          // A cleared pick is sent as empty. The server merges answers by
+          // key, so a key not sent keeps its old value there -- and on the
+          // next start the device, having no value, would take the server's
+          // and the cleared pick would come back. Empty is what the client
+          // reads as "nothing to apply".
+          for (final metric in cleared) 'daily_$metric': '',
+          // Dated, as the inline check-in dates its saves, so the server's
+          // copy can be compared with the device's rather than assumed
+          // newer.
+          'daily_logged_at': checkin['date'],
+          // The whole day, cleared keys absent, so the server's copy of the
+          // day matches the device's.
+          'daily_checkin': checkin,
+        })
+        .catchError((_) => <String, dynamic>{});
   }
 
   /// Posts one check-in event. Failures are non-fatal: the local write has
@@ -368,7 +958,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   ///
   /// The bucket-to-event mapping lives in [CheckinEventMapper] so it can be
   /// tested without building this widget.
-  Future<void> _recordCheckinEvent(String metric, String rawValue) async {
+  Future<void> _recordCheckinEvent(
+    String metric,
+    String rawValue, {
+    String? variant,
+  }) async {
     final mapped = CheckinEventMapper.map(metric, rawValue);
     if (mapped == null) return;
 
@@ -376,6 +970,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       userId: AuthStorage.getUserId() ?? 'anon',
       metric: metric,
       day: DateTime.now(),
+      variant: variant,
     );
 
     final result = await EventsApi.log(
@@ -394,6 +989,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       );
       return;
     }
+
+    // This one got through, so the connection is back. The queue was only
+    // drained on resume and on a dashboard rebuild, so a backlog built up
+    // offline could sit unsent for as long as she stayed in the app.
+    unawaited(OfflineEventQueue.instance.flush());
 
     // A symptom or pain entry can trip a red flag rule; surface the reviewed
     // guidance rather than letting the ordinary confirmation stand.
@@ -424,13 +1024,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   Future<void> _loadTodayCheckins() async {
+    // Covers the case neither app-start nor resume does: the app left open and
+    // untouched across midnight, then used without ever being backgrounded.
+    await DailyRollover.runIfNeeded();
+
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
 
     final result = await EventsApi.list(
       eventTypes: const [
-        'mood_logged', 'symptom_logged', 'energy_logged', 'sleep_logged',
-        'stress_logged', 'hydration_logged', 'pain_logged', 'flow_logged',
+        'mood_logged',
+        'symptom_logged',
+        'energy_logged',
+        'sleep_logged',
+        'stress_logged',
+        'hydration_logged',
+        'pain_logged',
+        'flow_logged',
         'activity_logged',
       ],
       from: startOfDay,
@@ -442,26 +1052,41 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     // Oldest first, so a later entry for the same metric wins.
     final events = result.data!.reversed;
     final selections = <String, String>{};
+    // Symptoms are the one multi-select metric: a day has as many
+    // `symptom_logged` events as she tapped chips, and last-wins would keep
+    // exactly one of them.
+    final symptoms = <String>{};
     for (final event in events) {
       final mapped = CheckinEventMapper.reverse(event.eventType, event.payload);
-      if (mapped != null) selections[mapped.key] = mapped.value;
+      if (mapped == null) continue;
+      if (mapped.key == 'symptom') {
+        symptoms.add(mapped.value);
+      } else {
+        selections[mapped.key] = mapped.value;
+      }
     }
 
-    if (selections.isEmpty) return;
+    if (selections.isEmpty && symptoms.isEmpty) return;
 
     // A metric she has changed in this session is left alone, here as in the
     // other two places that restore these fields. This request can have been
     // in flight before her tap reached the server, in which case it carries the
     // previous value and would put it back on top of her choice.
     selections.removeWhere(
-        (metric, _) => _userEditedMetrics.contains('daily_$metric'));
-    if (selections.isEmpty) return;
+      (metric, _) => _userEditedMetrics.contains('daily_$metric'),
+    );
+    final keepSymptoms =
+        symptoms.isNotEmpty && !_userEditedMetrics.contains('daily_symptom');
+    if (selections.isEmpty && !keepSymptoms) return;
 
-    final checkin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
+    final checkin = Map<String, dynamic>.from(
+      BlushyStorage.read('daily_checkin.json'),
+    );
     selections.forEach((metric, label) {
       checkin[metric] = label;
       if (metric == 'mood') checkin['feeling'] = label;
     });
+    if (keepSymptoms) checkin['symptom'] = symptoms.toList();
     checkin['date'] = now.toIso8601String();
     BlushyStorage.write('daily_checkin.json', checkin);
 
@@ -473,7 +1098,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       if (selections['water'] != null) _livingWater = selections['water'];
       if (selections['flow'] != null) _livingFlow = selections['flow'];
       if (selections['pain'] != null) _livingPain = selections['pain'];
-      if (selections['exercise'] != null) _livingExercise = selections['exercise'];
+      if (selections['exercise'] != null) {
+        _livingExercise = selections['exercise'];
+      }
     });
   }
 
@@ -485,7 +1112,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     if (step == null) return const SizedBox.shrink();
 
     final bool urgent = safety.isEmergency;
-    final Color accent = urgent ? const Color(0xFFB3261E) : const Color(0xFFB26A00);
+    final Color accent = urgent
+        ? const Color(0xFFB3261E)
+        : const Color(0xFFB26A00);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -500,12 +1129,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         children: [
           Row(
             children: [
-              Icon(urgent ? Icons.emergency_outlined : Icons.warning_amber_rounded, color: accent, size: 20),
+              Icon(
+                urgent ? Icons.emergency_outlined : Icons.warning_amber_rounded,
+                color: accent,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   step.title,
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: accent),
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: accent,
+                  ),
                 ),
               ),
             ],
@@ -513,27 +1150,41 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           const SizedBox(height: 8),
           Text(
             step.instruction,
-            style: GoogleFonts.poppins(fontSize: 12.5, height: 1.45, color: BlushyColors.text),
+            style: GoogleFonts.manrope(
+              fontSize: 12.5,
+              height: 1.45,
+              color: BlushyColors.text,
+            ),
           ),
           if (safety.emergencyNumber != null) ...[
             const SizedBox(height: 10),
             Text(
               'Emergency number: ${safety.emergencyNumber}',
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: accent),
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: accent,
+              ),
             ),
           ],
           if (step.source != null) ...[
             const SizedBox(height: 8),
             Text(
               'Source: ${step.source}',
-              style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(
+                fontSize: 10,
+                color: BlushyColors.secondaryText,
+              ),
             ),
           ],
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () => setState(() => _checkinSafety = null),
-              child: Text('Dismiss', style: GoogleFonts.poppins(fontSize: 12, color: accent)),
+              child: Text(
+                'Dismiss',
+                style: GoogleFonts.manrope(fontSize: 12, color: accent),
+              ),
             ),
           ),
         ],
@@ -610,21 +1261,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     setState(() => _conditionsResult = result);
   }
 
-
   Future<void> _loadReflection() async {
-    final result = await ReflectionsApi.current();
+    await ReflectionsApi.current();
     if (!mounted) return;
-    setState(() {
-      // An answer already given this period is shown as answered.
-      final existing = result.data?['reflection'];
-      if (existing is Map && existing['response'] != null) {
-      }
-    });
+    // The response is not rendered anywhere yet: this has always assigned it
+    // to a local and dropped it. Kept as a fetch rather than deleted because
+    // the endpoint marks the reflection as seen.
   }
-
-
-
-
 
   ApiResult<Timeline> _timelineResult = const ApiResult.loading();
 
@@ -688,12 +1331,28 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   };
 
   static String _timelineDateLabel(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     final now = DateTime.now();
-    final sameDay = date.year == now.year && date.month == now.month && date.day == now.day;
+    final sameDay =
+        date.year == now.year && date.month == now.month && date.day == now.day;
     if (sameDay) return 'Today';
     final yesterday = now.subtract(const Duration(days: 1));
-    if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
+    if (date.year == yesterday.year &&
+        date.month == yesterday.month &&
+        date.day == yesterday.day) {
       return 'Yesterday';
     }
     return '${months[date.month - 1]} ${date.day}';
@@ -764,7 +1423,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     await PatternsApi.feedback(insight.id, helpful: true);
     if (!mounted) return;
     messenger.showSnackBar(
-      const SnackBar(content: Text('Noted. Docsy will keep showing observations like this.')),
+      const SnackBar(
+        content: Text('Noted. Docsy will keep showing observations like this.'),
+      ),
     );
   }
 
@@ -802,10 +1463,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       final days = insight.periodEnd!.difference(insight.periodStart!).inDays;
       if (days > 0) parts.add('over the last $days days');
     }
-    return parts.isEmpty ? 'Based on your recent logs' : 'Based on ${parts.join(', ')}';
+    return parts.isEmpty
+        ? 'Based on your recent logs'
+        : 'Based on ${parts.join(', ')}';
   }
 
   ApiResult<CycleState> _cycleResult = const ApiResult.loading();
+
 
   /// Last successful server response, so an offline refresh can keep showing
   /// the last known real values instead of falling back to local arithmetic.
@@ -861,7 +1525,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     if (isoDate == null || isoDate.isEmpty) return 'Not available';
     final parsed = DateTime.tryParse(isoDate);
     if (parsed == null) return 'Not available';
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[parsed.month - 1]} ${parsed.day}';
   }
 
@@ -872,18 +1549,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   /// from "not enough data yet" can read it, and the ones that only read
   /// `isLogged` behave exactly as before.
   Map<String, dynamic> _getDynamicCycleDates([PersonalContext? pc]) {
-    Map<String, dynamic> unavailable(String state, String dayText, String subtitle) => {
-          'state': state,
-          'isLogged': false,
-          'cycleDay': null,
-          'cycleDayText': dayText,
-          'subtitle': subtitle,
-          'ovulationText': 'Not available',
-          'fertileWindow': 'Not available',
-          'expectedPeriod': 'Not available',
-          'recTestDay': 'Not available',
-          'phaseName': 'Not Logged',
-        };
+    Map<String, dynamic> unavailable(
+      String state,
+      String dayText,
+      String subtitle,
+    ) => {
+      'state': state,
+      'isLogged': false,
+      'cycleDay': null,
+      'cycleDayText': dayText,
+      'subtitle': subtitle,
+      'ovulationText': 'Not available',
+      'fertileWindow': 'Not available',
+      'expectedPeriod': 'Not available',
+      'recTestDay': 'Not available',
+      'phaseName': 'Not Logged',
+    };
 
     final cycle = _cycleResult.data ?? _lastKnownCycle;
 
@@ -892,7 +1573,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       return unavailable(
         'restricted',
         'Cycle tracking paused',
-        cycle.restrictedMessage ?? 'Your current stage does not use cycle tracking.',
+        cycle.restrictedMessage ??
+            'Your current stage does not use cycle tracking.',
       );
     }
 
@@ -955,9 +1637,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final String ovulationText = hasOvulation
         ? _formatDayMonth(cycle.estimatedOvulationDate)
         : notEnough;
-    final String expectedPeriod =
-        predictionsAvailable ? _formatDayMonth(cycle.nextPeriodStartDate) : notEnough;
-    final String fertileWindow = (cycle.fertileWindowStart != null && cycle.fertileWindowEnd != null)
+    final String expectedPeriod = predictionsAvailable
+        ? _formatDayMonth(cycle.nextPeriodStartDate)
+        : notEnough;
+    final String fertileWindow =
+        (cycle.fertileWindowStart != null && cycle.fertileWindowEnd != null)
         ? '${_formatDayMonth(cycle.fertileWindowStart)} - ${_formatDayMonth(cycle.fertileWindowEnd)}'
         : notEnough;
 
@@ -966,21 +1650,28 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         : DateTime.tryParse(cycle.nextPeriodStartDate!);
     final String recTestDay = nextPeriod == null
         ? notEnough
-        : _formatDayMonth(nextPeriod.add(const Duration(days: 3)).toIso8601String());
+        : _formatDayMonth(
+            nextPeriod.add(const Duration(days: 3)).toIso8601String(),
+          );
 
     // A late period is surfaced as late, not folded into a new cycle.
     final String subtitle;
     if (cycle.isOverdue) {
-      subtitle = cycle.lateNotice ??
+      subtitle =
+          cycle.lateNotice ??
           'Your period is ${cycle.daysOverdue ?? 0} day(s) later than your logged pattern suggests.';
     } else if (hasOvulation) {
       subtitle = 'Expected Ovulation: $ovulationText';
     } else {
-      subtitle = cycle.sufficiencyMessage ?? 'Keep logging to build your cycle picture.';
+      subtitle =
+          cycle.sufficiencyMessage ??
+          'Keep logging to build your cycle picture.';
     }
 
     return {
-      'state': _cycleResult.state == ApiState.insufficientData ? 'insufficient_data' : 'ready',
+      'state': _cycleResult.state == ApiState.insufficientData
+          ? 'insufficient_data'
+          : 'ready',
       'isLogged': true,
       'cycleDay': cycleDay,
       'cycleDayText': cycle.isOverdue
@@ -1004,11 +1695,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     if (val == null) return [];
     if (val is List) return val.map((e) => e.toString().toLowerCase()).toList();
     if (val is Set) return val.map((e) => e.toString().toLowerCase()).toList();
-    if (val is Iterable) return val.map((e) => e.toString().toLowerCase()).toList();
+    if (val is Iterable) {
+      return val.map((e) => e.toString().toLowerCase()).toList();
+    }
     if (val is String) {
       if (val.trim().isEmpty) return [];
-      final cleaned = val.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '').replaceAll("'", '');
-      return cleaned.split(',').map((e) => e.trim().toLowerCase()).where((e) => e.isNotEmpty).toList();
+      final cleaned = val
+          .replaceAll('[', '')
+          .replaceAll(']', '')
+          .replaceAll('"', '')
+          .replaceAll("'", '');
+      return cleaned
+          .split(',')
+          .map((e) => e.trim().toLowerCase())
+          .where((e) => e.isNotEmpty)
+          .toList();
     }
     return [val.toString().toLowerCase()];
   }
@@ -1064,7 +1765,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
     if (userChoices.isEmpty) {
       // Default to showing core essentials if no granular symptoms specified
-      return kw.any((k) => ['mood', 'energy', 'hot flashes', 'cramps', 'bloating', 'pain', 'movement', 'sleep'].contains(k.toLowerCase()));
+      return kw.any(
+        (k) => [
+          'mood',
+          'energy',
+          'hot flashes',
+          'cramps',
+          'bloating',
+          'pain',
+          'movement',
+          'sleep',
+        ].contains(k.toLowerCase()),
+      );
     }
 
     return metricMatches(userChoices, kw);
@@ -1135,62 +1847,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     }
   }
 
-  void _saveWeightLog(double val) {
-    setState(() {
-      _loggedWeight = val;
-    });
-    try {
-      BlushyStorage.write('logged_weight.json', {'weight': val});
-      final weightData = BlushyStorage.read('weight_history.json');
-      final List history = weightData['history'] is List ? List.from(weightData['history']) : [];
-      history.add({'weight': val, 'date': DateTime.now().toIso8601String()});
-      BlushyStorage.write('weight_history.json', {'history': history});
-
-      final profileData = BlushyStorage.read('user_profile.json');
-      final Map answers = Map.from(profileData['answers'] as Map? ?? profileData['profile']?['answers'] as Map? ?? {});
-      answers['weight_current'] = val.toString();
-      answers['weight'] = val.toString();
-      profileData['answers'] = answers;
-      BlushyStorage.write('user_profile.json', profileData);
-    } catch (_) {}
-    ApiAuthService().saveWeightLog(val).catchError((_) => false);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final provider = BlushyOSProvider.of(context);
-      final cur = provider.personalContext;
-      provider.updatePersonalContext(PersonalContext(
-        userName: cur.userName,
-        dateOfBirth: cur.dateOfBirth,
-        weight: val,
-        trackingPreference: cur.trackingPreference,
-        cyclePattern: cur.cyclePattern,
-        confidence: cur.confidence,
-        lifeContexts: cur.lifeContexts,
-        userGoals: cur.userGoals,
-        medicalConditions: cur.medicalConditions,
-        preferences: cur.preferences,
-        cycleLength: cur.cycleLength,
-        cycleDay: cur.cycleDay,
-        cyclePhase: cur.cyclePhase,
-        lastPeriodStart: cur.lastPeriodStart,
-        medications: cur.medications,
-      ));
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Weight saved: ${val.toStringAsFixed(1)} kg")),
-      );
-    }
-  }
-
   void _loadOnboardingData() {
     try {
       final decoded = BlushyStorage.read('user_profile.json');
       final weightData = BlushyStorage.read('logged_weight.json');
       final savedWeight = weightData['weight'];
-      
+
       // Restored from the device, and it must lose to a selection she has
       // just made.
       //
@@ -1234,7 +1896,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         _livingWater = v;
         _wellnessWater = v;
       });
-      restore('meditation', (v) => _wellnessMeditation = v);
       restore('flow', (v) => _livingFlow = v);
       restore('pain', (v) => _livingPain = v);
       restore('exercise', (v) {
@@ -1244,7 +1905,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
       setState(() {
         final p = decoded['profile'];
-        _onboardingData = p is Map ? Map<String, dynamic>.from(p) : Map<String, dynamic>.from(decoded);
+        _onboardingData = p is Map
+            ? Map<String, dynamic>.from(p)
+            : Map<String, dynamic>.from(decoded);
         if (savedWeight != null && savedWeight.toString().isNotEmpty) {
           _loggedWeight = double.tryParse(savedWeight.toString());
         }
@@ -1256,258 +1919,287 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     }
 
     // Attempt to sync from backend API
-    ApiAuthService().getOnboardingAnswers().then((remoteAnswers) {
-      if (remoteAnswers.isNotEmpty && mounted) {
-        setState(() {
-          final currentAnswers = _onboardingData['answers'];
-          _onboardingData['answers'] = {
-            if (currentAnswers is Map) ...currentAnswers,
-            ...remoteAnswers,
-          };
-          if (remoteAnswers.containsKey('preferred_name')) {
-            _onboardingData['preferredName'] = remoteAnswers['preferred_name'];
-          }
-          if (remoteAnswers.containsKey('life_stage')) {
-            final active = BlushyOSProvider.of(context).personalContext.activeLifeStages;
-            if (active.isEmpty) {
-              _onboardingData['lifeStage'] = remoteAnswers['life_stage'];
-            }
-          }
-          final remoteW = remoteAnswers['weight_current'] ?? remoteAnswers['weight'];
-          if (remoteW != null && remoteW.toString().isNotEmpty) {
-            final parsedW = double.tryParse(remoteW.toString());
-            if (parsedW != null && parsedW > 0) {
-              _loggedWeight = parsedW;
-            }
-          }
+    ApiAuthService()
+        .getOnboardingAnswers()
+        .then((remoteAnswers) {
+          if (remoteAnswers.isNotEmpty && mounted) {
+            setState(() {
+              final currentAnswers = _onboardingData['answers'];
+              _onboardingData['answers'] = {
+                if (currentAnswers is Map) ...currentAnswers,
+                ...remoteAnswers,
+              };
+              if (remoteAnswers.containsKey('preferred_name')) {
+                _onboardingData['preferredName'] =
+                    remoteAnswers['preferred_name'];
+              }
+              if (remoteAnswers.containsKey('life_stage')) {
+                final active = BlushyOSProvider.of(
+                  context,
+                ).personalContext.activeLifeStages;
+                if (active.isEmpty) {
+                  _onboardingData['lifeStage'] = remoteAnswers['life_stage'];
+                }
+              }
+              final remoteW =
+                  remoteAnswers['weight_current'] ?? remoteAnswers['weight'];
+              if (remoteW != null && remoteW.toString().isNotEmpty) {
+                final parsedW = double.tryParse(remoteW.toString());
+                if (parsedW != null && parsedW > 0) {
+                  _loggedWeight = parsedW;
+                }
+              }
 
-          // Hydrate live interactive state from MongoDB.
-          //
-          // Guarded: this runs on every tab change, and without the guard a
-          // stored value -- possibly from a previous day, since these carry no
-          // date -- overwrote the selection she had just made.
-          // The `daily_*` answers are a partial, stale mirror.
-          //
-          // Only some selectors write them, nothing ever clears them, and they
-          // carry no per-metric date -- so they sit at whatever was last
-          // written to each key, which can be days old. Applied unconditionally
-          // they overwrote the fresher state the device held: measured on a
-          // real device, mood went Happy -> Cramps, energy High -> Medium,
-          // sleep 6-8h -> <6h and water 3L -> 1L on every tab change, because
-          // a tab change triggers the sync that runs this.
-          //
-          // The device copy and today's events agreed with each other and with
-          // what she had actually picked; only this mirror disagreed. So it is
-          // now a *fallback*: it fills in a metric the device has nothing for
-          // -- a fresh install, or another device -- and otherwise defers.
-          final device = BlushyStorage.read('daily_checkin.json');
-          final deviceAt =
-              DateTime.tryParse(device['date']?.toString() ?? '');
-          final remoteAt = DateTime.tryParse(
-              remoteAnswers['daily_logged_at']?.toString() ?? '');
+              // Hydrate live interactive state from MongoDB.
+              //
+              // Guarded: this runs on every tab change, and without the guard a
+              // stored value -- possibly from a previous day, since these carry no
+              // date -- overwrote the selection she had just made.
+              // The `daily_*` answers are a partial, stale mirror.
+              //
+              // Only some selectors write them, nothing ever clears them, and they
+              // carry no per-metric date -- so they sit at whatever was last
+              // written to each key, which can be days old. Applied unconditionally
+              // they overwrote the fresher state the device held: measured on a
+              // real device, mood went Happy -> Cramps, energy High -> Medium,
+              // sleep 6-8h -> <6h and water 3L -> 1L on every tab change, because
+              // a tab change triggers the sync that runs this.
+              //
+              // The device copy and today's events agreed with each other and with
+              // what she had actually picked; only this mirror disagreed. So it is
+              // now a *fallback*: it fills in a metric the device has nothing for
+              // -- a fresh install, or another device -- and otherwise defers.
+              final device = BlushyStorage.read('daily_checkin.json');
+              final deviceAt = DateTime.tryParse(
+                device['date']?.toString() ?? '',
+              );
+              final remoteAt = DateTime.tryParse(
+                remoteAnswers['daily_logged_at']?.toString() ?? '',
+              );
 
-          void hydrate(String key, void Function(String) assign) {
-            final metric = key.replaceFirst('daily_', '');
+              void hydrate(String key, void Function(String) assign) {
+                final metric = key.replaceFirst('daily_', '');
 
-            final str = remoteAnswers[key]?.toString().trim() ?? '';
-            if (!shouldApplyRemoteCheckin(
-              remoteValue: str,
-              deviceValue: device[metric]?.toString(),
-              deviceAt: deviceAt,
-              remoteAt: remoteAt,
-              editedThisSession: _userEditedMetrics.contains(key),
-            )) {
-              return;
-            }
-            assign(str);
-          }
+                final str = remoteAnswers[key]?.toString().trim() ?? '';
+                if (!shouldApplyRemoteCheckin(
+                  remoteValue: str,
+                  deviceValue: device[metric]?.toString(),
+                  deviceAt: deviceAt,
+                  remoteAt: remoteAt,
+                  editedThisSession: _userEditedMetrics.contains(key),
+                )) {
+                  return;
+                }
+                assign(str);
+              }
 
-          final analysis = remoteAnswers['analysis_summary']?.toString().trim();
-          if (analysis != null && analysis.isNotEmpty) {
-            _onboardingAnalysisSummary = analysis;
-          }
+              final analysis = remoteAnswers['analysis_summary']
+                  ?.toString()
+                  .trim();
+              if (analysis != null && analysis.isNotEmpty) {
+                _onboardingAnalysisSummary = analysis;
+              }
 
-          // Both halves again; see the note on the local restore above.
-          hydrate('daily_mood', (v) => _selectedFeeling = v);
-          hydrate('daily_energy', (v) {
-            _selectedEnergy = v;
-            _checkInEnergy = v;
-          });
-          hydrate('daily_sleep', (v) {
-            _livingSleep = v;
-            _wellnessSleep = v;
-          });
-          hydrate('daily_water', (v) {
-            _livingWater = v;
-            _wellnessWater = v;
-          });
-          hydrate('daily_stress', (v) {
-            _livingStress = v;
-            _wellnessStress = v;
-          });
-          hydrate('daily_flow', (v) => _livingFlow = v);
-          hydrate('daily_pain', (v) => _livingPain = v);
-          hydrate('daily_exercise', (v) {
-            _livingExercise = v;
-            _wellnessExercise = v;
-          });
-          hydrate('daily_meditation', (v) => _wellnessMeditation = v);
+              // Both halves again; see the note on the local restore above.
+              hydrate('daily_mood', (v) => _selectedFeeling = v);
+              hydrate('daily_energy', (v) {
+                _selectedEnergy = v;
+                _checkInEnergy = v;
+              });
+              hydrate('daily_sleep', (v) {
+                _livingSleep = v;
+                _wellnessSleep = v;
+              });
+              hydrate('daily_water', (v) {
+                _livingWater = v;
+                _wellnessWater = v;
+              });
+              hydrate('daily_stress', (v) {
+                _livingStress = v;
+                _wellnessStress = v;
+              });
+              hydrate('daily_flow', (v) => _livingFlow = v);
+              hydrate('daily_pain', (v) => _livingPain = v);
+              hydrate('daily_exercise', (v) {
+                _livingExercise = v;
+                _wellnessExercise = v;
+              });
 
-          if (remoteAnswers['puberty_feeling'] != null) {
-            final pf = remoteAnswers['puberty_feeling'];
-            if (pf is Map && pf['feeling'] != null) {
-              _selectedFeeling = pf['feeling'].toString();
-            } else if (pf is String) {
-              _selectedFeeling = pf;
-            }
-          }
+              if (remoteAnswers['puberty_feeling'] != null) {
+                final pf = remoteAnswers['puberty_feeling'];
+                if (pf is Map && pf['feeling'] != null) {
+                  _selectedFeeling = pf['feeling'].toString();
+                } else if (pf is String) {
+                  _selectedFeeling = pf;
+                }
+              }
 
-          if (remoteAnswers['completed_lessons'] != null) {
-            _completedLessons.addAll(_extractStrings(remoteAnswers['completed_lessons']));
-          }
+              if (remoteAnswers['completed_lessons'] != null) {
+                _completedLessons.addAll(
+                  _extractStrings(remoteAnswers['completed_lessons']),
+                );
+              }
 
-          if (remoteAnswers['first_period_kit'] is Map) {
-            final kitMap = remoteAnswers['first_period_kit'] as Map;
-            kitMap.forEach((k, v) {
-              _periodKitChecklist[k.toString()] = v == true;
+              if (remoteAnswers['first_period_kit'] is Map) {
+                final kitMap = remoteAnswers['first_period_kit'] as Map;
+                kitMap.forEach((k, v) {
+                  _periodKitChecklist[k.toString()] = v == true;
+                });
+              }
+
+              if (remoteAnswers['daily_checkin'] is Map) {
+                final c = remoteAnswers['daily_checkin'] as Map;
+                if (c['feeling'] != null) {
+                  _selectedFeeling = c['feeling'].toString();
+                }
+                if (c['mood'] != null) _selectedFeeling = c['mood'].toString();
+                // Both halves again; see the note on the local restore above.
+                if (c['energy'] != null) {
+                  _selectedEnergy = c['energy'].toString();
+                  _checkInEnergy = c['energy'].toString();
+                }
+                if (c['flow'] != null) _livingFlow = c['flow'].toString();
+                if (c['pain'] != null) _livingPain = c['pain'].toString();
+                if (c['sleep'] != null) {
+                  _livingSleep = c['sleep'].toString();
+                  _wellnessSleep = c['sleep'].toString();
+                }
+                if (c['stress'] != null) {
+                  _livingStress = c['stress'].toString();
+                  _wellnessStress = c['stress'].toString();
+                }
+                if (c['water'] != null) {
+                  _livingWater = c['water'].toString();
+                  _wellnessWater = c['water'].toString();
+                }
+                if (c['exercise'] != null) {
+                  _livingExercise = c['exercise'].toString();
+                  _wellnessExercise = c['exercise'].toString();
+                }
+              }
+
+              // Restored through the same function that writes them, so the two
+              // sides cannot drift apart again. The previous block read
+              // `remoteAnswers['peri_log']['hot_flashes']` while the writer stored
+              // `{metric: ..., value: ...}` under `peri_log`, and the endpoint had
+              // already turned that into a String, so none of these ever loaded.
+              String? logged(String category, String label) {
+                final key = trackerLogKey(category, label);
+                if (_userEditedMetrics.contains(key)) return null;
+                final v = remoteAnswers[key];
+                final s = v?.toString().trim() ?? '';
+                return s.isEmpty ? null : s;
+              }
+
+              _hormonalBloating =
+                  logged('hormone', 'BLOATING') ?? _hormonalBloating;
+              _hormonalAcne = logged('hormone', 'ACNE STATUS') ?? _hormonalAcne;
+              _hormonalHeadache =
+                  logged('hormone', 'HEADACHE') ?? _hormonalHeadache;
+              _hormonalMedication =
+                  logged('hormone', 'MEDICATION TAKEN') ?? _hormonalMedication;
+              _hormonalHairThinning =
+                  logged('hormone', 'HAIR THINNING') ?? _hormonalHairThinning;
+              _hormonalFacialHair =
+                  logged('hormone', 'FACIAL & BODY HAIR') ??
+                  _hormonalFacialHair;
+              _hormonalWeightChange =
+                  logged('hormone', 'WEIGHT CHANGE') ?? _hormonalWeightChange;
+
+              _ttcCervicalMucus =
+                  logged('ttc', 'CERVICAL MUCUS') ?? _ttcCervicalMucus;
+              _ttcLhTest = logged('ttc', 'OVULATION TEST (LH)') ?? _ttcLhTest;
+
+              _pregnancyBabyMovement =
+                  logged('pregnancy', 'BABY MOVEMENT') ??
+                  _pregnancyBabyMovement;
+
+              _postpartumFeeding =
+                  logged('postpartum', 'FEEDING METHOD') ?? _postpartumFeeding;
+              _postpartumBleeding =
+                  logged('postpartum', 'BLEEDING STATUS') ??
+                  _postpartumBleeding;
+
+              _periHotFlashes =
+                  logged('peri', 'HOT FLASHES') ?? _periHotFlashes;
+              _periNightSweats =
+                  logged('peri', 'NIGHT SWEATS') ?? _periNightSweats;
+              _periWeightChange =
+                  logged('peri', 'WEIGHT & METABOLISM') ?? _periWeightChange;
+              _periVaginalDryness =
+                  logged('peri', 'VAGINAL DRYNESS') ?? _periVaginalDryness;
+
+              _menoHotFlashes =
+                  logged('menopause', 'HOT FLASHES') ?? _menoHotFlashes;
+              _menoNightSweats =
+                  logged('menopause', 'NIGHT SWEATS') ?? _menoNightSweats;
+              _menoVaginalDryness =
+                  logged('menopause', 'VAGINAL DRYNESS') ?? _menoVaginalDryness;
+              _menoBoneJoint =
+                  logged('menopause', 'BONE & JOINT COMFORT') ?? _menoBoneJoint;
+              _menoHeartHealth =
+                  logged('menopause', 'HEART & CIRCULATION') ??
+                  _menoHeartHealth;
+            });
+
+            // Hydrate personal context with fetched user profile values in post frame callback
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              final provider = BlushyOSProvider.of(context);
+              final cur = provider.personalContext;
+              final name =
+                  remoteAnswers['preferred_name']?.toString() ?? cur.userName;
+              final cLen =
+                  int.tryParse(
+                    remoteAnswers['cycle_length']?.toString() ?? '',
+                  ) ??
+                  cur.cycleLength;
+
+              // `period_last_start_date` is the onboarding seed, and it fills in
+              // rather than overrules.
+              //
+              // This ran on every refresh -- so on every tab change -- and replaced
+              // whatever was current with the signup answer. Logging a period on
+              // 26 Aug therefore held only until the next refresh, which put 31 Aug
+              // back and then pushed it to the server through
+              // `updatePersonalContext`, writing the stale date in as though she
+              // had chosen it. Traced on a device as the date alternating
+              // 26 -> 31 -> 26 -> 31 with each sync.
+              //
+              // Nothing updates this key after signup: logging a period writes
+              // `last_period` / `cycle_start_date` / `last_period_date`, never
+              // this one. So it is only ever a seed.
+              DateTime? pStart = cur.lastPeriodStart;
+              if (pStart == null &&
+                  remoteAnswers.containsKey('period_last_start_date')) {
+                pStart = DateTime.tryParse(
+                  remoteAnswers['period_last_start_date'].toString(),
+                );
+              }
+
+              provider.updatePersonalContext(
+                PersonalContext(
+                  userName: name,
+                  dateOfBirth: cur.dateOfBirth,
+                  weight: cur.weight ?? _loggedWeight,
+                  trackingPreference: cur.trackingPreference,
+                  cyclePattern: cur.cyclePattern,
+                  confidence: cur.confidence,
+                  lifeContexts: cur.lifeContexts,
+                  userGoals: cur.userGoals,
+                  medicalConditions: cur.medicalConditions,
+                  preferences: cur.preferences,
+                  cycleLength: cLen,
+                  cycleDay: cur.cycleDay,
+                  cyclePhase: cur.cyclePhase,
+                  lastPeriodStart: pStart,
+                  medications: cur.medications,
+                ),
+              );
             });
           }
-
-          if (remoteAnswers['daily_checkin'] is Map) {
-            final c = remoteAnswers['daily_checkin'] as Map;
-            if (c['feeling'] != null) _selectedFeeling = c['feeling'].toString();
-            if (c['mood'] != null) _selectedFeeling = c['mood'].toString();
-            // Both halves again; see the note on the local restore above.
-            if (c['energy'] != null) {
-              _selectedEnergy = c['energy'].toString();
-              _checkInEnergy = c['energy'].toString();
-            }
-            if (c['flow'] != null) _livingFlow = c['flow'].toString();
-            if (c['pain'] != null) _livingPain = c['pain'].toString();
-            if (c['sleep'] != null) {
-              _livingSleep = c['sleep'].toString();
-              _wellnessSleep = c['sleep'].toString();
-            }
-            if (c['stress'] != null) {
-              _livingStress = c['stress'].toString();
-              _wellnessStress = c['stress'].toString();
-            }
-            if (c['water'] != null) {
-              _livingWater = c['water'].toString();
-              _wellnessWater = c['water'].toString();
-            }
-            if (c['exercise'] != null) {
-              _livingExercise = c['exercise'].toString();
-              _wellnessExercise = c['exercise'].toString();
-            }
-            if (c['meditation'] != null) {
-              _wellnessMeditation = c['meditation'].toString();
-            }
-          }
-
-          // Restored through the same function that writes them, so the two
-          // sides cannot drift apart again. The previous block read
-          // `remoteAnswers['peri_log']['hot_flashes']` while the writer stored
-          // `{metric: ..., value: ...}` under `peri_log`, and the endpoint had
-          // already turned that into a String, so none of these ever loaded.
-          String? logged(String category, String label) {
-            final key = trackerLogKey(category, label);
-            if (_userEditedMetrics.contains(key)) return null;
-            final v = remoteAnswers[key];
-            final s = v?.toString().trim() ?? '';
-            return s.isEmpty ? null : s;
-          }
-
-          _hormonalBloating = logged('hormone', 'BLOATING') ?? _hormonalBloating;
-          _hormonalAcne = logged('hormone', 'ACNE STATUS') ?? _hormonalAcne;
-          _hormonalHeadache = logged('hormone', 'HEADACHE') ?? _hormonalHeadache;
-          _hormonalMedication =
-              logged('hormone', 'MEDICATION TAKEN') ?? _hormonalMedication;
-          _hormonalHairThinning =
-              logged('hormone', 'HAIR THINNING') ?? _hormonalHairThinning;
-          _hormonalFacialHair =
-              logged('hormone', 'FACIAL & BODY HAIR') ?? _hormonalFacialHair;
-          _hormonalWeightChange =
-              logged('hormone', 'WEIGHT CHANGE') ?? _hormonalWeightChange;
-
-          _ttcCervicalMucus =
-              logged('ttc', 'CERVICAL MUCUS') ?? _ttcCervicalMucus;
-          _ttcLhTest = logged('ttc', 'OVULATION TEST (LH)') ?? _ttcLhTest;
-
-          _pregnancyBabyMovement =
-              logged('pregnancy', 'BABY MOVEMENT') ?? _pregnancyBabyMovement;
-
-          _postpartumFeeding =
-              logged('postpartum', 'FEEDING METHOD') ?? _postpartumFeeding;
-          _postpartumBleeding =
-              logged('postpartum', 'BLEEDING STATUS') ?? _postpartumBleeding;
-
-          _periHotFlashes = logged('peri', 'HOT FLASHES') ?? _periHotFlashes;
-          _periNightSweats = logged('peri', 'NIGHT SWEATS') ?? _periNightSweats;
-          _periWeightChange =
-              logged('peri', 'WEIGHT & METABOLISM') ?? _periWeightChange;
-          _periVaginalDryness =
-              logged('peri', 'VAGINAL DRYNESS') ?? _periVaginalDryness;
-
-          _menoHotFlashes = logged('menopause', 'HOT FLASHES') ?? _menoHotFlashes;
-          _menoNightSweats =
-              logged('menopause', 'NIGHT SWEATS') ?? _menoNightSweats;
-          _menoVaginalDryness =
-              logged('menopause', 'VAGINAL DRYNESS') ?? _menoVaginalDryness;
-          _menoBoneJoint =
-              logged('menopause', 'BONE & JOINT COMFORT') ?? _menoBoneJoint;
-          _menoHeartHealth =
-              logged('menopause', 'HEART & CIRCULATION') ?? _menoHeartHealth;
-        });
-
-        // Hydrate personal context with fetched user profile values in post frame callback
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          final provider = BlushyOSProvider.of(context);
-          final cur = provider.personalContext;
-          final name = remoteAnswers['preferred_name']?.toString() ?? cur.userName;
-          final cLen = int.tryParse(remoteAnswers['cycle_length']?.toString() ?? '') ?? cur.cycleLength;
-
-          // `period_last_start_date` is the onboarding seed, and it fills in
-          // rather than overrules.
-          //
-          // This ran on every refresh -- so on every tab change -- and replaced
-          // whatever was current with the signup answer. Logging a period on
-          // 26 Aug therefore held only until the next refresh, which put 31 Aug
-          // back and then pushed it to the server through
-          // `updatePersonalContext`, writing the stale date in as though she
-          // had chosen it. Traced on a device as the date alternating
-          // 26 -> 31 -> 26 -> 31 with each sync.
-          //
-          // Nothing updates this key after signup: logging a period writes
-          // `last_period` / `cycle_start_date` / `last_period_date`, never
-          // this one. So it is only ever a seed.
-          DateTime? pStart = cur.lastPeriodStart;
-          if (pStart == null && remoteAnswers.containsKey('period_last_start_date')) {
-            pStart = DateTime.tryParse(
-                remoteAnswers['period_last_start_date'].toString());
-          }
-
-          provider.updatePersonalContext(PersonalContext(
-            userName: name,
-            dateOfBirth: cur.dateOfBirth,
-            weight: cur.weight ?? _loggedWeight,
-            trackingPreference: cur.trackingPreference,
-            cyclePattern: cur.cyclePattern,
-            confidence: cur.confidence,
-            lifeContexts: cur.lifeContexts,
-            userGoals: cur.userGoals,
-            medicalConditions: cur.medicalConditions,
-            preferences: cur.preferences,
-            cycleLength: cLen,
-            cycleDay: cur.cycleDay,
-            cyclePhase: cur.cyclePhase,
-            lastPeriodStart: pStart,
-            medications: cur.medications,
-          ));
-        });
-      }
-    }).catchError((_) {});
+        })
+        .catchError((_) {});
   }
 
   @override
@@ -1522,23 +2214,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final state = BlushyOSProvider.of(context);
     final pc = state.personalContext;
 
-    final List<String> effectiveActiveStages = widget.activeStages ?? pc.activeLifeStages.toList();
+    final List<String> effectiveActiveStages =
+        widget.activeStages ?? pc.activeLifeStages.toList();
     if (widget.stageKey == null && effectiveActiveStages.length > 1) {
       return _buildUnifiedMultiStageHomeOS(effectiveActiveStages, pc, state);
     }
 
-    final String currentStage = (widget.stageKey != null && widget.stageKey!.isNotEmpty)
-        ? widget.stageKey!
-        : (pc.activeLifeStages.isNotEmpty ? pc.activeLifeStages.first : null) ??
-          (pc.lifeStage ??
-              _onboardingData['lifeStage'] ??
-              _onboardingData['life_stage'] ??
-              _onboardingData['stage'] ??
-              'firstPeriodNotStarted')
-          .toString()
-          .trim();
+    final String currentStage = _resolveStageKey(pc);
 
-    final String normalized = currentStage.replaceAll('_', '').replaceAll(' ', '').toLowerCase();
+    final String normalized = currentStage
+        .replaceAll('_', '')
+        .replaceAll(' ', '')
+        .toLowerCase();
 
     switch (normalized) {
       case 'firstperiodnotstarted':
@@ -1590,13 +2277,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   bool _shouldShowCycleTracker(List<String> stages) {
     for (final s in stages) {
       final norm = s.replaceAll('_', '').replaceAll(' ', '').toLowerCase();
-      if (norm != 'firstperiodnotstarted' && norm != 'notstarted' && norm != 'puberty' && norm != 'menopause') {
+      if (norm != 'firstperiodnotstarted' &&
+          norm != 'notstarted' &&
+          norm != 'puberty' &&
+          norm != 'menopause') {
         return true;
       }
     }
     return false;
   }
-
 
   Widget _buildUnifiedMultiSiaInsights(List<String> stages) {
     return _buildLivingSiaInsights();
@@ -1620,7 +2309,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           const SizedBox(width: 10),
           Text(
             title,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: BlushyColors.text,
@@ -1635,8 +2324,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              "FOCUS TOPIC",
-              style: GoogleFonts.poppins(
+              AppLocalizations.of(context).dashFocusTopic,
+              style: GoogleFonts.manrope(
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 color: BlushyColors.primary,
@@ -1663,7 +2352,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  Widget _buildStageSpecificUniqueContent(String stageKey, PersonalContext pc, BlushyOSState state, bool isMobile, {bool skipJourney = false, bool skipPatterns = false}) {
+  Widget _buildStageSpecificUniqueContent(
+    String stageKey,
+    PersonalContext pc,
+    BlushyOSState state,
+    bool isMobile, {
+    bool skipJourney = false,
+    bool skipPatterns = false,
+  }) {
     final norm = stageKey.replaceAll('_', '').replaceAll(' ', '').toLowerCase();
     switch (norm) {
       case 'firstperiodstarted':
@@ -1717,9 +2413,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     }
   }
 
-  Widget _buildUnifiedMultiStageHomeOS(List<String> stages, PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
+  Widget _buildUnifiedMultiStageHomeOS(
+    List<String> stages,
+    PersonalContext pc,
+    BlushyOSState state,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -1734,17 +2432,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             alignment: Alignment.topCenter,
             child: Container(
               width: min(1440.0, width - (isMobile ? 0.0 : 64.0)),
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
               child: ListView(
                 shrinkWrap: _effectiveShrinkWrap,
                 physics: _effectiveScrollPhysics,
                 children: [
-                  // 1. UNIFIED HERO BRIEF
-                  GreetingCard(name: displayName),
-                  const SizedBox(height: 24),
-                  const TodaysContextSection(),
-                  SizedBox(height: isMobile ? 20 : 32),
-
                   // 2. ACTIVE FOCUS TOPIC HEADERS (RENDERED ONLY AT THE START)
                   ...stages.map((stageKey) {
                     return _buildStageSectionHeader(stageKey);
@@ -1774,7 +2469,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildStageSpecificUniqueContent(stageKey, pc, state, isMobile, skipJourney: true, skipPatterns: true),
+                        _buildStageSpecificUniqueContent(
+                          stageKey,
+                          pc,
+                          state,
+                          isMobile,
+                          skipJourney: true,
+                          skipPatterns: true,
+                        ),
                         SizedBox(height: isMobile ? 32 : 48),
                       ],
                     );
@@ -1794,21 +2496,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- FIRST PERIODS OS REDESIGN ---
 
-
-
   // --- SECTION 1: DOCSY'S DAILY LETTER (HERO) ---
   Widget _buildSiasDailyLetter(String name) {
     return _buildUnifiedHeroCard(
       category: "Docsy's Daily Note",
       title: "${_getTimeBasedGreetingPrefix()}, $name",
-      subtitle: "Growing up happens one step at a time. You don't have to know everything today. We'll learn together.",
+      subtitle:
+          "Growing up happens one step at a time. You don't have to know everything today. We'll learn together.",
       primaryBtnText: "Ask Docsy",
       onPrimaryTap: () => _openAskSiaChat(context, null),
       secondaryBtnText: "Continue Learning",
       onSecondaryTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text("Scroll down to Continue Learning section"),
+            content: Text(
+              AppLocalizations.of(context).dashScrollDownContinueLearning,
+            ),
             backgroundColor: BlushyColors.primary,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
@@ -1831,8 +2534,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("CONTINUE LEARNING"),
               const SizedBox(height: 6),
               Text(
-                "Small lessons designed for your stage.",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashSmallLessonsDesignedStage,
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -1843,7 +2546,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 220,
+          height: 300,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -1852,7 +2555,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             itemBuilder: (context, index) {
               final lesson = _lessons[index];
               final isCompleted = _completedLessons.contains(lesson);
-              final isUnlocked = index == 0 || _completedLessons.contains(_lessons[index - 1]);
+              final isUnlocked =
+                  index == 0 || _completedLessons.contains(_lessons[index - 1]);
 
               // Cover colors
               final List<Color> bgColors = [
@@ -1873,7 +2577,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isCompleted ? BlushyColors.primary.withValues(alpha: 0.4) : BlushyColors.border,
+                      color: isCompleted
+                          ? BlushyColors.primary.withValues(alpha: 0.4)
+                          : BlushyColors.border,
                       width: isCompleted ? 1.5 : 0.8,
                     ),
                     boxShadow: [
@@ -1897,8 +2603,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         ),
                         child: Center(
                           child: Icon(
-                            isCompleted ? Icons.check_circle : (isUnlocked ? Icons.lock_open : Icons.lock),
-                            color: isCompleted ? BlushyColors.primary : Colors.black26,
+                            isCompleted
+                                ? Icons.check_circle
+                                : (isUnlocked ? Icons.lock_open : Icons.lock),
+                            color: isCompleted
+                                ? BlushyColors.primary
+                                : Colors.black26,
                             size: 28,
                           ),
                         ),
@@ -1912,7 +2622,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                               lesson,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: BlushyColors.text,
@@ -1929,9 +2639,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
-                                value: isCompleted ? 1.0 : (isUnlocked ? 0.3 : 0.0),
+                                value: isCompleted
+                                    ? 1.0
+                                    : (isUnlocked ? 0.3 : 0.0),
                                 backgroundColor: const Color(0xFFF0F0F0),
-                                valueColor: AlwaysStoppedAnimation<Color>(BlushyColors.primary),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  BlushyColors.primary,
+                                ),
                                 minHeight: 4,
                               ),
                             ),
@@ -1947,21 +2661,35 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                   _completedLessons.add(lesson);
                                 }
                               });
-                              ApiAuthService().saveOnboardingAnswers({'completed_lessons': _completedLessons.toList()}).catchError((_) => <String, dynamic>{});
+                              ApiAuthService()
+                                  .saveOnboardingAnswers({
+                                    'completed_lessons': _completedLessons
+                                        .toList(),
+                                  })
+                                  .catchError((_) => <String, dynamic>{});
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
-                                color: isCompleted ? Colors.transparent : BlushyColors.primary,
+                                color: isCompleted
+                                    ? Colors.transparent
+                                    : BlushyColors.primary,
                                 borderRadius: BorderRadius.circular(8),
-                                border: isCompleted ? Border.all(color: BlushyColors.primary) : null,
+                                border: isCompleted
+                                    ? Border.all(color: BlushyColors.primary)
+                                    : null,
                               ),
                               child: Text(
                                 isCompleted ? "Review" : "Resume",
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.manrope(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: isCompleted ? BlushyColors.primary : Colors.white,
+                                  color: isCompleted
+                                      ? BlushyColors.primary
+                                      : Colors.white,
                                 ),
                               ),
                             ),
@@ -1985,23 +2713,28 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final List<Map<String, String>> commonQuestions = [
       {
         "q": "Why is one breast bigger?",
-        "ans": "During puberty, breasts grow at different rates. It's completely normal for one to grow faster or look slightly larger than the other. Over time, they usually even out, but minor asymmetry is totally natural and common for most girls."
+        "ans":
+            "During puberty, breasts grow at different rates. It's completely normal for one to grow faster or look slightly larger than the other. Over time, they usually even out, but minor asymmetry is totally natural and common for most girls.",
       },
       {
         "q": "Will periods hurt?",
-        "ans": "Some girls feel mild cramps in their lower tummy before or during their period. This is because the uterus muscles tighten. It usually feels like a dull ache. Simple remedies like a warm hot water bottle, walking, or asking a trusted adult for help can make it feel much better."
+        "ans":
+            "Some girls feel mild cramps in their lower tummy before or during their period. This is because the uterus muscles tighten. It usually feels like a dull ache. Simple remedies like a warm hot water bottle, walking, or asking a trusted adult for help can make it feel much better.",
       },
       {
         "q": "What is white discharge?",
-        "ans": "White or clear fluid on your underwear is called discharge. It is your body's natural way of cleaning the vagina and keeping it healthy. It usually starts a few months or a year before your first period begins, showing that your body is developing normally."
+        "ans":
+            "White or clear fluid on your underwear is called discharge. It is your body's natural way of cleaning the vagina and keeping it healthy. It usually starts a few months or a year before your first period begins, showing that your body is developing normally.",
       },
       {
         "q": "What if I get my period at school?",
-        "ans": "It is a very common worry, but teachers and school nurses are prepared for this! Keeping an extra pad in your backpack or pouch will help you feel ready. If you're caught by surprise, you can always ask a school nurse or female teacher for help."
+        "ans":
+            "It is a very common worry, but teachers and school nurses are prepared for this! Keeping an extra pad in your backpack or pouch will help you feel ready. If you're caught by surprise, you can always ask a school nurse or female teacher for help.",
       },
       {
         "q": "Why am I getting pimples?",
-        "ans": "Hormones during puberty cause the skin glands to produce more natural oils, which can clog pores. Washing your face daily with a gentle cleanser helps keep your skin fresh. Pimples are a natural part of growing up that almost everyone goes through!"
+        "ans":
+            "Hormones during puberty cause the skin glands to produce more natural oils, which can clog pores. Washing your face daily with a gentle cleanser helps keep your skin fresh. Pimples are a natural part of growing up that almost everyone goes through!",
       },
     ];
 
@@ -2026,11 +2759,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             children: [
               Row(
                 children: [
-                  const Icon(Icons.wb_sunny_outlined, color: BlushyColors.warning, size: 18),
+                  const Icon(
+                    Icons.wb_sunny_outlined,
+                    color: BlushyColors.warning,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Text(
-                    "DAILY DISCOVERY",
-                    style: GoogleFonts.poppins(
+                    AppLocalizations.of(context).dashDailyDiscovery,
+                    style: GoogleFonts.manrope(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.warning,
@@ -2040,8 +2777,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               ),
               const SizedBox(height: 12),
               Text(
-                "Sweat glands become more active during puberty. Drinking plenty of water and washing daily helps keep you fresh, confident, and clean.",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashSweatGlandsBecomeMore,
+                style: GoogleFonts.manrope(
                   fontSize: 14,
                   color: BlushyColors.text,
                   height: 1.45,
@@ -2059,14 +2796,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       );
                     },
                     child: Text(
-                      "Read",
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                      AppLocalizations.of(context).dashRead,
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.primary,
+                      ),
                     ),
                   ),
                   const Spacer(),
                   IconButton(
                     icon: Icon(
-                      _savedArticles.contains("Sweat Glands") ? Icons.bookmark : Icons.bookmark_border,
+                      _savedArticles.contains("Sweat Glands")
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
                       size: 20,
                       color: BlushyColors.secondaryText,
                     ),
@@ -2081,10 +2824,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.share_outlined, size: 20, color: BlushyColors.secondaryText),
+                    icon: const Icon(
+                      Icons.share_outlined,
+                      size: 20,
+                      color: BlushyColors.secondaryText,
+                    ),
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Link copied to share with family!")),
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(
+                              context,
+                            ).dashLinkCopiedShareFamily,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -2098,8 +2851,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
-            "Questions Girls Often Ask",
-            style: GoogleFonts.poppins(
+            AppLocalizations.of(context).dashQuestionsGirlsOftenAsk,
+            style: GoogleFonts.manrope(
               fontSize: 20,
               fontWeight: FontWeight.w500,
               color: BlushyColors.text,
@@ -2132,13 +2885,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.help_outline, color: BlushyColors.primary, size: 20),
+                      const Icon(
+                        Icons.help_outline,
+                        color: BlushyColors.primary,
+                        size: 20,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         item['q']!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: BlushyColors.text,
@@ -2180,16 +2937,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      color: _connectTabIndex == 0 ? Colors.white : Colors.transparent,
+                      color: _connectTabIndex == 0
+                          ? Colors.white
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      "Girls",
+                      AppLocalizations.of(context).dashGirls,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: _connectTabIndex == 0 ? BlushyColors.text : BlushyColors.secondaryText,
+                        color: _connectTabIndex == 0
+                            ? BlushyColors.text
+                            : BlushyColors.secondaryText,
                       ),
                     ),
                   ),
@@ -2201,16 +2962,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      color: _connectTabIndex == 1 ? Colors.white : Colors.transparent,
+                      color: _connectTabIndex == 1
+                          ? Colors.white
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      "Growing Together",
+                      AppLocalizations.of(context).dashGrowingTogether,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: _connectTabIndex == 1 ? BlushyColors.text : BlushyColors.secondaryText,
+                        color: _connectTabIndex == 1
+                            ? BlushyColors.text
+                            : BlushyColors.secondaryText,
                       ),
                     ),
                   ),
@@ -2237,8 +3002,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Supportive Community Preview",
-            style: GoogleFonts.poppins(
+            AppLocalizations.of(context).dashSupportiveCommunityPreview,
+            style: GoogleFonts.manrope(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -2249,15 +3014,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.chat_bubble_outline, size: 16, color: BlushyColors.primary),
+              const Icon(
+                Icons.chat_bubble_outline,
+                size: 16,
+                color: BlushyColors.primary,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "How do I track if I haven't got my period yet?",
-                      style: GoogleFonts.poppins(
+                      AppLocalizations.of(context).dashHowDoITrack,
+                      style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: BlushyColors.text,
@@ -2265,8 +3034,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "You can focus on learning, discharge changes and kits here! Docsy helps guide you.",
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      AppLocalizations.of(
+                        context,
+                      ).dashCanFocusLearningDischarge,
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: BlushyColors.secondaryText,
+                      ),
                     ),
                   ],
                 ),
@@ -2278,15 +3052,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.favorite_border, size: 16, color: BlushyColors.danger),
+              const Icon(
+                Icons.favorite_border,
+                size: 16,
+                color: BlushyColors.danger,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Read what others are sharing",
-                      style: GoogleFonts.poppins(
+                      AppLocalizations.of(context).dashReadWhatOthersAre,
+                      style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: BlushyColors.text,
@@ -2294,8 +3072,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "Real conversations from the community, not examples.",
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      AppLocalizations.of(
+                        context,
+                      ).dashRealConversationsFromCommunity,
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: BlushyColors.secondaryText,
+                      ),
                     ),
                   ],
                 ),
@@ -2308,18 +3091,30 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             child: ElevatedButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Redirecting to Community Space...")),
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(
+                        context,
+                      ).dashRedirectingCommunitySpace,
+                    ),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: BlushyColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
               child: Text(
-                "Join Community",
-                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                AppLocalizations.of(context).dashJoinCommunity,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -2344,13 +3139,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "SHARED READING",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                AppLocalizations.of(context).dashSharedReading,
+                style: GoogleFonts.manrope(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                "Share articles about growing up with your parent safely.",
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
+                AppLocalizations.of(context).dashShareArticlesAboutGrowing,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  color: BlushyColors.text,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -2359,14 +3162,29 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     child: OutlinedButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Article shared with Parent account!")),
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).dashArticleSharedParentAccount,
+                            ),
+                          ),
                         );
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: BlushyColors.primary),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                      child: Text("Send to Parent", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        AppLocalizations.of(context).dashSendParent,
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: BlushyColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -2374,14 +3192,29 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     child: OutlinedButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Opening Shared Library...")),
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).dashOpeningSharedLibrary,
+                            ),
+                          ),
                         );
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: BlushyColors.primary),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                      child: Text("Shared Library", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        AppLocalizations.of(context).dashSharedLibrary,
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: BlushyColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -2403,13 +3236,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "LET'S TALK • WEEKLY PROMPT",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.warning, letterSpacing: 1.0),
+                AppLocalizations.of(context).dashLetSTalkWeekly,
+                style: GoogleFonts.manrope(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.warning,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 "\"What is one thing you've been curious about recently?\"",
-                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: BlushyColors.text,
+                ),
               ),
               const SizedBox(height: 14),
               Row(
@@ -2421,12 +3263,26 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _letsTalkDiscussed ? BlushyColors.success : BlushyColors.primary,
+                      backgroundColor: _letsTalkDiscussed
+                          ? BlushyColors.success
+                          : BlushyColors.primary,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                     ),
-                    child: Text(_letsTalkDiscussed ? "Discussed " : "Discussed", style: GoogleFonts.poppins(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      _letsTalkDiscussed ? "Discussed " : "Discussed",
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton(
@@ -2436,11 +3292,29 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       });
                     },
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: _letsTalkSaved ? BlushyColors.disabled : BlushyColors.primary),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      side: BorderSide(
+                        color: _letsTalkSaved
+                            ? BlushyColors.disabled
+                            : BlushyColors.primary,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                     ),
-                    child: Text(_letsTalkSaved ? "Saved" : "Save for Weekend", style: GoogleFonts.poppins(fontSize: 11, color: _letsTalkSaved ? BlushyColors.disabled : BlushyColors.primary, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      _letsTalkSaved ? "Saved" : "Save for Weekend",
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: _letsTalkSaved
+                            ? BlushyColors.disabled
+                            : BlushyColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -2463,14 +3337,25 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "FIRST PERIOD KIT CHECKLIST",
-                  style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                  AppLocalizations.of(context).dashFirstPeriodKitChecklist,
+                  style: GoogleFonts.manrope(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: BlushyColors.secondaryText,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 ..._periodKitChecklist.keys.map((item) {
                   final isChecked = _periodKitChecklist[item]!;
                   return CheckboxListTile(
-                    title: Text(item, style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text)),
+                    title: Text(
+                      item,
+                      style: GoogleFonts.manrope(
+                        fontSize: 13,
+                        color: BlushyColors.text,
+                      ),
+                    ),
                     value: isChecked,
                     activeColor: BlushyColors.primary,
                     contentPadding: EdgeInsets.zero,
@@ -2479,7 +3364,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       setState(() {
                         _periodKitChecklist[item] = val ?? false;
                       });
-                      ApiAuthService().saveOnboardingAnswers({'first_period_kit': _periodKitChecklist}).catchError((_) => <String, dynamic>{});
+                      ApiAuthService()
+                          .saveOnboardingAnswers({
+                            'first_period_kit': _periodKitChecklist,
+                          })
+                          .catchError((_) => <String, dynamic>{});
                     },
                   );
                 }),
@@ -2501,13 +3390,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "SHARED JOURNEY",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                AppLocalizations.of(context).dashSharedJourney,
+                style: GoogleFonts.manrope(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 10),
               Text(
-                "Display learning progress completed together. The child decides what is visible.",
-                style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                AppLocalizations.of(
+                  context,
+                ).dashDisplayLearningProgressCompleted,
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 12),
               ..._lessons.map((lesson) {
@@ -2518,18 +3417,24 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   child: Row(
                     children: [
                       Icon(
-                        isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-                        color: isCompleted ? BlushyColors.success : BlushyColors.disabled,
+                        isCompleted
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        color: isCompleted
+                            ? BlushyColors.success
+                            : BlushyColors.disabled,
                         size: 16,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           lesson,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 12,
                             color: BlushyColors.text,
-                            decoration: isCompleted ? TextDecoration.lineThrough : null,
+                            decoration: isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
                           ),
                         ),
                       ),
@@ -2546,10 +3451,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           },
                           child: Text(
                             isShared ? "Shared " : "Share",
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: isShared ? BlushyColors.success : BlushyColors.primary,
+                              color: isShared
+                                  ? BlushyColors.success
+                                  : BlushyColors.primary,
                             ),
                           ),
                         ),
@@ -2577,10 +3484,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       "Living With My Cycle",
     ];
 
-    final normalizedStage = (BlushyOSProvider.of(context).personalContext.lifeStage ?? '')
-        .toLowerCase()
-        .replaceAll('_', '')
-        .replaceAll(' ', '');
+    final normalizedStage =
+        (BlushyOSProvider.of(context).personalContext.lifeStage ?? '')
+            .toLowerCase()
+            .replaceAll('_', '')
+            .replaceAll(' ', '');
 
     int activeIndex = 0;
     if (normalizedStage.contains('notstarted')) {
@@ -2615,7 +3523,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           SectionHeading("GROWING JOURNEY"),
           const SizedBox(height: 20),
           ...timelineStages.map((stage) {
-            final isActive = stage['status'] == "active" || stage['status'] == "done";
+            final isActive =
+                stage['status'] == "active" || stage['status'] == "done";
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2626,15 +3535,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       height: 16,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isActive ? BlushyColors.primary : Colors.transparent,
+                        color: isActive
+                            ? BlushyColors.primary
+                            : Colors.transparent,
                         border: Border.all(
-                          color: isActive ? BlushyColors.primary : BlushyColors.border,
+                          color: isActive
+                              ? BlushyColors.primary
+                              : BlushyColors.border,
                           width: 2,
                         ),
                       ),
                       child: isActive
                           ? const Center(
-                              child: Icon(Icons.circle, size: 6, color: Colors.white),
+                              child: Icon(
+                                Icons.circle,
+                                size: 6,
+                                color: Colors.white,
+                              ),
                             )
                           : null,
                     ),
@@ -2654,17 +3571,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       Text(
                         stage['title']!,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
-                          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                          color: isActive ? BlushyColors.text : BlushyColors.secondaryText,
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isActive
+                              ? BlushyColors.text
+                              : BlushyColors.secondaryText,
                         ),
                       ),
                       if (isActive) ...[
                         const SizedBox(height: 4),
                         Text(
                           "\"Every little thing you learn today prepares you for tomorrow.\"",
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 14,
                             fontStyle: FontStyle.italic,
                             color: BlushyColors.primary,
@@ -2713,7 +3634,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   late final ScrollController _homeScrollController = ScrollController();
 
   Widget _buildNotStartedHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
+    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty)
+        ? pc.userName!
+        : "there";
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -2726,13 +3649,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             child: Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width < 768
+                      ? 640
+                      : double.infinity,
+                ),
                 child: ListView(
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
                   children: [
                     _buildSiasDailyLetter(displayName),
+                    const SizedBox(height: 32),
+                    _buildCheckIn(),
                     const SizedBox(height: 32),
                     _buildLivingSiaInsights(),
                     const SizedBox(height: 32),
@@ -2759,10 +3691,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 child: ListView(
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 36,
+                  ),
                   children: [
                     _buildSiasDailyLetter(displayName),
                     const SizedBox(height: 48),
+                    _buildCheckIn(),
+                    const SizedBox(height: 32),
                     _buildLivingSiaInsights(),
                     const SizedBox(height: 48),
                     _buildLivingPatterns(),
@@ -2786,7 +3723,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               alignment: Alignment.topCenter,
               child: Container(
                 width: min(1440.0, width - 64.0),
-                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                  vertical: 40,
+                ),
                 child: ListView(
                   controller: widget.isNested ? null : _homeScrollController,
                   shrinkWrap: _effectiveShrinkWrap,
@@ -2795,6 +3735,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     // Row 1: Docsy Daily Letter (12 columns)
                     _buildSiasDailyLetter(displayName),
                     const SizedBox(height: 24),
+                    _buildCheckIn(),
+                    const SizedBox(height: 32),
                     _buildLivingSiaInsights(),
                     const SizedBox(height: 24),
                     _buildLivingPatterns(),
@@ -2823,10 +3765,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         const SizedBox(width: 32),
 
                         // Right Sidebar Panel (35% width)
-                        Expanded(
-                          flex: 35,
-                          child: _buildGrowingJourney(),
-                        ),
+                        Expanded(flex: 35, child: _buildGrowingJourney()),
                       ],
                     ),
                     const SizedBox(height: 40),
@@ -2896,7 +3835,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   const SizedBox(width: 6),
                   Text(
                     category.toUpperCase(),
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 8.5,
                       fontWeight: FontWeight.w700,
                       color: BlushyColors.primary,
@@ -2908,7 +3847,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               const SizedBox(height: 10),
               Text(
                 title,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 18.5,
                   fontWeight: FontWeight.w600,
                   color: BlushyColors.text,
@@ -2919,7 +3858,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 const SizedBox(height: 8),
                 Text(
                   subtitle,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 12,
                     color: BlushyColors.secondaryText,
                     height: 1.4,
@@ -2930,7 +3869,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 const SizedBox(height: 10),
                 Text(
                   "${metricsTitle.toUpperCase()}  •  $metricsValue",
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: BlushyColors.primary,
@@ -2946,13 +3885,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     onPressed: onPrimaryTap,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                     child: Text(
                       primaryBtnText,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -2965,13 +3909,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       onPressed: onSecondaryTap,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary, width: 1.2),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: const BorderSide(
+                          color: BlushyColors.primary,
+                          width: 1.2,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: Text(
                         secondaryBtnText,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -3002,8 +3954,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("MY FIRST CYCLES"),
               const SizedBox(height: 6),
               Text(
-                "Your learning cycle companion.",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashLearningCycleCompanion,
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -3030,7 +3982,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: Builder(
                       builder: (context) {
-                        final curPc = BlushyOSProvider.of(context).personalContext;
+                        final curPc = BlushyOSProvider.of(
+                          context,
+                        ).personalContext;
                         final DateTime? pStart = curPc.lastPeriodStart;
                         final int cycleDay = (pStart != null)
                             ? (DateTime.now().difference(pStart).inDays + 1)
@@ -3038,13 +3992,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         final int daysAgo = (pStart != null)
                             ? DateTime.now().difference(pStart).inDays
                             : (cycleDay > 0 ? cycleDay - 1 : 0);
-                        final bool hasData = pStart != null || (curPc.cycleDay != null && curPc.cycleDay! > 0);
+                        final bool hasData =
+                            pStart != null ||
+                            (curPc.cycleDay != null && curPc.cycleDay! > 0);
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              hasData ? "Day $cycleDay of Cycle" : "Cycle Tracking",
-                              style: GoogleFonts.poppins(
+                              hasData
+                                  ? "Day $cycleDay of Cycle"
+                                  : "Cycle Tracking",
+                              style: GoogleFonts.manrope(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: BlushyColors.text,
@@ -3052,8 +4010,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              hasData ? "$daysAgo days since last period start" : "No period logged yet",
-                              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                              hasData
+                                  ? "$daysAgo days since last period start"
+                                  : "No period logged yet",
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                color: BlushyColors.secondaryText,
+                              ),
                             ),
                           ],
                         );
@@ -3092,15 +4055,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   const SizedBox(width: 14),
                   _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800)),
                   const SizedBox(width: 14),
-                  _buildStartedLegendDot("Luteal", const Color(0xFF6F42F5)),
+                  _buildStartedLegendDot("Luteal", BlushyColors.accent),
                 ],
               ),
               const SizedBox(height: 32),
 
               // Calendar Preview of the last 30 days
               Text(
-                "PAST 30 DAYS",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                AppLocalizations.of(context).dashPastDays,
+                style: GoogleFonts.manrope(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 12),
               SizedBox(
@@ -3109,29 +4077,40 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   itemCount: 30,
-                  separatorBuilder: (context, index) => const SizedBox(width: 6),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 6),
                   itemBuilder: (context, index) {
                     final int day = index + 1;
                     final curPc = BlushyOSProvider.of(context).personalContext;
                     final int activeCycleDay = (curPc.lastPeriodStart != null)
-                        ? (DateTime.now().difference(curPc.lastPeriodStart!).inDays + 1)
+                        ? (DateTime.now()
+                                  .difference(curPc.lastPeriodStart!)
+                                  .inDays +
+                              1)
                         : (curPc.cycleDay ?? 1);
                     final bool isMenstrual = day <= activeCycleDay && day <= 5;
                     return Container(
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: isMenstrual ? BlushyColors.primary : const Color(0xFFF9F6F0),
+                        color: isMenstrual
+                            ? BlushyColors.primary
+                            : const Color(0xFFF9F6F0),
                         shape: BoxShape.circle,
-                        border: Border.all(color: BlushyColors.border, width: 0.8),
+                        border: Border.all(
+                          color: BlushyColors.border,
+                          width: 0.8,
+                        ),
                       ),
                       child: Center(
                         child: Text(
                           day.toString(),
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
-                            color: isMenstrual ? Colors.white : BlushyColors.text,
+                            color: isMenstrual
+                                ? Colors.white
+                                : BlushyColors.text,
                           ),
                         ),
                       ),
@@ -3140,10 +4119,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Irregular cycles reassurance note
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFDFBF7),
                   borderRadius: BorderRadius.circular(12),
@@ -3151,12 +4133,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 18, color: BlushyColors.primary),
+                    const Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: BlushyColors.primary,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        "It's completely normal for your first few cycles to be irregular. Your body is gently finding its own natural rhythm.",
-                        style: GoogleFonts.poppins(
+                        AppLocalizations.of(context).dashSCompletelyNormalFirst,
+                        style: GoogleFonts.manrope(
                           fontSize: 12,
                           color: BlushyColors.secondaryText,
                           height: 1.45,
@@ -3180,15 +4166,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color,
-          ),
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
         ),
         const SizedBox(width: 6),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 10,
             color: BlushyColors.secondaryText,
             fontWeight: FontWeight.w500,
@@ -3203,20 +4186,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final List<Map<String, dynamic>> moodOptions = [
       {"icon": "😊", "label": "Happy"},
       {"icon": "🙂", "label": "Okay"},
-      {"icon": "😖", "label": "Cramps"},
-      {"icon": "🥱", "label": "Tired"},
+      {"icon": "😌", "label": "Calm"},
+      {"icon": "😔", "label": "Low"},
       {"icon": "😤", "label": "Irritable"},
     ];
 
-    final List<String> energyOptions = ["High", "Medium", "Low"];
-    final List<String> flowOptions = ["Light", "Medium", "Heavy"];
+    final List<String> energyOptions = CheckinVocabulary.energy;
+    final List<String> flowOptions = CheckinVocabulary.flow;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading(AppLocalizations.of(context).dashHowAreYouToday),
+          child: SectionHeading(
+            AppLocalizations.of(context).dashHowAreYouToday,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -3232,21 +4217,34 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               // Shown when something just logged matched a reviewed red flag
               // rule, so the reviewed instruction replaces the usual
               // confirmation rather than sitting alongside it.
-              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
+              if (_checkinSafety != null)
+                _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
                 AppLocalizations.of(context).dashMood,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
                   final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
+                  final savedFeeling =
+                      checkinData['feeling'] ??
+                      (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
-                  final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
+                  final String? activeFeeling =
+                      _selectedFeeling ??
+                      savedFeeling ??
+                      (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
+                  final isSelected =
+                      activeFeeling != null &&
+                      activeFeeling.toString().toLowerCase() ==
+                          (opt['label'] as String).toLowerCase();
                   return GestureDetector(
                     onTap: () {
                       setState(() {
@@ -3266,10 +4264,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected
+                                ? BlushyColors.primary.withValues(alpha: 0.1)
+                                : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isSelected ? BlushyColors.primary : BlushyColors.border,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.border,
                               width: isSelected ? 1.5 : 0.8,
                             ),
                           ),
@@ -3286,10 +4288,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         const SizedBox(height: 6),
                         Text(
                           opt['label'],
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? BlushyColors.primary
+                                : BlushyColors.secondaryText,
                           ),
                         ),
                       ],
@@ -3302,16 +4308,32 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               // Energy Selector
               Text(
                 AppLocalizations.of(context).dashEnergyLevel,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
                 children: energyOptions.map((opt) {
                   final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedEnergy = checkinData['energy'] ?? (BlushyStorage.read('logged_energy.json'))['energy'];
+                  final savedEnergy =
+                      checkinData['energy'] ??
+                      (BlushyStorage.read('logged_energy.json'))['energy'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeEnergy = _selectedEnergy ?? savedEnergy ?? (wb.energy != null ? (wb.energy! >= 7 ? 'High' : (wb.energy! >= 4 ? 'Medium' : 'Low')) : null);
-                  final isSelected = activeEnergy != null && activeEnergy.toString().toLowerCase() == opt.toLowerCase();
+                  final String? activeEnergy =
+                      _selectedEnergy ??
+                      savedEnergy ??
+                      (wb.energy != null
+                          ? (wb.energy! >= 7
+                                ? 'High'
+                                : (wb.energy! >= 4 ? 'Medium' : 'Low'))
+                          : null);
+                  final isSelected =
+                      activeEnergy != null &&
+                      activeEnergy.toString().toLowerCase() ==
+                          opt.toLowerCase();
                   return Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -3324,17 +4346,26 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary : const Color(0xFFF9F6F0),
+                            color: isSelected
+                                ? BlushyColors.primary
+                                : const Color(0xFFF9F6F0),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: isSelected ? BlushyColors.primary : BlushyColors.border, width: 0.8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.border,
+                              width: 0.8,
+                            ),
                           ),
                           child: Text(
                             opt,
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : BlushyColors.text,
+                              color: isSelected
+                                  ? Colors.white
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -3348,7 +4379,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               // Flow Selector
               Text(
                 AppLocalizations.of(context).dashFlowLevel,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -3366,17 +4401,26 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary : const Color(0xFFF9F6F0),
+                            color: isSelected
+                                ? BlushyColors.primary
+                                : const Color(0xFFF9F6F0),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: isSelected ? BlushyColors.primary : BlushyColors.border, width: 0.8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.border,
+                              width: 0.8,
+                            ),
                           ),
                           child: Text(
                             opt,
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : BlushyColors.text,
+                              color: isSelected
+                                  ? Colors.white
+                                  : BlushyColors.text,
                             ),
                           ),
                         ),
@@ -3390,7 +4434,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               // Notes & Voice logging
               Text(
                 AppLocalizations.of(context).dashNotesReflections,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -3401,12 +4449,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         VoiceNoteBottomSheet.show(context);
                       },
                       icon: const Icon(Icons.mic, size: 18),
-                      label: const Text("Voice Note"),
+                      label: Text(AppLocalizations.of(context).dashVoiceNote),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: BlushyColors.primary,
                         side: const BorderSide(color: BlushyColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -3418,12 +4468,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         BlushyShellTabs.open(BlushyShellTabs.mStudio);
                       },
                       icon: const Icon(Icons.edit, size: 18),
-                      label: const Text("M Studio"),
+                      label: Text(AppLocalizations.of(context).dashMStudio),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: BlushyColors.primary,
                         side: const BorderSide(color: BlushyColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -3441,23 +4493,28 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final List<Map<String, String>> startedArticles = [
       {
         "q": "Why are my cycles irregular?",
-        "body": "It takes time for the brain and ovaries to coordinate hormones after your very first period. Cycles can range from 20 to 45 days, and skipping months is very common during the first two years."
+        "body":
+            "It takes time for the brain and ovaries to coordinate hormones after your very first period. Cycles can range from 20 to 45 days, and skipping months is very common during the first two years.",
       },
       {
         "q": "What is PMS?",
-        "body": "Premenstrual Syndrome is the mix of physical and emotional changes that happen before your period. Feeling mood swings, mild bloating, or breast tenderness is normal as hormone levels shift."
+        "body":
+            "Premenstrual Syndrome is the mix of physical and emotional changes that happen before your period. Feeling mood swings, mild bloating, or breast tenderness is normal as hormone levels shift.",
       },
       {
         "q": "How do cramps happen?",
-        "body": "Cramps are caused by natural chemicals called prostaglandins that make your uterus muscles contract to shed its lining. Placing a warm pad or doing light stretches can relax the muscles."
+        "body":
+            "Cramps are caused by natural chemicals called prostaglandins that make your uterus muscles contract to shed its lining. Placing a warm pad or doing light stretches can relax the muscles.",
       },
       {
         "q": "Why am I tired?",
-        "body": "Hormones like progesterone rise before your period, which can lower your energy levels. Sleeping 8-9 hours and staying active helps normalize your daily energy cycle."
+        "body":
+            "Hormones like progesterone rise before your period, which can lower your energy levels. Sleeping 8-9 hours and staying active helps normalize your daily energy cycle.",
       },
       {
         "q": "How long should periods last?",
-        "body": "A normal period lasts between 3 to 7 days. The flow is usually heavier on the first two days and gets much lighter toward the end. Tracking helps you learn your pattern."
+        "body":
+            "A normal period lasts between 3 to 7 days. The flow is usually heavier on the first two days and gets much lighter toward the end. Tracking helps you learn your pattern.",
       },
     ];
 
@@ -3499,7 +4556,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     Expanded(
                       child: Text(
                         item['q']!,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: BlushyColors.text,
@@ -3511,17 +4568,27 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       children: [
                         TextButton(
                           onPressed: () {
-                            _showArticleDialog(context, item['q']!, item['body']!);
+                            _showArticleDialog(
+                              context,
+                              item['q']!,
+                              item['body']!,
+                            );
                           },
                           child: Text(
-                            "Read",
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                            AppLocalizations.of(context).dashRead,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: BlushyColors.primary,
+                            ),
                           ),
                         ),
                         const Spacer(),
                         IconButton(
                           icon: Icon(
-                            _startedSavedArticles.contains(item['q']) ? Icons.bookmark : Icons.bookmark_border,
+                            _startedSavedArticles.contains(item['q'])
+                                ? Icons.bookmark
+                                : Icons.bookmark_border,
                             size: 18,
                             color: BlushyColors.secondaryText,
                           ),
@@ -3536,8 +4603,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18, color: BlushyColors.secondaryText),
-                          onPressed: () => _openAskSiaChat(context, "Tell me about: ${item['q']}"),
+                          icon: const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 18,
+                            color: BlushyColors.secondaryText,
+                          ),
+                          onPressed: () => _openAskSiaChat(
+                            context,
+                            "Tell me about: ${item['q']}",
+                          ),
                         ),
                       ],
                     ),
@@ -3576,16 +4650,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      color: _connectStartedTabIndex == 0 ? Colors.white : Colors.transparent,
+                      color: _connectStartedTabIndex == 0
+                          ? Colors.white
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      "Girls",
+                      AppLocalizations.of(context).dashGirls,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: _connectStartedTabIndex == 0 ? BlushyColors.text : BlushyColors.secondaryText,
+                        color: _connectStartedTabIndex == 0
+                            ? BlushyColors.text
+                            : BlushyColors.secondaryText,
                       ),
                     ),
                   ),
@@ -3597,16 +4675,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      color: _connectStartedTabIndex == 1 ? Colors.white : Colors.transparent,
+                      color: _connectStartedTabIndex == 1
+                          ? Colors.white
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      "Growing Together",
+                      AppLocalizations.of(context).dashGrowingTogether,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: _connectStartedTabIndex == 1 ? BlushyColors.text : BlushyColors.secondaryText,
+                        color: _connectStartedTabIndex == 1
+                            ? BlushyColors.text
+                            : BlushyColors.secondaryText,
                       ),
                     ),
                   ),
@@ -3616,7 +4698,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           ),
         ),
         const SizedBox(height: 16),
-        _connectStartedTabIndex == 0 ? _buildStartedGirlsTab() : _buildStartedGrowingTogetherTab(),
+        _connectStartedTabIndex == 0
+            ? _buildStartedGirlsTab()
+            : _buildStartedGrowingTogetherTab(),
       ],
     );
   }
@@ -3633,8 +4717,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Community Discussions & Stories",
-            style: GoogleFonts.poppins(
+            AppLocalizations.of(context).dashCommunityDiscussionsStories,
+            style: GoogleFonts.manrope(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -3651,13 +4735,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Questions people are asking",
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      AppLocalizations.of(context).dashQuestionsPeopleAreAsking,
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "Open the community to read and reply.",
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      AppLocalizations.of(context).dashOpenCommunityReadReply,
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: BlushyColors.secondaryText,
+                      ),
                     ),
                   ],
                 ),
@@ -3668,20 +4759,31 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.favorite_border, size: 16, color: Colors.pinkAccent),
+              const Icon(
+                Icons.favorite_border,
+                size: 16,
+                color: Colors.pinkAccent,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Tips people are sharing",
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      AppLocalizations.of(context).dashTipsPeopleAreSharing,
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "Open the community to read and reply.",
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      AppLocalizations.of(context).dashOpenCommunityReadReply,
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: BlushyColors.secondaryText,
+                      ),
                     ),
                   ],
                 ),
@@ -3702,12 +4804,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               style: ElevatedButton.styleFrom(
                 backgroundColor: BlushyColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
               child: Text(
-                "Open Discussions",
-                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                AppLocalizations.of(context).dashOpenDiscussions,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -3732,13 +4840,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "SHARED READING & PARENT RESOURCES",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                AppLocalizations.of(context).dashSharedReadingParentResources,
+                style: GoogleFonts.manrope(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                "Send cycle articles to parent or consult conversation guides.",
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
+                AppLocalizations.of(context).dashSendCycleArticlesParent,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  color: BlushyColors.text,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -3747,14 +4863,29 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     child: OutlinedButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Article shared with Parent!")),
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).dashArticleSharedParent,
+                            ),
+                          ),
                         );
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: BlushyColors.primary),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                      child: Text("Share", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        AppLocalizations.of(context).dashShare,
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: BlushyColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -3762,14 +4893,29 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     child: OutlinedButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Opening Parent Resource library...")),
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).dashOpeningParentResourceLibrary,
+                            ),
+                          ),
                         );
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: BlushyColors.primary),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                      child: Text("Guides", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        AppLocalizations.of(context).dashGuides,
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: BlushyColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -3791,13 +4937,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "CONVERSATION PROMPT",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.warning, letterSpacing: 1.0),
+                AppLocalizations.of(context).dashConversationPrompt,
+                style: GoogleFonts.manrope(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.warning,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 "\"Is there anything you wish we discussed more about body changes?\"",
-                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                style: GoogleFonts.manrope(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: BlushyColors.text,
+                ),
               ),
               const SizedBox(height: 14),
               Row(
@@ -3809,11 +4964,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _startedLetsTalkDiscussed ? BlushyColors.success : BlushyColors.primary,
+                      backgroundColor: _startedLetsTalkDiscussed
+                          ? BlushyColors.success
+                          : BlushyColors.primary,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    child: Text(_startedLetsTalkDiscussed ? "Discussed " : "Discussed", style: GoogleFonts.poppins(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      _startedLetsTalkDiscussed ? "Discussed " : "Discussed",
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton(
@@ -3823,10 +4989,25 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       });
                     },
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: _startedLetsTalkSaved ? BlushyColors.disabled : BlushyColors.primary),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      side: BorderSide(
+                        color: _startedLetsTalkSaved
+                            ? BlushyColors.disabled
+                            : BlushyColors.primary,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    child: Text(_startedLetsTalkSaved ? "Saved" : "Save for Weekend", style: GoogleFonts.poppins(fontSize: 11, color: _startedLetsTalkSaved ? BlushyColors.disabled : BlushyColors.primary, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      _startedLetsTalkSaved ? "Saved" : "Save for Weekend",
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: _startedLetsTalkSaved
+                            ? BlushyColors.disabled
+                            : BlushyColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -3849,14 +5030,25 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "FIRST PERIOD KIT STATUS",
-                  style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                  AppLocalizations.of(context).dashFirstPeriodKitStatus,
+                  style: GoogleFonts.manrope(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: BlushyColors.secondaryText,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 ..._startedPeriodKitChecklist.keys.map((item) {
                   final isChecked = _startedPeriodKitChecklist[item]!;
                   return CheckboxListTile(
-                    title: Text(item, style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text)),
+                    title: Text(
+                      item,
+                      style: GoogleFonts.manrope(
+                        fontSize: 13,
+                        color: BlushyColors.text,
+                      ),
+                    ),
                     value: isChecked,
                     activeColor: BlushyColors.primary,
                     contentPadding: EdgeInsets.zero,
@@ -3877,8 +5069,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4.0),
           child: Text(
-            " Docsy Safety: Your parent never has access to your private chat logs, notes, or moods.",
-            style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText, fontStyle: FontStyle.italic),
+            AppLocalizations.of(context).dashDocsySafetyParentNever,
+            style: GoogleFonts.manrope(
+              fontSize: 10,
+              color: BlushyColors.secondaryText,
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ),
       ],
@@ -3895,9 +5091,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-  Widget _buildFirstPeriodStartedHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
+  Widget _buildFirstPeriodStartedHomeOS(
+    PersonalContext pc,
+    BlushyOSState state,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -3909,23 +5106,28 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             child: Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width < 768
+                      ? 640
+                      : double.infinity,
+                ),
                 child: ListView(
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
                   children: [
-                    GreetingCard(name: displayName),
-                    const SizedBox(height: 32),
                     _buildMyFirstCycles(),
                     const SizedBox(height: 32),
                     _buildHowAreYouToday(),
                     const SizedBox(height: 32),
+                    _buildCheckIn(),
+                    const SizedBox(height: 32),
                     _buildLivingSiaInsights(),
                     const SizedBox(height: 32),
                     _buildLivingPatterns(),
-                    const SizedBox(height: 32),
-                    const TodaysContextSection(),
                     const SizedBox(height: 32),
                     _buildStartedConnect(),
                     const SizedBox(height: 32),
@@ -3946,19 +5148,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 child: ListView(
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 36,
+                  ),
                   children: [
-                    GreetingCard(name: displayName),
-                    const SizedBox(height: 48),
                     _buildMyFirstCycles(),
                     const SizedBox(height: 48),
                     _buildHowAreYouToday(),
                     const SizedBox(height: 48),
+                    _buildCheckIn(),
+                    const SizedBox(height: 32),
                     _buildLivingSiaInsights(),
                     const SizedBox(height: 48),
                     _buildLivingPatterns(),
-                    const SizedBox(height: 48),
-                    const TodaysContextSection(),
                     const SizedBox(height: 48),
                     _buildStartedConnect(),
                     const SizedBox(height: 48),
@@ -3977,23 +5180,26 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               alignment: Alignment.topCenter,
               child: Container(
                 width: min(1440.0, width - 64.0),
-                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                  vertical: 40,
+                ),
                 child: ListView(
-                  controller: widget.isNested ? null : _startedHomeScrollController,
+                  controller: widget.isNested
+                      ? null
+                      : _startedHomeScrollController,
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
                   children: [
-                    GreetingCard(name: displayName),
-                    const SizedBox(height: 24),
                     _buildMyFirstCycles(),
                     const SizedBox(height: 24),
                     _buildHowAreYouToday(),
                     const SizedBox(height: 24),
+                    _buildCheckIn(),
+                    const SizedBox(height: 32),
                     _buildLivingSiaInsights(),
                     const SizedBox(height: 24),
                     _buildLivingPatterns(),
-                    const SizedBox(height: 24),
-                    const TodaysContextSection(),
                     const SizedBox(height: 24),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -4013,10 +5219,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         const SizedBox(width: 32),
 
                         // Right Sidebar Panel (35% width)
-                        Expanded(
-                          flex: 35,
-                          child: _buildStartedJourney(),
-                        ),
+                        Expanded(flex: 35, child: _buildStartedJourney()),
                       ],
                     ),
                     const SizedBox(height: 40),
@@ -4033,10 +5236,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   void _showArticleDialog(BuildContext context, String title, String summary) {
     showDialog(
       context: context,
-      builder: (dialogContext) => ArticleDetailDialog(
-        title: title,
-        summary: summary,
-      ),
+      builder: (dialogContext) =>
+          ArticleDetailDialog(title: title, summary: summary),
     );
   }
 
@@ -4049,17 +5250,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   Widget _buildLivingTodayCycle() {
     final cycleData = _getDynamicCycleDates(_currentPc);
     final bool hasPeriodLogged = cycleData['isLogged'] == true;
-    final String phaseText = hasPeriodLogged ? "${cycleData['phaseName']} Rhythm" : "Cycle Tracking";
-    // "Not logged" and "not fetched yet" are different things to be told, and
-    // this said the first for both: the data layer already distinguishes them
-    // and supplies "Loading…", which the `isLogged` branch threw away.
-    final bool isFetching = cycleData['state'] == 'loading';
-    final String dayText = hasPeriodLogged
-        ? (cycleData['cycleDayText'] ?? "Cycle Tracking")
-        : (isFetching ? "Loading…" : "Cycle Day: Not Logged");
-    final String subtitleText = hasPeriodLogged 
-        ? (cycleData['subtitle'] ?? "") 
-        : "No period logged yet. Tap to set your last period start date.";
 
     final pc = _currentPc;
     final wb = BlushyOSProvider.of(context).wellbeingState;
@@ -4073,165 +5263,227 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final String? savedFlow = checkinData['flow'];
     final String? savedPain = checkinData['pain'];
 
-    final String energyVal = _selectedEnergy ?? savedEnergy ?? (wb.energy != null ? "Level ${wb.energy}/10" : "Not Logged Today");
-    final String moodVal = _selectedFeeling ?? savedMood ?? (wb.mood != null ? (wb.symptoms.isNotEmpty ? wb.symptoms.first : "Level ${wb.mood}/10") : "Not Logged Today");
+    final String energyVal =
+        _selectedEnergy ??
+        savedEnergy ??
+        (wb.energy != null ? "Level ${wb.energy}/10" : "Not Logged Today");
+    final String moodVal =
+        _selectedFeeling ??
+        savedMood ??
+        (wb.mood != null
+            ? (wb.symptoms.isNotEmpty
+                  ? wb.symptoms.first
+                  : "Level ${wb.mood}/10")
+            : "Not Logged Today");
     final String sleepVal = _livingSleep ?? savedSleep ?? "Not Logged Today";
     final String stressVal = _livingStress ?? savedStress ?? "Not Logged Today";
-    final String hydrationVal = _livingWater ?? savedWater ?? "Not Logged Today";
-    final String exerciseVal = _livingExercise ?? savedExercise ?? "Not Logged Today";
+    final String hydrationVal =
+        _livingWater ?? savedWater ?? "Not Logged Today";
+    final String exerciseVal =
+        _livingExercise ?? savedExercise ?? "Not Logged Today";
     final String flowVal = _livingFlow ?? savedFlow ?? "Not Logged Today";
     final String painVal = _livingPain ?? savedPain ?? "Not Logged Today";
+
+    // The wash begins at the top of the section, behind the heading as well as
+    // the cycle, and fades into the page colour before the section ends. Only
+    // this section has it.
+    // How long a cycle runs for this person, defaulted the same way the rest
+    // of the app defaults it. Period length is left to the painter's own
+    // default, as the cycle card already does -- there is no logged figure for
+    // it, and inventing one would put a wrong number on the legend.
+    // From the cycle the server calculated, which is what the day and the
+    // phase already come from. The profile carries its own copy of the cycle
+    // length; the server's is the one everything on this card is counted
+    // from. Period length was a constant 5 here before, while the logged
+    // figure sat unused in the same object.
+    final CycleState? heroState = _cycleResult.data ?? _lastKnownCycle;
+    final int? serverCycle = heroState?.cycleLengthDays;
+    final int? serverPeriod = heroState?.periodLengthDays;
+    final int heroCycle = (serverCycle != null && serverCycle > 0)
+        ? serverCycle
+        : ((pc.cycleLength != null && pc.cycleLength! > 0) ? pc.cycleLength! : 28);
+    // Five only where the server sent nothing -- a fresh account with no
+    // period logged yet -- and then the legend is describing a typical
+    // cycle, not hers, which the card's own wording already says.
+    final int heroPeriod =
+        (serverPeriod != null && serverPeriod > 0) ? serverPeriod : 5;
+    final int? heroDay = cycleData['cycleDay'] as int?;
+
+    // Greeting, cycle, recently -- then the way to add to the day, and what
+    // is in it. Laid out to the home design spec: the greeting on the page
+    // rather than in a box, the ring as the focal element, one surface for
+    // what was logged lately.
+    final t = AppLocalizations.of(context);
+    final rawName = (pc.userName ?? '').trim();
+    final greetName = rawName.isEmpty ? 'there' : rawName;
+    final greeting = GreetingCard.greetingFor(t, greetName, DateTime.now());
+
+    final CyclePhaseKind? phaseKind =
+        hasPeriodLogged ? CyclePhaseKindLook.parse(cycleData['phaseName'] as String?) : null;
+    final CycleCardState ringState = switch (cycleData['state']) {
+      'loading' => CycleCardState.loading,
+      'ready' || 'insufficient_data' => CycleCardState.ready,
+      _ => CycleCardState.noTracking,
+    };
+    // The model's own caveat where predictions are limited or the cycle is
+    // irregular; shown as written, so no false precision is added here.
+    final String? caveat = cycleData['state'] == 'insufficient_data'
+        ? (heroState?.sufficiencyMessage ?? 'Predictions are limited until a few more cycles are logged.')
+        : (heroState?.confidenceLevel == 'low' ? heroState?.sufficiencyMessage : null);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        GreetingHero(greeting: greeting, name: greetName),
+        const SizedBox(height: BlushySpace.betweenSections),
+        CycleRingCard(
+          state: ringState,
+          phase: phaseKind,
+          cycleDay: heroDay,
+          cycleLength: heroCycle,
+          periodLength: heroPeriod,
+          caveat: caveat,
+          onCalendar: () => _showLogPeriodBottomSheet(context),
+          onSetUp: () => _showLogPeriodBottomSheet(context),
+          onInsights: phaseKind == null
+              ? null
+              : () => _openAskSiaChat(
+                    context,
+                    'What should I know about my ${phaseKind.label.toLowerCase()} phase?',
+                  ),
+        ),
+        const SizedBox(height: BlushySpace.betweenSections),
+        RecentlySurface(
+          items: _recentItems(heroState),
+          onEmptyAction: _openSymptomSheet,
+        ),
+        const SizedBox(height: BlushySpace.betweenCards),
+        LogSymptomsBanner(
+          title: hasPeriodLogged
+              ? "Log Today's Symptoms"
+              : 'Log Period Start Date',
+          subtitle: hasPeriodLogged
+              ? 'Track how you feel and take care'
+              : 'Everything on this page is counted from it',
+          onTap: () {
+            if (!hasPeriodLogged) {
+              _showLogPeriodBottomSheet(context);
+            } else {
+              _openSymptomSheet();
+            }
+          },
+        ),
+        const SizedBox(height: BlushySpace.betweenSections),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeading("TODAY'S CYCLE"),
-              const SizedBox(height: 6),
-              Text(
-                phaseText,
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: BlushyColors.text,
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: BlushySpace.xs),
+          child: SectionHeading(
+            AppLocalizations.of(context).dashTodaySLoggedSignals,
+            icon: Icons.monitor_heart_outlined,
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                dayText,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: BlushyColors.text,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                subtitleText,
-                                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: BlushyColors.primary, size: 20),
-                          onPressed: () {
-                            _showLogPeriodBottomSheet(context);
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          splashRadius: 20,
-                          tooltip: "Log / Edit Period Date",
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // Ovary tracker shape (BlushyCycleCard)
-              const Center(
-                child: SizedBox(
-                  width: 260,
-                  height: 95,
-                  child: BlushyCycleCard(purePainterMode: true),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Color Indicators
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildStartedLegendDot("Menstrual", BlushyColors.primary),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Luteal", const Color(0xFF6F42F5)),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Today's Check-in CTA
-              ElevatedButton(
-                onPressed: () {
-                  if (!hasPeriodLogged) {
-                    _showLogPeriodBottomSheet(context);
-                  } else {
-                    _scrollToCheckIn();
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BlushyColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: Text(
-                  hasPeriodLogged ? "Log Today's Symptoms" : "Log Period Start Date",
-                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Today's logged metrics & user focus expectations
-              Text(
-                "TODAY'S LOGGED SIGNALS",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
-              ),
-              const SizedBox(height: 16),
-              _buildExpectationItem("Energy", energyVal, energyVal != "Not Logged Today" ? "Live Log" : "Tap check-in to log"),
-              _buildExpectationItem("Mood", moodVal, moodVal != "Not Logged Today" ? "Live Log" : "Tap check-in to log"),
-              if (_isMetricSelected(pc, ['flow', 'period', 'bleeding', 'spotting']))
-                _buildExpectationItem("Flow", flowVal, flowVal != "Not Logged Today" ? "Live Log" : "Tap check-in to log"),
-              if (_isMetricSelected(pc, ['pain', 'cramps', 'headache', 'back pain']))
-                _buildExpectationItem("Pain", painVal, painVal != "Not Logged Today" ? "Live Log" : "Tap check-in to log"),
-              if (_isMetricSelected(pc, ['sleep', 'insomnia', 'rest', 'fatigue']))
-                _buildExpectationItem("Sleep", sleepVal, sleepVal != "Not Logged Today" ? "Live Log" : "Tap check-in to log"),
-              if (_isMetricSelected(pc, ['stress', 'anxiety', 'mood swings', 'mental health']))
-                _buildExpectationItem("Stress", stressVal, stressVal != "Not Logged Today" ? "Live Log" : "Tap check-in to log"),
-              _buildExpectationItem("Hydration", hydrationVal, hydrationVal != "Not Logged Today" ? "Live Log" : "Tap check-in to log"),
-              if (_isMetricSelected(pc, ['exercise', 'workout', 'fitness', 'activity', 'walk']))
-                _buildExpectationItem("Movement", exerciseVal, exerciseVal != "Not Logged Today" ? "Live Log" : "Tap check-in to log"),
-            ],
-          ),
+        const SizedBox(height: BlushySpace.md),
+        LoggedSignalsCard(
+          // Opens the same sheet the banner does. That sheet is where the day
+          // arrows live, so it is already the full log -- a second screen
+          // showing the same thing is how the two drift apart.
+          footer: _ViewFullLogButton(onTap: _openSymptomSheet),
+          signals: [
+            _signal('Energy', energyVal, BlushyColors.primary,
+                Icons.bolt_rounded),
+            _signal('Mood', moodVal, BlushyColors.accent,
+                Icons.sentiment_satisfied_rounded),
+            if (_isMetricSelected(
+                pc, ['flow', 'period', 'bleeding', 'spotting']))
+              _signal('Flow', flowVal, BlushyColors.secondary,
+                  Icons.water_drop_rounded),
+            if (_isMetricSelected(
+                pc, ['pain', 'cramps', 'headache', 'back pain']))
+              _signal('Pain', painVal, BlushyColors.primary,
+                  Icons.flash_on_rounded),
+            if (_isMetricSelected(
+                pc, ['sleep', 'insomnia', 'rest', 'fatigue']))
+              _signal('Sleep', sleepVal, BlushyColors.secondary,
+                  Icons.bedtime_rounded),
+            if (_isMetricSelected(
+                pc, ['stress', 'anxiety', 'mood swings', 'mental health']))
+              _signal('Stress', stressVal, BlushyColors.accent,
+                  Icons.spa_rounded),
+            _signal('Hydration', hydrationVal, BlushyColors.secondary,
+                Icons.local_drink_rounded),
+            if (_isMetricSelected(pc,
+                ['exercise', 'workout', 'fitness', 'activity', 'walk']))
+              _signal('Movement', exerciseVal, BlushyColors.accent,
+                  Icons.directions_run_rounded),
+          ],
         ),
       ],
     );
   }
 
+  /// What was logged lately, as rows with a value. Nothing is invented for
+  /// a row that has none; it is simply not in the list.
+  List<RecentItem> _recentItems(CycleState? cycle) {
+    final items = <RecentItem>[];
+    final checkin = BlushyStorage.read('daily_checkin.json');
+
+    final start = DateTime.tryParse(cycle?.cycleStartDate ?? '');
+    if (start != null) {
+      final days = (cycle?.periodLengthDays ?? 5).clamp(1, 14);
+      final end = start.add(Duration(days: days - 1));
+      items.add(RecentItem(
+        icon: Icons.water_drop_outlined,
+        title: 'Period',
+        value: '${_formatDayMonth(start.toIso8601String())} \u2013 ${_formatDayMonth(end.toIso8601String())}',
+        onTap: () => _showLogPeriodBottomSheet(context),
+      ));
+    }
+
+    final symptoms = checkin['symptom'];
+    if (symptoms is List && symptoms.isNotEmpty) {
+      items.add(RecentItem(
+        icon: Icons.healing_rounded,
+        title: 'Symptoms',
+        value: symptoms.map((e) => e.toString()).join(', '),
+        onTap: _openSymptomSheet,
+      ));
+    }
+
+    final mood = checkin['feeling'] ?? checkin['mood'];
+    if (mood is String && mood.isNotEmpty) {
+      items.add(RecentItem(
+        icon: Icons.sentiment_satisfied_outlined,
+        title: 'Mood',
+        value: mood,
+        onTap: _openSymptomSheet,
+      ));
+    }
+    return items;
+  }
+
+  /// One row of the signals card.
+  ///
+  /// The dashboard words an unlogged metric as "Not Logged Today"; that string
+  /// is what the row is told, rather than the row trying to recognise it, so
+  /// the two cannot disagree about what counts as logged.
+  LoggedSignal _signal(
+    String label,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
+    return LoggedSignal(
+      label: label,
+      value: value,
+      logged: value != 'Not Logged Today' && value != 'Loading...',
+      color: color,
+      icon: icon,
+      onTap: _openSymptomSheet,
+    );
+  }
+
   void _showLogPeriodBottomSheet(BuildContext context) {
-    DateTime selectedStart = _periodConfirmationState.actualStartDate ?? DateTime.now();
+    DateTime selectedStart =
+        _periodConfirmationState.actualStartDate ?? DateTime.now();
     DateTime? selectedEnd;
 
     showModalBottomSheet(
@@ -4268,8 +5520,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    "Log / Edit Period",
-                    style: GoogleFonts.poppins(
+                    AppLocalizations.of(context).dashLogEditPeriod,
+                    style: GoogleFonts.manrope(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.text,
@@ -4277,16 +5529,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    "Confirm or correct your period start and end dates below.",
-                    style: GoogleFonts.poppins(
+                    AppLocalizations.of(context).dashConfirmCorrectPeriodStart,
+                    style: GoogleFonts.manrope(
                       fontSize: 12,
                       color: BlushyColors.secondaryText,
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    "PERIOD START DATE",
-                    style: GoogleFonts.poppins(
+                    AppLocalizations.of(context).dashPeriodStartDate,
+                    style: GoogleFonts.manrope(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                       color: BlushyColors.secondaryText,
@@ -4299,7 +5551,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       final picked = await showDatePicker(
                         context: context,
                         initialDate: selectedStart,
-                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                        firstDate: DateTime.now().subtract(
+                          const Duration(days: 365),
+                        ),
                         lastDate: DateTime.now(),
                         helpText: "SELECT PERIOD START DATE",
                         confirmText: "SELECT",
@@ -4312,7 +5566,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -4323,17 +5580,25 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         children: [
                           Text(
                             "${selectedStart.year}-${selectedStart.month.toString().padLeft(2, '0')}-${selectedStart.day.toString().padLeft(2, '0')}",
-                            style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text, fontWeight: FontWeight.w600),
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              color: BlushyColors.text,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          const Icon(Icons.calendar_today_rounded, size: 16, color: BlushyColors.primary),
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 16,
+                            color: BlushyColors.primary,
+                          ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    "PERIOD END DATE (OPTIONAL)",
-                    style: GoogleFonts.poppins(
+                    AppLocalizations.of(context).dashPeriodEndDateOptional,
+                    style: GoogleFonts.manrope(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                       color: BlushyColors.secondaryText,
@@ -4345,7 +5610,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
-                        initialDate: selectedEnd ?? selectedStart.add(const Duration(days: 5)),
+                        initialDate:
+                            selectedEnd ??
+                            selectedStart.add(const Duration(days: 5)),
                         firstDate: selectedStart,
                         lastDate: DateTime.now().add(const Duration(days: 10)),
                         helpText: "SELECT PERIOD END DATE",
@@ -4359,7 +5626,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -4369,12 +5639,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            selectedEnd == null 
-                                ? "Not ended yet" 
+                            selectedEnd == null
+                                ? "Not ended yet"
                                 : "${selectedEnd!.year}-${selectedEnd!.month.toString().padLeft(2, '0')}-${selectedEnd!.day.toString().padLeft(2, '0')}",
-                            style: GoogleFonts.poppins(fontSize: 14, color: selectedEnd == null ? BlushyColors.secondaryText : BlushyColors.text, fontWeight: FontWeight.w600),
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              color: selectedEnd == null
+                                  ? BlushyColors.secondaryText
+                                  : BlushyColors.text,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          const Icon(Icons.calendar_today_rounded, size: 16, color: BlushyColors.primary),
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 16,
+                            color: BlushyColors.primary,
+                          ),
                         ],
                       ),
                     ),
@@ -4387,12 +5667,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: BlushyColors.border),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: Text(
-                            "Cancel",
-                            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.secondaryText),
+                            AppLocalizations.of(context).dashCancel,
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: BlushyColors.secondaryText,
+                            ),
                           ),
                         ),
                       ),
@@ -4407,12 +5693,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             backgroundColor: BlushyColors.primary,
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: Text(
-                            "Save",
-                            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
+                            AppLocalizations.of(context).dashSave,
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -4434,7 +5725,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final cur = provider.personalContext;
 
     // Persist the event, then take the recalculated cycle from the response.
-    final logged = await CycleApi.logPeriod(startDate: startDate, endDate: endDate);
+    final logged = await CycleApi.logPeriod(
+      startDate: startDate,
+      endDate: endDate,
+    );
     if (!mounted) return;
 
     final CycleState? serverCycle = logged.data?.cycle;
@@ -4443,7 +5737,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         _lastKnownCycle = serverCycle;
         _cycleResult = ApiResult<CycleState>(
           data: serverCycle,
-          state: logged.state == ApiState.loading ? ApiState.ready : logged.state,
+          state: logged.state == ApiState.loading
+              ? ApiState.ready
+              : logged.state,
           source: logged.source,
           version: logged.version,
           lastUpdated: logged.lastUpdated,
@@ -4454,31 +5750,35 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       if (!mounted) return;
     }
 
-    final int cLen = (cur.cycleLength != null && cur.cycleLength! > 0) ? cur.cycleLength! : 28;
+    final int cLen = (cur.cycleLength != null && cur.cycleLength! > 0)
+        ? cur.cycleLength!
+        : 28;
     final int? cDay = serverCycle?.currentCycleDay;
 
-    provider.updatePersonalContext(PersonalContext(
-      userName: cur.userName,
-      dateOfBirth: cur.dateOfBirth,
-      weight: cur.weight,
-      lifeStage: cur.lifeStage,
-      dueDate: cur.dueDate,
-      babyBirthDate: cur.babyBirthDate,
-      trackingPreference: cur.trackingPreference,
-      cyclePattern: cur.cyclePattern,
-      confidence: cur.confidence,
-      lifeContexts: cur.lifeContexts,
-      userGoals: cur.userGoals,
-      userSymptoms: cur.userSymptoms,
-      medicalConditions: cur.medicalConditions,
-      preferences: cur.preferences,
-      cycleLength: cLen,
-      cycleDay: cDay,
-      // Phase comes from the server calculation, not re-derived here.
-      cyclePhase: serverCycle?.phase ?? cur.cyclePhase,
-      lastPeriodStart: startDate,
-      medications: cur.medications,
-    ));
+    provider.updatePersonalContext(
+      PersonalContext(
+        userName: cur.userName,
+        dateOfBirth: cur.dateOfBirth,
+        weight: cur.weight,
+        lifeStage: cur.lifeStage,
+        dueDate: cur.dueDate,
+        babyBirthDate: cur.babyBirthDate,
+        trackingPreference: cur.trackingPreference,
+        cyclePattern: cur.cyclePattern,
+        confidence: cur.confidence,
+        lifeContexts: cur.lifeContexts,
+        userGoals: cur.userGoals,
+        userSymptoms: cur.userSymptoms,
+        medicalConditions: cur.medicalConditions,
+        preferences: cur.preferences,
+        cycleLength: cLen,
+        cycleDay: cDay,
+        // Phase comes from the server calculation, not re-derived here.
+        cyclePhase: serverCycle?.phase ?? cur.cyclePhase,
+        lastPeriodStart: startDate,
+        medications: cur.medications,
+      ),
+    );
 
     setState(() {
       _periodConfirmationState = _periodConfirmationState.copyWith(
@@ -4490,7 +5790,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
     try {
       final profileData = BlushyStorage.read('user_profile.json');
-      final profileMap = Map<String, dynamic>.from(profileData['profile'] ?? profileData);
+      final profileMap = Map<String, dynamic>.from(
+        profileData['profile'] ?? profileData,
+      );
       profileMap['period_last_start_date'] = startDate.toIso8601String();
       profileMap['last_period'] = startDate.toIso8601String();
       BlushyStorage.write('user_profile.json', {'profile': profileMap});
@@ -4503,422 +5805,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          cDay == null ? 'Period logged.' : 'Period logged. You are on day $cDay.',
+          cDay == null
+              ? 'Period logged.'
+              : 'Period logged. You are on day $cDay.',
         ),
-      ),
-    );
-  }
-
-  Widget _buildExpectationItem(String label, String value, String confidence) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 30,
-            child: Text(
-              label,
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
-            ),
-          ),
-          Expanded(
-            flex: 45,
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
-            ),
-          ),
-          Expanded(
-            flex: 25,
-            child: Text(
-              confidence,
-              textAlign: TextAlign.end,
-              style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText, fontStyle: FontStyle.italic),
-            ),
-          ),
-        ],
       ),
     );
   }
 
   // --- SECTION 3: CHECK IN (One-tap logging) ---
-  Widget _buildLivingCheckIn() {
-    final List<Map<String, dynamic>> moodOptions = [
-      {"icon": "😊", "label": "Happy"},
-      {"icon": "🙂", "label": "Okay"},
-      {"icon": "😖", "label": "Cramps"},
-      {"icon": "🥱", "label": "Tired"},
-      {"icon": "😤", "label": "Irritable"},
-    ];
-
-    final List<String> energyOptions = ["High", "Medium", "Low"];
-    final List<String> flowOptions = ["Light", "Medium", "Heavy"];
-    final List<String> painOptions = ["None", "Mild", "Severe"];
-    final List<String> sleepOptions = ["<6h", "6-8h", ">8h"];
-    final List<String> stressOptions = ["Low", "Moderate", "High"];
-    final List<String> waterOptions = ["1L", "2L", "3L"];
-    final List<String> exerciseOptions = ["Active", "Light", "None"];
-
-    return Column(
-      key: _checkInKey,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading("CHECK IN"),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Shown when something just logged matched a reviewed red flag
-              // rule, so the reviewed instruction replaces the usual
-              // confirmation rather than sitting alongside it.
-              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
-              // Mood Selector
-              Text(
-                AppLocalizations.of(context).dashMood,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedFeeling = checkinData['feeling'] ?? checkinData['mood'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
-                  final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
-                  final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
-                  return GestureDetector(
-                    onTap: () {
-                      final String moodLabel = opt['label'] as String;
-                      final int moodScore = (moodLabel == 'Happy') ? 9 : (moodLabel == 'Okay' ? 7 : (moodLabel == 'Tired' ? 5 : 4));
-                      setState(() {
-                        _selectedFeeling = moodLabel;
-                      });
-
-                      final os = BlushyOSProvider.of(context);
-                      final currentWb = os.wellbeingState;
-                      os.updateWellbeingState(CurrentWellbeingState(
-                        mood: moodScore,
-                        energy: currentWb.energy,
-                        sleepQuality: currentWb.sleepQuality,
-                        symptoms: [moodLabel, ...currentWb.symptoms.where((s) => s != moodLabel)],
-                        lastCheckIn: DateTime.now(),
-                        periodActive: currentWb.periodActive,
-                      ));
-
-                      final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
-                      updatedCheckin['feeling'] = moodLabel;
-                      updatedCheckin['mood'] = moodLabel;
-                      updatedCheckin['mood_score'] = moodScore;
-                      updatedCheckin['date'] = DateTime.now().toIso8601String();
-                      BlushyStorage.write('daily_checkin.json', updatedCheckin);
-                      // Persist as a timestamped health event so patterns, care plan and
-                      // doctor summaries can actually see this entry.
-                      _recordCheckinEvent('mood', moodLabel.toString());
-
-                      // Her choice wins over the next tab-change sync, which would
-                      // otherwise re-apply the stored value on top of it.
-                      _userEditedMetrics.add('daily_mood');
-                      ApiAuthService().saveOnboardingAnswers({
-                        'daily_mood': moodLabel,
-                        'daily_mood_score': moodScore,
-                        'daily_checkin': updatedCheckin,
-                        'daily_logged_at': DateTime.now().toIso8601String(),
-                      }).catchError((_) => <String, dynamic>{});
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-                              const SizedBox(width: 8),
-                              Text("Logged Mood: $moodLabel"),
-                            ],
-                          ),
-                          backgroundColor: const Color(0xFF6F42F5),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? BlushyColors.primary : BlushyColors.border,
-                              width: isSelected ? 1.5 : 0.8,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              _optionIcon(opt['icon']),
-                              size: 20,
-                              color: isSelected
-                                  ? BlushyColors.primary
-                                  : BlushyColors.text,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          opt['label'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              // Energy Selector
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-              _buildLivingHorizontalSelector(AppLocalizations.of(context).dashEnergyLevel, energyOptions, _selectedEnergy, (val) {
-                final int energyScore = (val == 'High') ? 9 : (val == 'Medium' ? 7 : 4);
-                setState(() => _selectedEnergy = val);
-
-                final os = BlushyOSProvider.of(context);
-                final currentWb = os.wellbeingState;
-                os.updateWellbeingState(CurrentWellbeingState(
-                  mood: currentWb.mood,
-                  energy: energyScore,
-                  sleepQuality: currentWb.sleepQuality,
-                  symptoms: currentWb.symptoms,
-                  lastCheckIn: DateTime.now(),
-                  periodActive: currentWb.periodActive,
-                ));
-
-                final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
-                updatedCheckin['energy'] = val;
-                updatedCheckin['energy_score'] = energyScore;
-                updatedCheckin['date'] = DateTime.now().toIso8601String();
-                BlushyStorage.write('daily_checkin.json', updatedCheckin);
-                // Persist as a timestamped health event so patterns, care plan and
-                // doctor summaries can actually see this entry.
-                _recordCheckinEvent('energy', val.toString());
-
-                // Her choice wins over the next tab-change sync, which would
-                // otherwise re-apply the stored value on top of it.
-                _userEditedMetrics.add('daily_energy');
-                ApiAuthService().saveOnboardingAnswers({
-                  'daily_energy': val,
-                  'daily_energy_score': energyScore,
-                  'daily_checkin': updatedCheckin,
-                  'daily_logged_at': DateTime.now().toIso8601String(),
-                }).catchError((_) => <String, dynamic>{});
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
-                        const SizedBox(width: 8),
-                        Text("Logged Energy: $val"),
-                      ],
-                    ),
-                    backgroundColor: const Color(0xFF10B981),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              }, logCategoryKey: 'daily_checkin'),
-
-              // Flow Selector (Shown if selected or tracking cycle)
-              if (_isMetricSelected(pc, ['flow', 'period', 'bleeding', 'spotting'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector(AppLocalizations.of(context).dashFlowLevel, flowOptions, _livingFlow, (val) {
-                  setState(() => _livingFlow = val);
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
-                  updatedCheckin['flow'] = val;
-                  updatedCheckin['date'] = DateTime.now().toIso8601String();
-                  BlushyStorage.write('daily_checkin.json', updatedCheckin);
-                  // Persist as a timestamped health event so patterns, care plan and
-                  // doctor summaries can actually see this entry.
-                  _recordCheckinEvent('flow', val.toString());
-                  ApiAuthService().saveOnboardingAnswers({
-                    'daily_flow': val,
-                    'daily_checkin': updatedCheckin,
-                    'daily_logged_at': DateTime.now().toIso8601String(),
-                  }).catchError((_) => <String, dynamic>{});
-                }, logCategoryKey: 'daily_checkin', checkinKey: 'flow'),
-              ],
-
-              // Pain Selector
-              if (_isMetricSelected(pc, ['pain', 'cramps', 'headache', 'back pain'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("PAIN LEVEL", painOptions, _livingPain, (val) {
-                  setState(() => _livingPain = val);
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
-                  updatedCheckin['pain'] = val;
-                  updatedCheckin['date'] = DateTime.now().toIso8601String();
-                  BlushyStorage.write('daily_checkin.json', updatedCheckin);
-                  // Persist as a timestamped health event so patterns, care plan and
-                  // doctor summaries can actually see this entry.
-                  _recordCheckinEvent('pain', val.toString());
-                  ApiAuthService().saveOnboardingAnswers({
-                    'daily_pain': val,
-                    'daily_checkin': updatedCheckin,
-                  }).catchError((_) => <String, dynamic>{});
-                }, logCategoryKey: 'daily_checkin', checkinKey: 'pain'),
-              ],
-
-              // Sleep Selector
-              if (_isMetricSelected(pc, ['sleep', 'insomnia', 'rest', 'fatigue'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("SLEEP TIME", sleepOptions, _livingSleep, (val) {
-                  final int sleepHours = (val == '>8h') ? 9 : (val == '6-8h' ? 7 : 5);
-                  setState(() => _livingSleep = val);
-
-                  final os = BlushyOSProvider.of(context);
-                  final currentWb = os.wellbeingState;
-                  os.updateWellbeingState(CurrentWellbeingState(
-                    mood: currentWb.mood,
-                    energy: currentWb.energy,
-                    sleepQuality: sleepHours,
-                    symptoms: currentWb.symptoms,
-                    lastCheckIn: DateTime.now(),
-                    periodActive: currentWb.periodActive,
-                  ));
-
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
-                  updatedCheckin['sleep'] = val;
-                  updatedCheckin['sleep_hours'] = sleepHours;
-                  updatedCheckin['date'] = DateTime.now().toIso8601String();
-                  BlushyStorage.write('daily_checkin.json', updatedCheckin);
-                  // Persist as a timestamped health event so patterns, care plan and
-                  // doctor summaries can actually see this entry.
-                  _recordCheckinEvent('sleep', val.toString());
-
-                  ApiAuthService().saveOnboardingAnswers({
-                    'daily_sleep': val,
-                    'daily_sleep_hours': sleepHours,
-                    'daily_checkin': updatedCheckin,
-                  }).catchError((_) => <String, dynamic>{});
-                }, logCategoryKey: 'daily_checkin', checkinKey: 'sleep'),
-              ],
-
-              // Stress Selector
-              if (_isMetricSelected(pc, ['stress', 'anxiety', 'mood swings', 'mental health'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("STRESS LEVEL", stressOptions, _livingStress, (val) {
-                  setState(() => _livingStress = val);
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
-                  updatedCheckin['stress'] = val;
-                  updatedCheckin['date'] = DateTime.now().toIso8601String();
-                  BlushyStorage.write('daily_checkin.json', updatedCheckin);
-                  // Persist as a timestamped health event so patterns, care plan and
-                  // doctor summaries can actually see this entry.
-                  _recordCheckinEvent('stress', val.toString());
-                  // Her choice wins over the next tab-change sync, which would
-                  // otherwise re-apply the stored value on top of it.
-                  _userEditedMetrics.add('daily_stress');
-                  ApiAuthService().saveOnboardingAnswers({
-                    'daily_stress': val,
-                    'daily_checkin': updatedCheckin,
-                  }).catchError((_) => <String, dynamic>{});
-                }, logCategoryKey: 'daily_checkin', checkinKey: 'stress'),
-              ],
-
-              // Water Selector
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-              _buildLivingHorizontalSelector("DAILY WATER", waterOptions, _livingWater, (val) {
-                setState(() => _livingWater = val);
-                final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
-                updatedCheckin['water'] = val;
-                updatedCheckin['date'] = DateTime.now().toIso8601String();
-                BlushyStorage.write('daily_checkin.json', updatedCheckin);
-                // Persist as a timestamped health event so patterns, care plan and
-                // doctor summaries can actually see this entry.
-                _recordCheckinEvent('water', val.toString());
-                ApiAuthService().saveOnboardingAnswers({
-                  'daily_water': val,
-                  'daily_checkin': updatedCheckin,
-                }).catchError((_) => <String, dynamic>{});
-              }, logCategoryKey: 'daily_checkin', checkinKey: 'water'),
-
-              // Exercise Selector
-              if (_isMetricSelected(pc, ['exercise', 'workout', 'fitness', 'activity', 'walk'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("EXERCISE ACTIVITY", exerciseOptions, _livingExercise, (val) {
-                  setState(() => _livingExercise = val);
-                  final updatedCheckin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
-                  updatedCheckin['exercise'] = val;
-                  updatedCheckin['date'] = DateTime.now().toIso8601String();
-                  BlushyStorage.write('daily_checkin.json', updatedCheckin);
-                  // Persist as a timestamped health event so patterns, care plan and
-                  // doctor summaries can actually see this entry.
-                  _recordCheckinEvent('exercise', val.toString());
-                  ApiAuthService().saveOnboardingAnswers({
-                    'daily_exercise': val,
-                    'daily_checkin': updatedCheckin,
-                  }).catchError((_) => <String, dynamic>{});
-                }, logCategoryKey: 'daily_checkin', checkinKey: 'exercise'),
-              ],
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Notes & Reflections
-              Text(
-                AppLocalizations.of(context).dashNotesReflections,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        VoiceNoteBottomSheet.show(context);
-                      },
-                      icon: const Icon(Icons.mic, size: 18),
-                      label: const Text("Voice Note"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // The tab, not a second copy of it stacked on top.
-                        BlushyShellTabs.open(BlushyShellTabs.mStudio);
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text("M Studio"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildLivingCheckIn() => _buildCheckIn();
 
   Widget _buildLivingHorizontalSelector(
     String label,
@@ -4933,12 +5829,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: BlushyColors.secondaryText,
+          ),
         ),
         const SizedBox(height: 12),
         Row(
           children: options.map((opt) {
-            final isSelected = selectedValue != null && selectedValue.toLowerCase() == opt.toLowerCase();
+            final isSelected =
+                selectedValue != null &&
+                selectedValue.toLowerCase() == opt.toLowerCase();
             return Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -4954,7 +5856,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       // dropped. Nothing any tracker recorded was ever
                       // restored.
                       final logKey = trackerLogKey(
-                          logCategoryKey ?? 'daily_checkin', label);
+                        logCategoryKey ?? 'daily_checkin',
+                        label,
+                      );
                       _userEditedMetrics.add(logKey);
 
                       // The daily metrics are also restored from the device on
@@ -4963,27 +5867,35 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       if (checkinKey != null) {
                         _userEditedMetrics.add('daily_$checkinKey');
                         final checkin = Map<String, dynamic>.from(
-                            BlushyStorage.read('daily_checkin.json'));
+                          BlushyStorage.read('daily_checkin.json'),
+                        );
                         checkin[checkinKey] = opt;
                         checkin['date'] = DateTime.now().toIso8601String();
                         BlushyStorage.write('daily_checkin.json', checkin);
                       }
                       ApiAuthService()
-                          .saveOnboardingAnswers({logKey: opt}).catchError(
-                              (_) => <String, dynamic>{});
+                          .saveOnboardingAnswers({logKey: opt})
+                          .catchError((_) => <String, dynamic>{});
                     } catch (_) {}
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                      color: isSelected ? BlushyColors.primary : const Color(0xFFF9F6F0),
+                      color: isSelected
+                          ? BlushyColors.primary
+                          : const Color(0xFFF9F6F0),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: isSelected ? BlushyColors.primary : BlushyColors.border, width: 0.8),
+                      border: Border.all(
+                        color: isSelected
+                            ? BlushyColors.primary
+                            : BlushyColors.border,
+                        width: 0.8,
+                      ),
                     ),
                     child: Text(
                       opt,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: isSelected ? Colors.white : BlushyColors.text,
@@ -5000,7 +5912,34 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 4: DOCSY INSIGHTS (AI section) ---
+  /// True while the patterns request has answered "nothing yet".
+  ///
+  /// The two states that mean that -- no logs at all, or not enough of them
+  /// -- get the illustrated card. Every other state (loading, offline, error,
+  /// ready) stays with ApiStateCard, which already handles each honestly.
+  bool get _patternsAreEmpty =>
+      _patternsResult.state == ApiState.empty ||
+      _patternsResult.state == ApiState.insufficientData;
+
+  /// The reason there is nothing yet, worded as ApiStateCard would word it.
+  String _patternsEmptyNote(String whenEmpty, String whenInsufficient) =>
+      _patternsResult.state == ApiState.empty ? whenEmpty : whenInsufficient;
+
   Widget _buildLivingSiaInsights() {
+    const whenEmpty = 'Docsy has not noticed anything in your logs yet.';
+    const whenInsufficient =
+        'Once you have logged a few days, Docsy will start sharing what it '
+        'notices.';
+
+    if (_patternsAreEmpty) {
+      return DocsyInsightsCard(
+        heading: AppLocalizations.of(context).dashSiaInsights,
+        note: _patternsEmptyNote(whenEmpty, whenInsufficient),
+        actionLabel: AppLocalizations.of(context).dashLogTodayCheckIn,
+        onAction: _scrollToCheckIn,
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -5020,7 +5959,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               _onboardingAnalysisSummary!,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 12,
                 height: 1.5,
                 color: BlushyColors.secondaryText,
@@ -5032,14 +5971,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         ApiStateCard<List<Insight>>(
           result: _patternsResult,
           onRetry: () => _loadPatterns(refresh: true),
-          emptyMessage: "Docsy has not noticed anything in your logs yet.",
+          emptyMessage: whenEmpty,
           emptyActionLabel: AppLocalizations.of(context).dashLogFirstCheckIn,
+          insufficientDataActionLabel: AppLocalizations.of(
+            context,
+          ).dashLogTodayCheckIn,
           onEmptyAction: _scrollToCheckIn,
-          insufficientDataMessage:
-              "Once you have logged a few days, Docsy will start sharing what it notices.",
+          insufficientDataMessage: whenInsufficient,
           builder: (context, insights) {
             if (insights.isEmpty) {
-              return _buildPatternsPlaceholder("Docsy has not noticed anything in your logs yet.");
+              return _buildPatternsPlaceholder(whenEmpty);
             }
             // The Docsy Note surfaces the strongest current observation.
             return _buildSiaNoteCard(insights.first);
@@ -5065,12 +6006,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
+                const Icon(
+                  Icons.auto_awesome,
+                  size: 16,
+                  color: BlushyColors.primary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     insight.description,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.text,
@@ -5082,7 +6027,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             const SizedBox(height: 10),
             Text(
               _evidenceLine(insight),
-              style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.4),
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                color: BlushyColors.secondaryText,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -5093,19 +6042,31 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     TextButton(
                       onPressed: () => _markInsightHelpful(insight),
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 32),
+                      ),
                       child: Text(
                         AppLocalizations.of(context).dashHelpful,
-                        style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary),
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: BlushyColors.primary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     TextButton(
                       onPressed: () => _markInsightNotUseful(insight),
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 32),
+                      ),
                       child: Text(
                         AppLocalizations.of(context).dashNotUseful,
-                        style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: BlushyColors.secondaryText,
+                        ),
                       ),
                     ),
                   ],
@@ -5120,8 +6081,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         "matches your experience.",
                   ),
                   child: Text(
-                    "Explain Insight",
-                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                    AppLocalizations.of(context).dashExplainInsight,
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.primary,
+                    ),
                   ),
                 ),
               ],
@@ -5132,13 +6097,27 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-
   // --- SECTION 5: DISCOVER (Personalized educational feed) ---
 
   // --- SECTION 6: COMMUNITY ---
 
   // --- SECTION 7: MY PATTERNS (Personalized observations dynamically generated from onboarding choices) ---
   Widget _buildLivingPatterns() {
+    const whenEmpty = 'Nothing stands out in your logs yet.';
+    const whenInsufficient =
+        'Keep logging for a couple of weeks and Blushy will start showing '
+        'what it notices.';
+
+    if (_patternsAreEmpty) {
+      return PatternsEmptyCard(
+        heading: AppLocalizations.of(context).dashPatternsTitle,
+        note: _patternsEmptyNote(whenEmpty, whenInsufficient),
+        actionLabel: AppLocalizations.of(context).dashLogTodayCheckIn,
+        onAction: _scrollToCheckIn,
+        onRefresh: () => _loadPatterns(refresh: true),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -5163,14 +6142,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         ApiStateCard<List<Insight>>(
           result: _patternsResult,
           onRetry: () => _loadPatterns(refresh: true),
-          emptyMessage: "Nothing stands out in your logs yet.",
+          emptyMessage: whenEmpty,
           emptyActionLabel: AppLocalizations.of(context).dashLogFirstCheckIn,
+          insufficientDataActionLabel: AppLocalizations.of(
+            context,
+          ).dashLogTodayCheckIn,
           onEmptyAction: _scrollToCheckIn,
-          insufficientDataMessage:
-              "Keep logging for a couple of weeks and Blushy will start showing what it notices.",
+          insufficientDataMessage: whenInsufficient,
           builder: (context, insights) {
             if (insights.isEmpty) {
-              return _buildPatternsPlaceholder("Nothing stands out in your logs yet.");
+              return _buildPatternsPlaceholder(whenEmpty);
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -5193,7 +6174,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       ),
       child: Text(
         message,
-        style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText, height: 1.5),
+        style: GoogleFonts.manrope(
+          fontSize: 13,
+          color: BlushyColors.secondaryText,
+          height: 1.5,
+        ),
       ),
     );
   }
@@ -5236,7 +6221,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       Expanded(
                         child: Text(
                           insight.title.toUpperCase(),
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             color: BlushyColors.primary,
@@ -5248,14 +6233,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: BlushyColors.taupe,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     _strengthLabel(insight),
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
                       color: BlushyColors.secondaryText,
@@ -5268,18 +6256,26 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             // Observational wording produced by the pattern engine.
             Text(
               insight.description,
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: BlushyColors.text),
+              style: GoogleFonts.manrope(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: BlushyColors.text,
+              ),
             ),
             const SizedBox(height: 8),
             // Real evidence: how many of the logs this was derived from.
             Text(
               _evidenceLine(insight),
-              style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.4),
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                color: BlushyColors.secondaryText,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               AppLocalizations.of(context).dashPatternNotDiagnosis,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 10,
                 color: BlushyColors.secondaryText,
                 fontStyle: FontStyle.italic,
@@ -5292,16 +6288,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               children: [
                 TextButton(
                   onPressed: () => _markInsightNotUseful(insight),
-                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 28),
+                  ),
                   child: Text(
                     AppLocalizations.of(context).dashNotUseful,
-                    style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      color: BlushyColors.secondaryText,
+                    ),
                   ),
                 ),
                 if (insight.generatedAt != null)
                   Text(
                     _relativeTime(insight.generatedAt!),
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 9,
                       color: BlushyColors.secondaryText.withValues(alpha: 0.8),
                       fontStyle: FontStyle.italic,
@@ -5323,23 +6325,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     return "${diff.inDays}d ago";
   }
 
-
   // --- SECTION 8: JOURNEY (Monthly reflections) ---
-  /// "MONTHLY REFLECTION & JOURNEY — JULY 2026", or the bare heading if the
-  /// month is missing or malformed.
-  static String _monthlyHeading(String reportingMonth) {
-    const heading = 'MONTHLY REFLECTION & JOURNEY';
+  /// "July 2026" from "2026-07", or null where the month is not known.
+  static String? _monthLabel(String reportingMonth) {
     final parts = reportingMonth.split('-');
-    if (parts.length != 2) return heading;
-
+    if (parts.length != 2) return null;
     final month = int.tryParse(parts[1]);
-    if (month == null || month < 1 || month > 12) return heading;
-
+    if (month == null || month < 1 || month > 12) return null;
     const names = [
-      'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-      'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
+      'January', 'February', 'March', 'April', 'May', 'June', 'July',
+      'August', 'September', 'October', 'November', 'December',
     ];
-    return '$heading — ${names[month - 1]} ${parts[0]}';
+    return '${names[month - 1]} ${parts[0]}';
   }
 
   Widget _buildLivingJourney() {
@@ -5347,108 +6344,39 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       pc: _currentPc,
       state: BlushyOSProvider.of(context),
     );
-    final List<MilestoneItem> items = journeyData.milestoneItems;
 
-    // Nothing to report for a month that ended before the account existed.
-    //
-    // This card reports the last *completed* calendar month, so through August
-    // it reports July -- and someone who installed the app in August was shown
-    // a list of things she had "not logged" in a month she was never here for.
-    // That is a statement about the app, not about her, and it sat at the top
-    // of her home page.
+    // The card reports the last *completed* calendar month, so through
+    // August it reports July -- and someone who installed the app in August
+    // has no July here. This used to hide the whole card for her, which
+    // meant it appeared before the server answered and vanished after: the
+    // page changed shape on a network response. It stays, and says why it
+    // has nothing yet, rather than listing things she "did not log" in a
+    // month she was not here for.
     if (journeyData.dataState == 'not_yet_joined') {
-      return const SizedBox.shrink();
+      return MonthlyJourneyCard(
+        heading: 'MONTHLY REFLECTION & JOURNEY',
+        monthLabel: _monthLabel(journeyData.reportingMonth),
+        milestones: const [],
+        reflectionHeading: AppLocalizations.of(context).dashDocsySReflection,
+        reflection: 'Your first monthly reflection arrives after your first '
+            'full month here. Everything you log until then is what it will '
+            'be written from.',
+      );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BlushyColors.border, width: 0.8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            // The month is named. This card reports the last *completed*
-            // calendar month -- the server refuses the current one, since a
-            // month still running has nothing final to say -- so on the 31st of
-            // August it shows July. Without the label that reads as a bug: the
-            // only clue was the word "July" buried in the body text.
-            _monthlyHeading(journeyData.reportingMonth),
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.secondaryText,
-              letterSpacing: 2.0,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ...items.map((m) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    m.showGreenTick ? Icons.check_circle : Icons.radio_button_unchecked,
-                    color: m.showGreenTick ? BlushyColors.success : const Color(0xFFBDBDBD),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          m.title,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: BlushyColors.text,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          m.description,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: BlushyColors.secondaryText,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const Divider(height: 36, color: Color(0xFFF5F0EB)),
-          Text(
-            "DOCSY'S REFLECTION",
-            style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            journeyData.reflection,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: BlushyColors.text,
-              fontStyle: FontStyle.italic,
-              height: 1.45,
-            ),
-          ),
-        ],
-      ),
+    return MonthlyJourneyCard(
+      heading: 'MONTHLY REFLECTION & JOURNEY',
+      monthLabel: _monthLabel(journeyData.reportingMonth),
+      milestones: journeyData.milestoneItems,
+      reflectionHeading: AppLocalizations.of(context).dashDocsySReflection,
+      reflection: journeyData.reflection,
     );
   }
 
-  Widget _buildLivingWithMyCycleHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
+  Widget _buildLivingWithMyCycleHomeOS(
+    PersonalContext pc,
+    BlushyOSState state,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -5459,14 +6387,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             child: Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width < 768
+                      ? 640
+                      : double.infinity,
+                ),
                 child: ListView(
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 24,
+                  ),
                   children: [
-                    GreetingCard(name: displayName),
-                    const SizedBox(height: 32),
                     _buildLivingTodayCycle(),
                     const SizedBox(height: 32),
                     _buildLivingCheckIn(),
@@ -5474,8 +6407,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     _buildLivingSiaInsights(),
                     const SizedBox(height: 32),
                     _buildLivingPatterns(),
-                    const SizedBox(height: 32),
-                    const TodaysContextSection(),
                     const SizedBox(height: 32),
                     _buildLivingJourney(),
                   ],
@@ -5490,10 +6421,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               child: ListView(
                 shrinkWrap: _effectiveShrinkWrap,
                 physics: _effectiveScrollPhysics,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 36,
+                ),
                 children: [
-                  GreetingCard(name: displayName),
-                  const SizedBox(height: 48),
                   _buildLivingTodayCycle(),
                   const SizedBox(height: 48),
                   _buildLivingCheckIn(),
@@ -5501,8 +6433,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   _buildLivingSiaInsights(),
                   const SizedBox(height: 48),
                   _buildLivingPatterns(),
-                  const SizedBox(height: 48),
-                  const TodaysContextSection(),
                   const SizedBox(height: 48),
                   _buildLivingJourney(),
                 ],
@@ -5516,19 +6446,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               alignment: Alignment.topCenter,
               child: Container(
                 width: min(1440.0, width - 64.0),
-                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                  vertical: 40,
+                ),
                 child: ListView(
-                  controller: widget.isNested ? null : _livingHomeScrollController,
+                  controller: widget.isNested
+                      ? null
+                      : _livingHomeScrollController,
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
                   children: [
-                    GreetingCard(name: displayName),
-                    const SizedBox(height: 48),
                     _buildLivingTodayCycle(),
                     const SizedBox(height: 48),
                     _buildLivingCheckIn(),
-                    const SizedBox(height: 48),
-                    const TodaysContextSection(),
                     const SizedBox(height: 48),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -5538,9 +6469,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           flex: 65,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildLivingSiaInsights(),
-                            ],
+                            children: [_buildLivingSiaInsights()],
                           ),
                         ),
                         const SizedBox(width: 32),
@@ -5576,7 +6505,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 2: MY CYCLE HEALTH (Irregular tracking metrics & Ovary shape) ---
   Widget _buildHormonalCycleHealth() {
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -5588,8 +6516,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("MY CYCLE HEALTH"),
               const SizedBox(height: 6),
               Text(
-                "Hormonal Rhythm Tracker",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashHormonalRhythmTracker,
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -5627,7 +6555,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 children: [
                                   Text(
                                     cycleData['cycleDayText'] as String,
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
                                       color: BlushyColors.text,
@@ -5636,14 +6564,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                   const SizedBox(height: 2),
                                   Text(
                                     cycleData['subtitle'] as String,
-                                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 12,
+                                      color: BlushyColors.secondaryText,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(width: 8),
                             IconButton(
-                              icon: const Icon(Icons.edit, color: BlushyColors.primary, size: 20),
+                              icon: const Icon(
+                                Icons.edit,
+                                color: BlushyColors.primary,
+                                size: 20,
+                              ),
                               onPressed: () {
                                 _showLogPeriodBottomSheet(context);
                               },
@@ -5680,24 +6615,31 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   const SizedBox(width: 14),
                   _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800)),
                   const SizedBox(width: 14),
-                  _buildStartedLegendDot("Luteal", const Color(0xFF6F42F5)),
+                  _buildStartedLegendDot("Luteal", BlushyColors.accent),
                 ],
               ),
               const SizedBox(height: 32),
 
               // Recent Cycle History horizontal blocks
               Text(
-                "RECENT CYCLE HISTORY",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                AppLocalizations.of(context).dashRecentCycleHistory,
+                style: GoogleFonts.manrope(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 16),
               const RealCycleHistory(),
               const SizedBox(height: 28),
 
-              
               // Educational explanation cards instead of direct prediction certainty
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFDFBF7),
                   borderRadius: BorderRadius.circular(12),
@@ -5707,14 +6649,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.info_outline, size: 18, color: BlushyColors.primary),
+                        const Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: BlushyColors.primary,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             // Read "between 38 and 71 days" for everyone. Both
                             // numbers were literals, shown as her own history.
                             "Cycle length varies for many people, and the history above is drawn from what you have logged.",
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              color: BlushyColors.secondaryText,
+                              height: 1.45,
+                            ),
                           ),
                         ),
                       ],
@@ -5722,12 +6672,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     const Divider(height: 20, color: Color(0xFFE5DDD5)),
                     Row(
                       children: [
-                        const Icon(Icons.calendar_month_outlined, size: 18, color: BlushyColors.warning),
+                        const Icon(
+                          Icons.calendar_month_outlined,
+                          size: 18,
+                          color: BlushyColors.warning,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            "Your next period may arrive within the next few weeks. Because your cycles vary, this is only an estimate.",
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.45),
+                            AppLocalizations.of(
+                              context,
+                            ).dashNextPeriodMayArrive,
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              color: BlushyColors.secondaryText,
+                              height: 1.45,
+                            ),
                           ),
                         ),
                       ],
@@ -5748,300 +6708,26 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Text(
           title,
-          style: GoogleFonts.poppins(fontSize: 9, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(
+            fontSize: 9,
+            color: BlushyColors.secondaryText,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           val,
-          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
+          style: GoogleFonts.manrope(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: BlushyColors.text,
+          ),
         ),
       ],
     );
   }
 
   // --- SECTION 3: TODAY'S CHECK-IN (One-tap logging) ---
-  Widget _buildHormonalCheckIn() {
-    final List<Map<String, dynamic>> moodOptions = [
-      {"icon": "😊", "label": "Happy"},
-      {"icon": "🙂", "label": "Okay"},
-      {"icon": "😖", "label": "Cramps"},
-      {"icon": "🥱", "label": "Tired"},
-      {"icon": "😤", "label": "Irritable"},
-    ];
-
-    final List<String> painOptions = ["None", "Mild", "Severe"];
-    final List<String> crampsOptions = ["None", "Mild", "Severe"];
-    final List<String> flowOptions = ["Light", "Medium", "Heavy"];
-    final List<String> bloatingOptions = ["None", "Mild", "Severe"];
-    final List<String> acneOptions = ["None", "Mild", "Severe"];
-    final List<String> headacheOptions = ["None", "Mild", "Severe"];
-    final List<String> medicationOptions = ["Taken", "Not Taken"];
-    // Neutral scales. "Same / More / Less" records a direction without
-    // implying one is better, which a card is not in a position to say.
-    final List<String> severityOptions = ["None", "Mild", "Noticeable"];
-    final List<String> changeOptions = ["Same", "Up", "Down"];
-    final List<String> exerciseOptions = ["Active", "Light", "None"];
-
-    return Column(
-      key: _checkInKey,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading("TODAY'S CHECK-IN"),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Shown when something just logged matched a reviewed red flag
-              // rule, so the reviewed instruction replaces the usual
-              // confirmation rather than sitting alongside it.
-              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
-              // Mood Selector
-              Text(
-                AppLocalizations.of(context).dashMood,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
-                  final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
-                  final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedFeeling = opt['label'];
-                      });
-                      _persistCheckinAnswer('mood', opt['label'].toString());
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Logged Mood: ${opt['label']}"),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? BlushyColors.primary : BlushyColors.border,
-                              width: isSelected ? 1.5 : 0.8,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              _optionIcon(opt['icon']),
-                              size: 20,
-                              color: isSelected
-                                  ? BlushyColors.primary
-                                  : BlushyColors.text,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          opt['label'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Pain Selector
-              if (_isMetricSelected(pc, ['pain', 'cramps', 'pelvic pain', 'aches'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("PAIN LEVEL", painOptions, _hormonalPain, (val) {
-                  setState(() => _hormonalPain = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              // Cramps Selector
-              if (_isMetricSelected(pc, ['cramps', 'period pain', 'dysmenorrhea'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("CRAMPS", crampsOptions, _hormonalCramps, (val) {
-                  setState(() => _hormonalCramps = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              // Flow Selector
-              if (_isMetricSelected(pc, ['flow', 'irregular', 'heavy period', 'spotting'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector(AppLocalizations.of(context).dashFlowLevel, flowOptions, _hormonalFlow, (val) {
-                  setState(() => _hormonalFlow = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              // Bloating Selector
-              if (_isMetricSelected(pc, ['bloating', 'digestion', 'stomach', 'swelling'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("BLOATING", bloatingOptions, _hormonalBloating, (val) {
-                  setState(() => _hormonalBloating = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              // Acne Selector
-              if (_isMetricSelected(pc, ['acne', 'skin', 'breakouts', 'hormonal acne'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("ACNE STATUS", acneOptions, _hormonalAcne, (val) {
-                  setState(() => _hormonalAcne = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              // Headache Selector
-              if (_isMetricSelected(pc, ['headache', 'migraine', 'head pain'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("HEADACHE", headacheOptions, _hormonalHeadache, (val) {
-                  setState(() => _hormonalHeadache = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              // Medication Selector
-              if (_isMetricSelected(pc, ['medication', 'pills', 'supplements', 'birth control', 'metformin'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("MEDICATION TAKEN", medicationOptions, _hormonalMedication, (val) {
-                  setState(() => _hormonalMedication = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              // Hair, hair growth and weight: asked by the PCOS branch since
-              // it was written, with nothing on the home page keyed to them.
-              // Trackers, not guidance -- what any of it means belongs to the
-              // reviewed content, not to a card.
-              if (_isMetricSelected(pc, ['hair thinning', 'hair loss', 'hair fall', 'thinning'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("HAIR THINNING", severityOptions, _hormonalHairThinning, (val) {
-                  setState(() => _hormonalHairThinning = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              if (_isMetricSelected(pc, ['facial hair', 'body hair', 'excess hair'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("FACIAL & BODY HAIR", severityOptions, _hormonalFacialHair, (val) {
-                  setState(() => _hormonalFacialHair = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              if (_isMetricSelected(pc, ['weight', 'metabolism'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("WEIGHT CHANGE", changeOptions, _hormonalWeightChange, (val) {
-                  setState(() => _hormonalWeightChange = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-
-              // Exercise Selector
-              if (_isMetricSelected(pc, ['exercise', 'workout', 'fitness', 'movement', 'activity'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("EXERCISE ACTIVITY", exerciseOptions, _hormonalExercise, (val) {
-                  setState(() => _hormonalExercise = val);
-                }, logCategoryKey: 'hormone_log'),
-              ],
-
-              // Optional Weight
-              Text(
-                "WEIGHT (OPTIONAL)",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(AppLocalizations.of(context).dashLogWeight),
-                      content: const TextField(
-                        decoration: InputDecoration(hintText: "Enter weight in kg"),
-                        keyboardType: TextInputType.number,
-                      ),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
-                      ],
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.monitor_weight_outlined, size: 18),
-                label: Text(AppLocalizations.of(context).dashLogWeight),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: BlushyColors.primary,
-                  side: const BorderSide(color: BlushyColors.primary),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Notes & Reflections
-              Text(
-                AppLocalizations.of(context).dashNotesReflections,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        VoiceNoteBottomSheet.show(context);
-                      },
-                      icon: const Icon(Icons.mic, size: 18),
-                      label: const Text("Voice Note"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // The tab, not a second copy of it stacked on top.
-                        BlushyShellTabs.open(BlushyShellTabs.mStudio);
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text("M Studio"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildHormonalCheckIn() => _buildCheckIn();
 
   // --- SECTION 4: DOCSY INSIGHTS (Observations) ---
   /// Condition profile (spec section 14).
@@ -6063,7 +6749,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading(AppLocalizations.of(context).dashYourConditions),
+          child: SectionHeading(
+            AppLocalizations.of(context).dashYourConditions,
+          ),
         ),
         const SizedBox(height: 16),
         ApiStateCard<Map<String, dynamic>>(
@@ -6103,13 +6791,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.medical_information_outlined,
-                                  size: 16, color: BlushyColors.primary),
+                              const Icon(
+                                Icons.medical_information_outlined,
+                                size: 16,
+                                color: BlushyColors.primary,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   block["condition"]?.toString() ?? "",
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                     color: BlushyColors.text,
@@ -6122,16 +6813,25 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             Padding(
                               padding: const EdgeInsets.only(top: 4, left: 24),
                               child: Text(
-                                AppLocalizations.of(context).dashNoReviewedArticle,
-                                style: GoogleFonts.poppins(
-                                    fontSize: 11, color: BlushyColors.secondaryText),
+                                AppLocalizations.of(
+                                  context,
+                                ).dashNoReviewedArticle,
+                                style: GoogleFonts.manrope(
+                                  fontSize: 11,
+                                  color: BlushyColors.secondaryText,
+                                ),
                               ),
                             )
                           else
                             ...content.map((c) {
-                              final article = Map<String, dynamic>.from(c as Map);
+                              final article = Map<String, dynamic>.from(
+                                c as Map,
+                              );
                               return Padding(
-                                padding: const EdgeInsets.only(top: 6, left: 24),
+                                padding: const EdgeInsets.only(
+                                  top: 6,
+                                  left: 24,
+                                ),
                                 child: GestureDetector(
                                   onTap: () => _showArticleDialog(
                                     context,
@@ -6140,7 +6840,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                   ),
                                   child: Text(
                                     article["title"]?.toString() ?? "",
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(
                                       fontSize: 12,
                                       color: BlushyColors.primary,
                                       decoration: TextDecoration.underline,
@@ -6156,8 +6856,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   if (observations.isNotEmpty) ...[
                     const Divider(height: 24, color: Color(0xFFF5F0EB)),
                     Text(
-                      "FROM YOUR LOGS",
-                      style: GoogleFonts.poppins(
+                      AppLocalizations.of(context).dashFromLogs,
+                      style: GoogleFonts.manrope(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
                         color: BlushyColors.primary,
@@ -6171,8 +6871,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Text(
                           obs["description"]?.toString() ?? "",
-                          style: GoogleFonts.poppins(
-                              fontSize: 12, color: BlushyColors.text, height: 1.4),
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: BlushyColors.text,
+                            height: 1.4,
+                          ),
                         ),
                       );
                     }),
@@ -6181,7 +6884,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Text(
                     data["disclaimer"]?.toString() ??
                         "Blushy does not diagnose conditions or estimate hormone levels.",
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 10,
                       color: BlushyColors.secondaryText,
                       fontStyle: FontStyle.italic,
@@ -6196,7 +6899,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       ],
     );
   }
-
 
   Widget _buildAppointmentSummaryCard() {
     return Column(
@@ -6223,21 +6925,24 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: Text(
                       AppLocalizations.of(context).dashPrepareSummary,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: BlushyColors.text,
                       ),
                     ),
                   ),
-                  const Icon(Icons.assignment_ind_outlined, color: BlushyColors.primary, size: 24),
+                  const Icon(
+                    Icons.assignment_ind_outlined,
+                    color: BlushyColors.primary,
+                    size: 24,
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
-                "Blushy can pull together what you have logged over a date range you choose. "
-                "You decide what stays in before you share it.",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashBlushyCanPullTogether,
+                style: GoogleFonts.manrope(
                   fontSize: 12.5,
                   color: BlushyColors.secondaryText,
                   height: 1.45,
@@ -6250,23 +6955,30 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BlushyColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     elevation: 0,
                   ),
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DoctorSummaryScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const DoctorSummaryScreen(),
+                    ),
                   ),
                   child: Text(
                     AppLocalizations.of(context).dashBuildMySummary,
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                "A record of what you reported and what the app noticed. Not a diagnosis.",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashRecordWhatReportedWhat,
+                style: GoogleFonts.manrope(
                   fontSize: 10,
                   color: BlushyColors.secondaryText,
                   fontStyle: FontStyle.italic,
@@ -6279,28 +6991,31 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-
   Widget _buildHormonalPatterns() {
     final List<Map<String, String>> patternCards = [
       {
         "title": "Cycle Pattern",
         "desc": "\"Your last five cycles have gradually become shorter.\"",
-        "detail": "This progressive trend indicates improving ovulatory consistency, possibly due to balanced blood glucose levels."
+        "detail":
+            "This progressive trend indicates improving ovulatory consistency, possibly due to balanced blood glucose levels.",
       },
       {
         "title": "Pain Pattern",
         "desc": "\"Cramps usually peak during the first two days.\"",
-        "detail": "Prostaglandin concentration is highest as shedding starts, driving muscular micro-spasms."
+        "detail":
+            "Prostaglandin concentration is highest as shedding starts, driving muscular micro-spasms.",
       },
       {
         "title": "Mood Pattern",
         "desc": "\"Stress levels increase before longer cycles.\"",
-        "detail": "High cortisol can delay or prevent ovulation, extending follicular phase length and delaying your period."
+        "detail":
+            "High cortisol can delay or prevent ovulation, extending follicular phase length and delaying your period.",
       },
       {
         "title": "Sleep Pattern",
         "desc": "\"You sleep longer during weeks without pain.\"",
-        "detail": "Lower pain levels prevent nighttime waking and micro-arousals, keeping deep sleep cycles intact."
+        "detail":
+            "Lower pain levels prevent nighttime waking and micro-arousals, keeping deep sleep cycles intact.",
       },
     ];
 
@@ -6315,8 +7030,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("UNDERSTANDING MY PATTERNS"),
               const SizedBox(height: 4),
               Text(
-                "AI-generated trends across multiple cycle logs",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashAiGeneratedTrendsAcross,
+                style: GoogleFonts.manrope(
                   fontSize: 11,
                   color: BlushyColors.secondaryText,
                 ),
@@ -6340,32 +7055,65 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 children: [
                   Text(
                     card['title']!,
-                    style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
+                    style: GoogleFonts.manrope(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.primary,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     card['desc']!,
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.text,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     card['detail']!,
-                    style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.4),
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      color: BlushyColors.secondaryText,
+                      height: 1.4,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: () => _openAskSiaChat(context, "Explain this pattern: ${card['title']}"),
-                        child: Text("Ask Docsy", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
+                        onPressed: () => _openAskSiaChat(
+                          context,
+                          "Explain this pattern: ${card['title']}",
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context).dashAskDocsy,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            color: BlushyColors.primary,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       TextButton(
                         onPressed: () {
-                          _showArticleDialog(context, card['title']!, "Clinical observation maps: ${card['detail']}");
+                          _showArticleDialog(
+                            context,
+                            card['title']!,
+                            "Clinical observation maps: ${card['detail']}",
+                          );
                         },
-                        child: Text("Why This Matters", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+                        child: Text(
+                          AppLocalizations.of(context).dashWhyMatters,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: BlushyColors.primary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -6390,7 +7138,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
             heading,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: BlushyColors.secondaryText,
@@ -6420,7 +7168,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   plan.suppressed
                       ? "Suggestions are paused while Blushy shows you the safety guidance above."
                       : "Nothing to suggest right now. That is a good sign.",
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 12,
                     color: BlushyColors.secondaryText,
                     height: 1.5,
@@ -6444,7 +7192,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(_careActionIcon(action.category), size: 20, color: BlushyColors.primary),
+          Icon(
+            _careActionIcon(action.category),
+            size: 20,
+            color: BlushyColors.primary,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -6457,7 +7209,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     Expanded(
                       child: Text(
                         action.title,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: BlushyColors.text,
@@ -6466,14 +7218,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     ),
                     if (action.isHighPriority)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: BlushyColors.taupe,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          "Priority",
-                          style: GoogleFonts.poppins(
+                          AppLocalizations.of(context).dashPriority,
+                          style: GoogleFonts.manrope(
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
                             color: BlushyColors.secondaryText,
@@ -6485,7 +7240,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 const SizedBox(height: 4),
                 Text(
                   action.description,
-                  style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText, height: 1.45),
+                  style: GoogleFonts.manrope(
+                    fontSize: 11,
+                    color: BlushyColors.secondaryText,
+                    height: 1.45,
+                  ),
                 ),
                 // Why this was suggested, so no recommendation appears without
                 // a stated basis (spec section 10).
@@ -6493,7 +7252,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   const SizedBox(height: 6),
                   Text(
                     action.reason!,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 10,
                       color: BlushyColors.secondaryText,
                       fontStyle: FontStyle.italic,
@@ -6506,10 +7265,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     TextButton(
                       onPressed: () => _completeCareAction(action),
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30)),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 30),
+                      ),
                       child: Text(
                         action.cta,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: BlushyColors.primary,
@@ -6519,18 +7281,27 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     const SizedBox(width: 16),
                     TextButton(
                       onPressed: () => _dismissCareAction(action),
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30)),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 30),
+                      ),
                       child: Text(
                         AppLocalizations.of(context).dashNotNow,
-                        style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: BlushyColors.secondaryText,
+                        ),
                       ),
                     ),
                     const Spacer(),
                     // Clinical suggestions say where they came from.
                     if (action.source == 'clinical_content')
                       Text(
-                        "Reviewed guidance",
-                        style: GoogleFonts.poppins(fontSize: 9, color: BlushyColors.secondaryText),
+                        AppLocalizations.of(context).dashReviewedGuidance,
+                        style: GoogleFonts.manrope(
+                          fontSize: 9,
+                          color: BlushyColors.secondaryText,
+                        ),
                       ),
                   ],
                 ),
@@ -6549,7 +7320,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- SECTION 7: LEARN ---
   Widget _buildHormonalLearn() {
     final List<String> topics = [
-      "Understanding PCOS", "Understanding Endometriosis", "Understanding PMDD", "Understanding Irregular Cycles", "Hormones Explained"
+      "Understanding PCOS",
+      "Understanding Endometriosis",
+      "Understanding PMDD",
+      "Understanding Irregular Cycles",
+      "Hormones Explained",
     ];
 
     // The 74 articles that used to live in these maps are now seeded
@@ -6579,14 +7354,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               return GestureDetector(
                 onTap: () => setState(() => _hormonalDiscoverTopic = topic),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
+                    color: isSelected
+                        ? BlushyColors.primary
+                        : const Color(0x0F2E2623),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : BlushyColors.text,
@@ -6615,23 +7395,39 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Text(
                       article['title']!,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       article['desc']!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        color: BlushyColors.secondaryText,
+                        height: 1.4,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         TextButton(
                           onPressed: () {
-                            _showArticleDialog(context, article['title']!, article['desc']!);
+                            _showArticleDialog(
+                              context,
+                              article['title']!,
+                              article['desc']!,
+                            );
                           },
                           child: Text(
-                            "Read",
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                            AppLocalizations.of(context).dashRead,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: BlushyColors.primary,
+                            ),
                           ),
                         ),
                         const Spacer(),
@@ -6644,7 +7440,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           onPressed: () {
                             setState(() {
                               if (isSaved) {
-                                _hormonalSavedArticles.remove(article['title']!);
+                                _hormonalSavedArticles.remove(
+                                  article['title']!,
+                                );
                               } else {
                                 _hormonalSavedArticles.add(article['title']!);
                               }
@@ -6652,8 +7450,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18, color: BlushyColors.secondaryText),
-                          onPressed: () => _openAskSiaChat(context, "Explain this article: ${article['title']}"),
+                          icon: const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 18,
+                            color: BlushyColors.secondaryText,
+                          ),
+                          onPressed: () => _openAskSiaChat(
+                            context,
+                            "Explain this article: ${article['title']}",
+                          ),
                         ),
                       ],
                     ),
@@ -6668,7 +7473,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 8: COMMUNITY ---
-
 
   // --- SECTION 9: HEALTH TIMELINE (Chronological Health Journey) ---
   /// Timeline: the user's own logged events in order, nothing else.
@@ -6690,7 +7494,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             children: [
               Text(
                 heading,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.secondaryText,
@@ -6700,7 +7504,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               const SizedBox(height: 4),
               Text(
                 subheading,
-                style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
             ],
           ),
@@ -6718,12 +7525,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             onRetry: _loadTimeline,
             emptyMessage: AppLocalizations.of(context).dashNothingLoggedYet,
             emptyActionLabel: AppLocalizations.of(context).dashLogFirstCheckIn,
+            insufficientDataActionLabel: AppLocalizations.of(
+              context,
+            ).dashLogTodayCheckIn,
             onEmptyAction: _scrollToCheckIn,
             builder: (context, timeline) {
               if (_timelineEntries.isEmpty) {
                 return Text(
                   AppLocalizations.of(context).dashNothingLoggedYet,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 12,
                     color: BlushyColors.secondaryText,
                     height: 1.5,
@@ -6736,17 +7546,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   ...List.generate(_timelineEntries.length, (index) {
                     return _buildTimelineRow(
                       _timelineEntries[index],
-                      isLast: index == _timelineEntries.length - 1 && !_timelineHasMore,
+                      isLast:
+                          index == _timelineEntries.length - 1 &&
+                          !_timelineHasMore,
                     );
                   }),
                   if (_timelineHasMore)
                     Align(
                       alignment: Alignment.center,
                       child: TextButton(
-                        onPressed: _timelineLoadingMore ? null : () => _loadTimeline(append: true),
+                        onPressed: _timelineLoadingMore
+                            ? null
+                            : () => _loadTimeline(append: true),
                         child: Text(
-                          _timelineLoadingMore ? "Loading..." : "Load earlier entries",
-                          style: GoogleFonts.poppins(
+                          _timelineLoadingMore
+                              ? "Loading..."
+                              : "Load earlier entries",
+                          style: GoogleFonts.manrope(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: BlushyColors.primary,
@@ -6773,7 +7589,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             flex: 26,
             child: Text(
               _timelineDateLabel(entry.date),
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: BlushyColors.primary,
@@ -6797,7 +7613,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     Expanded(
                       child: Text(
                         entry.displayText,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: BlushyColors.text,
@@ -6808,8 +7624,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     // shown as their own record (spec section 6).
                     if (!entry.editable)
                       Text(
-                        "Derived",
-                        style: GoogleFonts.poppins(fontSize: 9, color: BlushyColors.secondaryText),
+                        AppLocalizations.of(context).dashDerived,
+                        style: GoogleFonts.manrope(
+                          fontSize: 9,
+                          color: BlushyColors.secondaryText,
+                        ),
                       ),
                   ],
                 ),
@@ -6826,7 +7645,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   Widget _buildHormonalTimeline() {
-    return _buildTimelineSection(heading: "PAST JOURNEY TIMELINE", subheading: "Chronological record of what you have logged");
+    return _buildTimelineSection(
+      heading: "PAST JOURNEY TIMELINE",
+      subheading: "Chronological record of what you have logged",
+    );
   }
 
   // --- SECTION 10: MONTHLY REFLECTION ---
@@ -6835,8 +7657,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   Widget _buildHormonalHealthHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -6850,13 +7670,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width < 768
+                        ? 640
+                        : double.infinity,
+                  ),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 32),
                       _buildHormonalCycleHealth(),
                       const SizedBox(height: 32),
                       _buildHormonalCheckIn(),
@@ -6868,8 +7693,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildHormonalSiaInsights(),
                       const SizedBox(height: 32),
                       _buildHormonalPatterns(),
-                      const SizedBox(height: 32),
-                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildConditionProfileCard(),
                       const SizedBox(height: 32),
@@ -6898,10 +7721,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   constraints: const BoxConstraints(maxWidth: double.infinity),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 36,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 48),
                       _buildHormonalCycleHealth(),
                       const SizedBox(height: 48),
                       _buildHormonalCheckIn(),
@@ -6913,8 +7737,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildHormonalSiaInsights(),
                       const SizedBox(height: 48),
                       _buildHormonalPatterns(),
-                      const SizedBox(height: 48),
-                      const TodaysContextSection(),
                       const SizedBox(height: 48),
                       _buildConditionProfileCard(),
                       const SizedBox(height: 48),
@@ -6942,13 +7764,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 alignment: Alignment.topCenter,
                 child: Container(
                   width: min(1440.0, width - 64.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 40,
+                  ),
                   child: ListView(
                     controller: _hormonalHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
                       _buildHormonalCycleHealth(),
                       const SizedBox(height: 24),
                       _buildHormonalCheckIn(),
@@ -6956,8 +7779,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -7028,8 +7849,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("FERTILITY TIMELINE"),
               const SizedBox(height: 6),
               Text(
-                "Your Fertility Journey",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashFertilityJourney,
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -7067,7 +7888,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 children: [
                                   Text(
                                     cycleData['cycleDayText'] as String,
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
                                       color: BlushyColors.text,
@@ -7076,14 +7897,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                   const SizedBox(height: 2),
                                   Text(
                                     cycleData['subtitle'] as String,
-                                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 12,
+                                      color: BlushyColors.secondaryText,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(width: 8),
                             IconButton(
-                              icon: const Icon(Icons.edit, color: BlushyColors.primary, size: 20),
+                              icon: const Icon(
+                                Icons.edit,
+                                color: BlushyColors.primary,
+                                size: 20,
+                              ),
                               onPressed: () {
                                 _showLogPeriodBottomSheet(context);
                               },
@@ -7099,16 +7927,33 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       OutlinedButton(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Ovulation logged successfully!")),
+                            SnackBar(
+                              content: Text(
+                                AppLocalizations.of(
+                                  context,
+                                ).dashOvulationLoggedSuccessfully,
+                              ),
+                            ),
                           );
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: BlushyColors.primary,
                           side: const BorderSide(color: BlushyColors.primary),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
-                        child: Text("Log Ovulation", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          AppLocalizations.of(context).dashLogOvulation,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -7129,11 +7974,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       _buildStartedLegendDot("Menstrual", BlushyColors.primary),
                       const SizedBox(width: 14),
-                      _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
+                      _buildStartedLegendDot(
+                        "Follicular",
+                        const Color(0xFFFF9B9E),
+                      ),
                       const SizedBox(width: 14),
-                      _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800)),
+                      _buildStartedLegendDot(
+                        "Ovulation",
+                        const Color(0xFFFFB800),
+                      ),
                       const SizedBox(width: 14),
-                      _buildStartedLegendDot("Luteal", const Color(0xFF6F42F5)),
+                      _buildStartedLegendDot("Luteal", BlushyColors.accent),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -7142,9 +7993,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildMetricLabel("Fertile Window", cycleData['fertileWindow'] as String),
-                      _buildMetricLabel("Expected Period", cycleData['expectedPeriod'] as String),
-                      _buildMetricLabel("Rec. Test Day", cycleData['recTestDay'] as String),
+                      _buildMetricLabel(
+                        "Fertile Window",
+                        cycleData['fertileWindow'] as String,
+                      ),
+                      _buildMetricLabel(
+                        "Expected Period",
+                        cycleData['expectedPeriod'] as String,
+                      ),
+                      _buildMetricLabel(
+                        "Rec. Test Day",
+                        cycleData['recTestDay'] as String,
+                      ),
                     ],
                   ),
                 ],
@@ -7157,250 +8017,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 3: TODAY'S CHECK-IN ---
-  Widget _buildTtcCheckIn() {
-    final List<Map<String, dynamic>> moodOptions = [
-      {"icon": "✨", "label": "Hopeful"},
-      {"icon": "🌿", "label": "Calm"},
-      {"icon": "😰", "label": "Anxious"},
-      {"icon": "🥱", "label": "Tired"},
-      {"icon": "🥺", "label": "Sensitive"},
-    ];
-
-    final List<String> mucusOptions = ["Dry", "Sticky", "Creamy", "Eggwhite"];
-    final List<String> lhOptions = ["Low", "High", "Peak"];
-    final List<String> intercourseOptions = ["Yes", "No"];
-    final List<String> exerciseOptions = ["Active", "Light", "None"];
-    final List<String> vitaminOptions = ["Taken", "Not Taken"];
-
-    return Column(
-      key: _checkInKey,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading("TODAY'S CHECK-IN"),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Shown when something just logged matched a reviewed red flag
-              // rule, so the reviewed instruction replaces the usual
-              // confirmation rather than sitting alongside it.
-              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
-              // Mood Selector
-              Text(
-                AppLocalizations.of(context).dashMood,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
-                  final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
-                  final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedFeeling = opt['label'];
-                      });
-                      _persistCheckinAnswer('mood', opt['label'].toString());
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Logged Mood: ${opt['label']}"),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? BlushyColors.primary : BlushyColors.border,
-                              width: isSelected ? 1.5 : 0.8,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              _optionIcon(opt['icon']),
-                              size: 20,
-                              color: isSelected
-                                  ? BlushyColors.primary
-                                  : BlushyColors.text,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          opt['label'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              // Cervical Mucus (Shown if selected in symptoms/questionnaire)
-              if (_isMetricSelected(pc, ['mucus', 'cervical mucus', 'discharge', 'fertility'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("CERVICAL MUCUS", mucusOptions, _ttcCervicalMucus, (val) {
-                  setState(() => _ttcCervicalMucus = val);
-                }, logCategoryKey: 'ttc_log'),
-              ],
-
-              // LH Test Result
-              if (_isMetricSelected(pc, ['lh', 'ovulation test', 'opk', 'strip', 'fertility'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("OVULATION TEST (LH)", lhOptions, _ttcLhTest, (val) {
-                  setState(() => _ttcLhTest = val);
-                }, logCategoryKey: 'ttc_log'),
-              ],
-
-              // Intercourse
-              if (_isMetricSelected(pc, ['intercourse', 'sex', 'conception', 'trying'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("INTERCOURSE LOG", intercourseOptions, _ttcIntercourse, (val) {
-                  setState(() => _ttcIntercourse = val);
-                }, logCategoryKey: 'ttc_log'),
-              ],
-
-              // BBT Temperature Slider
-              if (_isMetricSelected(pc, ['bbt', 'temperature', 'basal', 'thermometer'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                Text(
-                  "BASAL BODY TEMPERATURE (BBT)",
-                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "${(_ttcBbt ?? 36.5).toStringAsFixed(1)}C",
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                    ),
-                    Expanded(
-                      child: Slider(
-                        value: _ttcBbt ?? 36.5,
-                        min: 35.5,
-                        max: 37.8,
-                        activeColor: BlushyColors.primary,
-                        inactiveColor: const Color(0xFFF5F0EB),
-                        onChanged: (val) {
-                          setState(() {
-                            _ttcBbt = val;
-                          });
-                          ApiAuthService().saveOnboardingAnswers({
-                            'ttc_log': {'metric': 'BBT', 'value': val, 'date': DateTime.now().toIso8601String()}
-                          }).catchError((_) => <String, dynamic>{});
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              // Prenatal Vitamins
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-              _buildLivingHorizontalSelector("PRENATAL VITAMINS", vitaminOptions, _ttcVitamins, (val) {
-                setState(() => _ttcVitamins = val);
-              }, logCategoryKey: 'ttc_log'),
-
-              // Exercise Activity
-              if (_isMetricSelected(pc, ['exercise', 'workout', 'fitness', 'activity', 'walk'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("EXERCISE ACTIVITY", exerciseOptions, _ttcExercise, (val) {
-                  setState(() => _ttcExercise = val);
-                }, logCategoryKey: 'ttc_log'),
-              ],
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Notes & M Studio triggers
-              Text(
-                "NOTES & M STUDIO",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        VoiceNoteBottomSheet.show(context);
-                      },
-                      icon: const Icon(Icons.mic, size: 18),
-                      label: const Text("Voice Note"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("TTC M Studio Entry"),
-                            content: const TextField(
-                              decoration: InputDecoration(hintText: "Reflect on today's state..."),
-                              maxLines: 3,
-                            ),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text("M Studio"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildTtcCheckIn() => _buildCheckIn();
 
   // --- SECTION 4: FERTILITY INSIGHTS (AI Observations) ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildTtcInsights() {
-    return const RealInsightsList(
-      title: 'What your logs show',
-    );
+    return const RealInsightsList(title: 'What your logs show');
   }
 
   // --- SECTION 5: TODAY'S PLAN ---
@@ -7414,7 +8037,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- SECTION 6: LEARN ---
   Widget _buildTtcLearn() {
     final List<String> topics = [
-      "Understanding Ovulation", "Fertile Window", "Egg Health", "Stress & Fertility", "Understanding BBT"
+      "Understanding Ovulation",
+      "Fertile Window",
+      "Egg Health",
+      "Stress & Fertility",
+      "Understanding BBT",
     ];
 
     // The 74 articles that used to live in these maps are now seeded
@@ -7444,14 +8071,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               return GestureDetector(
                 onTap: () => setState(() => _ttcDiscoverTopic = topic),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
+                    color: isSelected
+                        ? BlushyColors.primary
+                        : const Color(0x0F2E2623),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : BlushyColors.text,
@@ -7480,23 +8112,39 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Text(
                       article['title']!,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       article['desc']!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        color: BlushyColors.secondaryText,
+                        height: 1.4,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         TextButton(
                           onPressed: () {
-                            _showArticleDialog(context, article['title']!, article['desc']!);
+                            _showArticleDialog(
+                              context,
+                              article['title']!,
+                              article['desc']!,
+                            );
                           },
                           child: Text(
-                            "Read",
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                            AppLocalizations.of(context).dashRead,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: BlushyColors.primary,
+                            ),
                           ),
                         ),
                         const Spacer(),
@@ -7517,8 +8165,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18, color: BlushyColors.secondaryText),
-                          onPressed: () => _openAskSiaChat(context, "Explain this article: ${article['title']}"),
+                          icon: const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 18,
+                            color: BlushyColors.secondaryText,
+                          ),
+                          onPressed: () => _openAskSiaChat(
+                            context,
+                            "Explain this article: ${article['title']}",
+                          ),
                         ),
                       ],
                     ),
@@ -7535,9 +8190,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- SECTION 7: PARTNER MODE ---
   Widget _buildTtcPartner() {
     final List<Map<String, String>> tasks = [
-      {"task": "Prepare ovulation test strips in the bathroom.", "who": "Partner Task"},
-      {"task": "Incorporate prenatal vitamins with breakfast.", "who": "Coordinated Task"},
-      {"task": "Schedule evening relaxing walk together.", "who": "Coordinated Task"}
+      {
+        "task": "Prepare ovulation test strips in the bathroom.",
+        "who": "Partner Task",
+      },
+      {
+        "task": "Incorporate prenatal vitamins with breakfast.",
+        "who": "Coordinated Task",
+      },
+      {
+        "task": "Schedule evening relaxing walk together.",
+        "who": "Coordinated Task",
+      },
     ];
 
     return Column(
@@ -7560,28 +8224,52 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             children: [
               Row(
                 children: [
-                  const Icon(Icons.favorite, color: BlushyColors.primary, size: 20),
+                  const Icon(
+                    Icons.favorite,
+                    color: BlushyColors.primary,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Text(
-                    "Shared Timeline & Reminders",
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    AppLocalizations.of(context).dashSharedTimelineReminders,
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.text,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               Text(
-                "Encouraging Message:",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                AppLocalizations.of(context).dashEncouragingMessage,
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 "\"Every step we take together brings us closer. I'm right here with you today.\"",
-                style: GoogleFonts.poppins(fontSize: 16, fontStyle: FontStyle.italic, color: BlushyColors.text, fontWeight: FontWeight.w600),
+                style: GoogleFonts.manrope(
+                  fontSize: 16,
+                  fontStyle: FontStyle.italic,
+                  color: BlushyColors.text,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const Divider(height: 32, color: Color(0xFFF5F0EB)),
               Text(
-                "PARTNER TASKS & CONVERSATION STARTERS",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                AppLocalizations.of(
+                  context,
+                ).dashPartnerTasksConversationStarters,
+                style: GoogleFonts.manrope(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 12),
               ...tasks.map((t) {
@@ -7589,24 +8277,38 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(vertical: 6.0),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_box_outline_blank, size: 18, color: BlushyColors.primary),
+                      const Icon(
+                        Icons.check_box_outline_blank,
+                        size: 18,
+                        color: BlushyColors.primary,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           t['task']!,
-                          style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: BlushyColors.text,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0x0F2E2623),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           t['who']!,
-                          style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            color: BlushyColors.secondaryText,
+                          ),
                         ),
                       ),
                     ],
@@ -7624,14 +8326,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildTtcPatterns() {
-    return const RealInsightsList(
-      title: 'Patterns in your logs',
-    );
+    return const RealInsightsList(title: 'Patterns in your logs');
   }
 
   // --- SECTION 9: JOURNEY TIMELINE ---
   Widget _buildTtcJourneyTimeline() {
-    return _buildTimelineSection(heading: "YOUR JOURNEY", subheading: "Chronological record of what you have logged");
+    return _buildTimelineSection(
+      heading: "YOUR JOURNEY",
+      subheading: "Chronological record of what you have logged",
+    );
   }
 
   // --- SECTION 10: MONTHLY REFLECTION ---
@@ -7640,8 +8343,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   Widget _buildTTCHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -7655,13 +8356,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width < 768
+                        ? 640
+                        : double.infinity,
+                  ),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 32),
                       _buildTtcTimeline(),
                       const SizedBox(height: 32),
                       _buildTtcCheckIn(),
@@ -7673,8 +8379,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildTtcInsights(),
                       const SizedBox(height: 32),
                       _buildTtcPatterns(),
-                      const SizedBox(height: 32),
-                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildTtcPartner(),
                       const SizedBox(height: 32),
@@ -7701,10 +8405,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   constraints: const BoxConstraints(maxWidth: double.infinity),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 36,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 48),
                       _buildTtcTimeline(),
                       const SizedBox(height: 48),
                       _buildTtcCheckIn(),
@@ -7716,8 +8421,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildTtcInsights(),
                       const SizedBox(height: 48),
                       _buildTtcPatterns(),
-                      const SizedBox(height: 48),
-                      const TodaysContextSection(),
                       const SizedBox(height: 48),
                       _buildTtcPartner(),
                       const SizedBox(height: 48),
@@ -7743,13 +8446,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 alignment: Alignment.topCenter,
                 child: Container(
                   width: min(1440.0, width - 64.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 40,
+                  ),
                   child: ListView(
                     controller: _ttcHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
                       _buildTtcTimeline(),
                       const SizedBox(height: 24),
                       _buildTtcCheckIn(),
@@ -7757,8 +8461,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -7817,7 +8519,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   /// Null when no due date is known, so callers say so rather than naming a
   /// week nobody reported.
   int? _pregnancyWeek() {
-    final DateTime? dueDate = BlushyOSProvider.of(context).personalContext.dueDate;
+    final DateTime? dueDate = BlushyOSProvider.of(
+      context,
+    ).personalContext.dueDate;
     if (dueDate == null) return null;
     final daysToGo = dueDate.difference(DateTime.now()).inDays;
     return ((280 - daysToGo) / 7).floor();
@@ -7869,7 +8573,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
       .replaceAll(RegExp(r'^_+|_+$'), '');
 
-
   // --- SECTION 2: BABY THIS WEEK ---
   Widget _buildPregnancyBabyThisWeek() {
     final List<String> highlights = [
@@ -7894,7 +8597,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 _pregnancyWeek() == null
                     ? "This week"
                     : "Week ${_pregnancyWeek()} development",
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -7926,7 +8629,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           // stage of pregnancy. Size guidance belongs in the
                           // reviewed content pipeline, keyed by week.
                           "Your midwife or doctor can tell you what to expect at this stage.",
-                          style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.primary, height: 1.3),
+                          style: GoogleFonts.manrope(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: BlushyColors.primary,
+                            height: 1.3,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         ...highlights.map((h) {
@@ -7934,12 +8642,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                             padding: const EdgeInsets.symmetric(vertical: 4.0),
                             child: Row(
                               children: [
-                                const Icon(Icons.check_circle_outline, size: 16, color: BlushyColors.primary),
+                                const Icon(
+                                  Icons.check_circle_outline,
+                                  size: 16,
+                                  color: BlushyColors.primary,
+                                ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     h,
-                                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 12,
+                                      color: BlushyColors.secondaryText,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -7957,7 +8672,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       decoration: BoxDecoration(
                         color: const Color(0xFFFDFBF7),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: BlushyColors.border, width: 0.8),
+                        border: Border.all(
+                          color: BlushyColors.border,
+                          width: 0.8,
+                        ),
                       ),
                       child: Center(
                         child: Text(
@@ -7978,14 +8696,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       // Week-specific development detail is clinical content and belongs
                       // in the reviewed pipeline, keyed by week. This was fixed at
                       // week 24 and shown at every stage.
-                      _showArticleDialog(context, "Development this week", "Week by week development notes will appear here once they have been reviewed. Your midwife or doctor is the best source in the meantime.");
+                      _showArticleDialog(
+                        context,
+                        "Development this week",
+                        "Week by week development notes will appear here once they have been reviewed. Your midwife or doctor is the best source in the meantime.",
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: BlushyColors.primary,
                       side: const BorderSide(color: BlushyColors.primary),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    child: const Text("Learn More"),
+                    child: Text(AppLocalizations.of(context).dashLearnMore),
                   ),
                 ],
               ),
@@ -8007,308 +8731,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 4: TODAY'S CHECK-IN ---
-  Widget _buildPregnancyCheckIn() {
-    final List<Map<String, dynamic>> moodOptions = [
-      {"icon": "🥰", "label": "Joyful"},
-      {"icon": "🌿", "label": "Calm"},
-      {"icon": "🥱", "label": "Tired"},
-      {"icon": "🤢", "label": "Nauseous"},
-      {"icon": "🎭", "label": "Moody"},
-    ];
-
-    final List<String> movementOptions = ["Active", "Normal", "Quiet"];
-    final List<String> contractionOptions = ["None", "Mild", "Strong"];
-    final List<String> exerciseOptions = ["Active", "Light", "None"];
-    final List<String> vitaminOptions = ["Taken", "Not Taken"];
-
-    return Column(
-      key: _checkInKey,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading("TODAY'S CHECK-IN"),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Shown when something just logged matched a reviewed red flag
-              // rule, so the reviewed instruction replaces the usual
-              // confirmation rather than sitting alongside it.
-              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
-              // Mood Selector
-              Text(
-                AppLocalizations.of(context).dashMood,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
-                  final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
-                  final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedFeeling = opt['label'];
-                      });
-                      _persistCheckinAnswer('mood', opt['label'].toString());
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Logged Mood: ${opt['label']}"),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? BlushyColors.primary : BlushyColors.border,
-                              width: isSelected ? 1.5 : 0.8,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              _optionIcon(opt['icon']),
-                              size: 20,
-                              color: isSelected
-                                  ? BlushyColors.primary
-                                  : BlushyColors.text,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          opt['label'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              // Baby Movement (Shown if tracking kicks/movement)
-              if (_isMetricSelected(pc, ['movement', 'kicks', 'baby activity', 'fetal'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("BABY MOVEMENT", movementOptions, _pregnancyBabyMovement, (val) {
-                  setState(() => _pregnancyBabyMovement = val);
-                }, logCategoryKey: 'pregnancy_log'),
-              ],
-
-              // Kick Count logger
-              if (_isMetricSelected(pc, ['kicks', 'kick count', 'fetal movement', 'baby'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                Text(
-                  "KICK COUNT (DAILY)",
-                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, color: BlushyColors.primary),
-                      onPressed: () {
-                        if ((_pregnancyKickCount ?? 0) > 0) {
-                          setState(() => _pregnancyKickCount = (_pregnancyKickCount ?? 0) - 1);
-                          ApiAuthService().saveOnboardingAnswers({
-                            'pregnancy_log': {'metric': 'kick_count', 'value': _pregnancyKickCount, 'date': DateTime.now().toIso8601String()}
-                          }).catchError((_) => <String, dynamic>{});
-                        }
-                      },
-                    ),
-                    Text(
-                      "${_pregnancyKickCount ?? 0} Kicks",
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.primary),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline, color: BlushyColors.primary),
-                      onPressed: () {
-                        setState(() => _pregnancyKickCount = (_pregnancyKickCount ?? 0) + 1);
-                        ApiAuthService().saveOnboardingAnswers({
-                          'pregnancy_log': {'metric': 'kick_count', 'value': _pregnancyKickCount, 'date': DateTime.now().toIso8601String()}
-                        }).catchError((_) => <String, dynamic>{});
-                      },
-                    ),
-                  ],
-                ),
-              ],
-
-              // Contractions
-              if (_isMetricSelected(pc, ['contractions', 'braxton hicks', 'labor', 'cramps'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("CONTRACTIONS", contractionOptions, _pregnancyContractions, (val) {
-                  setState(() => _pregnancyContractions = val);
-                }, logCategoryKey: 'pregnancy_log'),
-              ],
-
-              // Vitamins
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-              _buildLivingHorizontalSelector("PRENATAL VITAMINS", vitaminOptions, _pregnancyVitamins, (val) {
-                setState(() => _pregnancyVitamins = val);
-              }, logCategoryKey: 'pregnancy_log'),
-
-              // Exercise Activity
-              if (_isMetricSelected(pc, ['exercise', 'workout', 'fitness', 'activity', 'walk', 'yoga'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("EXERCISE ACTIVITY", exerciseOptions, _pregnancyExercise, (val) {
-                  setState(() => _pregnancyExercise = val);
-                }, logCategoryKey: 'pregnancy_log'),
-              ],
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Optional Blood Pressure / Blood Sugar
-              Text(
-                "OPTIONAL HEALTH DATA",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Log Blood Pressure"),
-                            content: const TextField(
-                              decoration: InputDecoration(hintText: "Enter e.g. 120/80 mmHg"),
-                            ),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.favorite_outline, size: 18),
-                      label: const Text("Blood Pressure"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Log Blood Sugar"),
-                            content: const TextField(
-                              decoration: InputDecoration(hintText: "Enter e.g. 95 mg/dL"),
-                            ),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.water_drop_outlined, size: 18),
-                      label: const Text("Blood Sugar"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Notes & Reflections
-              Text(
-                AppLocalizations.of(context).dashNotesReflections,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        VoiceNoteBottomSheet.show(context);
-                      },
-                      icon: const Icon(Icons.mic, size: 18),
-                      label: const Text("Voice Note"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Pregnancy M Studio Entry"),
-                            content: const TextField(
-                              decoration: InputDecoration(hintText: "Reflect on this week..."),
-                              maxLines: 3,
-                            ),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text("M Studio"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildPregnancyCheckIn() => _buildCheckIn();
 
   // --- SECTION 5: DOCSY INSIGHTS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPregnancyInsights() {
-    return const RealInsightsList(
-      title: 'What your logs show',
-    );
+    return const RealInsightsList(title: 'What your logs show');
   }
 
   // --- SECTION 6: TODAY'S CARE PLAN ---
@@ -8346,11 +8775,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             children: [
               Row(
                 children: [
-                  const Icon(Icons.assignment_outlined, color: BlushyColors.primary, size: 20),
+                  const Icon(
+                    Icons.assignment_outlined,
+                    color: BlushyColors.primary,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Text(
-                    "Pregnancy Prep & Lists",
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    AppLocalizations.of(context).dashPregnancyPrepLists,
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.text,
+                    ),
                   ),
                 ],
               ),
@@ -8360,24 +8797,38 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(vertical: 6.0),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_box_outline_blank, size: 18, color: BlushyColors.primary),
+                      const Icon(
+                        Icons.check_box_outline_blank,
+                        size: 18,
+                        color: BlushyColors.primary,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           c['item']!,
-                          style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: BlushyColors.text,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0x0F2E2623),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           c['unlock']!,
-                          style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            color: BlushyColors.secondaryText,
+                          ),
                         ),
                       ),
                     ],
@@ -8394,7 +8845,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- SECTION 8: LEARN ---
   Widget _buildPregnancyLearn() {
     final List<String> topics = [
-      "Baby Development", "Mother's Body", "Nutrition", "Sleep", "Labour Preparation"
+      "Baby Development",
+      "Mother's Body",
+      "Nutrition",
+      "Sleep",
+      "Labour Preparation",
     ];
 
     // The 74 articles that used to live in these maps are now seeded
@@ -8424,14 +8879,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               return GestureDetector(
                 onTap: () => setState(() => _pregnancyDiscoverTopic = topic),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
+                    color: isSelected
+                        ? BlushyColors.primary
+                        : const Color(0x0F2E2623),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : BlushyColors.text,
@@ -8460,23 +8920,39 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Text(
                       article['title']!,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       article['desc']!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        color: BlushyColors.secondaryText,
+                        height: 1.4,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         TextButton(
                           onPressed: () {
-                            _showArticleDialog(context, article['title']!, article['desc']!);
+                            _showArticleDialog(
+                              context,
+                              article['title']!,
+                              article['desc']!,
+                            );
                           },
                           child: Text(
-                            "Read",
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                            AppLocalizations.of(context).dashRead,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: BlushyColors.primary,
+                            ),
                           ),
                         ),
                         const Spacer(),
@@ -8489,7 +8965,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           onPressed: () {
                             setState(() {
                               if (isSaved) {
-                                _pregnancySavedArticles.remove(article['title']!);
+                                _pregnancySavedArticles.remove(
+                                  article['title']!,
+                                );
                               } else {
                                 _pregnancySavedArticles.add(article['title']!);
                               }
@@ -8497,8 +8975,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18, color: BlushyColors.secondaryText),
-                          onPressed: () => _openAskSiaChat(context, "Explain this article: ${article['title']}"),
+                          icon: const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 18,
+                            color: BlushyColors.secondaryText,
+                          ),
+                          onPressed: () => _openAskSiaChat(
+                            context,
+                            "Explain this article: ${article['title']}",
+                          ),
                         ),
                       ],
                     ),
@@ -8515,9 +9000,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- SECTION 9: PARTNER & FAMILY ---
   Widget _buildPregnancyPartner() {
     final List<Map<String, String>> tasks = [
-      {"task": "Incorporate iron supplements with breakfast.", "who": "Coordinated"},
+      {
+        "task": "Incorporate iron supplements with breakfast.",
+        "who": "Coordinated",
+      },
       {"task": "Prepare side sleep body pillows.", "who": "Partner Task"},
-      {"task": "Sync 24 Week scan calendar timings.", "who": "Coordinated"}
+      {"task": "Sync 24 Week scan calendar timings.", "who": "Coordinated"},
     ];
 
     return Column(
@@ -8540,18 +9028,30 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             children: [
               Row(
                 children: [
-                  const Icon(Icons.favorite, color: BlushyColors.primary, size: 20),
+                  const Icon(
+                    Icons.favorite,
+                    color: BlushyColors.primary,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Text(
-                    "Shared Pregnancy Timeline",
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    AppLocalizations.of(context).dashSharedPregnancyTimeline,
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.text,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               Text(
-                "Coordinated Checklists & Tasks:",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                AppLocalizations.of(context).dashCoordinatedChecklistsTasks,
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 12),
               ...tasks.map((t) {
@@ -8559,24 +9059,38 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(vertical: 6.0),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_box_outline_blank, size: 18, color: BlushyColors.primary),
+                      const Icon(
+                        Icons.check_box_outline_blank,
+                        size: 18,
+                        color: BlushyColors.primary,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           t['task']!,
-                          style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: BlushyColors.text,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0x0F2E2623),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           t['who']!,
-                          style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            color: BlushyColors.secondaryText,
+                          ),
                         ),
                       ),
                     ],
@@ -8606,8 +9120,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   Widget _buildPregnancyHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -8621,13 +9133,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width < 768
+                        ? 640
+                        : double.infinity,
+                  ),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 32),
                       _buildPregnancyBabyThisWeek(),
                       const SizedBox(height: 32),
                       _buildPregnancyCheckIn(),
@@ -8637,8 +9154,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildPregnancyInsights(),
-                      const SizedBox(height: 32),
-                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildPregnancyPartner(),
                       const SizedBox(height: 32),
@@ -8671,10 +9186,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   constraints: const BoxConstraints(maxWidth: double.infinity),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 36,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 48),
                       _buildPregnancyBabyThisWeek(),
                       const SizedBox(height: 48),
                       _buildPregnancyCheckIn(),
@@ -8684,8 +9200,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildPregnancyInsights(),
-                      const SizedBox(height: 48),
-                      const TodaysContextSection(),
                       const SizedBox(height: 48),
                       _buildPregnancyPartner(),
                       const SizedBox(height: 48),
@@ -8717,20 +9231,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 alignment: Alignment.topCenter,
                 child: Container(
                   width: min(1440.0, width - 64.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 40,
+                  ),
                   child: ListView(
                     controller: _pregnancyHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
                       _buildPregnancyCheckIn(),
                       const SizedBox(height: 24),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -8824,12 +9337,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       {"icon": "🥺", "label": "Sensitive"},
     ];
 
-    final List<String> feedingOptions = ["Breastfeeding", "Bottle Feeding", "Pumping"];
-    final List<String> bleedingOptions = ["None", "Spotting", "Flow"];
-    final List<String> incisionOptions = ["Healing", "Sore", "Not Applicable"];
-    final List<String> pelvicOptions = ["Completed", "Not Done"];
-    final List<String> waterOptions = ["2L", "2.5L", "3L"];
-    final List<String> exerciseOptions = ["Light Walk", "Rest", "None"];
+    final List<String> feedingOptions = CheckinVocabulary.feeding;
+    final List<String> bleedingOptions = CheckinVocabulary.postpartumBleeding;
+    final List<String> incisionOptions = CheckinVocabulary.incisionHealing;
+    final List<String> pelvicOptions = CheckinVocabulary.pelvicFloor;
+    final List<String> waterOptions = CheckinVocabulary.waterHigher;
+    final List<String> exerciseOptions = CheckinVocabulary.exerciseGentle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -8852,21 +9365,34 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               // Shown when something just logged matched a reviewed red flag
               // rule, so the reviewed instruction replaces the usual
               // confirmation rather than sitting alongside it.
-              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
+              if (_checkinSafety != null)
+                _buildCheckinSafetyBanner(_checkinSafety!),
               // Mood Selector
               Text(
                 AppLocalizations.of(context).dashMood,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: moodOptions.map((opt) {
                   final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
+                  final savedFeeling =
+                      checkinData['feeling'] ??
+                      (BlushyStorage.read('logged_feeling.json'))['feeling'];
                   final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
-                  final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
+                  final String? activeFeeling =
+                      _selectedFeeling ??
+                      savedFeeling ??
+                      (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
+                  final isSelected =
+                      activeFeeling != null &&
+                      activeFeeling.toString().toLowerCase() ==
+                          (opt['label'] as String).toLowerCase();
                   return GestureDetector(
                     onTap: () {
                       setState(() {
@@ -8886,10 +9412,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
+                            color: isSelected
+                                ? BlushyColors.primary.withValues(alpha: 0.1)
+                                : const Color(0xFFF9F6F0),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isSelected ? BlushyColors.primary : BlushyColors.border,
+                              color: isSelected
+                                  ? BlushyColors.primary
+                                  : BlushyColors.border,
                               width: isSelected ? 1.5 : 0.8,
                             ),
                           ),
@@ -8906,10 +9436,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         const SizedBox(height: 6),
                         Text(
                           opt['label'],
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? BlushyColors.primary
+                                : BlushyColors.secondaryText,
                           ),
                         ),
                       ],
@@ -8918,56 +9452,132 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 }).toList(),
               ),
               // Feeding Method (Shown if selected in postpartum goals)
-              if (_isMetricSelected(pc, ['feeding', 'breastfeeding', 'pumping', 'bottle', 'baby'])) ...[
+              if (_isMetricSelected(pc, [
+                'feeding',
+                'breastfeeding',
+                'pumping',
+                'bottle',
+                'baby',
+              ])) ...[
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("FEEDING METHOD", feedingOptions, _postpartumFeeding, (val) {
-                  setState(() => _postpartumFeeding = val);
-                }, logCategoryKey: 'postpartum_log'),
+                _buildLivingHorizontalSelector(
+                  "FEEDING METHOD",
+                  feedingOptions,
+                  _postpartumFeeding,
+                  (val) {
+                    setState(() => _postpartumFeeding = val);
+                    _recordCheckinEvent('feeding', val.toString());
+                  },
+                  logCategoryKey: 'postpartum_log',
+                ),
               ],
 
               // Bleeding (Lochia)
-              if (_isMetricSelected(pc, ['bleeding', 'lochia', 'recovery', 'flow'])) ...[
+              if (_isMetricSelected(pc, [
+                'bleeding',
+                'lochia',
+                'recovery',
+                'flow',
+              ])) ...[
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("BLEEDING STATUS", bleedingOptions, _postpartumBleeding, (val) {
-                  setState(() => _postpartumBleeding = val);
-                }, logCategoryKey: 'postpartum_log'),
+                _buildLivingHorizontalSelector(
+                  "BLEEDING STATUS",
+                  bleedingOptions,
+                  _postpartumBleeding,
+                  (val) {
+                    setState(() => _postpartumBleeding = val);
+                    // Recorded as lochia, never as a symptom named
+                    // "bleeding"; see lochiaBuckets.
+                    _recordCheckinEvent('postpartum_bleeding', val.toString());
+                  },
+                  logCategoryKey: 'postpartum_log',
+                ),
               ],
 
               // Incision Healing
-              if (_isMetricSelected(pc, ['incision', 'c-section', 'stitches', 'perineal', 'healing'])) ...[
+              if (_isMetricSelected(pc, [
+                'incision',
+                'c-section',
+                'stitches',
+                'perineal',
+                'healing',
+              ])) ...[
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("INCISION HEALING", incisionOptions, _postpartumIncision, (val) {
-                  setState(() => _postpartumIncision = val);
-                }, logCategoryKey: 'postpartum_log'),
+                _buildLivingHorizontalSelector(
+                  "INCISION HEALING",
+                  incisionOptions,
+                  _postpartumIncision,
+                  (val) {
+                    setState(() => _postpartumIncision = val);
+                    // "Not Applicable" maps to nothing on purpose, so this
+                    // records only when there is a wound to report on.
+                    _recordCheckinEvent('incision', val.toString());
+                  },
+                  logCategoryKey: 'postpartum_log',
+                ),
               ],
 
               // Pelvic Exercises
-              if (_isMetricSelected(pc, ['pelvic', 'pelvic floor', 'kegel', 'core'])) ...[
+              if (_isMetricSelected(pc, [
+                'pelvic',
+                'pelvic floor',
+                'kegel',
+                'core',
+              ])) ...[
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("PELVIC FLOOR EXERCISE", pelvicOptions, _postpartumPelvic, (val) {
-                  setState(() => _postpartumPelvic = val);
-                }, logCategoryKey: 'postpartum_log'),
+                _buildLivingHorizontalSelector(
+                  "PELVIC FLOOR EXERCISE",
+                  pelvicOptions,
+                  _postpartumPelvic,
+                  (val) {
+                    setState(() => _postpartumPelvic = val);
+                    _recordCheckinEvent('pelvic_floor', val.toString());
+                  },
+                  logCategoryKey: 'postpartum_log',
+                ),
               ],
 
               // Hydration
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
-              _buildLivingHorizontalSelector("DAILY HYDRATION", waterOptions, _postpartumWater, (val) {
-                setState(() => _postpartumWater = val);
-              }, logCategoryKey: 'postpartum_log'),
+              _buildLivingHorizontalSelector(
+                "DAILY HYDRATION",
+                waterOptions,
+                _postpartumWater,
+                (val) {
+                  setState(() => _postpartumWater = val);
+                },
+                logCategoryKey: 'postpartum_log',
+              ),
 
               // Gentle Movement
-              if (_isMetricSelected(pc, ['exercise', 'walk', 'movement', 'activity', 'fitness'])) ...[
+              if (_isMetricSelected(pc, [
+                'exercise',
+                'walk',
+                'movement',
+                'activity',
+                'fitness',
+              ])) ...[
                 const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("GENTLE MOVEMENT", exerciseOptions, _postpartumExercise, (val) {
-                  setState(() => _postpartumExercise = val);
-                }, logCategoryKey: 'postpartum_log'),
+                _buildLivingHorizontalSelector(
+                  "GENTLE MOVEMENT",
+                  exerciseOptions,
+                  _postpartumExercise,
+                  (val) {
+                    setState(() => _postpartumExercise = val);
+                  },
+                  logCategoryKey: 'postpartum_log',
+                ),
               ],
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
               // Optional Weight
               Text(
-                "WEIGHT (OPTIONAL)",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                AppLocalizations.of(context).dashWeightOptional,
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
@@ -8977,11 +9587,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     builder: (context) => AlertDialog(
                       title: Text(AppLocalizations.of(context).dashLogWeight),
                       content: const TextField(
-                        decoration: InputDecoration(hintText: "Enter weight in kg"),
+                        decoration: InputDecoration(
+                          hintText: "Enter weight in kg",
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(AppLocalizations.of(context).dashSave),
+                        ),
                       ],
                     ),
                   );
@@ -8991,8 +9606,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 style: OutlinedButton.styleFrom(
                   foregroundColor: BlushyColors.primary,
                   side: const BorderSide(color: BlushyColors.primary),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
@@ -9000,7 +9620,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               // Notes & Reflections
               Text(
                 AppLocalizations.of(context).dashNotesReflections,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -9011,12 +9635,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         VoiceNoteBottomSheet.show(context);
                       },
                       icon: const Icon(Icons.mic, size: 18),
-                      label: const Text("Voice Note"),
+                      label: Text(AppLocalizations.of(context).dashVoiceNote),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: BlushyColors.primary,
                         side: const BorderSide(color: BlushyColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -9027,24 +9653,37 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text("Postpartum M Studio Entry"),
+                            title: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).dashPostpartumMStudioEntry,
+                            ),
                             content: const TextField(
-                              decoration: InputDecoration(hintText: "Reflect on today's recovery..."),
+                              decoration: InputDecoration(
+                                hintText: "Reflect on today's recovery...",
+                              ),
                               maxLines: 3,
                             ),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text(
+                                  AppLocalizations.of(context).dashSave,
+                                ),
+                              ),
                             ],
                           ),
                         );
                       },
                       icon: const Icon(Icons.edit, size: 18),
-                      label: const Text("M Studio"),
+                      label: Text(AppLocalizations.of(context).dashMStudio),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: BlushyColors.primary,
                         side: const BorderSide(color: BlushyColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -9061,9 +9700,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPostpartumInsights() {
-    return const RealInsightsList(
-      title: 'What your logs show',
-    );
+    return const RealInsightsList(title: 'What your logs show');
   }
 
   // --- SECTION 5: YOUR CARE PLAN ---
@@ -9076,7 +9713,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final List<Map<String, String>> items = [
       {"item": "Feeding Session Summary", "val": "8 Sessions Logged Today"},
       {"item": "Weekly Tummy Time Target", "val": "Completed (15 mins/day)"},
-      {"item": "Skin-to-Skin Bonding Time", "val": "Logged 30 mins after shift"},
+      {
+        "item": "Skin-to-Skin Bonding Time",
+        "val": "Logged 30 mins after shift",
+      },
       {"item": "Pediatrician Check-up", "val": "Next Check: August 18"},
     ];
 
@@ -9100,11 +9740,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
             children: [
               Row(
                 children: [
-                  const Icon(Icons.child_care, color: BlushyColors.primary, size: 20),
+                  const Icon(
+                    Icons.child_care,
+                    color: BlushyColors.primary,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Text(
-                    "Mother-Baby Coordinated Tasks",
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    AppLocalizations.of(context).dashMotherBabyCoordinatedTasks,
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: BlushyColors.text,
+                    ),
                   ),
                 ],
               ),
@@ -9114,17 +9762,28 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Row(
                     children: [
-                      const Icon(Icons.bookmark_outline, size: 18, color: BlushyColors.primary),
+                      const Icon(
+                        Icons.bookmark_outline,
+                        size: 18,
+                        color: BlushyColors.primary,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           c['item']!,
-                          style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: BlushyColors.text,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       Text(
                         c['val']!,
-                        style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: BlushyColors.secondaryText,
+                        ),
                       ),
                     ],
                   ),
@@ -9140,7 +9799,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- SECTION 7: LEARN ---
   Widget _buildPostpartumLearn() {
     final List<String> topics = [
-      "Physical Recovery", "Mental Health", "Postpartum Depression", "Breastfeeding", "Pelvic Floor Recovery"
+      "Physical Recovery",
+      "Mental Health",
+      "Postpartum Depression",
+      "Breastfeeding",
+      "Pelvic Floor Recovery",
     ];
 
     // The 74 articles that used to live in these maps are now seeded
@@ -9170,14 +9833,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               return GestureDetector(
                 onTap: () => setState(() => _postpartumDiscoverTopic = topic),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
+                    color: isSelected
+                        ? BlushyColors.primary
+                        : const Color(0x0F2E2623),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : BlushyColors.text,
@@ -9206,23 +9874,39 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Text(
                       article['title']!,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       article['desc']!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        color: BlushyColors.secondaryText,
+                        height: 1.4,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         TextButton(
                           onPressed: () {
-                            _showArticleDialog(context, article['title']!, article['desc']!);
+                            _showArticleDialog(
+                              context,
+                              article['title']!,
+                              article['desc']!,
+                            );
                           },
                           child: Text(
-                            "Read",
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                            AppLocalizations.of(context).dashRead,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: BlushyColors.primary,
+                            ),
                           ),
                         ),
                         const Spacer(),
@@ -9235,7 +9919,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           onPressed: () {
                             setState(() {
                               if (isSaved) {
-                                _postpartumSavedArticles.remove(article['title']!);
+                                _postpartumSavedArticles.remove(
+                                  article['title']!,
+                                );
                               } else {
                                 _postpartumSavedArticles.add(article['title']!);
                               }
@@ -9243,8 +9929,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18, color: BlushyColors.secondaryText),
-                          onPressed: () => _openAskSiaChat(context, "Explain this article: ${article['title']}"),
+                          icon: const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 18,
+                            color: BlushyColors.secondaryText,
+                          ),
+                          onPressed: () => _openAskSiaChat(
+                            context,
+                            "Explain this article: ${article['title']}",
+                          ),
                         ),
                       ],
                     ),
@@ -9276,8 +9969,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   Widget _buildPostpartumHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -9291,24 +9982,29 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width < 768
+                        ? 640
+                        : double.infinity,
+                  ),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 32),
                       _buildPostpartumRecoveryTimeline(),
                       const SizedBox(height: 32),
                       _buildPostpartumWellbeing(),
+                      const SizedBox(height: 32),
+                      _buildCheckIn(),
                       const SizedBox(height: 32),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 32),
                       _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildPostpartumInsights(),
-                      const SizedBox(height: 32),
-                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildPostpartumCarePlan(),
                       const SizedBox(height: 32),
@@ -9337,21 +10033,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   constraints: const BoxConstraints(maxWidth: double.infinity),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 36,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 48),
                       _buildPostpartumRecoveryTimeline(),
                       const SizedBox(height: 48),
                       _buildPostpartumWellbeing(),
                       const SizedBox(height: 48),
+                      _buildCheckIn(),
+                      const SizedBox(height: 32),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 48),
                       _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildPostpartumInsights(),
-                      const SizedBox(height: 48),
-                      const TodaysContextSection(),
                       const SizedBox(height: 48),
                       _buildPostpartumCarePlan(),
                       const SizedBox(height: 48),
@@ -9379,22 +10076,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 alignment: Alignment.topCenter,
                 child: Container(
                   width: min(1440.0, width - 64.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 40,
+                  ),
                   child: ListView(
                     controller: _postpartumHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
                       _buildPostpartumRecoveryTimeline(),
                       const SizedBox(height: 24),
                       _buildPostpartumWellbeing(),
                       const SizedBox(height: 24),
+                      _buildCheckIn(),
+                      const SizedBox(height: 32),
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -9455,8 +10153,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     // everyone, regardless of what they had logged. `pc` was already in scope
     // and carries the real dates; nothing was reading it.
     final DateTime? periStart = pc.lastPeriodStart;
-    final int? periDaysSince =
-        periStart == null ? null : DateTime.now().difference(periStart).inDays;
+    final int? periDaysSince = periStart == null
+        ? null
+        : DateTime.now().difference(periStart).inDays;
     final List<int> recentCycles = [31, 45, 62, 39, 54];
 
     return Column(
@@ -9470,8 +10169,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("MY CHANGING CYCLE"),
               const SizedBox(height: 6),
               Text(
-                "Transition Tracking & History",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashTransitionTrackingHistory,
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -9507,7 +10206,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                 periDaysSince == null
                                     ? "Cycle day not known yet"
                                     : "Cycle Day ${periDaysSince + 1}",
-                                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                                style: GoogleFonts.manrope(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: BlushyColors.text,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -9516,14 +10219,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                                     // someone tracking an irregular cycle.
                                     ? "Log a period start date to see this"
                                     : "Last period: $periDaysSince days ago",
-                                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                                style: GoogleFonts.manrope(
+                                  fontSize: 12,
+                                  color: BlushyColors.secondaryText,
+                                ),
                               ),
                             ],
                           ),
                         ),
                         const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.edit, color: BlushyColors.primary, size: 20),
+                          icon: const Icon(
+                            Icons.edit,
+                            color: BlushyColors.primary,
+                            size: 20,
+                          ),
                           onPressed: () {
                             _showLogPeriodBottomSheet(context);
                           },
@@ -9537,7 +10247,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   ),
                   const SizedBox(width: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: BlushyColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -9546,7 +10259,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       // "Highly Variable" was asserted to everyone. It is a
                       // description of her cycle, and nothing had measured it.
                       periDaysSince == null ? "Tracking" : "In transition",
-                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -9559,7 +10276,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Text(
                       periDaysSince == null ? "—" : "Day ${periDaysSince + 1}",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: BlushyColors.text,
@@ -9571,7 +10288,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       periDaysSince == null
                           ? "No period logged yet"
                           : "Since your last logged period",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 11,
                         color: BlushyColors.secondaryText,
                       ),
@@ -9595,14 +10312,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   const SizedBox(width: 12),
                   _buildStartedLegendDot("Follicular", const Color(0xFFE2B7A8)),
                   const SizedBox(width: 12),
-                  _buildStartedLegendDot("Luteal/Late", const Color(0xFFE8987E)),
+                  _buildStartedLegendDot(
+                    "Luteal/Late",
+                    const Color(0xFFE8987E),
+                  ),
                 ],
               ),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
               Text(
-                "RECENT CYCLE HISTORY",
-                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                AppLocalizations.of(context).dashRecentCycleHistory,
+                style: GoogleFonts.manrope(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: BlushyColors.secondaryText,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 12),
               SizedBox(
@@ -9611,20 +10336,31 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   itemCount: recentCycles.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
                   itemBuilder: (context, index) {
                     final cycleLen = recentCycles[index];
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: BlushyColors.background,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: BlushyColors.border, width: 0.8),
+                        border: Border.all(
+                          color: BlushyColors.border,
+                          width: 0.8,
+                        ),
                       ),
                       child: Center(
                         child: Text(
                           "$cycleLen Days",
-                          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: BlushyColors.text,
+                          ),
                         ),
                       ),
                     );
@@ -9642,14 +10378,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 decoration: BoxDecoration(
                   color: const Color(0xFFFDFBF7),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFF3E4DD), width: 0.8),
+                  border: Border.all(
+                    color: const Color(0xFFF3E4DD),
+                    width: 0.8,
+                  ),
                 ),
                 child: Text(
                   // This claimed to have noticed a trend across her recent
                   // months. Nothing had analysed anything; it was a fixed
                   // sentence shown to everyone in this stage.
                   "Cycles often become less predictable during the perimenopause transition. What you log here builds your own picture over time.",
-                  style: GoogleFonts.poppins(fontSize: 12, fontStyle: FontStyle.italic, color: BlushyColors.secondaryText),
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    color: BlushyColors.secondaryText,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -9665,12 +10408,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BlushyColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                       child: Text(
                         AppLocalizations.of(context).dashLogPeriod,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -9682,17 +10427,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        _showArticleDialog(context, "Full Cycle History", "Detailed logs of all tracked cycles: \n- June 2026: 54 Days\n- April 2026: 39 Days\n- Feb 2026: 62 Days\n- Dec 2025: 45 Days\n- Oct 2025: 31 Days");
+                        _showArticleDialog(
+                          context,
+                          "Full Cycle History",
+                          "Detailed logs of all tracked cycles: \n- June 2026: 54 Days\n- April 2026: 39 Days\n- Feb 2026: 62 Days\n- Dec 2025: 45 Days\n- Oct 2025: 31 Days",
+                        );
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: BlushyColors.primary,
                         side: const BorderSide(color: BlushyColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: Text(
-                        "View Full History",
-                        style: GoogleFonts.poppins(
+                        AppLocalizations.of(context).dashViewFullHistory,
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
@@ -9709,293 +10460,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 3: TODAY'S CHECK-IN ---
-  Widget _buildPeriWellbeing() {
-    final List<Map<String, dynamic>> moodOptions = [
-      {"icon": "😌", "label": "Balanced"},
-      {"icon": "🥱", "label": "Tired"},
-      {"icon": "😰", "label": "Anxious"},
-      {"icon": "🔥", "label": "Warm"},
-      {"icon": "😤", "label": "Irritable"},
-    ];
-
-    final List<String> flashOptions = ["None", "Mild", "Intense"];
-    final List<String> sweatOptions = ["None", "Mild", "Intense"];
-    final List<String> periSeverityOptions = ["None", "Mild", "Noticeable"];
-    final List<String> periChangeOptions = ["Same", "Up", "Down"];
-    final List<String> fogOptions = ["None", "Mild", "Intense"];
-    final List<String> therapyOptions = ["Taken", "Not Taken", "None"];
-    final List<String> flowOptions = ["None", "Spotting", "Medium", "Heavy"];
-    final List<String> exerciseOptions = ["Strength Training", "Walk", "None"];
-    final List<String> waterOptions = ["1.5L", "2L", "2.5L"];
-
-    return Column(
-      key: _checkInKey,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading("TODAY'S CHECK-IN"),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Shown when something just logged matched a reviewed red flag
-              // rule, so the reviewed instruction replaces the usual
-              // confirmation rather than sitting alongside it.
-              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
-              // Mood Selector
-              Text(
-                AppLocalizations.of(context).dashMood,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
-                  final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
-                  final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedFeeling = opt['label'];
-                      });
-                      _persistCheckinAnswer('mood', opt['label'].toString());
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Logged Mood: ${opt['label']}"),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? BlushyColors.primary : BlushyColors.border,
-                              width: isSelected ? 1.5 : 0.8,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              _optionIcon(opt['icon']),
-                              size: 20,
-                              color: isSelected
-                                  ? BlushyColors.primary
-                                  : BlushyColors.text,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          opt['label'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              // Hot Flashes (Shown if selected in symptoms/questionnaire)
-              if (_isMetricSelected(pc, ['hot flashes', 'flashes', 'sweats'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("HOT FLASHES", flashOptions, _periHotFlashes, (val) {
-                  setState(() => _periHotFlashes = val);
-                }, logCategoryKey: 'peri_log'),
-              ],
-
-              // Night Sweats (Shown if selected)
-              if (_isMetricSelected(pc, ['night sweats', 'sweats', 'sleep'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("NIGHT SWEATS", sweatOptions, _periNightSweats, (val) {
-                  setState(() => _periNightSweats = val);
-                }, logCategoryKey: 'peri_log'),
-              ],
-
-              // Brain Fog (Shown if selected)
-              if (_isMetricSelected(pc, ['brain fog', 'memory', 'focus', 'fatigue'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("BRAIN FOG", fogOptions, _periBrainFog, (val) {
-                  setState(() => _periBrainFog = val);
-                }, logCategoryKey: 'peri_log'),
-              ],
-
-              // Weight and dryness are on the perimenopause questionnaire and
-              // had nowhere to show.
-              if (_isMetricSelected(pc, ['weight', 'metabolism'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("WEIGHT & METABOLISM", periChangeOptions, _periWeightChange, (val) {
-                  setState(() => _periWeightChange = val);
-                }, logCategoryKey: 'peri_log'),
-              ],
-
-              if (_isMetricSelected(pc, ['vaginal dryness', 'dryness', 'intimacy'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("VAGINAL DRYNESS", periSeverityOptions, _periVaginalDryness, (val) {
-                  setState(() => _periVaginalDryness = val);
-                }, logCategoryKey: 'peri_log'),
-              ],
-
-
-              // Hormone Therapy
-              if (_isMetricSelected(pc, ['hrt', 'therapy', 'medication', 'hormone'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("HORMONE THERAPY", therapyOptions, _periHormoneTherapy, (val) {
-                  setState(() => _periHormoneTherapy = val);
-                }, logCategoryKey: 'peri_log'),
-              ],
-
-              // Flow
-              if (_isMetricSelected(pc, ['flow', 'irregular', 'spotting', 'period'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("PERIOD FLOW (LOCHIA/SPOTTING)", flowOptions, _periFlow, (val) {
-                  setState(() => _periFlow = val);
-                }, logCategoryKey: 'peri_log'),
-              ],
-
-              // Exercise
-              if (_isMetricSelected(pc, ['exercise', 'workout', 'walk', 'activity', 'fitness'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("DAILY EXERCISE", exerciseOptions, _periExercise, (val) {
-                  setState(() => _periExercise = val);
-                }, logCategoryKey: 'peri_log'),
-              ],
-
-              // Hydration
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-              _buildLivingHorizontalSelector("DAILY HYDRATION", waterOptions, _periWater, (val) {
-                setState(() => _periWater = val);
-              }, logCategoryKey: 'peri_log'),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Optional Weight
-              Text(
-                "WEIGHT (OPTIONAL)",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(AppLocalizations.of(context).dashLogWeight),
-                      content: const TextField(
-                        decoration: InputDecoration(hintText: "Enter weight in kg"),
-                        keyboardType: TextInputType.number,
-                      ),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
-                      ],
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.monitor_weight_outlined, size: 18),
-                label: Text(AppLocalizations.of(context).dashLogWeight),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: BlushyColors.primary,
-                  side: const BorderSide(color: BlushyColors.primary),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Notes & Reflections
-              Text(
-                AppLocalizations.of(context).dashNotesReflections,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        VoiceNoteBottomSheet.show(context);
-                      },
-                      icon: const Icon(Icons.mic, size: 18),
-                      label: const Text("Voice Note"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("M Studio Reflection"),
-                            content: const TextField(
-                              decoration: InputDecoration(hintText: "Reflect on how your body feels today..."),
-                              maxLines: 3,
-                            ),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text("M Studio"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildPeriWellbeing() => _buildCheckIn();
 
   // --- SECTION 4: DOCSY INSIGHTS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPeriInsights() {
-    return const RealInsightsList(
-      title: 'What your logs show',
-    );
+    return const RealInsightsList(title: 'What your logs show');
   }
 
   // --- SECTION 5: UNDERSTANDING MY PATTERNS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildPeriPatterns() {
-    return const RealInsightsList(
-      title: 'Patterns in your logs',
-    );
+    return const RealInsightsList(title: 'Patterns in your logs');
   }
 
   // --- SECTION 6: TODAY'S CARE PLAN ---
@@ -10006,7 +10484,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- SECTION 7: LEARN ---
   Widget _buildPeriLearn() {
     final List<String> topics = [
-      "Understanding Perimenopause", "Hormonal Changes", "Hot Flashes", "Sleep", "Bone Health"
+      "Understanding Perimenopause",
+      "Hormonal Changes",
+      "Hot Flashes",
+      "Sleep",
+      "Bone Health",
     ];
 
     // The 74 articles that used to live in these maps are now seeded
@@ -10036,14 +10518,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               return GestureDetector(
                 onTap: () => setState(() => _periDiscoverTopic = topic),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
+                    color: isSelected
+                        ? BlushyColors.primary
+                        : const Color(0x0F2E2623),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : BlushyColors.text,
@@ -10072,23 +10559,39 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Text(
                       article['title']!,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       article['desc']!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        color: BlushyColors.secondaryText,
+                        height: 1.4,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         TextButton(
                           onPressed: () {
-                            _showArticleDialog(context, article['title']!, article['desc']!);
+                            _showArticleDialog(
+                              context,
+                              article['title']!,
+                              article['desc']!,
+                            );
                           },
                           child: Text(
-                            "Read",
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                            AppLocalizations.of(context).dashRead,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: BlushyColors.primary,
+                            ),
                           ),
                         ),
                         const Spacer(),
@@ -10109,8 +10612,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18, color: BlushyColors.secondaryText),
-                          onPressed: () => _openAskSiaChat(context, "Explain this article: ${article['title']}"),
+                          icon: const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 18,
+                            color: BlushyColors.secondaryText,
+                          ),
+                          onPressed: () => _openAskSiaChat(
+                            context,
+                            "Explain this article: ${article['title']}",
+                          ),
                         ),
                       ],
                     ),
@@ -10142,8 +10652,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   Widget _buildPerimenopauseHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -10157,13 +10665,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width < 768
+                        ? 640
+                        : double.infinity,
+                  ),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 32),
                       _buildPeriChangingCycle(pc),
                       const SizedBox(height: 32),
                       _buildPeriWellbeing(),
@@ -10175,8 +10688,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildPeriInsights(),
                       const SizedBox(height: 32),
                       _buildPeriPatterns(),
-                      const SizedBox(height: 32),
-                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildPeriCarePlan(),
                       const SizedBox(height: 32),
@@ -10203,10 +10714,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   constraints: const BoxConstraints(maxWidth: double.infinity),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 36,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 48),
                       _buildPeriChangingCycle(pc),
                       const SizedBox(height: 48),
                       _buildPeriWellbeing(),
@@ -10218,8 +10730,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildPeriInsights(),
                       const SizedBox(height: 48),
                       _buildPeriPatterns(),
-                      const SizedBox(height: 48),
-                      const TodaysContextSection(),
                       const SizedBox(height: 48),
                       _buildPeriCarePlan(),
                       const SizedBox(height: 48),
@@ -10245,13 +10755,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 alignment: Alignment.topCenter,
                 child: Container(
                   width: min(1440.0, width - 64.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 40,
+                  ),
                   child: ListView(
                     controller: _periHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
                       _buildPeriChangingCycle(pc),
                       const SizedBox(height: 24),
                       _buildPeriWellbeing(),
@@ -10259,8 +10770,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -10321,10 +10830,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final state = BlushyOSProvider.of(context);
     final wb = wbParam ?? state.wellbeingState;
 
-    final String? sleepVal = _wellnessSleep ?? (wb.sleepQuality != null ? "${wb.sleepQuality}h" : null);
-    final String? energyVal = (_checkInEnergy?.isNotEmpty == true && _checkInEnergy != 'Balanced') ? _checkInEnergy : (wb.energy != null ? "Level ${wb.energy}/10" : null);
-    final String? moodVal = _selectedFeeling ?? (_checkInMood?.isNotEmpty == true && _checkInMood != 'Calm' ? _checkInMood : (wb.mood != null ? "Level ${wb.mood}/10" : null));
-    final String? hrtVal = _hormonalMedication != 'Not Taken' ? _hormonalMedication : null;
+    final String? sleepVal =
+        _wellnessSleep ??
+        (wb.sleepQuality != null ? "${wb.sleepQuality}h" : null);
+    final String? energyVal =
+        (_checkInEnergy?.isNotEmpty == true && _checkInEnergy != 'Balanced')
+        ? _checkInEnergy
+        : (wb.energy != null ? "Level ${wb.energy}/10" : null);
+    final String? moodVal =
+        _selectedFeeling ??
+        (_checkInMood?.isNotEmpty == true && _checkInMood != 'Calm'
+            ? _checkInMood
+            : (wb.mood != null ? "Level ${wb.mood}/10" : null));
+    final String? hrtVal = _hormonalMedication != 'Not Taken'
+        ? _hormonalMedication
+        : null;
     final String? walkingVal = _wellnessExercise;
     final String? hydrationVal = _wellnessWater;
 
@@ -10358,8 +10878,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("MY WELLBEING"),
               const SizedBox(height: 6),
               Text(
-                "Long-Term Wellness Overview",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashLongTermWellnessOverview,
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -10387,12 +10907,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       children: [
                         Text(
                           scoreTitle,
-                          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: BlushyColors.text,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           scoreSubtitle,
-                          style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: BlushyColors.secondaryText,
+                          ),
                         ),
                       ],
                     ),
@@ -10402,25 +10929,55 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               const SizedBox(height: 24),
               Row(
                 children: [
-                  Expanded(child: _buildMetricLabel("Sleep Quality", sleepVal ?? "Not Logged")),
+                  Expanded(
+                    child: _buildMetricLabel(
+                      "Sleep Quality",
+                      sleepVal ?? "Not Logged",
+                    ),
+                  ),
                   const SizedBox(width: 24),
-                  Expanded(child: _buildMetricLabel("Energy level", energyVal ?? "Not Logged")),
+                  Expanded(
+                    child: _buildMetricLabel(
+                      "Energy level",
+                      energyVal ?? "Not Logged",
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: _buildMetricLabel("Mood State", moodVal ?? "Not Logged")),
+                  Expanded(
+                    child: _buildMetricLabel(
+                      "Mood State",
+                      moodVal ?? "Not Logged",
+                    ),
+                  ),
                   const SizedBox(width: 24),
-                  Expanded(child: _buildMetricLabel("Medication/HRT", hrtVal ?? "Not Logged")),
+                  Expanded(
+                    child: _buildMetricLabel(
+                      "Medication/HRT",
+                      hrtVal ?? "Not Logged",
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: _buildMetricLabel("Daily Walking", walkingVal ?? "Not Logged")),
+                  Expanded(
+                    child: _buildMetricLabel(
+                      "Daily Walking",
+                      walkingVal ?? "Not Logged",
+                    ),
+                  ),
                   const SizedBox(width: 24),
-                  Expanded(child: _buildMetricLabel("Hydration", hydrationVal ?? "Not Logged")),
+                  Expanded(
+                    child: _buildMetricLabel(
+                      "Hydration",
+                      hydrationVal ?? "Not Logged",
+                    ),
+                  ),
                 ],
               ),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
@@ -10429,11 +10986,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 decoration: BoxDecoration(
                   color: const Color(0xFFFDFBF7),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFF3E4DD), width: 0.8),
+                  border: Border.all(
+                    color: const Color(0xFFF3E4DD),
+                    width: 0.8,
+                  ),
                 ),
                 child: Text(
                   quoteText,
-                  style: GoogleFonts.poppins(fontSize: 12, fontStyle: FontStyle.italic, color: BlushyColors.secondaryText),
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    color: BlushyColors.secondaryText,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -10445,12 +11009,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BlushyColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                       child: Text(
-                        "Today's Check-In",
-                        style: GoogleFonts.poppins(
+                        AppLocalizations.of(context).dashTodaySCheck,
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -10462,17 +11028,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        _showArticleDialog(context, "Wellness History", "Your logged check-in history:\n- Sleep: ${sleepVal ?? 'Not Logged'}\n- Hydration: ${hydrationVal ?? 'Not Logged'}\n- Mood: ${moodVal ?? 'Not Logged'}");
+                        _showArticleDialog(
+                          context,
+                          "Wellness History",
+                          "Your logged check-in history:\n- Sleep: ${sleepVal ?? 'Not Logged'}\n- Hydration: ${hydrationVal ?? 'Not Logged'}\n- Mood: ${moodVal ?? 'Not Logged'}",
+                        );
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: BlushyColors.primary,
                         side: const BorderSide(color: BlushyColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: Text(
-                        "View Health History",
-                        style: GoogleFonts.poppins(
+                        AppLocalizations.of(context).dashViewHealthHistory,
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
@@ -10489,291 +11061,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 3: TODAY'S CHECK-IN ---
-  Widget _buildMenoCheckIn() {
-    final List<Map<String, dynamic>> moodOptions = [
-      {"icon": "😌", "label": "Balanced"},
-      {"icon": "🥱", "label": "Tired"},
-      {"icon": "😰", "label": "Anxious"},
-      {"icon": "🔥", "label": "Warm"},
-      {"icon": "😤", "label": "Irritable"},
-    ];
-
-    final List<String> flashOptions = ["None", "Mild", "Intense"];
-    final List<String> sweatOptions = ["None", "Mild", "Intense"];
-    final List<String> jointOptions = ["None", "Mild", "Intense"];
-    final List<String> menoSeverityOptions = ["None", "Mild", "Noticeable"];
-    final List<String> therapyOptions = ["Taken", "Not Taken", "None"];
-    final List<String> strengthOptions = ["Done", "Not Done"];
-    final List<String> walkingOptions = ["Done", "Not Done"];
-    final List<String> waterOptions = ["2L", "2.5L", "3L"];
-
-    return Column(
-      key: _checkInKey,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading("TODAY'S CHECK-IN"),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Shown when something just logged matched a reviewed red flag
-              // rule, so the reviewed instruction replaces the usual
-              // confirmation rather than sitting alongside it.
-              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
-              // Mood Selector
-              Text(
-                AppLocalizations.of(context).dashMood,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
-                  final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
-                  final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedFeeling = opt['label'];
-                      });
-                      _persistCheckinAnswer('mood', opt['label'].toString());
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Logged Mood: ${opt['label']}"),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? BlushyColors.primary : BlushyColors.border,
-                              width: isSelected ? 1.5 : 0.8,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              _optionIcon(opt['icon']),
-                              size: 20,
-                              color: isSelected
-                                  ? BlushyColors.primary
-                                  : BlushyColors.text,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          opt['label'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              // Hot Flashes (Shown if selected in symptoms/questionnaire)
-              if (_isMetricSelected(pc, ['hot flashes', 'flashes', 'sweats'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("HOT FLASHES", flashOptions, _menoHotFlashes, (val) {
-                  setState(() => _menoHotFlashes = val);
-                }, logCategoryKey: 'menopause_log'),
-              ],
-
-              // Night Sweats (Shown if selected)
-              if (_isMetricSelected(pc, ['night sweats', 'sweats', 'sleep'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("NIGHT SWEATS", sweatOptions, _menoNightSweats, (val) {
-                  setState(() => _menoNightSweats = val);
-                }, logCategoryKey: 'menopause_log'),
-              ],
-
-              // Joint Stiffness (Shown if selected)
-              if (_isMetricSelected(pc, ['joint stiffness', 'joints', 'stiffness', 'body ache', 'pain'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("JOINT STIFFNESS", jointOptions, _menoJointPain, (val) {
-                  setState(() => _menoJointPain = val);
-                }, logCategoryKey: 'menopause_log'),
-              ],
-
-              // Dryness, bone and heart are all on the menopause
-              // questionnaire. Recording only -- a card is not the place to
-              // say what a change in any of them means.
-              if (_isMetricSelected(pc, ['vaginal dryness', 'dryness', 'intimacy'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("VAGINAL DRYNESS", menoSeverityOptions, _menoVaginalDryness, (val) {
-                  setState(() => _menoVaginalDryness = val);
-                }, logCategoryKey: 'menopause_log'),
-              ],
-
-              if (_isMetricSelected(pc, ['bone density', 'bone health', 'bone'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("BONE & JOINT COMFORT", menoSeverityOptions, _menoBoneJoint, (val) {
-                  setState(() => _menoBoneJoint = val);
-                }, logCategoryKey: 'menopause_log'),
-              ],
-
-              if (_isMetricSelected(pc, ['cardiovascular', 'heart health', 'circulation'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("HEART & CIRCULATION", menoSeverityOptions, _menoHeartHealth, (val) {
-                  setState(() => _menoHeartHealth = val);
-                }, logCategoryKey: 'menopause_log'),
-              ],
-
-
-              // Hormone Therapy / Medication
-              if (_isMetricSelected(pc, ['hrt', 'therapy', 'medication', 'hormone'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("MEDICATION & HRT STATUS", therapyOptions, _menoHormoneTherapy, (val) {
-                  setState(() => _menoHormoneTherapy = val);
-                }, logCategoryKey: 'menopause_log'),
-              ],
-
-              // Strength Training
-              if (_isMetricSelected(pc, ['strength', 'workout', 'fitness', 'exercise'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("STRENGTH WORKOUT", strengthOptions, _menoStrength, (val) {
-                  setState(() => _menoStrength = val);
-                }, logCategoryKey: 'menopause_log'),
-              ],
-
-              // Walking
-              if (_isMetricSelected(pc, ['walk', 'walking', 'steps', 'movement', 'activity'])) ...[
-                const Divider(height: 36, color: Color(0xFFF5F0EB)),
-                _buildLivingHorizontalSelector("DAILY WALKING HABIT", walkingOptions, _menoWalking, (val) {
-                  setState(() => _menoWalking = val);
-                }, logCategoryKey: 'menopause_log'),
-              ],
-
-              // Hydration
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-              _buildLivingHorizontalSelector("DAILY HYDRATION", waterOptions, _menoWater, (val) {
-                setState(() => _menoWater = val);
-              }, logCategoryKey: 'menopause_log'),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Optional Blood Pressure
-              Text(
-                "BLOOD PRESSURE (OPTIONAL)",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("Log Blood Pressure"),
-                      content: const TextField(
-                        decoration: InputDecoration(hintText: "Enter systolic/diastolic, e.g. 120/80"),
-                        keyboardType: TextInputType.text,
-                      ),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
-                      ],
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.favorite_outline, size: 18),
-                label: const Text("Log Blood Pressure"),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: BlushyColors.primary,
-                  side: const BorderSide(color: BlushyColors.primary),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Notes & Reflections
-              Text(
-                AppLocalizations.of(context).dashNotesReflections,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        VoiceNoteBottomSheet.show(context);
-                      },
-                      icon: const Icon(Icons.mic, size: 18),
-                      label: const Text("Voice Note"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("M Studio Reflection"),
-                            content: const TextField(
-                              decoration: InputDecoration(hintText: "Write down notes on overall wellbeing..."),
-                              maxLines: 3,
-                            ),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Save")),
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text("M Studio"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildMenoCheckIn() => _buildCheckIn();
 
   // --- SECTION 4: DOCSY INSIGHTS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildMenoInsights() {
-    return const RealInsightsList(
-      title: 'What your logs show',
-    );
+    return const RealInsightsList(title: 'What your logs show');
   }
 
   // --- SECTION 5: LONG-TERM WELLNESS ---
@@ -10781,28 +11075,34 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     final List<Map<String, String>> wellnessCards = [
       {
         "title": "Bone Health",
-        "desc": "\"You've completed strength exercises three times this week.\"",
-        "detail": "Resistance exercise triggers osteoblast cells, vital for preserving bone mineral density levels after menopause estrogen drops."
+        "desc":
+            "\"You've completed strength exercises three times this week.\"",
+        "detail":
+            "Resistance exercise triggers osteoblast cells, vital for preserving bone mineral density levels after menopause estrogen drops.",
       },
       {
         "title": "Heart Health",
         "desc": "\"You've maintained your walking goal.\"",
-        "detail": "Walking helps support vascular elasticity, essential for lowering cardiovascular risks in the post-menopausal transition."
+        "detail":
+            "Walking helps support vascular elasticity, essential for lowering cardiovascular risks in the post-menopausal transition.",
       },
       {
         "title": "Sleep",
         "desc": "\"Sleep quality has gradually improved.\"",
-        "detail": "Consistent room coolings and screen-free routines have extended deep REM segments by 30 mins average."
+        "detail":
+            "Consistent room coolings and screen-free routines have extended deep REM segments by 30 mins average.",
       },
       {
         "title": "Mental Wellbeing",
         "desc": "\"You've been journaling consistently.\"",
-        "detail": "Taking 5 minutes to write reflections correlates with stable evening cortisol baselines."
+        "detail":
+            "Taking 5 minutes to write reflections correlates with stable evening cortisol baselines.",
       },
       {
         "title": "Nutrition",
         "desc": "\"Protein intake has improved.\"",
-        "detail": "Averaging 70g daily protein helps prevent natural muscle mass declines (sarcopenia) and supports cellular energy."
+        "detail":
+            "Averaging 70g daily protein helps prevent natural muscle mass declines (sarcopenia) and supports cellular energy.",
       },
     ];
 
@@ -10817,8 +11117,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("LONG-TERM WELLNESS"),
               const SizedBox(height: 6),
               Text(
-                "EMPOWERED POST-MENOPAUSE WELLNESS CARDS",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashEmpoweredPostMenopauseWellness,
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -10829,7 +11129,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 240,
+          // Sized for the UI face at its current size and leading; the
+          // cards' columns overflowed the old height by up to 90px.
+          height: 320,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -10850,31 +11152,73 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Text(
                       card['title']!.toUpperCase(),
-                      style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
+                      style: GoogleFonts.manrope(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.primary,
+                        letterSpacing: 1.0,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       card['desc']!,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Why This Matters: Encourages sustainable heart, joint and bone vitalities.",
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      AppLocalizations.of(
+                        context,
+                      ).dashWhyMattersEncouragesSustainable,
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: BlushyColors.secondaryText,
+                      ),
                     ),
                     const Spacer(),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        TextButton(
-                          onPressed: () {
-                            _showArticleDialog(context, card['title']!, card['detail']!);
-                          },
-                          child: Text("Learn More", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+                        Flexible(
+                          child: TextButton(
+                            onPressed: () {
+                              _showArticleDialog(
+                                context,
+                                card['title']!,
+                                card['detail']!,
+                              );
+                            },
+                            child: Text(
+                              AppLocalizations.of(context).dashLearnMore,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: BlushyColors.primary,
+                              ),
+                            ),
+                          ),
                         ),
-                        TextButton(
-                          onPressed: () => _openAskSiaChat(context, "Tell me about my ${card['title']}"),
-                          child: Text("Ask Docsy", style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.primary)),
+                        Flexible(
+                          child: TextButton(
+                            onPressed: () => _openAskSiaChat(
+                              context,
+                              "Tell me about my ${card['title']}",
+                            ),
+                            child: Text(
+                              AppLocalizations.of(context).dashAskDocsy,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                color: BlushyColors.primary,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -10896,7 +11240,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   // --- SECTION 7: LEARN ---
   Widget _buildMenoLearn() {
     final List<String> topics = [
-      "Understanding Menopause", "Bone Health", "Heart Health", "Strength Training", "Nutrition"
+      "Understanding Menopause",
+      "Bone Health",
+      "Heart Health",
+      "Strength Training",
+      "Nutrition",
     ];
 
     // The 74 articles that used to live in these maps are now seeded
@@ -10926,14 +11274,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               return GestureDetector(
                 onTap: () => setState(() => _menoDiscoverTopic = topic),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? BlushyColors.primary : const Color(0x0F2E2623),
+                    color: isSelected
+                        ? BlushyColors.primary
+                        : const Color(0x0F2E2623),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     topic,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: isSelected ? Colors.white : BlushyColors.text,
@@ -10962,23 +11315,39 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Text(
                       article['title']!,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       article['desc']!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        color: BlushyColors.secondaryText,
+                        height: 1.4,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         TextButton(
                           onPressed: () {
-                            _showArticleDialog(context, article['title']!, article['desc']!);
+                            _showArticleDialog(
+                              context,
+                              article['title']!,
+                              article['desc']!,
+                            );
                           },
                           child: Text(
-                            "Read",
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                            AppLocalizations.of(context).dashRead,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: BlushyColors.primary,
+                            ),
                           ),
                         ),
                         const Spacer(),
@@ -10999,8 +11368,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18, color: BlushyColors.secondaryText),
-                          onPressed: () => _openAskSiaChat(context, "Explain this article: ${article['title']}"),
+                          icon: const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 18,
+                            color: BlushyColors.secondaryText,
+                          ),
+                          onPressed: () => _openAskSiaChat(
+                            context,
+                            "Explain this article: ${article['title']}",
+                          ),
                         ),
                       ],
                     ),
@@ -11032,8 +11408,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   Widget _buildMenopauseHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -11047,13 +11421,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width < 768
+                        ? 640
+                        : double.infinity,
+                  ),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 32),
                       _buildMenoCheckIn(),
                       const SizedBox(height: 32),
                       _buildMenoWellbeing(),
@@ -11065,8 +11444,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildMenoInsights(),
                       const SizedBox(height: 32),
                       _buildMenoPatterns(),
-                      const SizedBox(height: 32),
-                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildMenoCarePlan(),
                       const SizedBox(height: 32),
@@ -11093,10 +11470,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   constraints: const BoxConstraints(maxWidth: double.infinity),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 36,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 48),
                       _buildMenoCheckIn(),
                       const SizedBox(height: 48),
                       _buildMenoWellbeing(),
@@ -11108,8 +11486,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildMenoInsights(),
                       const SizedBox(height: 48),
                       _buildMenoPatterns(),
-                      const SizedBox(height: 48),
-                      const TodaysContextSection(),
                       const SizedBox(height: 48),
                       _buildMenoCarePlan(),
                       const SizedBox(height: 48),
@@ -11135,13 +11511,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 alignment: Alignment.topCenter,
                 child: Container(
                   width: min(1440.0, width - 64.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 40,
+                  ),
                   child: ListView(
                     controller: _menoHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
                       _buildMenoCheckIn(),
                       const SizedBox(height: 24),
                       _buildMenoWellbeing(),
@@ -11149,8 +11526,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -11207,59 +11582,85 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 2: MY WELLNESS ---
   // --- SECTION 2: MY WELLNESS ---
-  Widget _buildWellnessDashboard([PersonalContext? pcParam, CurrentWellbeingState? wbParam]) {
+  Widget _buildWellnessDashboard([
+    PersonalContext? pcParam,
+    CurrentWellbeingState? wbParam,
+  ]) {
     final state = BlushyOSProvider.of(context);
     final pc = pcParam ?? state.personalContext;
     final wb = wbParam ?? state.wellbeingState;
 
-    final String? sleepVal = _wellnessSleep ?? (wb.sleepQuality != null ? "${wb.sleepQuality}h" : null);
-    final String? energyVal = (_checkInEnergy?.isNotEmpty == true && _checkInEnergy != 'Balanced') ? _checkInEnergy : (wb.energy != null ? "Level ${wb.energy}/10" : null);
-    final String? hydrationVal = _wellnessWater != null ? "$_wellnessWater" : null;
-    final String? moodVal = _selectedFeeling ?? (_checkInMood?.isNotEmpty == true && _checkInMood != 'Calm' ? _checkInMood : (wb.mood != null ? "Level ${wb.mood}/10" : null));
+    final String? sleepVal =
+        _wellnessSleep ??
+        (wb.sleepQuality != null ? "${wb.sleepQuality}h" : null);
+    final String? energyVal =
+        (_checkInEnergy?.isNotEmpty == true && _checkInEnergy != 'Balanced')
+        ? _checkInEnergy
+        : (wb.energy != null ? "Level ${wb.energy}/10" : null);
+    final String? hydrationVal = _wellnessWater != null
+        ? "$_wellnessWater"
+        : null;
+    final String? moodVal =
+        _selectedFeeling ??
+        (_checkInMood?.isNotEmpty == true && _checkInMood != 'Calm'
+            ? _checkInMood
+            : (wb.mood != null ? "Level ${wb.mood}/10" : null));
     final String? movementVal = _wellnessExercise;
-    final String? stressVal = _wellnessStress != null ? "$_wellnessStress Stress" : null;
+    final String? stressVal = _wellnessStress != null
+        ? "$_wellnessStress Stress"
+        : null;
 
     final List<String> userGoals = _extractStrings(_onboardingData['goals']);
-    final List<String> userSymptoms = _extractStrings(_onboardingData['symptoms']);
-    final Set<String> activeFilters = {...userGoals, ...userSymptoms, ..._extractStrings(pc.userGoals), ..._extractStrings(pc.userSymptoms)}.toSet();
+    final List<String> userSymptoms = _extractStrings(
+      _onboardingData['symptoms'],
+    );
+    final Set<String> activeFilters = {
+      ...userGoals,
+      ...userSymptoms,
+      ..._extractStrings(pc.userGoals),
+      ..._extractStrings(pc.userSymptoms),
+    }.toSet();
 
     final List<Map<String, dynamic>> allMetrics = [
       {
         "label": "Sleep State",
         "val": sleepVal ?? "Not Logged",
-        "keys": ["sleep", "fatigue", "rest"]
+        "keys": ["sleep", "fatigue", "rest"],
       },
       {
         "label": "Energy level",
         "val": energyVal ?? "Not Logged",
-        "keys": ["energy", "fatigue", "low energy", "vitality"]
+        "keys": ["energy", "fatigue", "low energy", "vitality"],
       },
       {
         "label": "Daily Hydration",
         "val": hydrationVal ?? "Not Logged",
-        "keys": ["hydration", "water", "nutrition"]
+        "keys": ["hydration", "water", "nutrition"],
       },
       {
         "label": "Mood State",
         "val": moodVal ?? "Not Logged",
-        "keys": ["mood", "pms", "emotions", "anxiety", "cramps"]
+        "keys": ["mood", "pms", "emotions", "anxiety", "cramps"],
       },
       {
         "label": "Movement",
         "val": movementVal ?? "Not Logged",
-        "keys": ["fitness", "movement", "exercise", "walk"]
+        "keys": ["fitness", "movement", "exercise", "walk"],
       },
       {
         "label": "Stress level",
         "val": stressVal ?? "Not Logged",
-        "keys": ["stress", "anxiety", "cramps", "mindfulness"]
+        "keys": ["stress", "anxiety", "cramps", "mindfulness"],
       },
-      if (_loggedWeight != null || activeFilters.any((f) => f.contains('weight')))
-      {
-        "label": "Weight",
-        "val": _loggedWeight != null ? "${_loggedWeight!.toStringAsFixed(1)} kg" : "Not Logged",
-        "keys": ["weight", "nutrition", "fitness"]
-      },
+      if (_loggedWeight != null ||
+          activeFilters.any((f) => f.contains('weight')))
+        {
+          "label": "Weight",
+          "val": _loggedWeight != null
+              ? "${_loggedWeight!.toStringAsFixed(1)} kg"
+              : "Not Logged",
+          "keys": ["weight", "nutrition", "fitness"],
+        },
     ];
 
     List<Map<String, dynamic>> displayMetrics = allMetrics;
@@ -11273,7 +11674,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
       }
     }
 
-    int loggedCount = displayMetrics.where((m) => m['val'] != 'Not Logged').length;
+    int loggedCount = displayMetrics
+        .where((m) => m['val'] != 'Not Logged')
+        .length;
     int totalMetrics = displayMetrics.length;
 
     final String scoreTitle = loggedCount > 0
@@ -11320,8 +11723,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("MY WELLNESS"),
               const SizedBox(height: 6),
               Text(
-                "Daily Lifestyle Overview",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashDailyLifestyleOverview,
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -11349,12 +11752,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     children: [
                       Text(
                         scoreTitle,
-                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                        style: GoogleFonts.manrope(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: BlushyColors.text,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         scoreSubtitle,
-                        style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          color: BlushyColors.secondaryText,
+                        ),
                       ),
                     ],
                   ),
@@ -11369,7 +11779,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     onTap: _scrollToCheckIn,
                     child: SizedBox(
                       width: 140,
-                      child: _buildMetricLabel(m['label'] as String, m['val'] as String),
+                      child: _buildMetricLabel(
+                        m['label'] as String,
+                        m['val'] as String,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -11380,11 +11793,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 decoration: BoxDecoration(
                   color: const Color(0xFFFDFBF7),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFF3E4DD), width: 0.8),
+                  border: Border.all(
+                    color: const Color(0xFFF3E4DD),
+                    width: 0.8,
+                  ),
                 ),
                 child: Text(
                   quoteText,
-                  style: GoogleFonts.poppins(fontSize: 12, fontStyle: FontStyle.italic, color: BlushyColors.secondaryText),
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    color: BlushyColors.secondaryText,
+                  ),
                 ),
               ),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
@@ -11402,11 +11822,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.calendar_today, size: 14, color: BlushyColors.primary),
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: BlushyColors.primary,
+                        ),
                         const SizedBox(width: 8),
                         Text(
-                          "CYCLE OVERVIEW",
-                          style: GoogleFonts.poppins(
+                          AppLocalizations.of(context).dashCycleOverview,
+                          style: GoogleFonts.manrope(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
                             color: BlushyColors.secondaryText,
@@ -11419,9 +11843,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(child: _buildMetricLabel("Last Period", lastPeriodStr)),
-                        Expanded(child: _buildMetricLabel("Cycle Day", cycleDayStr)),
-                        Expanded(child: _buildMetricLabel("Next Period", nextPeriodStr)),
+                        Expanded(
+                          child: _buildMetricLabel(
+                            "Last Period",
+                            lastPeriodStr,
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildMetricLabel("Cycle Day", cycleDayStr),
+                        ),
+                        Expanded(
+                          child: _buildMetricLabel(
+                            "Next Period",
+                            nextPeriodStr,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -11436,12 +11872,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BlushyColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                       child: Text(
-                        "Today's Check-In",
-                        style: GoogleFonts.poppins(
+                        AppLocalizations.of(context).dashTodaySCheck,
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -11453,17 +11891,23 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        _showArticleDialog(context, "Wellness History", "Your logged check-in history:\n- Sleep: ${sleepVal ?? 'Not Logged'}\n- Hydration: ${hydrationVal ?? 'Not Logged'}\n- Mood: ${moodVal ?? 'Not Logged'}\n- Weight: ${_loggedWeight != null ? '${_loggedWeight!.toStringAsFixed(1)} kg' : 'Not Logged'}");
+                        _showArticleDialog(
+                          context,
+                          "Wellness History",
+                          "Your logged check-in history:\n- Sleep: ${sleepVal ?? 'Not Logged'}\n- Hydration: ${hydrationVal ?? 'Not Logged'}\n- Mood: ${moodVal ?? 'Not Logged'}\n- Weight: ${_loggedWeight != null ? '${_loggedWeight!.toStringAsFixed(1)} kg' : 'Not Logged'}",
+                        );
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: BlushyColors.primary,
                         side: const BorderSide(color: BlushyColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: Text(
-                        "View Wellness History",
-                        style: GoogleFonts.poppins(
+                        AppLocalizations.of(context).dashViewWellnessHistory,
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
@@ -11480,297 +11924,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   // --- SECTION 3: TODAY'S CHECK-IN ---
-  Widget _buildWellnessCheckIn() {
-    final List<Map<String, dynamic>> moodOptions = [
-      {"icon": "😌", "label": "Balanced"},
-      {"icon": "🥱", "label": "Tired"},
-      {"icon": "😰", "label": "Anxious"},
-      {"icon": "😴", "label": "Sleepy"},
-      {"icon": "😤", "label": "Irritable"},
-    ];
-
-    final List<String> exerciseOptions = ["Workout", "Walk", "None"];
-    final List<String> meditationOptions = ["Completed", "Not Done"];
-    final List<String> waterOptions = ["2L", "2.5L", "3L"];
-    final List<String> sleepOptions = ["6-7h", "7-8h", "8h+"];
-    final List<String> stressOptions = ["Low", "Moderate", "High"];
-
-    return Column(
-      key: _checkInKey,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading("TODAY'S CHECK-IN"),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Shown when something just logged matched a reviewed red flag
-              // rule, so the reviewed instruction replaces the usual
-              // confirmation rather than sitting alongside it.
-              if (_checkinSafety != null) _buildCheckinSafetyBanner(_checkinSafety!),
-              // Mood Selector
-              Text(
-                AppLocalizations.of(context).dashMood,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: moodOptions.map((opt) {
-                  final checkinData = BlushyStorage.read('daily_checkin.json');
-                  final savedFeeling = checkinData['feeling'] ?? (BlushyStorage.read('logged_feeling.json'))['feeling'];
-                  final wb = BlushyOSProvider.of(context).wellbeingState;
-                  final String? activeFeeling = _selectedFeeling ?? savedFeeling ?? (wb.symptoms.isNotEmpty ? wb.symptoms.first : null);
-                  final isSelected = activeFeeling != null && activeFeeling.toString().toLowerCase() == (opt['label'] as String).toLowerCase();
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedFeeling = opt['label'];
-                      });
-                      _persistCheckinAnswer('mood', opt['label'].toString());
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Logged Mood: ${opt['label']}"),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isSelected ? BlushyColors.primary.withValues(alpha: 0.1) : const Color(0xFFF9F6F0),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? BlushyColors.primary : BlushyColors.border,
-                              width: isSelected ? 1.5 : 0.8,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              _optionIcon(opt['icon']),
-                              size: 20,
-                              color: isSelected
-                                  ? BlushyColors.primary
-                                  : BlushyColors.text,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          opt['label'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Energy Level Selector
-              _buildLivingHorizontalSelector(AppLocalizations.of(context).dashEnergyLevel, ["Low", "Balanced", "High"], _checkInEnergy?.isNotEmpty == true ? _checkInEnergy : null, (val) {
-                setState(() => _checkInEnergy = val);
-                _persistCheckinAnswer('energy', val.toString());
-              }),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Sleep Duration
-              _buildLivingHorizontalSelector("SLEEP TIME", sleepOptions, _wellnessSleep, (val) {
-                setState(() => _wellnessSleep = val);
-                _persistCheckinAnswer('sleep', val.toString());
-              }),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Stress Levels
-              _buildLivingHorizontalSelector("STRESS LEVEL", stressOptions, _wellnessStress, (val) {
-                setState(() => _wellnessStress = val);
-                _persistCheckinAnswer('stress', val.toString());
-              }),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Hydration (Water Intake)
-              _buildLivingHorizontalSelector("DAILY HYDRATION (WATER INTAKE)", waterOptions, _wellnessWater, (val) {
-                setState(() => _wellnessWater = val);
-                _persistCheckinAnswer('water', val.toString());
-              }),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Exercise
-              _buildLivingHorizontalSelector("DAILY EXERCISE", exerciseOptions, _wellnessExercise, (val) {
-                setState(() => _wellnessExercise = val);
-                _persistCheckinAnswer('exercise', val.toString());
-              }),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Meditation
-              _buildLivingHorizontalSelector("MINDFUL MEDITATION", meditationOptions, _wellnessMeditation, (val) {
-                setState(() => _wellnessMeditation = val);
-                _persistCheckinAnswer('meditation', val.toString());
-              }),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Optional Weight
-              Text(
-                "WEIGHT (OPTIONAL)",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  final weightController = TextEditingController(
-                    text: _loggedWeight != null ? _loggedWeight!.toString() : '',
-                  );
-                  showDialog(
-                    context: context,
-                    builder: (dialogContext) => AlertDialog(
-                      backgroundColor: BlushyColors.background,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      title: Text(
-                        AppLocalizations.of(context).dashLogWeight,
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.text),
-                      ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Record your current weight in kg to track trends over time.",
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: weightController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            autofocus: true,
-                            style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
-                            decoration: InputDecoration(
-                              labelText: "Weight (kg)",
-                              hintText: "e.g. 62.5",
-                              suffixText: "kg",
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: Text("Cancel", style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: BlushyColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            elevation: 0,
-                          ),
-                          onPressed: () {
-                            final val = double.tryParse(weightController.text.trim());
-                            if (val != null && val > 0) {
-                              _saveWeightLog(val);
-                              Navigator.pop(dialogContext);
-                            }
-                          },
-                          child: Text("Save", style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                icon: Icon(
-                  _loggedWeight != null ? Icons.check_circle_outline : Icons.monitor_weight_outlined,
-                  size: 18,
-                  color: _loggedWeight != null ? BlushyColors.success : BlushyColors.primary,
-                ),
-                label: Text(
-                  _loggedWeight != null ? "Logged Weight: ${_loggedWeight!.toStringAsFixed(1)} kg" : AppLocalizations.of(context).dashLogWeight,
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    color: _loggedWeight != null ? BlushyColors.text : BlushyColors.primary,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: BlushyColors.primary,
-                  side: BorderSide(color: _loggedWeight != null ? BlushyColors.success : BlushyColors.primary),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              const Divider(height: 36, color: Color(0xFFF5F0EB)),
-
-              // Notes & Reflections
-              Text(
-                AppLocalizations.of(context).dashNotesReflections,
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        VoiceNoteBottomSheet.show(context);
-                      },
-                      icon: const Icon(Icons.mic, size: 18),
-                      label: const Text("Voice Note"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // The tab, not a second copy of it stacked on top.
-                        BlushyShellTabs.open(BlushyShellTabs.mStudio);
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text("M Studio"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BlushyColors.primary,
-                        side: const BorderSide(color: BlushyColors.primary),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildWellnessCheckIn() => _buildCheckIn();
 
   // --- SECTION 4: DOCSY INSIGHTS ---
   /// Server-derived patterns. Replaced a hardcoded list that asserted
   /// findings such as "a 30% drop in intensity" that nobody had measured.
   Widget _buildWellnessInsights() {
-    return const RealInsightsList(
-      title: 'What your logs show',
-    );
+    return const RealInsightsList(title: 'What your logs show');
   }
 
   // --- SECTION 5: TODAY'S PLAN ---
@@ -11787,9 +11947,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
 
   // --- SECTION 8: MY HABITS ---
   Widget _buildWellnessHabitCards() {
-    final List<String> userGoals = List<String>.from(_onboardingData['goals'] ?? []);
-    final List<String> userSymptoms = List<String>.from(_onboardingData['symptoms'] ?? []);
-    final Set<String> activeFilters = {...userGoals, ...userSymptoms}.map((e) => e.toLowerCase()).toSet();
+    final List<String> userGoals = List<String>.from(
+      _onboardingData['goals'] ?? [],
+    );
+    final List<String> userSymptoms = List<String>.from(
+      _onboardingData['symptoms'] ?? [],
+    );
+    final Set<String> activeFilters = {
+      ...userGoals,
+      ...userSymptoms,
+    }.map((e) => e.toLowerCase()).toSet();
 
     final String sleepDesc = _wellnessSleep != null
         ? "\"You've logged $_wellnessSleep sleep today.\""
@@ -11816,44 +11983,52 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         "title": "Sleep",
         "key": "sleep",
         "desc": sleepDesc,
-        "detail": "Consistent sleep cycles allow cells to repair, helping regulate daily cortisol and energy spikes naturally."
+        "detail":
+            "Consistent sleep cycles allow cells to repair, helping regulate daily cortisol and energy spikes naturally.",
       },
       {
         "title": "Hydration",
         "key": "hydration",
         "desc": hydrationDesc,
-        "detail": "Proper hydration keeps tissues lubricated, supports kidney filterings, and buffers afternoon headaches."
+        "detail":
+            "Proper hydration keeps tissues lubricated, supports kidney filterings, and buffers afternoon headaches.",
       },
       {
         "title": "Movement",
         "key": "movement",
         "desc": movementDesc,
-        "detail": "Establishing a minimum steps target supports vascular elasticity and promotes evening sleep depth."
+        "detail":
+            "Establishing a minimum steps target supports vascular elasticity and promotes evening sleep depth.",
       },
       {
         "title": "Mood Balance",
         "key": "mood",
         "desc": moodDesc,
-        "detail": "Tracking daily emotional changes builds body awareness and highlights phase-based mood trends."
+        "detail":
+            "Tracking daily emotional changes builds body awareness and highlights phase-based mood trends.",
       },
-      if (_loggedWeight != null || activeFilters.any((f) => f.contains('weight')))
-      {
-        "title": "Weight",
-        "key": "weight",
-        "desc": weightDesc,
-        "detail": "Logging weight trends provides contextual insights into hydration shifts and metabolic rhythms."
-      },
+      if (_loggedWeight != null ||
+          activeFilters.any((f) => f.contains('weight')))
+        {
+          "title": "Weight",
+          "key": "weight",
+          "desc": weightDesc,
+          "detail":
+              "Logging weight trends provides contextual insights into hydration shifts and metabolic rhythms.",
+        },
       {
         "title": "Mindfulness",
         "key": "mindfulness",
         "desc": "\"Mindfulness and breathing routines active.\"",
-        "detail": "Slow exhalations trigger active vagal parasympathetic states, helping calm mind stressors."
+        "detail":
+            "Slow exhalations trigger active vagal parasympathetic states, helping calm mind stressors.",
       },
       {
         "title": "Nutrition",
         "key": "nutrition",
         "desc": "\"Maintained healthy balanced meals today.\"",
-        "detail": "High-protein balanced breakfasts keep morning glucose spikes flat, preventing post-lunch fatigue lapses."
+        "detail":
+            "High-protein balanced breakfasts keep morning glucose spikes flat, preventing post-lunch fatigue lapses.",
       },
     ];
 
@@ -11861,7 +12036,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     if (activeFilters.isNotEmpty) {
       final filtered = allHabitCards.where((card) {
         final key = card['key']!;
-        return activeFilters.any((f) => f.contains(key) || (key == 'sleep' && f.contains('sleep')) || (key == 'hydration' && f.contains('water')));
+        return activeFilters.any(
+          (f) =>
+              f.contains(key) ||
+              (key == 'sleep' && f.contains('sleep')) ||
+              (key == 'hydration' && f.contains('water')),
+        );
       }).toList();
       if (filtered.isNotEmpty) {
         habitCards = filtered;
@@ -11879,8 +12059,8 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               SectionHeading("MY HABITS"),
               const SizedBox(height: 6),
               Text(
-                "AI-Generated Habit Insights",
-                style: GoogleFonts.poppins(
+                AppLocalizations.of(context).dashAiGeneratedHabitInsights,
+                style: GoogleFonts.manrope(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: BlushyColors.text,
@@ -11891,7 +12071,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 220,
+          height: 300,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -11912,17 +12092,31 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   children: [
                     Text(
                       card['title']!.toUpperCase(),
-                      style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
+                      style: GoogleFonts.manrope(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.primary,
+                        letterSpacing: 1.0,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       card['desc']!,
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: BlushyColors.text,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Why This Matters: Supports overall physical health and emotional vitality.",
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      AppLocalizations.of(
+                        context,
+                      ).dashWhyMattersSupportsOverall,
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: BlushyColors.secondaryText,
+                      ),
                     ),
                     const Spacer(),
                     Row(
@@ -11930,9 +12124,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       children: [
                         TextButton(
                           onPressed: () {
-                            _showArticleDialog(context, card['title']!, card['detail']!);
+                            _showArticleDialog(
+                              context,
+                              card['title']!,
+                              card['detail']!,
+                            );
                           },
-                          child: Text("Learn More", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+                          child: Text(
+                            AppLocalizations.of(context).dashLearnMore,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: BlushyColors.primary,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -11962,8 +12167,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
   }
 
   Widget _buildEverydayWellnessHomeOS(PersonalContext pc, BlushyOSState state) {
-    final String displayName = (pc.userName != null && pc.userName!.isNotEmpty) ? pc.userName! : "there";
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
@@ -11977,14 +12180,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width < 768 ? 640 : double.infinity),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width < 768
+                        ? 640
+                        : double.infinity,
+                  ),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
                     children: [
                       _buildBranchSwitcher(state),
-                      const SizedBox(height: 32),
-                      GreetingCard(name: displayName),
                       const SizedBox(height: 32),
                       _buildWellnessCheckIn(),
                       const SizedBox(height: 32),
@@ -11995,8 +12203,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildLivingPatterns(),
                       const SizedBox(height: 32),
                       _buildWellnessInsights(),
-                      const SizedBox(height: 32),
-                      const TodaysContextSection(),
                       const SizedBox(height: 32),
                       _buildWellnessHabitCards(),
                       const SizedBox(height: 32),
@@ -12021,10 +12227,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                   constraints: const BoxConstraints(maxWidth: double.infinity),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 36,
+                    ),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 48),
                       _buildWellnessCheckIn(),
                       const SizedBox(height: 48),
                       _buildWellnessDashboard(),
@@ -12034,8 +12241,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildLivingPatterns(),
                       const SizedBox(height: 48),
                       _buildWellnessInsights(),
-                      const SizedBox(height: 48),
-                      const TodaysContextSection(),
                       const SizedBox(height: 48),
                       _buildWellnessHabitCards(),
                       const SizedBox(height: 48),
@@ -12059,13 +12264,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                 alignment: Alignment.topCenter,
                 child: Container(
                   width: min(1440.0, width - 64.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 40,
+                  ),
                   child: ListView(
                     controller: _wellnessHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      GreetingCard(name: displayName),
-                      const SizedBox(height: 24),
                       _buildWellnessCheckIn(),
                       const SizedBox(height: 24),
                       _buildWellnessDashboard(),
@@ -12073,8 +12279,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
                       _buildLivingSiaInsights(),
                       const SizedBox(height: 24),
                       _buildLivingPatterns(),
-                      const SizedBox(height: 24),
-                      const TodaysContextSection(),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -12120,47 +12324,49 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard> w
     );
   }
 
-
-
   Widget _buildBranchSwitcher(BlushyOSState state) => const SizedBox.shrink();
 
-
-
   // --- EDITORIAL COMPOSTIONS ---
+}
 
 
+/// The way through to the full log, at the foot of the signals card.
+///
+/// Quiet: a tint rather than a fill. It is a second way to somewhere the red
+/// banner above already leads, so it must not compete with it.
+class _ViewFullLogButton extends StatelessWidget {
+  const _ViewFullLogButton({required this.onTap});
 
+  final VoidCallback onTap;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  @override
+  Widget build(BuildContext context) {
+    // Red with white text, like every button.
+    return Material(
+      color: BlushyColors.primary,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: BlushySpace.tapHeight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.bar_chart_rounded,
+                  size: 16, color: Colors.white),
+              const SizedBox(width: BlushySpace.sm),
+              Text(
+                'View Full Log',
+                style: BlushyType.body(
+                  color: Colors.white,
+                  weight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

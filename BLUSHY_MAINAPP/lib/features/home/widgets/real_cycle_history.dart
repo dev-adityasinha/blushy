@@ -104,7 +104,7 @@ class _RealCycleHistoryState extends State<RealCycleHistory> {
         children: [
           Text(
             entry.label,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: BlushyColors.text,
@@ -112,7 +112,7 @@ class _RealCycleHistoryState extends State<RealCycleHistory> {
           ),
           Text(
             '${entry.days} Days',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13,
               fontWeight: FontWeight.bold,
               color: BlushyColors.primary,
@@ -137,7 +137,7 @@ class _RealCycleHistoryState extends State<RealCycleHistory> {
         children: [
           Text(
             headline,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -146,7 +146,7 @@ class _RealCycleHistoryState extends State<RealCycleHistory> {
           const SizedBox(height: 4),
           Text(
             body,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 12,
               height: 1.45,
               color: BlushyColors.secondaryText,

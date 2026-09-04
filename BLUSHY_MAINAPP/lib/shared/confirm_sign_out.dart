@@ -21,19 +21,19 @@ Future<bool> confirmSignOut(BuildContext context) async {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: Text(
         AppLocalizations.of(context).csoSignOut,
-        style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
       ),
       content: Text(
         'You will need your password to sign back in. Anything you have logged '
         'stays on your account.',
-        style: GoogleFonts.poppins(fontSize: 14),
+        style: GoogleFonts.manrope(fontSize: 14),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogContext, false),
           child: Text(
             AppLocalizations.of(context).csoCancel,
-            style: GoogleFonts.poppins(color: BlushyColors.secondaryText),
+            style: GoogleFonts.manrope(color: BlushyColors.secondaryText),
           ),
         ),
         ElevatedButton(
@@ -44,7 +44,7 @@ Future<bool> confirmSignOut(BuildContext context) async {
           ),
           child: Text(
             AppLocalizations.of(context).csoSignOut,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),

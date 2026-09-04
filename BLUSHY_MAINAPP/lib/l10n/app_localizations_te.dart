@@ -552,596 +552,959 @@ class AppLocalizationsTe extends AppLocalizations {
   String get jrnRecordingVoiceNote => 'వాయిస్ రికార్డవుతోంది…';
 
   @override
-  String get csoSignOut => 'Sign out';
+  String get csoSignOut => 'సైన్ అవుట్';
 
   @override
-  String get csoCancel => 'Cancel';
+  String get csoCancel => 'రద్దు చేయి';
 
   @override
   String get crRecordedAgainstEverythingYou =>
-      'Recorded against everything you approve.';
+      'మీరు అనుమతించిన ప్రతిదానితో నమోదు చేయబడింది.';
 
   @override
-  String get eafWhatSYourEmail => 'What\'s your email?';
+  String get eafWhatSYourEmail => 'మీ ఇమెయిల్ ఏమిటి?';
 
   @override
-  String get eafCreateYourPassword => 'Create your password';
+  String get eafCreateYourPassword => 'మీ పాస్‌వర్డ్‌ను సృష్టించండి';
 
   @override
-  String get eafCheckYourEmail => 'Check your email';
+  String get eafCheckYourEmail => 'మీ ఇమెయిల్ చూడండి';
 
   @override
-  String get eafChangeEmail => 'Change email';
+  String get eafChangeEmail => 'ఇమెయిల్ మార్చు';
 
   @override
-  String get eafWelcomeBack => 'Welcome back';
+  String get eafWelcomeBack => 'మళ్లీ స్వాగతం';
 
   @override
-  String get eafForgotPassword => 'Forgot password?';
+  String get eafForgotPassword => 'పాస్‌వర్డ్ మర్చిపోయారా?';
 
   @override
-  String get eafResetPassword => 'Reset Password';
+  String get eafResetPassword => 'పాస్‌వర్డ్ రీసెట్ చేయి';
 
   @override
-  String get eafChooseANewPassword => 'Choose a New Password';
+  String get eafChooseANewPassword => 'కొత్త పాస్‌వర్డ్ ఎంచుకోండి';
 
   @override
-  String get oPrivacyPolicy => 'Privacy Policy';
+  String get oPrivacyPolicy => 'గోప్యతా విధానం';
 
   @override
-  String get oIAgreeToThe => 'I agree to the ';
+  String get oIAgreeToThe => 'నేను అంగీకరిస్తున్నాను ';
 
   @override
-  String get oTermsOfService => 'Terms of Service';
+  String get oTermsOfService => 'సేవా నిబంధనలు';
 
   @override
-  String get oWhenIsYourBirthday => 'When is your birthday?';
+  String get oWhenIsYourBirthday => 'మీ పుట్టినరోజు ఎప్పుడు?';
 
   @override
-  String get oWhereAreYouToday => 'Where are you today?';
+  String get oWhereAreYouToday => 'ఈరోజు మీరు ఎక్కడ ఉన్నారు?';
 
   @override
-  String get oWhenDidYourLast => 'When did your last period begin?';
+  String get oWhenDidYourLast => 'మీ చివరి రుతుస్రావం ఎప్పుడు మొదలైంది?';
 
   @override
-  String get oWhatSYourDue => 'What\'s your due date?';
+  String get oWhatSYourDue => 'మీ అంచనా ప్రసవ తేదీ ఏమిటి?';
 
   @override
-  String get oWhenWasYourBaby => 'When was your baby born?';
+  String get oWhenWasYourBaby => 'మీ బిడ్డ ఎప్పుడు పుట్టింది?';
 
   @override
-  String get oYourPreferredName => 'Your preferred name';
+  String get oYourPreferredName => 'మీకు నచ్చిన పేరు';
 
   @override
-  String get oWhatWouldYouLike => 'What would you like to learn first?';
+  String get oWhatWouldYouLike => 'మొదట మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?';
 
   @override
-  String get oWhenDidYourFirst => 'When did your first period start?';
+  String get oWhenDidYourFirst => 'మీ మొదటి రుతుస్రావం ఎప్పుడు మొదలైంది?';
 
   @override
-  String get oWhatWouldYouLike2 => 'What would you like help with?';
+  String get oWhatWouldYouLike2 => 'మీకు దేనిలో సహాయం కావాలి?';
 
   @override
-  String get oHowWouldYouDescribe => 'How would you describe your cycle?';
+  String get oHowWouldYouDescribe => 'మీ చక్రాన్ని మీరు ఎలా వర్ణిస్తారు?';
 
   @override
-  String get oWhatWouldYouLike3 => 'What would you like Blushy to help with?';
+  String get oWhatWouldYouLike3 => 'Blushy మీకు దేనిలో సహాయపడాలి?';
 
   @override
   String get oAreYouCurrentlyUsing =>
-      'Are you currently using hormonal contraception?';
+      'మీరు ప్రస్తుతం హార్మోన్ల గర్భనిరోధకం వాడుతున్నారా?';
 
   @override
   String get oWhichConditionBestMatches =>
-      'Which condition best matches your situation?';
+      'ఏ పరిస్థితి మీ స్థితికి బాగా సరిపోతుంది?';
 
   @override
-  String get oWhichSymptomsAffectYou => 'Which symptoms affect you most?';
+  String get oWhichSymptomsAffectYou =>
+      'ఏ లక్షణాలు మిమ్మల్ని ఎక్కువగా ప్రభావితం చేస్తాయి?';
 
   @override
-  String get oAreYouCurrentlyReceiving =>
-      'Are you currently receiving treatment?';
+  String get oAreYouCurrentlyReceiving => 'మీకు ప్రస్తుతం చికిత్స జరుగుతోందా?';
 
   @override
-  String get oHowLongHaveYou => 'How long have you been trying?';
+  String get oHowLongHaveYou => 'మీరు ఎంతకాలంగా ప్రయత్నిస్తున్నారు?';
 
   @override
-  String get oHowAreYouTracking => 'How are you tracking fertility?';
+  String get oHowAreYouTracking =>
+      'మీరు సంతానోత్పత్తిని ఎలా ట్రాక్ చేస్తున్నారు?';
 
   @override
   String get oAreYouCurrentlyReceiving2 =>
-      'Are you currently receiving fertility treatment?';
+      'మీకు ప్రస్తుతం సంతానోత్పత్తి చికిత్స జరుగుతోందా?';
 
   @override
-  String get oIsThisYourFirst => 'Is this your first pregnancy?';
+  String get oIsThisYourFirst => 'ఇది మీ మొదటి గర్భమా?';
 
   @override
-  String get oWhatSupportWouldYou => 'What support would you like?';
+  String get oWhatSupportWouldYou => 'మీకు ఎలాంటి మద్దతు కావాలి?';
 
   @override
-  String get oHowAreYouFeeding => 'How are you feeding your baby?';
+  String get oHowAreYouFeeding => 'మీ బిడ్డకు మీరు ఎలా ఆహారం ఇస్తున్నారు?';
 
   @override
-  String get oHowHaveYourPeriods => 'How have your periods changed?';
+  String get oHowHaveYourPeriods => 'మీ రుతుస్రావంలో ఏమి మారింది?';
 
   @override
-  String get oWhatWouldYouMost => 'What would you most like to improve?';
+  String get oWhatWouldYouMost =>
+      'మీరు దేనిలో ఎక్కువ మెరుగుదల కోరుకుంటున్నారు?';
 
   @override
-  String get oHowLongHasIt => 'How long has it been since your last period?';
+  String get oHowLongHasIt => 'మీ చివరి రుతుస్రావం అయ్యి ఎంతకాలం అయింది?';
 
   @override
   String get oWhichSymptomsAffectYour =>
-      'Which symptoms affect your daily life?';
+      'ఏ లక్షణాలు మీ రోజువారీ జీవితాన్ని ప్రభావితం చేస్తాయి?';
 
   @override
-  String get oWhatWouldYouLike4 => 'What would you like Blushy to focus on?';
+  String get oWhatWouldYouLike4 => 'Blushy దేనిపై దృష్టి పెట్టాలి?';
 
   @override
-  String get poYourPreferredName => 'Your preferred name';
+  String get poYourPreferredName => 'మీకు నచ్చిన పేరు';
 
   @override
-  String get sGoToSignIn => 'Go to sign in';
+  String get sGoToSignIn => 'సైన్ ఇన్‌కు వెళ్లు';
 
   @override
-  String get sVerifyCode => 'Verify Code';
+  String get sVerifyCode => 'కోడ్‌ను ధృవీకరించు';
 
   @override
-  String get sForgotPassword => 'Forgot password?';
+  String get sForgotPassword => 'పాస్‌వర్డ్ మర్చిపోయారా?';
 
   @override
-  String get sIAgreeToThe => 'I agree to the ';
+  String get sIAgreeToThe => 'నేను అంగీకరిస్తున్నాను ';
 
   @override
-  String get sTermsConditions => 'Terms & Conditions';
+  String get sTermsConditions => 'నిబంధనలు & షరతులు';
 
   @override
-  String get sTerms => 'Terms';
+  String get sTerms => 'నిబంధనలు';
 
   @override
-  String get sPrivacyPolicy => 'Privacy Policy';
+  String get sPrivacyPolicy => 'గోప్యతా విధానం';
 
   @override
-  String get cPeople => 'People';
+  String get cPeople => 'వ్యక్తులు';
 
   @override
   String get cSearchTitleTextTags =>
-      'Search title, text, tags, or username/email...';
+      'శీర్షిక, వచనం, ట్యాగ్‌లు లేదా వినియోగదారు పేరు/ఇమెయిల్ వెతకండి...';
 
   @override
-  String get cpPublish => 'Publish';
+  String get cpPublish => 'ప్రచురించు';
 
   @override
-  String get cpAnInterestingTitle => 'An interesting title...';
+  String get cpAnInterestingTitle => 'ఒక ఆసక్తికరమైన శీర్షిక...';
 
   @override
   String get cpShareYourThoughtsExperiences =>
-      'Share your thoughts, experiences, or questions...';
+      'మీ ఆలోచనలు, అనుభవాలు లేదా ప్రశ్నలను పంచుకోండి...';
 
   @override
-  String get cpEGLutealMoodswings => 'e.g., Luteal, MoodSwings, SleepTips';
+  String get cpEGLutealMoodswings =>
+      'ఉదా., లూటియల్, మూడ్‌స్వింగ్స్, స్లీప్‌టిప్స్';
 
   @override
-  String get pdDeleteComment => 'Delete Comment';
+  String get pdDeleteComment => 'వ్యాఖ్యను తొలగించు';
 
   @override
-  String get pdAreYouSureYou => 'Are you sure you want to delete this comment?';
+  String get pdAreYouSureYou =>
+      'ఈ వ్యాఖ్యను తొలగించాలని మీరు ఖచ్చితంగా అనుకుంటున్నారా?';
 
   @override
-  String get pdCancel => 'Cancel';
+  String get pdCancel => 'రద్దు చేయి';
 
   @override
-  String get pdDelete => 'Delete';
+  String get pdDelete => 'తొలగించు';
 
   @override
-  String get pdDeletePost => 'Delete Post';
+  String get pdDeletePost => 'పోస్ట్‌ను తొలగించు';
 
   @override
-  String get pdAreYouSureYou2 => 'Are you sure you want to delete this post?';
+  String get pdAreYouSureYou2 =>
+      'ఈ పోస్ట్‌ను తొలగించాలని మీరు ఖచ్చితంగా అనుకుంటున్నారా?';
 
   @override
-  String get pdComments => 'Comments';
+  String get pdComments => 'వ్యాఖ్యలు';
 
   @override
-  String get upFailedToLoadProfile => 'Failed to load profile details.';
+  String get upFailedToLoadProfile => 'ప్రొఫైల్ వివరాలను లోడ్ చేయడం విఫలమైంది.';
 
   @override
-  String get upCancel => 'Cancel';
+  String get upCancel => 'రద్దు చేయి';
 
   @override
-  String get upSave => 'Save';
+  String get upSave => 'సేవ్ చేయి';
 
   @override
   String get hDrDocsy => 'Docsy';
 
   @override
-  String get hClose => 'Close';
+  String get hClose => 'మూసివేయి';
 
   @override
-  String get dsQuestionsToAsk => 'Questions to ask';
+  String get dsQuestionsToAsk => 'అడగవలసిన ప్రశ్నలు';
 
   @override
-  String get umsdDailyUnifiedCheckIn => 'Daily Unified Check-in';
+  String get umsdDailyUnifiedCheckIn => 'రోజువారీ ఏకీకృత చెక్-ఇన్';
 
   @override
   String get umsdCheckInSavedAnd =>
-      'Check-in saved and synced to your live MongoDB profile! ✨';
+      'చెక్-ఇన్ సేవ్ అయ్యి మీ ప్రొఫైల్‌తో సమకాలీకరించబడింది! ✨';
 
   @override
   String get cYourCycleLengthIs =>
-      'Your cycle length is varying. Log your symptoms daily so Docsy can adjust predictions.';
+      'మీ చక్రం నిడివి మారుతోంది. ప్రతిరోజూ లక్షణాలను నమోదు చేయండి, Docsy అంచనాలను సరిచేస్తుంది.';
 
   @override
   String get cTrackingIsDisabledFocus =>
-      'Tracking is disabled. Focus on your daily energy, mood, and sleep.';
+      'ట్రాకింగ్ ఆపివేయబడింది. మీ రోజువారీ శక్తి, మానసిక స్థితి మరియు నిద్రపై దృష్టి పెట్టండి.';
 
   @override
   String get cYourRecommendationsAreAdapted =>
-      'Your recommendations are adapted to your current life stage.';
+      'మీ సిఫార్సులు మీ ప్రస్తుత జీవిత దశకు అనుగుణంగా అమర్చబడ్డాయి.';
 
   @override
-  String get paTodaySNextStep => 'TODAY\\\'S NEXT STEP';
+  String get paTodaySNextStep => 'ఈరోజు తదుపరి అడుగు';
 
   @override
-  String get smClearDrDocsyMemory => 'Clear Docsy Memory';
+  String get smClearDrDocsyMemory => 'Docsy జ్ఞాపకాన్ని తొలగించు';
 
   @override
-  String get scClinicalAlignment => 'Clinical Alignment';
+  String get scClinicalAlignment => 'వైద్య సమన్వయం';
 
   @override
-  String get scCurrentTrack => 'CURRENT TRACK';
+  String get scCurrentTrack => 'ప్రస్తుత మార్గం';
 
   @override
-  String get scNewTrack => 'NEW TRACK';
+  String get scNewTrack => 'కొత్త మార్గం';
 
   @override
-  String get scKeepCurrentTrack => 'Keep Current Track';
+  String get scKeepCurrentTrack => 'ప్రస్తుత మార్గాన్ని ఉంచు';
 
   @override
-  String get scSwitchTrack => 'Switch Track';
+  String get scSwitchTrack => 'మార్గాన్ని మార్చు';
 
   @override
-  String get sqWhatWouldYouLike => 'What would you like to learn first?';
+  String get sqWhatWouldYouLike => 'మొదట మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?';
 
   @override
-  String get sqWhenDidYourFirst => 'When did your first period start?';
+  String get sqWhenDidYourFirst => 'మీ మొదటి రుతుస్రావం ఎప్పుడు మొదలైంది?';
 
   @override
-  String get sqWhatWouldYouLike2 => 'What would you like support with?';
+  String get sqWhatWouldYouLike2 => 'మీకు దేనిలో మద్దతు కావాలి?';
 
   @override
-  String get sqHowWouldYouDescribe => 'How would you describe your cycle?';
+  String get sqHowWouldYouDescribe => 'మీ చక్రాన్ని మీరు ఎలా వర్ణిస్తారు?';
 
   @override
-  String get sqWhenDidYourLast => 'When did your last period start?';
+  String get sqWhenDidYourLast => 'మీ చివరి రుతుస్రావం ఎప్పుడు మొదలైంది?';
 
   @override
-  String get sqWhatAreYourPrimary => 'What are your primary wellness goals?';
+  String get sqWhatAreYourPrimary => 'మీ ప్రధాన ఆరోగ్య లక్ష్యాలు ఏమిటి?';
 
   @override
-  String get sqAreYouUsingHormonal => 'Are you using hormonal contraception?';
+  String get sqAreYouUsingHormonal =>
+      'మీరు హార్మోన్ల గర్భనిరోధకం వాడుతున్నారా?';
 
   @override
   String get sqWhichHormonalConditionS =>
-      'Which hormonal condition(s) apply to you?';
+      'ఏ హార్మోన్ల పరిస్థితి మీకు వర్తిస్తుంది?';
 
   @override
-  String get sqWhichSymptomsAffectYou => 'Which symptoms affect you most?';
+  String get sqWhichSymptomsAffectYou =>
+      'ఏ లక్షణాలు మిమ్మల్ని ఎక్కువగా ప్రభావితం చేస్తాయి?';
 
   @override
-  String get sqAreYouCurrentlyReceiving =>
-      'Are you currently receiving treatment?';
+  String get sqAreYouCurrentlyReceiving => 'మీకు ప్రస్తుతం చికిత్స జరుగుతోందా?';
 
   @override
-  String get sqHowLongHaveYou => 'How long have you been trying to conceive?';
+  String get sqHowLongHaveYou =>
+      'మీరు ఎంతకాలంగా గర్భధారణకు ప్రయత్నిస్తున్నారు?';
 
   @override
-  String get sqHowAreYouTracking => 'How are you tracking fertility?';
+  String get sqHowAreYouTracking =>
+      'మీరు సంతానోత్పత్తిని ఎలా ట్రాక్ చేస్తున్నారు?';
 
   @override
   String get sqAreYouUndergoingFertility =>
-      'Are you undergoing fertility assistance?';
+      'మీరు సంతానోత్పత్తి సహాయం పొందుతున్నారా?';
 
   @override
-  String get sqWhatIsYourEstimated => 'What is your estimated due date?';
+  String get sqWhatIsYourEstimated => 'మీ అంచనా ప్రసవ తేదీ ఏమిటి?';
 
   @override
-  String get sqIsThisYourFirst => 'Is this your first pregnancy?';
+  String get sqIsThisYourFirst => 'ఇది మీ మొదటి గర్భమా?';
 
   @override
   String get sqWhatSupportWouldYou =>
-      'What support would you like during pregnancy?';
+      'గర్భధారణ సమయంలో మీకు ఎలాంటి మద్దతు కావాలి?';
 
   @override
-  String get sqWhenWasYourBaby => 'When was your baby born?';
+  String get sqWhenWasYourBaby => 'మీ బిడ్డ ఎప్పుడు పుట్టింది?';
 
   @override
-  String get sqHowAreYouFeeding => 'How are you feeding your baby?';
+  String get sqHowAreYouFeeding => 'మీ బిడ్డకు మీరు ఎలా ఆహారం ఇస్తున్నారు?';
 
   @override
-  String get sqWhatAreasWouldYou => 'What areas would you like help with?';
+  String get sqWhatAreasWouldYou => 'ఏ విషయాల్లో మీకు సహాయం కావాలి?';
 
   @override
-  String get sqHowHaveYourPeriods => 'How have your periods changed?';
+  String get sqHowHaveYourPeriods => 'మీ రుతుస్రావంలో ఏమి మారింది?';
 
   @override
-  String get sqWhatWouldYouMost => 'What would you most like to focus on?';
+  String get sqWhatWouldYouMost =>
+      'మీరు దేనిపై ఎక్కువగా దృష్టి పెట్టాలనుకుంటున్నారు?';
 
   @override
-  String get sqHowLongHasIt => 'How long has it been since your last period?';
+  String get sqHowLongHasIt => 'మీ చివరి రుతుస్రావం అయ్యి ఎంతకాలం అయింది?';
 
   @override
   String get sqWhichSymptomsAffectYour =>
-      'Which symptoms affect your daily life?';
+      'ఏ లక్షణాలు మీ రోజువారీ జీవితాన్ని ప్రభావితం చేస్తాయి?';
 
   @override
-  String get sqWhatAreYourTop => 'What are your top health goals?';
+  String get sqWhatAreYourTop => 'మీ ప్రధాన ఆరోగ్య లక్ష్యాలు ఏమిటి?';
 
   @override
-  String get sjaRegenerate => 'Regenerate';
+  String get sjaRegenerate => 'మళ్లీ రూపొందించు';
 
   @override
   String get jcQuickPreviewQuietMorning =>
-      'Quick Preview: \"Quiet morning walks and warm tea with friends.\"';
+      'సంక్షిప్త వీక్షణ: \"ప్రశాంతమైన ఉదయపు నడక మరియు స్నేహితులతో వేడి టీ.\"';
 
   @override
-  String get stUndo => 'Undo';
+  String get stUndo => 'రద్దు చేయి';
 
   @override
-  String get stRedo => 'Redo';
+  String get stRedo => 'మళ్లీ చేయి';
 
   @override
-  String get stBack => 'Back';
+  String get stBack => 'వెనుకకు';
 
   @override
-  String get stCopy => 'Copy';
+  String get stCopy => 'కాపీ చేయి';
 
   @override
-  String get stDelete => 'Delete';
+  String get stDelete => 'తొలగించు';
 
   @override
-  String get ldPrivacyPolicy => 'Privacy Policy';
+  String get ldPrivacyPolicy => 'గోప్యతా విధానం';
 
   @override
-  String get ldTermsConditions => 'Terms & Conditions';
+  String get ldTermsConditions => 'నిబంధనలు & షరతులు';
 
   @override
-  String get ldPrivacyPolicy2 => '📜 Privacy Policy';
+  String get ldPrivacyPolicy2 => '📜 గోప్యతా విధానం';
 
   @override
-  String get ldRightToErasureDelete => 'Right to Erasure (Delete Account)';
+  String get ldRightToErasureDelete => 'తొలగింపు హక్కు (ఖాతాను తొలగించు)';
 
   @override
-  String get ldEmail => 'Email';
+  String get ldEmail => 'ఇమెయిల్';
 
   @override
-  String get ldWebsite => 'Website';
+  String get ldWebsite => 'వెబ్‌సైట్';
 
   @override
   String get ldTermsAndConditionsTerms =>
-      '⚖️ Terms and Conditions (Terms of Service)';
+      '⚖️ నిబంధనలు మరియు షరతులు (సేవా నిబంధనలు)';
 
   @override
-  String get ldUnauthorizedUse => 'Unauthorized Use';
+  String get ldUnauthorizedUse => 'అనధికార వినియోగం';
 
   @override
-  String get msNewTimeCapsule => 'New Time Capsule';
+  String get msNewTimeCapsule => 'కొత్త టైమ్ క్యాప్సూల్';
 
   @override
-  String get msAmIst => '8:00 AM IST';
+  String get msAmIst => 'ఉదయం 8:00 IST';
 
   @override
-  String get msSave => 'Save';
+  String get msSave => 'సేవ్ చేయి';
 
   @override
   String get rspThatIsTheWhole =>
-      'That is the whole session. Take a moment before you get up.';
+      'ఇదే పూర్తి సెషన్. లేచే ముందు ఒక క్షణం ఆగండి.';
 
   @override
   String get pPreparingHerEmergencySchool =>
-      'PREPARING HER EMERGENCY SCHOOL KIT';
+      'ఆమె పాఠశాల అత్యవసర కిట్‌ను సిద్ధం చేయడం';
 
   @override
-  String get pConversationStarters => ' CONVERSATION STARTERS';
+  String get pConversationStarters => ' సంభాషణ ప్రారంభాలు';
 
   @override
-  String get pParentFrequentQuestions => 'PARENT FREQUENT QUESTIONS';
+  String get pParentFrequentQuestions => 'తల్లిదండ్రుల తరచు ప్రశ్నలు';
 
   @override
-  String get gBouquet => 'Bouquet';
+  String get gBouquet => 'పూలగుచ్ఛం';
 
   @override
-  String get gCommunity => '🌸 Ideas';
+  String get gCommunity => '🌸 ఆలోచనలు';
 
   @override
-  String get hBuildABouquet => 'Build a Bouquet';
+  String get hBuildABouquet => 'పూలగుచ్ఛం తయారు చేయి';
 
   @override
-  String get hBuildItInBlack => 'Build it in Black & White';
+  String get hBuildItInBlack => 'నలుపు-తెలుపులో తయారు చేయి';
 
   @override
   String get pHereAreGeneralWays =>
-      'Here are general ways to support your partner today:';
+      'ఈరోజు మీ భాగస్వామికి మద్దతు ఇవ్వడానికి కొన్ని సాధారణ మార్గాలు:';
 
   @override
-  String get pGotIt => 'Got it';
+  String get pGotIt => 'అర్థమైంది';
 
   @override
-  String get pTips => 'Tips';
+  String get pTips => 'చిట్కాలు';
 
   @override
-  String get pSavePermissions => 'Save Permissions';
+  String get pSavePermissions => 'అనుమతులను సేవ్ చేయి';
 
   @override
-  String get pReject => 'Reject';
+  String get pReject => 'తిరస్కరించు';
 
   @override
-  String get pPending => 'Pending';
+  String get pPending => 'పెండింగ్‌లో';
 
   @override
-  String get pShareThisInvitation => 'Share this invitation';
+  String get pShareThisInvitation => 'ఈ ఆహ్వానాన్ని పంచుకోండి';
 
   @override
-  String get pConnect => 'Connect';
+  String get pConnect => 'కనెక్ట్ అవ్వు';
 
   @override
-  String get pLiveSynchronized => 'Live synchronized';
+  String get pLiveSynchronized => 'ప్రత్యక్షంగా సమకాలీకరించబడుతోంది';
 
   @override
-  String get pCompleteCheckIn => 'Complete Check-in';
+  String get pCompleteCheckIn => 'చెక్-ఇన్ పూర్తి చేయి';
 
   @override
-  String get pDigitalFlowerGift => 'Digital Flower Gift';
+  String get pDigitalFlowerGift => 'డిజిటల్ పూల బహుమతి';
 
   @override
-  String get pAiCommunicationHub => 'AI Communication Hub';
+  String get pAiCommunicationHub => 'AI సంభాషణ కేంద్రం';
 
   @override
   String get pYourPartnerHasChosen =>
-      'Your partner has chosen not to share personal insights right now.';
+      'మీ భాగస్వామి ప్రస్తుతం వ్యక్తిగత సమాచారాన్ని పంచుకోవద్దని ఎంచుకున్నారు.';
 
   @override
-  String get pWhatWouldYouLike => 'What would you like help with?';
+  String get pWhatWouldYouLike => 'మీకు దేనిలో సహాయం కావాలి?';
 
   @override
   String get phHereAreGeneralWays =>
-      'Here are general ways to support your partner today:';
+      'ఈరోజు మీ భాగస్వామికి మద్దతు ఇవ్వడానికి కొన్ని సాధారణ మార్గాలు:';
 
   @override
-  String get phGotIt => 'Got it';
+  String get phGotIt => 'అర్థమైంది';
 
   @override
-  String get phSeeHowICan => 'See how I can help';
+  String get phSeeHowICan => 'నేను ఎలా సహాయపడగలనో చూడండి';
 
   @override
-  String get phAllTodaySActions => 'All Today\'s Actions Completed! 🌸';
+  String get phAllTodaySActions => 'ఈరోజు అన్ని పనులు పూర్తయ్యాయి! 🌸';
 
   @override
   String get phDrDocsy => 'Docsy';
 
   @override
-  String get phNotSharedWithYou => 'Not shared with you';
+  String get phNotSharedWithYou => 'మీతో పంచుకోలేదు';
 
   @override
-  String get phConnectionEnded => 'Connection ended';
+  String get phConnectionEnded => 'కనెక్షన్ ముగిసింది';
 
   @override
-  String get phNothingSharedRightNow => 'Nothing shared right now';
+  String get phNothingSharedRightNow => 'ప్రస్తుతం ఏదీ పంచుకోలేదు';
 
   @override
-  String get plConnectWithPartner => 'Connect with Partner';
+  String get plConnectWithPartner => 'భాగస్వామితో కనెక్ట్ అవ్వు';
 
   @override
   String get plPairingWithYourPartner =>
-      'Pairing with your partner enables live AI insights, phase tracking, and support advice on the Learn page.';
+      'భాగస్వామితో జతకూడితే ప్రత్యక్ష AI సమాచారం, దశ ట్రాకింగ్ మరియు Learn పేజీలో మద్దతు సూచనలు లభిస్తాయి.';
 
   @override
-  String get plSendInvite => 'Send Invite';
+  String get plSendInvite => 'ఆహ్వానం పంపు';
 
   @override
-  String get plLearnDiscover => 'Learn & Discover';
+  String get plLearnDiscover => 'నేర్చుకో & తెలుసుకో';
 
   @override
   String get plConnectWithYourPartner =>
-      'Connect with your partner to unlock personalized Docsy AI insights.';
+      'వ్యక్తిగతీకరించిన Docsy AI సమాచారం కోసం మీ భాగస్వామితో కనెక్ట్ అవ్వండి.';
 
   @override
   String get plUnderstandingEnergyFatigueShifts =>
-      'Understanding Energy & Fatigue Shifts';
+      'శక్తి మరియు అలసట మార్పులను అర్థం చేసుకోవడం';
 
   @override
-  String get plMindfulCommunicationPrinciples =>
-      'Mindful Communication Principles';
+  String get plMindfulCommunicationPrinciples => 'సావధాన సంభాషణ సూత్రాలు';
 
   @override
   String get plDailyHydrationMetabolicBalance =>
-      'Daily Hydration & Metabolic Balance';
+      'రోజువారీ నీటి సేవనం మరియు జీవక్రియ సమతుల్యత';
 
   @override
   String get plManagingStressDailyResilience =>
-      'Managing Stress & Daily Resilience';
+      'ఒత్తిడి నిర్వహణ మరియు రోజువారీ స్థితిస్థాపకత';
 
   @override
   String get plBuildingHealthySleepArchitecture =>
-      'Building Healthy Sleep Architecture';
+      'ఆరోగ్యకరమైన నిద్ర నిర్మాణాన్ని ఏర్పరచడం';
 
   @override
-  String get psAskAboutHerActive => 'Ask about her active stage...';
+  String get psAskAboutHerActive => 'ఆమె ప్రస్తుత దశ గురించి అడగండి...';
 
   @override
-  String get puHowSharingWorks => 'How Sharing Works';
+  String get puHowSharingWorks => 'పంచుకోవడం ఎలా పనిచేస్తుంది';
 
   @override
-  String get puUnderstand => 'Understand';
+  String get puUnderstand => 'అర్థమైంది';
 
   @override
-  String get sSavesDirectlyToYour =>
-      'Saves directly to your journal and MongoDB';
+  String get sSavesDirectlyToYour => 'నేరుగా మీ డైరీలో సేవ్ అవుతుంది';
 
   @override
-  String get sLutealRecoveryActionChecklist =>
-      'Luteal Recovery Action Checklist';
+  String get sLutealRecoveryActionChecklist => 'లూటియల్ కోలుకునే పనుల జాబితా';
 
   @override
-  String get sMedicalReportPdf => 'Medical Report / PDF';
+  String get sMedicalReportPdf => 'వైద్య నివేదిక / PDF';
 
   @override
-  String get sSleep => 'Sleep';
+  String get sSleep => 'నిద్ర';
 
   @override
-  String get sEnergy => 'Energy';
+  String get sEnergy => 'శక్తి';
 
   @override
-  String get sMood => 'Mood';
+  String get sMood => 'మానసిక స్థితి';
 
   @override
   String get sWriteYourThoughtsBody =>
-      'Write your thoughts, body sensations, or reflections here...';
+      'మీ ఆలోచనలు, శారీరక అనుభూతులు లేదా ప్రతిబింబాలను ఇక్కడ రాయండి...';
 
   @override
-  String get vnbVoiceReflection => 'Voice Reflection';
+  String get vnbVoiceReflection => 'వాయిస్ రిఫ్లెక్షన్';
 
   @override
   String get vnbYourVoiceTranscriptWill =>
-      'Your voice transcript will appear here...';
+      'మీ స్వరపు లిఖిత రూపం ఇక్కడ కనిపిస్తుంది...';
 
   @override
-  String get gIdeasSubtitle => 'Ready-made bouquets to start from.';
+  String get gIdeasSubtitle => 'ప్రారంభించడానికి సిద్ధంగా ఉన్న పూలగుచ్ఛాలు.';
 
   @override
   String get jrnCouldNotAddPhoto =>
-      'That photo could not be added. Try another one.';
+      'ఆ ఫోటోను జోడించలేకపోయాము. మరొకటి ప్రయత్నించండి.';
 
   @override
   String get tourHomeBody =>
-      'Your day at a glance: cycle, check-ins and what to expect. Log how you feel here.';
+      'మీ రోజు ఒక్క చూపులో: చక్రం, చెక్-ఇన్ మరియు ఏమి ఆశించాలి. మీరు ఎలా అనుభూతి చెందుతున్నారో ఇక్కడ నమోదు చేయండి.';
 
   @override
   String get tourCommunityBody =>
-      'Questions and answers from other people going through the same thing.';
+      'అదే అనుభవం గుండా వెళ్తున్న ఇతరుల ప్రశ్నలు మరియు సమాధానాలు.';
 
   @override
   String get tourSiaBody =>
-      'Ask Docsy anything, by typing or by voice. She knows what you have logged.';
+      'Docsy‌ను ఏదైనా అడగండి, రాసి లేదా మాట్లాడి. మీరు ఏమి నమోదు చేశారో ఆమెకు తెలుసు.';
 
   @override
   String get tourStudioBody =>
-      'Your journal, guided recovery sessions and time capsules you write to your future self.';
+      'మీ డైరీ, మార్గదర్శక కోలుకునే సెషన్‌లు మరియు భవిష్యత్ మీకు రాసే టైమ్ క్యాప్సూల్‌లు.';
 
   @override
   String get tourPartnerBody =>
-      'Invite a partner and choose exactly what they can see. Nothing is shared until you say so.';
+      'భాగస్వామిని ఆహ్వానించి, వారు ఏమి చూడగలరో ఎంచుకోండి. మీరు చెప్పే వరకు ఏదీ పంచుకోబడదు.';
 
   @override
-  String get tourSkip => 'Skip';
+  String get tourSkip => 'దాటవేయి';
 
   @override
-  String get tourNext => 'Next';
+  String get tourNext => 'తదుపరి';
 
   @override
-  String get tourDone => 'Got it';
+  String get tourDone => 'అర్థమైంది';
 
   @override
   String get upAnonymousProfile =>
-      'This was posted anonymously, so there is no profile to open. Whoever wrote it chose not to be named, and that stays their choice.';
+      'ఇది అనామకంగా పోస్ట్ చేయబడింది, కాబట్టి తెరవడానికి ప్రొఫైల్ లేదు. రాసిన వ్యక్తి పేరు చెప్పవద్దని ఎంచుకున్నారు, అది వారి ఇష్టం.';
+
+  @override
+  String get dashFocusTopic => 'FOCUS TOPIC';
+
+  @override
+  String get dashScrollDownContinueLearning =>
+      'Scroll down to Continue Learning section';
+
+  @override
+  String get dashSmallLessonsDesignedStage =>
+      'Small lessons designed for your stage.';
+
+  @override
+  String get dashDailyDiscovery => 'DAILY DISCOVERY';
+
+  @override
+  String get dashSweatGlandsBecomeMore =>
+      'Sweat glands become more active during puberty. Drinking plenty of water and washing daily helps keep you fresh, confident, and clean.';
+
+  @override
+  String get dashRead => 'Read';
+
+  @override
+  String get dashLinkCopiedShareFamily => 'Link copied to share with family!';
+
+  @override
+  String get dashQuestionsGirlsOftenAsk => 'Questions Girls Often Ask';
+
+  @override
+  String get dashGirls => 'Girls';
+
+  @override
+  String get dashGrowingTogether => 'Growing Together';
+
+  @override
+  String get dashSupportiveCommunityPreview => 'Supportive Community Preview';
+
+  @override
+  String get dashHowDoITrack =>
+      'How do I track if I haven\'t got my period yet?';
+
+  @override
+  String get dashCanFocusLearningDischarge =>
+      'You can focus on learning, discharge changes and kits here! Docsy helps guide you.';
+
+  @override
+  String get dashReadWhatOthersAre => 'Read what others are sharing';
+
+  @override
+  String get dashRealConversationsFromCommunity =>
+      'Real conversations from the community, not examples.';
+
+  @override
+  String get dashRedirectingCommunitySpace =>
+      'Redirecting to Community Space...';
+
+  @override
+  String get dashJoinCommunity => 'Join Community';
+
+  @override
+  String get dashSharedReading => 'SHARED READING';
+
+  @override
+  String get dashShareArticlesAboutGrowing =>
+      'Share articles about growing up with your parent safely.';
+
+  @override
+  String get dashArticleSharedParentAccount =>
+      'Article shared with Parent account!';
+
+  @override
+  String get dashSendParent => 'Send to Parent';
+
+  @override
+  String get dashOpeningSharedLibrary => 'Opening Shared Library...';
+
+  @override
+  String get dashSharedLibrary => 'Shared Library';
+
+  @override
+  String get dashLetSTalkWeekly => 'LET\'S TALK • WEEKLY PROMPT';
+
+  @override
+  String get dashFirstPeriodKitChecklist => 'FIRST PERIOD KIT CHECKLIST';
+
+  @override
+  String get dashSharedJourney => 'SHARED JOURNEY';
+
+  @override
+  String get dashDisplayLearningProgressCompleted =>
+      'Display learning progress completed together. The child decides what is visible.';
+
+  @override
+  String get dashLearningCycleCompanion => 'Your learning cycle companion.';
+
+  @override
+  String get dashPastDays => 'PAST 30 DAYS';
+
+  @override
+  String get dashSCompletelyNormalFirst =>
+      'It\'s completely normal for your first few cycles to be irregular. Your body is gently finding its own natural rhythm.';
+
+  @override
+  String get dashVoiceNote => 'Voice Note';
+
+  @override
+  String get dashMStudio => 'M Studio';
+
+  @override
+  String get dashCommunityDiscussionsStories =>
+      'Community Discussions & Stories';
+
+  @override
+  String get dashQuestionsPeopleAreAsking => 'Questions people are asking';
+
+  @override
+  String get dashOpenCommunityReadReply =>
+      'Open the community to read and reply.';
+
+  @override
+  String get dashTipsPeopleAreSharing => 'Tips people are sharing';
+
+  @override
+  String get dashOpenDiscussions => 'Open Discussions';
+
+  @override
+  String get dashSharedReadingParentResources =>
+      'SHARED READING & PARENT RESOURCES';
+
+  @override
+  String get dashSendCycleArticlesParent =>
+      'Send cycle articles to parent or consult conversation guides.';
+
+  @override
+  String get dashArticleSharedParent => 'Article shared with Parent!';
+
+  @override
+  String get dashShare => 'Share';
+
+  @override
+  String get dashOpeningParentResourceLibrary =>
+      'Opening Parent Resource library...';
+
+  @override
+  String get dashGuides => 'Guides';
+
+  @override
+  String get dashConversationPrompt => 'CONVERSATION PROMPT';
+
+  @override
+  String get dashFirstPeriodKitStatus => 'FIRST PERIOD KIT STATUS';
+
+  @override
+  String get dashDocsySafetyParentNever =>
+      ' Docsy Safety: Your parent never has access to your private chat logs, notes, or moods.';
+
+  @override
+  String get dashTodaySLoggedSignals => 'TODAY\'S LOGGED SIGNALS';
+
+  @override
+  String get dashLogEditPeriod => 'Log / Edit Period';
+
+  @override
+  String get dashConfirmCorrectPeriodStart =>
+      'Confirm or correct your period start and end dates below.';
+
+  @override
+  String get dashPeriodStartDate => 'PERIOD START DATE';
+
+  @override
+  String get dashPeriodEndDateOptional => 'PERIOD END DATE (OPTIONAL)';
+
+  @override
+  String get dashCancel => 'Cancel';
+
+  @override
+  String get dashSave => 'Save';
+
+  @override
+  String get dashExplainInsight => 'Explain Insight';
+
+  @override
+  String get dashDocsySReflection => 'DOCSY\'S REFLECTION';
+
+  @override
+  String get dashHormonalRhythmTracker => 'Hormonal Rhythm Tracker';
+
+  @override
+  String get dashRecentCycleHistory => 'RECENT CYCLE HISTORY';
+
+  @override
+  String get dashNextPeriodMayArrive =>
+      'Your next period may arrive within the next few weeks. Because your cycles vary, this is only an estimate.';
+
+  @override
+  String get dashWeightOptional => 'WEIGHT (OPTIONAL)';
+
+  @override
+  String get dashFromLogs => 'FROM YOUR LOGS';
+
+  @override
+  String get dashBlushyCanPullTogether =>
+      'Blushy can pull together what you have logged over a date range you choose. You decide what stays in before you share it.';
+
+  @override
+  String get dashRecordWhatReportedWhat =>
+      'A record of what you reported and what the app noticed. Not a diagnosis.';
+
+  @override
+  String get dashAiGeneratedTrendsAcross =>
+      'AI-generated trends across multiple cycle logs';
+
+  @override
+  String get dashAskDocsy => 'Ask Docsy';
+
+  @override
+  String get dashWhyMatters => 'Why This Matters';
+
+  @override
+  String get dashPriority => 'Priority';
+
+  @override
+  String get dashReviewedGuidance => 'Reviewed guidance';
+
+  @override
+  String get dashDerived => 'Derived';
+
+  @override
+  String get dashFertilityJourney => 'Your Fertility Journey';
+
+  @override
+  String get dashOvulationLoggedSuccessfully =>
+      'Ovulation logged successfully!';
+
+  @override
+  String get dashLogOvulation => 'Log Ovulation';
+
+  @override
+  String get dashBasalBodyTemperatureBbt => 'BASAL BODY TEMPERATURE (BBT)';
+
+  @override
+  String get dashNotesMStudio => 'NOTES & M STUDIO';
+
+  @override
+  String get dashTtcMStudioEntry => 'TTC M Studio Entry';
+
+  @override
+  String get dashSharedTimelineReminders => 'Shared Timeline & Reminders';
+
+  @override
+  String get dashEncouragingMessage => 'Encouraging Message:';
+
+  @override
+  String get dashPartnerTasksConversationStarters =>
+      'PARTNER TASKS & CONVERSATION STARTERS';
+
+  @override
+  String get dashLearnMore => 'Learn More';
+
+  @override
+  String get dashKickCountDaily => 'KICK COUNT (DAILY)';
+
+  @override
+  String get dashOptionalHealthData => 'OPTIONAL HEALTH DATA';
+
+  @override
+  String get dashLogBloodPressure => 'Log Blood Pressure';
+
+  @override
+  String get dashBloodPressure => 'Blood Pressure';
+
+  @override
+  String get dashLogBloodSugar => 'Log Blood Sugar';
+
+  @override
+  String get dashBloodSugar => 'Blood Sugar';
+
+  @override
+  String get dashPregnancyMStudioEntry => 'Pregnancy M Studio Entry';
+
+  @override
+  String get dashPregnancyPrepLists => 'Pregnancy Prep & Lists';
+
+  @override
+  String get dashSharedPregnancyTimeline => 'Shared Pregnancy Timeline';
+
+  @override
+  String get dashCoordinatedChecklistsTasks =>
+      'Coordinated Checklists & Tasks:';
+
+  @override
+  String get dashPostpartumMStudioEntry => 'Postpartum M Studio Entry';
+
+  @override
+  String get dashMotherBabyCoordinatedTasks => 'Mother-Baby Coordinated Tasks';
+
+  @override
+  String get dashTransitionTrackingHistory => 'Transition Tracking & History';
+
+  @override
+  String get dashViewFullHistory => 'View Full History';
+
+  @override
+  String get dashMStudioReflection => 'M Studio Reflection';
+
+  @override
+  String get dashLongTermWellnessOverview => 'Long-Term Wellness Overview';
+
+  @override
+  String get dashTodaySCheck => 'Today\'s Check-In';
+
+  @override
+  String get dashViewHealthHistory => 'View Health History';
+
+  @override
+  String get dashBloodPressureOptional => 'BLOOD PRESSURE (OPTIONAL)';
+
+  @override
+  String get dashEmpoweredPostMenopauseWellness =>
+      'EMPOWERED POST-MENOPAUSE WELLNESS CARDS';
+
+  @override
+  String get dashWhyMattersEncouragesSustainable =>
+      'Why This Matters: Encourages sustainable heart, joint and bone vitalities.';
+
+  @override
+  String get dashDailyLifestyleOverview => 'Daily Lifestyle Overview';
+
+  @override
+  String get dashCycleOverview => 'CYCLE OVERVIEW';
+
+  @override
+  String get dashViewWellnessHistory => 'View Wellness History';
+
+  @override
+  String get dashRecordCurrentWeightKg =>
+      'Record your current weight in kg to track trends over time.';
+
+  @override
+  String get dashAiGeneratedHabitInsights => 'AI-Generated Habit Insights';
+
+  @override
+  String get dashWhyMattersSupportsOverall =>
+      'Why This Matters: Supports overall physical health and emotional vitality.';
+
+  @override
+  String get languageChoiceTitle => 'మీ భాషను ఎంచుకోండి';
+
+  @override
+  String get languageChoiceSubtitle =>
+      'Blushy మరియు Docsy ఈ భాషలో మాట్లాడతాయి. సెట్టింగ్‌లలో ఎప్పుడైనా మార్చుకోవచ్చు.';
+
+  @override
+  String get languageChoiceContinue => 'కొనసాగించు';
+
+  @override
+  String get dashLogTodayCheckIn => 'ఈరోజు చెక్-ఇన్ నమోదు చేయండి';
 }

@@ -3,6 +3,10 @@ import '../../shared/skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
+import '../../shared/blushy_surface.dart';
+import '../../theme/scale.dart';
+import 'package:share_plus/share_plus.dart';
+import 'post_card_parts.dart';
 import '../../core/theme.dart' hide BlushyColors;
 import '../../models/community_models.dart';
 import '../../services/reddit_community_service.dart';
@@ -36,6 +40,14 @@ bool communityPostMatches(CommunityPost post, String query) {
 class BlushyCommunityScreen extends StatefulWidget {
   const BlushyCommunityScreen({super.key});
 
+  /// The server's name for a filter.
+  ///
+  /// Four of the five are their own lowercased label; the fifth is not, and
+  /// lowercasing "My Posts" would ask the server for a feed it does not have.
+  /// Public so the mapping can be checked without a network.
+  static String feedTypeFor(String label) =>
+      label == 'My Posts' ? 'mine' : label.toLowerCase();
+
   @override
   State<BlushyCommunityScreen> createState() => _BlushyCommunityScreenState();
 }
@@ -67,7 +79,9 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
     'Trending': Icons.trending_up_rounded,
     'Latest': Icons.schedule_rounded,
     'Following': Icons.people_rounded,
+    'My Posts': Icons.person_rounded,
   };
+
   String _searchQuery = '';
   List<CommunityPost> _allPosts = [];
   List<CommunityPost> _feedPosts = [];
@@ -196,7 +210,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
     setState(() {
       _isLoadingFeed = true;
     });
-    final type = _activeTab.toLowerCase();
+    final type = BlushyCommunityScreen.feedTypeFor(_activeTab);
     // The term goes to the server so the whole feed is searched, not just the
     // page already loaded. The local filter below still runs, which keeps
     // typing responsive between round trips.
@@ -305,7 +319,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: Text(
           'Create Post',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: Colors.white,
@@ -351,16 +365,17 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: BlushyTheme.getPagePadding(context), vertical: 16.0),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
+        padding: const EdgeInsets.fromLTRB(BlushySpace.lg, 0, BlushySpace.sm, 0),
+        decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BlushyColors.border),
+          borderRadius: BorderRadius.all(Radius.circular(28)),
+          boxShadow: BlushySurface.shadow,
         ),
         child: Row(
           children: [
-            const Icon(Icons.search_rounded, color: BlushyColors.secondaryText, size: 18),
-            const SizedBox(width: 12),
+            const Icon(Icons.search_rounded,
+                color: BlushyColors.secondaryText, size: 20),
+            const SizedBox(width: BlushySpace.md),
             Expanded(
               child: TextField(
                 controller: _searchController,
@@ -375,13 +390,15 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                     _fetchCommunityFeed();
                   });
                 },
-                style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
+                style: BlushyType.body(color: BlushyColors.text),
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context).cSearchTitleTextTags,
-                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.6)),
+                  hintStyle: BlushyType.body(
+                      color: BlushyColors.secondaryText.withValues(alpha: 0.75)),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: BlushySpace.lg),
                 ),
               ),
             ),
@@ -411,15 +428,22 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
               GestureDetector(
                 onTap: _toggleSearchVoiceSTT,
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  width: BlushySpace.control,
+                  height: BlushySpace.control,
                   decoration: BoxDecoration(
-                    color: _isListeningSearchVoice ? BlushyColors.primary : const Color(0xFFF5EFE6),
+                    color: _isListeningSearchVoice
+                        ? BlushyColors.primary
+                        : BlushyColors.primary.withValues(alpha: 0.10),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    _isListeningSearchVoice ? Icons.stop_rounded : Icons.mic_rounded,
-                    color: _isListeningSearchVoice ? Colors.white : BlushyColors.secondaryText,
-                    size: 16,
+                    _isListeningSearchVoice
+                        ? Icons.stop_rounded
+                        : Icons.mic_rounded,
+                    color: _isListeningSearchVoice
+                        ? Colors.white
+                        : BlushyColors.primary,
+                    size: 18,
                   ),
                 ),
               ),
@@ -430,8 +454,10 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
   }
 
   Widget _buildNavigationTabs() {
-    // All four share the width instead of running off the edge. Scrolling put
-    // the last filter behind a gesture nobody had a reason to try.
+    // Five chips sharing the width, nothing to scroll. Each chip's name is
+    // scaled down rather than cut, so all five stay readable on a narrow
+    // phone; the icons went, because five icons and five names do not fit
+    // one row and the names are what the filters are.
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: BlushyTheme.getPagePadding(context),
@@ -475,29 +501,38 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: BlushySpace.sm, vertical: BlushySpace.sm + 2),
             decoration: BoxDecoration(
               color: active ? BlushyColors.primary : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: active ? BlushyColors.primary : BlushyColors.border,
-              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: active
+                  ? [
+                      BoxShadow(
+                        color: BlushyColors.primary.withValues(alpha: 0.30),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ]
+                  : BlushySurface.shadow,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(_feedTabs[label], size: 12, color: foreground),
-                const SizedBox(width: 3),
+                // Whole, always: scaled down to its share of the row rather
+                // than clipped. The only thing an ellipsis here could do is
+                // hide a filter's name.
                 Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: foreground,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: BlushyType.caption(
+                        color: foreground,
+                        weight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -521,7 +556,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
             children: [
               Text(
                 AppLocalizations.of(context).cPeople,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(height: 1.5, 
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.secondaryText,
@@ -546,7 +581,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
               padding: const EdgeInsets.only(bottom: 12.0),
               child: Text(
                 'No matching people found.',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(height: 1.5, 
                   fontSize: 12,
                   color: BlushyColors.secondaryText.withValues(alpha: 0.6),
                 ),
@@ -587,7 +622,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                             alignment: Alignment.center,
                             child: Text(
                               user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : 'U',
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
                                 color: BlushyColors.text,
@@ -602,7 +637,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                               children: [
                                 Text(
                                   user.displayName,
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(height: 1.5, 
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: BlushyColors.text,
@@ -613,7 +648,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
                                 if (user.email.isNotEmpty)
                                   Text(
                                     user.email,
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(height: 1.5, 
                                       fontSize: 9.5,
                                       color: BlushyColors.secondaryText.withValues(alpha: 0.7),
                                     ),
@@ -664,7 +699,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
               const SizedBox(height: 12),
               Text(
                 'No posts found in this feed.',
-                style: GoogleFonts.poppins(color: BlushyColors.secondaryText, fontSize: 13),
+                style: GoogleFonts.manrope(height: 1.5, color: BlushyColors.secondaryText, fontSize: 13),
               ),
             ],
           ),
@@ -688,18 +723,11 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
     return GestureDetector(
       onTap: () => _navigateToPostDetail(post),
       child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
+        padding: BlushySpace.card,
+        decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BlushyColors.border.withValues(alpha: 0.6), width: 0.8),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x042E2623),
-              offset: Offset(0, 4),
-              blurRadius: 12,
-            ),
-          ],
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+          boxShadow: BlushySurface.shadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -707,50 +735,16 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
             // Header (Author, Timestamp)
             Row(
               children: [
-                GestureDetector(
+                PostAvatar(
+                  name: post.authorName,
                   onTap: () => _showProfile(post.authorId),
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF5EFE6),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      post.authorName.isNotEmpty ? post.authorName[0].toUpperCase() : 'U',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                        color: BlushyColors.text,
-                      ),
-                    ),
-                  ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: BlushySpace.md),
                 Expanded(
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => _showProfile(post.authorId),
-                        child: Text(
-                          post.authorName,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: BlushyColors.text,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '•  ${_timeAgo(post.createdAt)}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          color: BlushyColors.secondaryText.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
+                  child: PostByline(
+                    name: post.authorName,
+                    timeAgo: _timeAgo(post.createdAt),
+                    onTap: () => _showProfile(post.authorId),
                   ),
                 ),
                 // Report and block. Visibility itself is enforced server side;
@@ -769,22 +763,16 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
             const SizedBox(height: 12),
 
             // Post Title & Body snippet
-            Text(
-              post.title,
-              style: GoogleFonts.poppins(
-                fontSize: 16.5,
-                fontWeight: FontWeight.w700,
-                color: BlushyColors.text,
-                height: 1.3,
-              ),
-            ),
+            // The UI face at the UI size: a post is a row in a feed, not a
+            // headline, and the serif at 24 made every card shout.
+            Text(post.title, style: BlushyType.heading(weight: FontWeight.w700)),
             if (post.text.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: BlushySpace.md),
               Text(
                 post.text,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 13.5,
                   color: BlushyColors.text.withValues(alpha: 0.8),
                   height: 1.5,
@@ -797,115 +785,49 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
             // Tags
             if (post.tags.isNotEmpty) ...[
               Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: post.tags.map((tag) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5EFE6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      tag,
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: BlushyColors.secondaryText,
-                      ),
-                    ),
-                  );
-                }).toList(),
+                spacing: BlushySpace.sm,
+                runSpacing: BlushySpace.sm,
+                children: [for (final tag in post.tags) PostTagPill(tag)],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: BlushySpace.lg),
             ],
 
-            // Score and actions footer (Heart Like, Dislike, and Comment)
+            // Like, comment, dislike, and share on the far side. Each a pill,
+            // so the row reads as four controls rather than as scattered
+            // icons. Share is text: the title and the body, which is what a
+            // post is.
             Row(
               children: [
-                // LIKE BUTTON
-                InkWell(
-                  onTap: () {
-                    final targetVote = post.userVote == 1 ? 0 : 1;
-                    _votePost(post, targetVote);
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          post.userVote == 1 ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                          size: 22,
-                          color: const Color(0xFFE11D48),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          // The server's score is the count. Clamped only so a
-                          // net-negative post does not show a negative number
-                          // beside a heart.
-                          '${post.score < 0 ? 0 : post.score}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1E1E1E),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                PostActionPill(
+                  icon: post.userVote == 1
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  // The server's score is the count. Clamped only so a
+                  // net-negative post does not show a negative number
+                  // beside a heart.
+                  label: '${post.score < 0 ? 0 : post.score}',
+                  tinted: true,
+                  onTap: () => _votePost(post, post.userVote == 1 ? 0 : 1),
                 ),
-                const SizedBox(width: 20),
-
-                // DISLIKE BUTTON
-                InkWell(
-                  onTap: () {
-                    final targetVote = post.userVote == -1 ? 0 : -1;
-                    _votePost(post, targetVote);
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          post.userVote == -1 ? Icons.thumb_down_rounded : Icons.thumb_down_outlined,
-                          size: 20,
-                          color: post.userVote == -1 ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 20),
-
-                // COMMENT BUTTON
-                InkWell(
+                const SizedBox(width: BlushySpace.sm),
+                PostActionPill(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  label: '${post.commentCount}',
                   onTap: () => _navigateToPostDetail(post),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          size: 20,
-                          color: Color(0xFF4A4A4A),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${post.commentCount}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF6B7280),
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+                const SizedBox(width: BlushySpace.sm),
+                PostActionPill(
+                  icon: post.userVote == -1
+                      ? Icons.thumb_down_rounded
+                      : Icons.thumb_down_outlined,
+                  onTap: () => _votePost(post, post.userVote == -1 ? 0 : -1),
+                ),
+                const Spacer(),
+                PostActionPill(
+                  icon: Icons.ios_share_rounded,
+                  onTap: () => Share.share(
+                    post.text.isEmpty ? post.title : '${post.title}\n\n${post.text}',
+                    subject: post.title,
                   ),
                 ),
               ],
@@ -930,4 +852,3 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
     return 'Just now';
   }
 }
-

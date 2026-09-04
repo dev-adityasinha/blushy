@@ -192,7 +192,7 @@ class _YearInReviewScrapbookState extends State<YearInReviewScrapbook> {
         iconTheme: const IconThemeData(color: Color(0xFF2D2529)),
         title: Text(
           '${widget.year} Year in Review',
-          style: GoogleFonts.playfairDisplay(
+          style: GoogleFonts.instrumentSerif(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF2D2529),
           ),
@@ -229,7 +229,7 @@ class _YearInReviewScrapbookState extends State<YearInReviewScrapbook> {
                       children: [
                         Text(
                           page.title,
-                          style: GoogleFonts.playfairDisplay(
+                          style: GoogleFonts.instrumentSerif(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF2D2529),
@@ -238,7 +238,7 @@ class _YearInReviewScrapbookState extends State<YearInReviewScrapbook> {
                         const SizedBox(height: 14),
                         Text(
                           page.body,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 14,
                             height: 1.6,
                             color: const Color(0xFF6B6169),

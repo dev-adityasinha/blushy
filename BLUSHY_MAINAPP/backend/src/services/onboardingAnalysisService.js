@@ -144,7 +144,9 @@ export async function analyseOnboarding(answers, { signal } = {}) {
               `Choose focus_areas ONLY from this list, most important first: ${allowed.join(', ')}. ` +
               'Do not invent areas. Do not give health advice, do not interpret ' +
               'symptoms, and do not mention conditions. The summary states only ' +
-              'what the app will show her.',
+              'what the app will show, and is addressed to her as "you" -- it is ' +
+              'displayed to her, so "Your home page is set up around sleep and ' +
+              'energy", never "The app will show her sleep and energy".',
           },
           { role: 'user', content: answerText(answers).join(', ') },
         ],

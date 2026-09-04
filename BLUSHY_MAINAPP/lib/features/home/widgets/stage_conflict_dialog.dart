@@ -80,7 +80,7 @@ class StageConflictDialog extends StatelessWidget {
                       children: [
                         Text(
                           "LIFE STAGE TRANSITION",
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: BlushyColors.primary,
@@ -89,7 +89,7 @@ class StageConflictDialog extends StatelessWidget {
                         ),
                         Text(
                           AppLocalizations.of(context).scClinicalAlignment,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 12,
                             color: BlushyColors.secondaryText,
                           ),
@@ -123,7 +123,7 @@ class StageConflictDialog extends StatelessWidget {
                       children: [
                         Text(
                           AppLocalizations.of(context).scCurrentTrack,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
                             color: BlushyColors.secondaryText,
@@ -133,7 +133,7 @@ class StageConflictDialog extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           fromStages.map(StageConflictEngine.getStageTitle).join(', '),
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: BlushyColors.text,
@@ -164,7 +164,7 @@ class StageConflictDialog extends StatelessWidget {
                       children: [
                         Text(
                           AppLocalizations.of(context).scNewTrack,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
                             color: BlushyColors.primary,
@@ -180,7 +180,7 @@ class StageConflictDialog extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 targetTitle,
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: BlushyColors.primary,
@@ -202,7 +202,7 @@ class StageConflictDialog extends StatelessWidget {
             // Clinical / User-Facing Explanation
             Text(
               conflictResult.userFacingMessage,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 13,
                 height: 1.5,
                 color: BlushyColors.text,
@@ -212,7 +212,7 @@ class StageConflictDialog extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 "• ${conflictResult.reason}",
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 11.5,
                   height: 1.4,
                   color: BlushyColors.secondaryText,
@@ -237,7 +237,7 @@ class StageConflictDialog extends StatelessWidget {
                     ),
                     child: Text(
                       AppLocalizations.of(context).scKeepCurrentTrack,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: BlushyColors.text,
@@ -262,7 +262,7 @@ class StageConflictDialog extends StatelessWidget {
                     ),
                     child: Text(
                       AppLocalizations.of(context).scSwitchTrack,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,

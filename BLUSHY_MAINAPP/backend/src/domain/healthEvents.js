@@ -28,6 +28,15 @@ const FLOWS = ['spotting', 'light', 'medium', 'heavy'];
 const SLEEP_QUALITY = ['poor', 'fair', 'good', 'excellent'];
 const CERVICAL_MUCUS = ['dry', 'sticky', 'creamy', 'watery', 'egg_white'];
 const LH_RESULTS = ['negative', 'low', 'high', 'peak'];
+// 'none' is a real answer: "I did not have sex today" is data, and a fertility
+// window reads differently when the days around it are known to be blank
+// rather than simply unlogged.
+const SEXUAL_ACTIVITIES = [
+  'none', 'protected', 'unprotected', 'oral', 'anal',
+  'masturbation', 'sensual_touch', 'toys',
+];
+const SEX_DRIVE = ['low', 'neutral', 'high'];
+const PREGNANCY_TEST_RESULTS = ['not_taken', 'positive', 'negative', 'faint_line'];
 
 function num(value) {
   const n = Number(value);
@@ -235,6 +244,72 @@ export const EVENT_TYPES = Object.freeze({
     },
   },
 
+  sexual_activity_logged: {
+    // 'fertility' because unprotected intercourse timing is the single
+    // strongest conception signal a person can log. Never 'safety': no
+    // reviewed red-flag rule reads this, and routing it through the rule set
+    // would put it in front of rules written for symptoms.
+    //
+    // This is the most sensitive thing the app stores. It reaches a partner
+    // only through the existing per-field sharing permissions, which default
+    // to off -- nothing here changes that.
+    invalidates: ['fertility', 'timeline'],
+    validate(payload) {
+      const activity = str(payload.activity, 20)?.toLowerCase() ?? null;
+      if (activity !== null && !SEXUAL_ACTIVITIES.includes(activity)) {
+        return { ok: false, error: `activity must be one of: ${SEXUAL_ACTIVITIES.join(', ')}.` };
+      }
+      const drive = str(payload.drive, 10)?.toLowerCase() ?? null;
+      if (drive !== null && !SEX_DRIVE.includes(drive)) {
+        return { ok: false, error: `drive must be one of: ${SEX_DRIVE.join(', ')}.` };
+      }
+      // Either alone is a real entry. Someone logging only that their drive
+      // was low has not said whether they had sex, and defaulting the
+      // activity to 'none' would put an answer in their record that they did
+      // not give -- one the fertility engine then reads.
+      if (activity === null && drive === null) {
+        return { ok: false, error: 'activity or drive is required.' };
+      }
+      const orgasm = payload.orgasm === undefined || payload.orgasm === null
+        ? null
+        : Boolean(payload.orgasm);
+      return { ok: true, value: { activity, drive, orgasm, reportedAs: reportedAs(payload) } };
+    },
+  },
+
+  pregnancy_test_logged: {
+    invalidates: ['fertility', 'timeline'],
+    validate(payload) {
+      const result = str(payload.result, 20)?.toLowerCase().replace(/\s+/g, '_') ?? null;
+      if (!result || !PREGNANCY_TEST_RESULTS.includes(result)) {
+        return { ok: false, error: `result must be one of: ${PREGNANCY_TEST_RESULTS.join(', ')}.` };
+      }
+      // A faint line is deliberately its own answer rather than folded into
+      // positive: it is what a person actually sees, and calling it either way
+      // for them would be reading a test we cannot see.
+      return { ok: true, value: { result, reportedAs: reportedAs(payload) } };
+    },
+  },
+
+  weight_logged: {
+    // Not 'safety': a weight reading on its own is not a red flag, and no
+    // reviewed rule reads one. It belongs to trends and the timeline.
+    invalidates: ['patterns', 'timeline'],
+    validate(payload) {
+      const kg = num(payload.kg ?? payload.weightKg);
+      if (kg === null) return { ok: false, error: 'kg is required.' };
+      // Wide on purpose. This is a typo guard, not a claim about who is
+      // allowed to use the app, and a number outside it is far more likely to
+      // be pounds entered by mistake than a real reading.
+      if (kg < 20 || kg > 400) {
+        return { ok: false, error: 'kg must be between 20 and 400.' };
+      }
+      // Stored to one decimal: scales report one, and keeping more implies a
+      // precision the reading does not have.
+      return { ok: true, value: { kg: Math.round(kg * 10) / 10 } };
+    },
+  },
+
   lh_test_logged: {
     invalidates: ['fertility', 'timeline'],
     validate(payload) {
@@ -291,7 +366,12 @@ export const EVENT_TYPES = Object.freeze({
     invalidates: ['timeline', 'patterns'],
     validate(payload) {
       const method = str(payload.method, 30)?.toLowerCase() ?? null;
-      const allowed = ['breast', 'bottle', 'mixed', 'solids'];
+      // `pumping` is here because the app offers it and it is its own thing:
+      // expressed milk is not nursing, and folding it into `breast` would
+      // report a feed at the breast that did not happen. The list was written
+      // before anything sent one of these events, so nothing had ever tested
+      // it against the choices the app actually shows.
+      const allowed = ['breast', 'bottle', 'mixed', 'solids', 'pumping'];
       if (!method || !allowed.includes(method)) {
         return { ok: false, error: `method must be one of: ${allowed.join(', ')}.` };
       }
@@ -307,6 +387,42 @@ export const EVENT_TYPES = Object.freeze({
       const value = num(payload.value);
       if (value === null) return { ok: false, error: 'value must be numeric.' };
       return { ok: true, value: { metric, value, scale: str(payload.scale, 30) ?? 'self_reported' } };
+    },
+  },
+
+  /// Whether a dose was taken today, not what the dose is.
+  ///
+  /// What she takes already lives on her profile, captured at onboarding and
+  /// from conversation. Nothing recorded whether she actually took it, so the
+  /// three cards that ask -- daily medication, prenatal vitamins, hormone
+  /// therapy -- saved the answer to the device and it reached nothing else.
+  /// Adherence over time is the part a care plan or a doctor summary can
+  /// actually use.
+  ///
+  /// `taken: false` is a real answer and is recorded as one. A day she was
+  /// asked and said no is not the same as a day she was never asked, and only
+  /// the first can tell a pattern anything.
+  medication_logged: {
+    invalidates: ['timeline', 'patterns', 'care_plan'],
+    validate(payload) {
+      const kind = str(payload.kind, 40)?.toLowerCase() ?? null;
+      const allowed = ['medication', 'vitamin', 'hormone_therapy'];
+      if (!kind || !allowed.includes(kind)) {
+        return { ok: false, error: `kind must be one of: ${allowed.join(', ')}.` };
+      }
+      if (typeof payload.taken !== 'boolean') {
+        return { ok: false, error: 'taken must be true or false.' };
+      }
+      return {
+        ok: true,
+        value: {
+          kind,
+          taken: payload.taken,
+          // Optional: the card asks only whether, not which.
+          name: str(payload.name, 80),
+          reportedAs: reportedAs(payload),
+        },
+      };
     },
   },
 
@@ -456,12 +572,18 @@ export function describeEvent(event) {
     case 'flow_logged': return `Flow: ${p.flow}`;
     case 'journal_created': return 'Journal entry';
     case 'bbt_logged': return `BBT ${p.celsius}°C`;
+    case 'weight_logged': return `Weight ${p.kg} kg`;
+    case 'sexual_activity_logged': return p.activity === 'none'
+      ? 'No sexual activity logged'
+      : `Sexual activity: ${String(p.activity).replace(/_/g, ' ')}`;
+    case 'pregnancy_test_logged': return `Pregnancy test: ${String(p.result).replace(/_/g, ' ')}`;
     case 'lh_test_logged': return `LH test: ${p.result}`;
     case 'cervical_mucus_logged': return `Cervical mucus: ${p.observation}`;
     case 'pregnancy_week_updated': return p.week !== null && p.week !== undefined ? `Pregnancy week ${p.week}` : 'Pregnancy dates updated';
     case 'pregnancy_ended': return 'Pregnancy ended';
     case 'feeding_logged': return `Feeding (${p.method})`;
     case 'recovery_metric_logged': return `${p.metric}: ${p.value}`;
+    case 'medication_logged': return `${p.kind === 'vitamin' ? 'Vitamins' : p.kind === 'hormone_therapy' ? 'Hormone therapy' : 'Medication'}: ${p.taken ? 'taken' : 'not taken'}`;
     case 'hot_flash_logged': return `Hot flash ${p.severity}/10`;
     case 'stress_logged': return `Stress level ${p.level}/5`;
     case 'activity_logged': return `Activity: ${p.activity}`;

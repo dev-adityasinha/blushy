@@ -4,6 +4,7 @@ import 'features/home/blushy_shell.dart';
 import 'features/home/presentation/partner_shell.dart';
 import 'core/state.dart';
 import 'core/storage.dart';
+import 'features/home/symptom_category_preference.dart';
 import 'services/language_preference.dart';
 import 'features/admin/content_review_screen.dart';
 import 'l10n/app_localizations.dart';
@@ -13,7 +14,11 @@ import 'features/auth/presentation/partner_onboarding_wizard.dart';
 import 'features/auth/presentation/choose_experience_screen.dart';
 import 'features/dev/developer_playground.dart';
 import 'services/auth_storage.dart';
+import 'dart:async';
+
 import 'services/api_warmup.dart';
+import 'services/daily_rollover.dart';
+import 'shared/language_gate.dart';
 import 'shared/splash_gate.dart';
 import 'shared/scroll_feel.dart';
 import 'core/theme.dart' hide BlushyColors;
@@ -25,6 +30,13 @@ Future<void> main() async {
   await BlushyStorage.init();
   // Restores the language Docsy replies in before the first screen renders.
   LanguagePreference.load();
+  // Which symptom groups she has switched off, before any sheet can
+  // offer one she opted out of.
+  SymptomCategoryPreference.load();
+  // Closes yesterday out before any screen reads the check-in, so her answers
+  // from yesterday are not shown back as today's. Anything the network refused
+  // yesterday is flushed on the way through.
+  unawaited(DailyRollover.runIfNeeded());
   // Wakes the API while the first screen builds, so a cold start is not paid
   // for under a card the user is waiting on.
   ApiWarmup.ping();
@@ -136,7 +148,7 @@ class BlushyApp extends StatelessWidget {
         ),
         // The red field and the circle that opens onto whatever the router
         // decides to show -- sign-in, onboarding or the app itself.
-        home: const SplashGate(child: AppRouter()),
+        home: const SplashGate(child: LanguageGate(child: AppRouter())),
         routes: {
           '/login': (context) => const AppRouter(),
           '/dev': (context) => const DeveloperPlaygroundScreen(),

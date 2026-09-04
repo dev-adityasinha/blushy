@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/state.dart';
 import '../../../models/auth_models.dart';
 import '../../../services/api_auth_service.dart';
+import 'email_auth_flow.dart';
 import '../../../services/auth_storage.dart';
 import '../../legal/legal_documents_screen.dart';
 import '../../../l10n/app_localizations.dart';
@@ -251,7 +252,7 @@ class _SignupScreenState extends State<SignupScreen> {
             Text(
               'Account created',
               textAlign: TextAlign.center,
-              style: GoogleFonts.playfairDisplay(
+              style: GoogleFonts.instrumentSerif(
                 fontSize: 21,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF2D2529),
@@ -262,7 +263,7 @@ class _SignupScreenState extends State<SignupScreen> {
               '$email is verified and ready.\n'
                   'Sign in to start your journey.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF7A6B72)),
+              style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72)),
             ),
             const SizedBox(height: 22),
             SizedBox(
@@ -276,7 +277,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 onPressed: () => Navigator.of(dialogContext).pop(),
                 child: Text(
                   AppLocalizations.of(context).sGoToSignIn,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -319,7 +320,7 @@ class _SignupScreenState extends State<SignupScreen> {
               title: Text(
                 'Enter Verification Code',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(
+                style: GoogleFonts.instrumentSerif(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF2D2529),
@@ -332,7 +333,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     Text(
                       'We sent a 6-digit code to:\n$email',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF7A6B72)),
+                      style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72)),
                     ),
                     const SizedBox(height: 20),
                     if (dialogError != null) ...[
@@ -345,7 +346,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: Text(
                           dialogError!,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.red.shade800),
+                          style: GoogleFonts.manrope(fontSize: 12, color: Colors.red.shade800),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -362,7 +363,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.center,
                             maxLength: 1,
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF2D2529),
@@ -440,7 +441,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               )
                             : Text(
                                 AppLocalizations.of(context).sVerifyCode,
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.manrope(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -453,7 +454,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       child: Text(
                         'Cancel',
-                        style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF7A6B72)),
+                        style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72)),
                       ),
                     ),
                   ],
@@ -502,7 +503,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         icon: const Icon(Icons.arrow_back, size: 18, color: textMuted),
                         label: Text(
                           'Back to experience choice',
-                          style: GoogleFonts.poppins(fontSize: 12, color: textMuted),
+                          style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
                         ),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
@@ -538,7 +539,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 alignment: Alignment.center,
                                 child: Text(
                                   'Log In',
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: _mode == AuthFormMode.login ? primaryColor : textMuted,
@@ -562,7 +563,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 alignment: Alignment.center,
                                 child: Text(
                                   'Create Account',
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: _mode == AuthFormMode.signup ? primaryColor : textMuted,
@@ -579,7 +580,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     // Header Title
                     Text(
                       _mode == AuthFormMode.signup ? 'Join the Blushy family' : 'Welcome back, lovely',
-                      style: GoogleFonts.playfairDisplay(
+                      style: GoogleFonts.instrumentSerif(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                         color: textDark,
@@ -588,7 +589,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 4),
                     Text(
                       _mode == AuthFormMode.signup ? 'Create an account in seconds' : 'Sign in to continue your journey',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 13,
                         color: textMuted,
                       ),
@@ -615,7 +616,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               const SizedBox(width: 6),
                               Text(
                                 _selectedRole == UserRole.woman ? 'Primary Account (Woman)' : 'Support Account (Man)',
-                                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: primaryColor),
+                                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: primaryColor),
                               ),
                             ],
                           ),
@@ -637,7 +638,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           child: Text(
                             _selectedRole == UserRole.woman ? 'Switch to Partner' : 'Switch to Woman',
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: primaryColor),
+                            style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: primaryColor),
                           ),
                         ),
                       ],
@@ -664,7 +665,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFFE53935), height: 1.4, fontWeight: FontWeight.w500),
+                                    style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFFE53935), height: 1.4, fontWeight: FontWeight.w500),
                                   ),
                                 ),
                               ],
@@ -689,7 +690,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                   child: Text(
                                     '👉 Switch to Woman Experience',
-                                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFE53935)),
+                                    style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFE53935)),
                                   ),
                                 ),
                               ),
@@ -713,7 +714,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                   child: Text(
                                     '👉 Switch to Partner Experience',
-                                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFE53935)),
+                                    style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFE53935)),
                                   ),
                                 ),
                               ),
@@ -735,7 +736,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: Text(
                           _successMessage!,
-                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.green.shade800, height: 1.4),
+                          style: GoogleFonts.manrope(fontSize: 12, color: Colors.green.shade800, height: 1.4),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -747,7 +748,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _nameController,
-                        style: GoogleFonts.poppins(fontSize: 14, color: textDark),
+                        style: GoogleFonts.manrope(fontSize: 14, color: textDark),
                         decoration: _buildInputDecoration('Your name', Icons.person_outline),
                         validator: (val) {
                           if (_mode == AuthFormMode.signup && (val == null || val.trim().isEmpty)) {
@@ -771,7 +772,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         AutofillHints.username,
                         AutofillHints.email,
                       ],
-                      style: GoogleFonts.poppins(fontSize: 14, color: textDark),
+                      style: GoogleFonts.manrope(fontSize: 14, color: textDark),
                       decoration: _buildInputDecoration('you@example.com', Icons.mail_outline),
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) return 'Email is required';
@@ -792,7 +793,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(10),
                         ],
-                        style: GoogleFonts.poppins(fontSize: 14, color: textDark),
+                        style: GoogleFonts.manrope(fontSize: 14, color: textDark),
                         decoration: _buildInputDecoration('10-digit mobile number', Icons.phone_outlined).copyWith(
                           prefixIcon: Padding(
                             padding: const EdgeInsets.only(left: 14, right: 8),
@@ -803,7 +804,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 const SizedBox(width: 6),
                                 Text(
                                   '+91',
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: textDark,
@@ -841,14 +842,26 @@ class _SignupScreenState extends State<SignupScreen> {
                         _buildFieldLabel('Password'),
                         if (_mode == AuthFormMode.login)
                           GestureDetector(
+                            // This used to show "Password reset link sent to
+                            // your email." and send nothing at all, so the
+                            // wait was for an email that was never coming.
+                            // It opens the flow that actually requests one.
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Password reset link sent to your email.')),
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => EmailAuthFlow(
+                                    initialMode: AuthMode.forgotPassword,
+                                    initialEmail:
+                                        _emailController.text.trim(),
+                                    onBackToWelcome: () =>
+                                        Navigator.of(context).pop(),
+                                  ),
+                                ),
                               );
                             },
                             child: Text(
                               AppLocalizations.of(context).sForgotPassword,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: primaryColor,
@@ -868,7 +881,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ? AutofillHints.newPassword
                             : AutofillHints.password,
                       ],
-                      style: GoogleFonts.poppins(fontSize: 14, color: textDark),
+                      style: GoogleFonts.manrope(fontSize: 14, color: textDark),
                       decoration: _buildInputDecoration('Minimum 8 characters', Icons.lock_outline).copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -908,7 +921,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 setState(() => _savePassword = !_savePassword),
                             child: Text(
                               'Save my password on this device',
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(
                                 fontSize: 12,
                                 color: textMuted,
                               ),
@@ -939,12 +952,12 @@ class _SignupScreenState extends State<SignupScreen> {
                               child: Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Text(AppLocalizations.of(context).sIAgreeToThe, style: GoogleFonts.poppins(fontSize: 12, color: textDark)),
+                                  Text(AppLocalizations.of(context).sIAgreeToThe, style: GoogleFonts.manrope(fontSize: 12, color: textDark)),
                                   GestureDetector(
                                     onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
                                     child: Text(
                                       AppLocalizations.of(context).sTermsConditions,
-                                      style: GoogleFonts.poppins(
+                                      style: GoogleFonts.manrope(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                         color: primaryColor,
@@ -992,7 +1005,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               )
                             : Text(
                                 _mode == AuthFormMode.signup ? 'Send verification link' : 'Sign in',
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.manrope(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -1012,7 +1025,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: Text(
                           "Signup requires email verification. Check your inbox. If you haven't received the email, you can verify it below.",
-                          style: GoogleFonts.poppins(fontSize: 11, color: textMuted, height: 1.4),
+                          style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.4),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -1024,7 +1037,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         const Expanded(child: Divider(color: borderColor)),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('OR', style: GoogleFonts.poppins(fontSize: 11, color: textMuted)),
+                          child: Text('OR', style: GoogleFonts.manrope(fontSize: 11, color: textMuted)),
                         ),
                         const Expanded(child: Divider(color: borderColor)),
                       ],
@@ -1047,7 +1060,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           const SizedBox(width: 8),
                           Text(
                             'Continue with Google',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: primaryColor,
@@ -1062,20 +1075,20 @@ class _SignupScreenState extends State<SignupScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('By continuing, you agree to our ', style: GoogleFonts.poppins(fontSize: 11, color: textMuted)),
+                        Text('By continuing, you agree to our ', style: GoogleFonts.manrope(fontSize: 11, color: textMuted)),
                         GestureDetector(
                           onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
                           child: Text(
                             AppLocalizations.of(context).sTerms,
-                            style: GoogleFonts.poppins(fontSize: 11, color: primaryColor, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+                            style: GoogleFonts.manrope(fontSize: 11, color: primaryColor, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
                           ),
                         ),
-                        Text(' & ', style: GoogleFonts.poppins(fontSize: 11, color: textMuted)),
+                        Text(' & ', style: GoogleFonts.manrope(fontSize: 11, color: textMuted)),
                         GestureDetector(
                           onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.privacyPolicy),
                           child: Text(
                             AppLocalizations.of(context).sPrivacyPolicy,
-                            style: GoogleFonts.poppins(fontSize: 11, color: primaryColor, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+                            style: GoogleFonts.manrope(fontSize: 11, color: primaryColor, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
                           ),
                         ),
                       ],
@@ -1088,13 +1101,13 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         Text(
                           _mode == AuthFormMode.login ? 'New to Blushy? ' : 'Already have an account? ',
-                          style: GoogleFonts.poppins(fontSize: 13, color: textMuted),
+                          style: GoogleFonts.manrope(fontSize: 13, color: textMuted),
                         ),
                         GestureDetector(
                           onTap: () => _switchMode(_mode == AuthFormMode.login ? AuthFormMode.signup : AuthFormMode.login),
                           child: Text(
                             _mode == AuthFormMode.login ? 'Create one' : 'Log in',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: primaryColor,
@@ -1117,7 +1130,7 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget _buildFieldLabel(String label) {
     return Text(
       label,
-      style: GoogleFonts.poppins(
+      style: GoogleFonts.manrope(
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: const Color(0xFF2D2529),
@@ -1128,7 +1141,7 @@ class _SignupScreenState extends State<SignupScreen> {
   InputDecoration _buildInputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFFA5959C)),
+      hintStyle: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFFA5959C)),
       prefixIcon: Icon(icon, size: 18, color: const Color(0xFFA5959C)),
       filled: true,
       fillColor: Colors.white,

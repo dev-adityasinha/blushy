@@ -187,7 +187,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
                   onPressed: _toggleVoiceRecording,
                   icon: Icon(
                     _isListeningVoice ? Icons.stop_rounded : Icons.mic_rounded,
-                    color: _isListeningVoice ? Colors.white : const Color(0xFF6F42F5),
+                    color: _isListeningVoice ? Colors.white : BlushyColors.primary,
                   ),
                   style: IconButton.styleFrom(
                     backgroundColor: _isListeningVoice ? BlushyColors.primary : const Color(0xFFF3E8FF),
@@ -223,7 +223,7 @@ class _SiaCompanionScreenState extends State<SiaCompanionScreen> {
               width: 24,
               height: 24,
               decoration: const BoxDecoration(
-                color: Color(0xFF6F42F5),
+                color: BlushyColors.primary,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,

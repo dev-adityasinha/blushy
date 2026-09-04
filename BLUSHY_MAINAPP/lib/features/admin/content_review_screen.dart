@@ -127,7 +127,7 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
           children: [
             Text(
               item['title']?.toString() ?? '',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+              style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
             Text(
@@ -135,12 +135,12 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
                 (item['lifeStages'] as List?)?.join(', ') ?? '',
                 (item['topics'] as List?)?.join(', ') ?? '',
               ].where((s) => s.isNotEmpty).join(' • '),
-              style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
             ),
             const SizedBox(height: 16),
             Text(
               item['body']?.toString() ?? '',
-              style: GoogleFonts.poppins(fontSize: 13, height: 1.55),
+              style: GoogleFonts.manrope(fontSize: 13, height: 1.55),
             ),
             const SizedBox(height: 20),
             Container(
@@ -154,7 +154,7 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('SOURCE',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.2,
@@ -162,7 +162,7 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
                   const SizedBox(height: 4),
                   Text(
                     item['source']?.toString() ?? 'No source recorded.',
-                    style: GoogleFonts.poppins(fontSize: 11),
+                    style: GoogleFonts.manrope(fontSize: 11),
                   ),
                 ],
               ),
@@ -207,7 +207,7 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
         iconTheme: const IconThemeData(color: BlushyColors.dark),
         title: Text(
           'Content review',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
               fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
         ),
         actions: [
@@ -224,7 +224,7 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
                   if (_error != null) ...[
                     Text(
                       _error!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.primary),
+                      style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.primary),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -260,7 +260,7 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(
           '$label ($count)',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 10,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.5,
@@ -272,7 +272,7 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
   Widget _emptyNote(String text) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Text(text,
-            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
+            style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText)),
       );
 
   Widget _buildRow(Map<String, dynamic> item) {
@@ -289,11 +289,11 @@ class _ContentReviewScreenState extends State<ContentReviewScreen> {
       child: ListTile(
         title: Text(
           item['title']?.toString() ?? '',
-          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+          style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           (item['lifeStages'] as List?)?.join(', ') ?? '',
-          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
         ),
         trailing: busy
             ? const SizedBox(

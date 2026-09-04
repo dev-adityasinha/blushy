@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/colors.dart';
@@ -8,6 +6,7 @@ import '../../../core/storage.dart';
 import '../../../core/cycle_calculator.dart';
 import '../../../services/api_auth_service.dart';
 import '../../../l10n/app_localizations.dart';
+import 'cycle_tracker_image.dart';
 
 class BlushyCycleCard extends StatefulWidget {
   final bool purePainterMode;
@@ -19,12 +18,10 @@ class BlushyCycleCard extends StatefulWidget {
 
 class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderStateMixin {
   late final AnimationController _progressController;
-  late final AnimationController _pulseController;
-  late final AnimationController _loopController;
   late final AnimationController _sweepController;
 
-  double _currentDayProgress = 0.5; 
-  double _userDragProgress = -1.0;                
+  double _currentDayProgress = 0.5;
+  double _userDragProgress = -1.0;
   bool _isSweeping = false;
   bool _isInitialized = false;
   String _activePhaseName = 'Follicular Phase';
@@ -32,7 +29,6 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
   String _activeExpectedPeriod = '';
   int _activeCycleLength = 28;
 
-  Path? _cachedPath;
 
   @override
   void initState() {
@@ -41,15 +37,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-    _loopController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat();
-    
+
     _sweepController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
@@ -173,8 +161,6 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
   @override
   void dispose() {
     _progressController.dispose();
-    _pulseController.dispose();
-    _loopController.dispose();
     _sweepController.dispose();
     super.dispose();
   }
@@ -202,80 +188,129 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
     });
   }
 
-  Path _generateContinuousBlushyPath(Size size) {
-    if (_cachedPath != null && size.width == 260) return _cachedPath!;
+  /// Says that the drawing can be scrubbed.
+  ///
+  /// The drag and the tap both worked before this; nothing told anyone they
+  /// were there, so neither was ever used.
+  Widget _buildExploreHint() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: BlushyColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: BlushyColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.touch_app_rounded,
+                size: 13, color: BlushyColors.primary),
+            const SizedBox(width: 6),
+            Text(
+              'Drag along the tube to explore days, or tap to play the cycle',
+              style: GoogleFonts.manrope(
+                fontSize: 10.5,
+                color: BlushyColors.secondaryText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    final w = size.width;
-    final h = size.height;
-    final path = Path();
+  /// Day 1 to the end of the cycle, with the day being looked at on it.
+  ///
+  /// Drives `_userDragProgress`, the same value the drag on the drawing sets,
+  /// so the two cannot disagree about which day is showing.
+  Widget _buildDayScrubber(double progress) {
+    final length = _activeCycleLength <= 0 ? 28 : _activeCycleLength;
+    // Day 1 is the first day, not the zeroth: at progress 0 this must read
+    // Day 1, and at the far end it must read the last day rather than one past
+    // the end of the cycle.
+    final day = (progress * length).floor().clamp(0, length - 1) + 1;
 
-    // Start at bottom-left leg
-    path.moveTo(w * 0.38, h * 0.90);
-    
-    // Left inner curve up
-    path.cubicTo(
-      w * 0.37, h * 0.76,
-      w * 0.31, h * 0.54,
-      w * 0.28, h * 0.44,
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Day 1',
+                style: GoogleFonts.manrope(
+                    fontSize: 10, color: BlushyColors.secondaryText)),
+            Text(
+              'Day $day',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: BlushyColors.text,
+              ),
+            ),
+            Text('Day $length',
+                style: GoogleFonts.manrope(
+                    fontSize: 10, color: BlushyColors.secondaryText)),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 4,
+            activeTrackColor: BlushyColors.primary,
+            inactiveTrackColor: BlushyColors.border,
+            thumbColor: BlushyColors.primary,
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+          ),
+          child: Slider(
+            value: progress.clamp(0.0, 1.0),
+            onChanged: (value) => setState(() {
+              _userDragProgress = value;
+              _updateLabelsForProgress(value);
+            }),
+            // Deliberately no release on let-go.
+            //
+            // A quick drag across the drawing is a glance, so that one springs
+            // back. Moving a slider is a decision: snapping it home the moment
+            // it is let go reads as the control refusing the input. It stays
+            // where it is put, and the button below goes back.
+          ),
+        ),
+        if (_userDragProgress >= 0.0)
+          TextButton(
+            onPressed: _releaseScrub,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'Back to today',
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: BlushyColors.primary,
+              ),
+            ),
+          ),
+      ],
     );
+  }
 
-    // Left loop/ovary curve
-    path.cubicTo(
-      w * 0.25, h * 0.34,
-      w * 0.18, h * 0.30,
-      w * 0.18, h * 0.42,
+  /// Lets go of the scrubbed day and eases back to today.
+  ///
+  /// The same ending the drag on the drawing has, so releasing either returns
+  /// to the real day rather than leaving the card on whichever was last looked
+  /// at.
+  void _releaseScrub() {
+    final pc = BlushyOSProvider.of(context).personalContext;
+    setState(() {
+      _userDragProgress = -1.0;
+      if (!_isSweeping) _syncWithState(pc);
+    });
+    _progressController.animateTo(
+      _currentDayProgress,
+      curve: Curves.easeOutCubic,
     );
-    path.cubicTo(
-      w * 0.18, h * 0.54,
-      w * 0.10, h * 0.56,
-      w * 0.06, h * 0.42,
-    );
-    path.cubicTo(
-      w * 0.02, h * 0.26,
-      w * 0.08, h * 0.14,
-      w * 0.14, h * 0.14,
-    );
-
-    // Top bridge left to center dip
-    path.cubicTo(
-      w * 0.22, h * 0.14,
-      w * 0.34, h * 0.22,
-      w * 0.50, h * 0.26, // Center dip
-    );
-
-    // Top bridge right to right loop
-    path.cubicTo(
-      w * 0.66, h * 0.22,
-      w * 0.78, h * 0.14,
-      w * 0.86, h * 0.14,
-    );
-
-    // Right loop/ovary curve
-    path.cubicTo(
-      w * 0.92, h * 0.14,
-      w * 0.98, h * 0.26,
-      w * 0.94, h * 0.42,
-    );
-    path.cubicTo(
-      w * 0.90, h * 0.56,
-      w * 0.82, h * 0.54,
-      w * 0.82, h * 0.42,
-    );
-    path.cubicTo(
-      w * 0.82, h * 0.30,
-      w * 0.75, h * 0.34,
-      w * 0.72, h * 0.44,
-    );
-
-    // Right inner curve down to end at bottom-right leg
-    path.cubicTo(
-      w * 0.69, h * 0.54,
-      w * 0.63, h * 0.76,
-      w * 0.62, h * 0.90,
-    );
-
-    _cachedPath = path;
-    return path;
   }
 
   void _triggerEducationalSweep() {
@@ -303,7 +338,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
     if (phaseName.contains('Menstrual')) return BlushyColors.primary;
     if (phaseName.contains('Follicular')) return const Color(0xFFFF9B9E);
     if (phaseName.contains('Ovulation')) return const Color(0xFFFFB800);
-    return const Color(0xFF6F42F5); // Luteal
+    return BlushyColors.accent; // Luteal
   }
 
   @override
@@ -312,8 +347,8 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
     _syncWithState(state.personalContext);
     final mode = ContextResolver.resolve(state.personalContext, state.wellbeingState);
 
-    const canvasSize = Size(260, 120); 
-    
+    const canvasSize = Size(240, 240);
+
     double activeProgress = _progressController.value;
     if (_userDragProgress >= 0.0) {
       activeProgress = _userDragProgress;
@@ -335,39 +370,20 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
               _updateLabelsForProgress(normalized);
             });
           },
-          onHorizontalDragEnd: (details) {
-            final pc = BlushyOSProvider.of(context).personalContext;
-            setState(() {
-              _userDragProgress = -1.0;
-              if (!_isSweeping) {
-                _syncWithState(pc);
-              }
-            });
-            _progressController.animateTo(
-              _currentDayProgress,
-              curve: Curves.easeOutCubic,
-            );
-          },
+          onHorizontalDragEnd: (_) => _releaseScrub(),
           child: SizedBox(
             width: canvasSize.width,
             height: canvasSize.height,
             child: AnimatedBuilder(
               animation: Listenable.merge([
                 _progressController,
-                _pulseController,
-                _loopController,
                 _sweepController
               ]),
               builder: (context, child) {
-                return CustomPaint(
-                  painter: SignatureCyclePathPainter(
-                    path: _generateContinuousBlushyPath(canvasSize),
-                    progress: activeProgress,
-                    pulseVal: _pulseController.value,
-                    loopAngle: _loopController.value * 2.0 * math.pi,
-                    activeColor: activeColor,
-                  ),
-                );
+                // The supplied drawing, with the cycle traced along it.
+                // The controller that settles to today and runs the tap
+                // sweep drives it.
+                return CycleTrackerImage(progress: activeProgress);
               },
             ),
           ),
@@ -399,7 +415,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
                 children: [
                   Text(
                     _getTitleForMode(mode),
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: BlushyColors.text,
@@ -425,7 +441,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
                         const SizedBox(width: 4),
                         Text(
                           'Edit Cycle',
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: BlushyColors.text,
@@ -441,7 +457,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
 
           // Dynamic Content based on mode
           _buildContentForMode(mode, activeColor),
-          
+
           if (mode == CycleCardMode.predictable || mode == CycleCardMode.learning) ...[
             const Divider(color: BlushyColors.border, height: 32),
             Center(
@@ -455,44 +471,24 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
                     _updateLabelsForProgress(normalized);
                   });
                 },
-                onHorizontalDragEnd: (details) {
-                  final pc = BlushyOSProvider.of(context).personalContext;
-                  setState(() {
-                    _userDragProgress = -1.0;
-                    if (!_isSweeping) {
-                      _syncWithState(pc);
-                    }
-                  });
-                  _progressController.animateTo(
-                    _currentDayProgress,
-                    curve: Curves.easeOutCubic,
-                  );
-                },
+                onHorizontalDragEnd: (_) => _releaseScrub(),
                 child: SizedBox(
                   width: canvasSize.width,
                   height: canvasSize.height,
                   child: AnimatedBuilder(
                     animation: Listenable.merge([
                       _progressController,
-                      _pulseController,
-                      _loopController,
                       _sweepController
                     ]),
                     builder: (context, child) {
-                      return CustomPaint(
-                        painter: SignatureCyclePathPainter(
-                          path: _generateContinuousBlushyPath(canvasSize),
-                          progress: activeProgress,
-                          pulseVal: _pulseController.value,
-                          loopAngle: _loopController.value * 2.0 * math.pi,
-                          activeColor: activeColor,
-                        ),
-                      );
+                      return CycleTrackerImage(progress: activeProgress);
                     },
                   ),
                 ),
               ),
             ),
+            const SizedBox(height: 10),
+            _buildExploreHint(),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -500,9 +496,11 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
                 _buildLegendDot('Menstrual', const Color(0xFFEF4444)),
                 _buildLegendDot('Follicular', const Color(0xFFF97316)),
                 _buildLegendDot('Ovulation', const Color(0xFFFACC15)),
-                _buildLegendDot('Luteal', const Color(0xFF7C3AED)),
+                _buildLegendDot('Luteal', BlushyColors.accent),
               ],
             ),
+            const SizedBox(height: 14),
+            _buildDayScrubber(activeProgress),
           ]
         ],
       ),
@@ -530,7 +528,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
             children: [
               Text(
                 _activePhaseName,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
                   color: activeColor,
@@ -540,7 +538,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
               const SizedBox(height: 4),
               Text(
                 _activeExpectedPeriod.isNotEmpty ? 'Expected Period: $_activeExpectedPeriod' : 'Expected Period: In $_activePeriodLabel',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 12,
                   color: BlushyColors.secondaryText,
                 ),
@@ -551,17 +549,17 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
       case CycleCardMode.variable:
         return Text(
           AppLocalizations.of(context).cYourCycleLengthIs,
-          style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
+          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.text),
         );
       case CycleCardMode.wellbeing:
         return Text(
           AppLocalizations.of(context).cTrackingIsDisabledFocus,
-          style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
+          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.text),
         );
       case CycleCardMode.lifeContext:
         return Text(
           AppLocalizations.of(context).cYourRecommendationsAreAdapted,
-          style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text),
+          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.text),
         );
     }
   }
@@ -581,7 +579,7 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
         const SizedBox(width: 4),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 10,
             color: BlushyColors.secondaryText,
           ),
@@ -591,167 +589,3 @@ class _BlushyCycleCardState extends State<BlushyCycleCard> with TickerProviderSt
   }
 }
 
-class SignatureCyclePathPainter extends CustomPainter {
-  final double progress;
-  final String activePhase;
-  final int cycleLength;
-  final int periodLength;
-
-  SignatureCyclePathPainter({
-    required this.progress,
-    this.activePhase = 'Follicular',
-    this.cycleLength = 28,
-    this.periodLength = 5,
-    Path? path,
-    double? pulseVal,
-    double? loopAngle,
-    Color? activeColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-    if (w <= 0 || h <= 0) return;
-
-    // Define colors
-    final Color colorMenstrual = const Color(0xFFEF4444); // Red
-    final Color colorFollicular = const Color(0xFFF97316); // Orange
-    final Color colorOvulation = const Color(0xFFFACC15); // Golden Yellow
-    final Color colorLuteal = const Color(0xFF7C3AED); // Purple
-    final Color colorInactive = const Color(0xFFD8D6D4); // Soft Neutral Gray
-
-    // 1. Define the Single Continuous Uterus Outline Path
-    final Path uterusPath = Path();
-    uterusPath.moveTo(w * 0.46, h * 0.78);
-    uterusPath.cubicTo(w * 0.44, h * 0.58, w * 0.38, h * 0.44, w * 0.33, h * 0.32);
-    uterusPath.cubicTo(w * 0.28, h * 0.28, w * 0.22, h * 0.28, w * 0.17, h * 0.32);
-    uterusPath.cubicTo(w * 0.10, h * 0.36, w * 0.07, h * 0.48, w * 0.14, h * 0.56);
-    uterusPath.cubicTo(w * 0.20, h * 0.62, w * 0.23, h * 0.48, w * 0.19, h * 0.38);
-    uterusPath.cubicTo(w * 0.15, h * 0.28, w * 0.11, h * 0.16, w * 0.21, h * 0.14);
-    uterusPath.cubicTo(w * 0.31, h * 0.12, w * 0.37, h * 0.20, w * 0.43, h * 0.22);
-    uterusPath.cubicTo(w * 0.47, h * 0.24, w * 0.49, h * 0.26, w * 0.50, h * 0.26);
-    uterusPath.cubicTo(w * 0.51, h * 0.26, w * 0.53, h * 0.24, w * 0.57, h * 0.22);
-    uterusPath.cubicTo(w * 0.63, h * 0.20, w * 0.69, h * 0.12, w * 0.79, h * 0.14);
-    uterusPath.cubicTo(w * 0.89, h * 0.16, w * 0.85, h * 0.28, w * 0.81, h * 0.38);
-    uterusPath.cubicTo(w * 0.77, h * 0.48, w * 0.80, h * 0.62, w * 0.86, h * 0.56);
-    uterusPath.cubicTo(w * 0.93, h * 0.48, w * 0.90, h * 0.36, w * 0.83, h * 0.32);
-    uterusPath.cubicTo(w * 0.78, h * 0.28, w * 0.72, h * 0.28, w * 0.67, h * 0.32);
-    uterusPath.cubicTo(w * 0.62, h * 0.44, w * 0.56, h * 0.58, w * 0.54, h * 0.78);
-
-    // Measure the single continuous path
-    final List<PathMetric> metricsList = uterusPath.computeMetrics().toList();
-    if (metricsList.isEmpty) return;
-    final PathMetric pathMetric = metricsList.first;
-    final double pathLength = pathMetric.length;
-    if (pathLength <= 0) return;
-
-    // 2. Draw full background uterus path in neutral gray
-    final bgPaint = Paint()
-      ..color = colorInactive
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 9.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(uterusPath, bgPaint);
-
-    // Calculate phase limits as offsets along the continuous path
-    final double menstrualDuration = periodLength.toDouble();
-    const double follicularDuration = 9.0;
-    const double ovulationDuration = 2.0;
-    const double expectedDuration = 3.0;
-
-    double p1 = menstrualDuration / cycleLength;
-    double p2 = (menstrualDuration + follicularDuration) / cycleLength;
-    double p3 = (menstrualDuration + follicularDuration + ovulationDuration) / cycleLength;
-    double p4 = (cycleLength - expectedDuration) / cycleLength;
-
-    if (p4 < p3) {
-      p4 = p3;
-    }
-
-    final double activeOffset = pathLength * progress.clamp(0.0, 1.0);
-
-    // Helper to draw a path slice with a flat color
-    void drawSlice(double startProgress, double endProgress, Color color) {
-      final double startO = pathLength * startProgress;
-      final double endO = pathLength * endProgress;
-      if (activeOffset > startO) {
-        final double limitO = activeOffset.clamp(startO, endO);
-        if (limitO > startO) {
-          final Path slice = pathMetric.extractPath(startO, limitO);
-          canvas.drawPath(
-            slice,
-            Paint()
-              ..color = color
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 9.5
-              ..strokeCap = StrokeCap.round,
-          );
-        }
-      }
-    }
-
-    // 3. Draw active progress segments sequentially
-    drawSlice(0.0, p1, colorMenstrual);
-    drawSlice(p1, p2, colorFollicular);
-    drawSlice(p2, p3, colorOvulation);
-    drawSlice(p3, p4, colorLuteal);
-    drawSlice(p4, 1.0, colorMenstrual);
-
-    // 4. Draw traveling egg
-    final tangent = pathMetric.getTangentForOffset(activeOffset);
-    final eggOffset = tangent?.position ?? Offset(w * 0.46, h * 0.78);
-
-    Color activeEggColor = colorMenstrual;
-    if (progress <= p1) {
-      activeEggColor = colorMenstrual;
-    } else if (progress <= p2) {
-      activeEggColor = colorFollicular;
-    } else if (progress <= p3) {
-      activeEggColor = colorOvulation;
-    } else if (progress <= p4) {
-      activeEggColor = colorLuteal;
-    } else {
-      activeEggColor = colorMenstrual;
-    }
-
-    // Soft shadow under the egg
-    canvas.drawCircle(
-      eggOffset,
-      10.5,
-      Paint()
-        ..color = const Color(0xFF2C2523).withValues(alpha: 0.08)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0),
-    );
-
-    // Colored outer border
-    canvas.drawCircle(
-      eggOffset,
-      10.5,
-      Paint()..color = activeEggColor..style = PaintingStyle.fill,
-    );
-
-    // Matte white egg body
-    canvas.drawCircle(
-      eggOffset,
-      7.0,
-      Paint()..color = Colors.white..style = PaintingStyle.fill,
-    );
-
-    // Tiny egg center core highlight dot
-    canvas.drawCircle(
-      eggOffset,
-      2.0,
-      Paint()..color = activeEggColor..style = PaintingStyle.fill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant SignatureCyclePathPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-           oldDelegate.activePhase != activePhase ||
-           oldDelegate.cycleLength != cycleLength ||
-           oldDelegate.periodLength != periodLength;
-  }
-}

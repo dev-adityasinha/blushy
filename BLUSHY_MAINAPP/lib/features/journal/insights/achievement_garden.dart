@@ -65,7 +65,7 @@ class AchievementGardenWidget extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFECFDF5),
       appBar: AppBar(
-        title: Text('Reflective Content Garden 🌿', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        title: Text('Reflective Content Garden 🌿', style: GoogleFonts.instrumentSerif(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFFECFDF5),
         elevation: 0,
       ),
@@ -75,7 +75,7 @@ class AchievementGardenWidget extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Text(
               'Your garden grows organically with the depth & diversity of your reflections.',
-              style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF065F46)),
+              style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF065F46)),
               textAlign: TextAlign.center,
             ),
           ),
@@ -119,8 +119,8 @@ class AchievementGardenWidget extends StatelessWidget {
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
-          Text(title, style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF065F46))),
-          Text(count, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[600])),
+          Text(title, style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF065F46))),
+          Text(count, style: GoogleFonts.manrope(fontSize: 10, color: Colors.grey[600])),
         ],
       ),
     );

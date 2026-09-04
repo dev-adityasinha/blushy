@@ -1,0 +1,9 @@
+# Only the compiled web bundle is deployed. Everything else in this directory
+# is source or other build targets -- the Android build alone is far larger
+# than the site, and uploading it would make every deploy slow for nothing.
+*
+!build
+build/*
+!build/web
+!build/web/**
+!vercel.json

@@ -239,6 +239,16 @@ async function listFeed(userId, type = 'home', { search = '' } = {}) {
     query = { author_id: { $in: followedIds }, privacy: 'public' };
   }
 
+  // Your own posts, public and private alike: they are yours to see, and a
+  // "my posts" list that silently left out the private ones would look like
+  // they had been lost. Nothing else reads private posts; this is the one
+  // place the privacy filter is deliberately not applied, and only because
+  // the author is the viewer.
+  if (type === 'mine') {
+    if (!userId) return [];
+    query = { author_id: userId };
+  }
+
   // Searching the whole feed rather than the page the app happens to hold.
   // The client could only filter what it had already fetched, so anything
   // past the first page was unfindable while people search hit the server.

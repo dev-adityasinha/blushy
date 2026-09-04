@@ -61,10 +61,12 @@ void main() {
 
       final field = tester.widget<TextField>(find.byType(TextField).last);
 
-      expect(field.maxLines, isNot(1),
-          reason: 'one line is what made the text scroll sideways');
-      expect(field.minLines, 1, reason: 'it still opens at one line');
-      expect(field.maxLines, greaterThan(1));
+      expect(field.maxLines, isNull,
+          reason: 'no line cap: a long message wraps as far as it needs');
+      // The field keeps one height and scrolls inside it, by decision: a
+      // long message must not grow the bar. `expands` is what fills the
+      // fixed height and lets the text scroll within it.
+      expect(field.expands, isTrue, reason: 'fixed height, scrolls inside');
       expect(field.keyboardType, TextInputType.multiline);
 
       // The screen runs a periodic placeholder timer, cancelled in dispose.
@@ -305,7 +307,7 @@ void main() {
     });
   });
 
-  testWidgets('she writes from the right, with a face beside the message',
+  testWidgets('she writes from the right, with no face and no name',
       (tester) async {
     // Docsy answers from the right. The bubbles used to be full-width blocks,
     // so which side they sat on made no visible difference at all.
@@ -348,21 +350,24 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
       }
 
-      // Her face is at the far right, beside her message.
-      final avatar = tester.getRect(find.byIcon(Icons.person_rounded).first);
-      expect(avatar.right, greaterThan(350),
-          reason: 'her messages run to the right edge');
+      // No face and no name on either side, by decision: which side a
+      // bubble sits on is what says who is speaking.
+      expect(find.byIcon(Icons.person_rounded), findsNothing);
+      expect(find.text('You'), findsNothing,
+          reason: 'her own bubbles carry no name');
+      expect(find.text('Docsy'), findsWidgets,
+          reason: "Docsy's bubbles carry hers");
 
-      // And the bubble does not span the width. Measuring the label instead
-      // of the bubble is what let the earlier version of this test pass while
-      // both senders were still full width: the label sits at the left of the
-      // bubble either way.
+      // Her bubble sits to the right and does not span the width. Measured
+      // on the bubble that holds her words, not on a label.
       final bubble = tester.getRect(find
           .ancestor(
-            of: find.text('You'),
+            of: find.text('my back hurts'),
             matching: find.byType(ConstrainedBox),
           )
           .first);
+      expect(bubble.right, greaterThan(350),
+          reason: 'her messages run to the right edge');
       expect(bubble.left, greaterThan(30.0),
           reason: 'a full-width bubble makes left and right indistinguishable');
 

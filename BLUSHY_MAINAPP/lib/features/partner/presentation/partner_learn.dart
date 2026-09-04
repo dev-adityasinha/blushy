@@ -142,17 +142,17 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                 children: [
                   Text(
                     category.toUpperCase(),
-                    style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.2),
+                    style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.2),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     title,
-                    style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(fontSize: 24, fontWeight: FontWeight.bold, color: BlushyColors.text),
                   ),
                   const SizedBox(height: 20),
                   Text(
                     body,
-                    style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.text, height: 1.6),
+                    style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.text, height: 1.6),
                   ),
                   const SizedBox(height: 28),
                   Container(
@@ -167,12 +167,12 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                       children: [
                         Text(
                           "Actionable Recommendation →",
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                          style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.primary),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           action,
-                          style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text, height: 1.5),
+                          style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.text, height: 1.5),
                         ),
                       ],
                     ),
@@ -193,14 +193,14 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text(AppLocalizations.of(context).plConnectWithPartner, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context).plConnectWithPartner, style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppLocalizations.of(context).plPairingWithYourPartner,
-              style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -217,7 +217,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: BlushyColors.secondaryText)),
+            child: Text('Cancel', style: GoogleFonts.manrope(color: BlushyColors.secondaryText)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -240,7 +240,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               backgroundColor: BlushyColors.primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text(AppLocalizations.of(context).plSendInvite, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(AppLocalizations.of(context).plSendInvite, style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -269,7 +269,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                       children: [
                         Text(
                           AppLocalizations.of(context).plLearnDiscover,
-                          style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(fontSize: 24, fontWeight: FontWeight.bold, color: BlushyColors.text),
                         ),
                         IconButton(
                           icon: const Icon(Icons.refresh_rounded, color: BlushyColors.primary),
@@ -385,11 +385,11 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                   children: [
                     Text(
                       "No Partner Connected",
-                      style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                     Text(
                       AppLocalizations.of(context).plConnectWithYourPartner,
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                      style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                     ),
                   ],
                 ),
@@ -399,7 +399,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
           const SizedBox(height: 14),
           Text(
             "Pairing allows Docsy to display partner support recommendations, phase awareness, and relationship care tips tailored to your partner.",
-            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text.withValues(alpha: 0.8), height: 1.4),
+            style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.text.withValues(alpha: 0.8), height: 1.4),
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -414,7 +414,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               ),
               child: Text(
                 "Connect Partner",
-                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
           ),
@@ -485,19 +485,19 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               const SizedBox(width: 8),
               Text(
                 "✨ DOCSY AI PARTNER INSIGHTS",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.success, letterSpacing: 1.1),
+                style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.success, letterSpacing: 1.1),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             siaHeadline,
-            style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.bold, color: BlushyColors.text, height: 1.3),
+            style: GoogleFonts.manrope(fontSize: 17, fontWeight: FontWeight.bold, color: BlushyColors.text, height: 1.3),
           ),
           const SizedBox(height: 4),
           Text(
             siaSubtext,
-            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+            style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
           ),
 
           const SizedBox(height: 14),
@@ -505,7 +505,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
           const SizedBox(height: 8),
           Text(
             "Recommended for $partnerName today (minimum 3 active tips):",
-            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
+            style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
           ),
           const SizedBox(height: 6),
           for (var item in suggestions.take(math.max(3, suggestions.length)))
@@ -519,7 +519,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                   Expanded(
                     child: Text(
                       (item is Map ? (item['title'] ?? item['description'] ?? item.toString()) : item.toString()),
-                      style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.text),
                     ),
                   ),
                 ],
@@ -630,7 +630,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       ),
       child: Text(
         message,
-        style: GoogleFonts.poppins(fontSize: 12.5, color: BlushyColors.secondaryText, height: 1.5),
+        style: GoogleFonts.manrope(fontSize: 12.5, color: BlushyColors.secondaryText, height: 1.5),
       ),
     );
   }
@@ -651,7 +651,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               Expanded(
                 child: Text(
                   item.title,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: BlushyColors.text,
@@ -668,7 +668,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
               const SizedBox(height: 4),
               Text(
                 item.summary ?? '',
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
+                style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText, height: 1.4),
               ),
               const SizedBox(height: 6),
               Row(
@@ -676,7 +676,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                   if (item.readingTimeMinutes != null)
                     Text(
                       '${item.readingTimeMinutes} min',
-                      style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                      style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.secondaryText),
                     ),
                   // Clinical content states where it came from (spec §31).
                   if (item.source != null) ...[
@@ -686,7 +686,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                         item.source!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                        style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.secondaryText),
                       ),
                     ),
                   ],
@@ -708,18 +708,18 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
             showDialog(
               context: context,
               builder: (dialogContext) => AlertDialog(
-                title: Text(item.title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                title: Text(item.title, style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
                 content: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(item.body, style: GoogleFonts.poppins(fontSize: 13, height: 1.5)),
+                      Text(item.body, style: GoogleFonts.manrope(fontSize: 13, height: 1.5)),
                       if (item.source != null) ...[
                         const SizedBox(height: 16),
                         Text(
                           'Source: ${item.source}',
-                          style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.secondaryText),
                         ),
                       ],
                     ],
@@ -745,7 +745,7 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Text(
         title,
-        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
+        style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
       ),
     );
   }
@@ -777,17 +777,17 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
                   children: [
                     Text(
                       category.toUpperCase(),
-                      style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
+                      style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.0),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       title,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       snippet,
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
                     ),
                   ],
                 ),

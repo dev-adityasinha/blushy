@@ -86,7 +86,7 @@ class _NotificationInboxState extends State<NotificationInbox> {
         iconTheme: const IconThemeData(color: BlushyColors.text),
         title: Text(
           'Notifications',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: BlushyColors.text,
@@ -165,7 +165,7 @@ class _NotificationInboxState extends State<NotificationInbox> {
                     children: [
                       Text(
                         item.title,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: item.isUnread ? FontWeight.bold : FontWeight.w600,
                           color: BlushyColors.text,
@@ -175,7 +175,7 @@ class _NotificationInboxState extends State<NotificationInbox> {
                         const SizedBox(height: 4),
                         Text(
                           item.body!.trim(),
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 11,
                             height: 1.45,
                             color: BlushyColors.secondaryText,
@@ -185,7 +185,7 @@ class _NotificationInboxState extends State<NotificationInbox> {
                       const SizedBox(height: 6),
                       Text(
                         _when(item.scheduledFor),
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 10,
                           color: BlushyColors.secondaryText,
                         ),
@@ -211,7 +211,7 @@ class _NotificationInboxState extends State<NotificationInbox> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 13,
                 height: 1.5,
                 color: BlushyColors.secondaryText,

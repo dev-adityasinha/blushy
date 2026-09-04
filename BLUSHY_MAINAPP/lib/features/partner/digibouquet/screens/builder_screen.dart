@@ -794,7 +794,7 @@ class _BuilderScreenState extends State<BuilderScreen> {
                 'Connect a partner to send this to them. You can still share '
                 'it as an image with anyone.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 11,
                   height: 1.4,
                   color: Colors.black54,

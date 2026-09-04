@@ -11,7 +11,7 @@ class JournalCalendarWidget extends StatelessWidget {
     return Scaffold(
       backgroundColor: BlushyColors.background,
       appBar: AppBar(
-        title: Text('Smart Memory Calendar 📅', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        title: Text('Smart Memory Calendar 📅', style: GoogleFonts.instrumentSerif(fontWeight: FontWeight.bold)),
         backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
@@ -22,7 +22,7 @@ class JournalCalendarWidget extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('August 2026', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('August 2026', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
                 Row(
                   children: [
                     IconButton(icon: const Icon(Icons.chevron_left_rounded), onPressed: () {}),
@@ -52,7 +52,7 @@ class JournalCalendarWidget extends StatelessWidget {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: Text('Day $day Memory Preview', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
+                          title: Text('Day $day Memory Preview', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold)),
                           content: Text(AppLocalizations.of(context).jcQuickPreviewQuietMorning, style: GoogleFonts.caveat(fontSize: 18)),
                         ),
                       );
@@ -67,7 +67,7 @@ class JournalCalendarWidget extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('$day', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600)),
+                        Text('$day', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600)),
                         if (hasEntry) ...[
                           const SizedBox(height: 2),
                           const Text('😊', style: TextStyle(fontSize: 12)),

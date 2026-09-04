@@ -14,13 +14,14 @@ import 'helpers/test_image_http.dart';
 ///
 /// The home tab does not render one dashboard: it switches on the life stage
 /// and calls one of ten builders, each with its own mobile, tablet and desktop
-/// layout. Today's Context was first placed inside the CYCLE PATTERNS section,
-/// which only `_buildLivingWithMyCycleHomeOS` renders -- so for nine stages out
-/// of ten it was in the code and never on the screen.
+/// layout. A section placed in one branch is in the code and never on the
+/// screen for the other nine, and the failure is invisible from the stage it
+/// was written against. This drives the real dashboard once per stage.
 ///
-/// Anything anchored to one branch of that switch fails the same way, and the
-/// failure is invisible from the stage it was written against. This drives the
-/// real dashboard once per stage.
+/// Today's Context was removed from the home screen on request. It is asserted
+/// absent rather than simply dropped: it had been mounted on all ten stages
+/// across three layouts each, so a partial removal would have left it showing
+/// on whichever stage nobody checked.
 void main() {
   useIsolatedStorage();
 
@@ -101,8 +102,15 @@ void main() {
 
         expect(
           find.text("TODAY'S CONTEXT"),
+          findsNothing,
+          reason: 'it was removed from the home screen',
+        );
+        expect(
+          find.text('CHECK IN'),
           findsWidgets,
-          reason: 'the $stage dashboard should render Today\'s Context',
+          reason: 'the $stage dashboard must offer somewhere to log. '
+              'firstPeriodNotStarted had none, and it is the stage every '
+              'account falls back to before onboarding sets one',
         );
         expect(
           find.text('DOCSY INSIGHTS'),
@@ -118,12 +126,11 @@ void main() {
     });
   }
 
-  testWidgets("the pre-menarche stage withholds only Today's Context",
+  testWidgets('the pre-menarche stage still gets the two insight sections',
       (tester) async {
-    // This one is a decision, not an oversight. That dashboard has no cycle
-    // tracking and no daily check-in, and Today's Context is four cards of
-    // cycle phase, sleep, energy and mood. Showing it here would offer someone
-    // who has not had a period a cycle card reading "Not Logged".
+    // A different branch again, and the one most easily forgotten: it has no
+    // cycle tracking and no daily check-in, so it is the likeliest place for a
+    // shared section to be quietly skipped.
     BlushyStorage.write('user_profile.json', {
       'profile': {'lifeStage': 'firstPeriodNotStarted'},
     });
@@ -134,8 +141,11 @@ void main() {
       tester.takeException(); // Pre-existing overflow; see the note above.
 
       expect(find.text("TODAY'S CONTEXT"), findsNothing);
+      // This is the stage a brand new account lands on, and it had no
+      // check-in at all: the app opened with nowhere to log.
+      expect(find.text('CHECK IN'), findsWidgets);
       // Docsy Insights and Cycle Patterns were asked for on all ten stages,
-      // this one included, so only Today's Context is withheld here.
+      // this one included.
       expect(find.text('DOCSY INSIGHTS'), findsWidgets);
       expect(find.text('CYCLE PATTERNS & INSIGHTS'), findsWidgets);
     });

@@ -677,14 +677,14 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               const SizedBox(width: 6),
               Text(
                 AppLocalizations.of(context).journalAutoSaving,
-                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: const Color(0xFFD97706)),
+                style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w500, color: const Color(0xFFD97706)),
               ),
             ] else ...[
               const Icon(Icons.check_circle_rounded, color: Color(0xFF43A047), size: 14),
               const SizedBox(width: 6),
               Text(
                 '✓ Saved',
-                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF43A047)),
+                style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF43A047)),
               ),
             ],
           ],
@@ -713,15 +713,15 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Accessibility & Motion Settings', style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                      Text('Accessibility & Motion Settings', style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
                       IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
                     ],
                   ),
                   const SizedBox(height: 12),
                   SwitchListTile(
                     activeThumbColor: BlushyColors.primary,
-                    title: Text('Ambient Sounds', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('Play background environment soundscapes.', style: GoogleFonts.poppins(fontSize: 12)),
+                    title: Text('Ambient Sounds', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text('Play background environment soundscapes.', style: GoogleFonts.manrope(fontSize: 12)),
                     value: _enableAmbientAudio,
                     onChanged: (val) {
                       setModalState(() => _enableAmbientAudio = val);
@@ -732,8 +732,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   SwitchListTile(
                     activeThumbColor: BlushyColors.primary,
-                    title: Text('Long Animations & Transitions', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('Enable 3D cover flipping and opening motion.', style: GoogleFonts.poppins(fontSize: 12)),
+                    title: Text('Long Animations & Transitions', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text('Enable 3D cover flipping and opening motion.', style: GoogleFonts.manrope(fontSize: 12)),
                     value: _enableAnimations,
                     onChanged: (val) {
                       setModalState(() => _enableAnimations = val);
@@ -742,8 +742,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   SwitchListTile(
                     activeThumbColor: BlushyColors.primary,
-                    title: Text('Decorative Effects', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('Coffee steam curves, plant sway, & reflections.', style: GoogleFonts.poppins(fontSize: 12)),
+                    title: Text('Decorative Effects', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text('Coffee steam curves, plant sway, & reflections.', style: GoogleFonts.manrope(fontSize: 12)),
                     value: _enableDecorativeEffects,
                     onChanged: (val) {
                       setModalState(() => _enableDecorativeEffects = val);
@@ -1104,7 +1104,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   TextStyle _getTextStyle(double size, {bool italic = false, Color? color}) {
     Color txtColor = color ?? _themes.firstWhere((t) => t['name'] == _activeTheme)['textColor'];
     if (_activeFont == 'Elegant Serif') {
-      return GoogleFonts.playfairDisplay(fontSize: size, color: txtColor, fontWeight: FontWeight.bold, fontStyle: italic ? FontStyle.italic : FontStyle.normal);
+      return GoogleFonts.instrumentSerif(fontSize: size, color: txtColor, fontWeight: FontWeight.bold, fontStyle: italic ? FontStyle.italic : FontStyle.normal);
     } else if (_activeFont == 'Handwriting') {
       return GoogleFonts.caveat(fontSize: size + 4, color: txtColor, fontWeight: FontWeight.w600);
     } else if (_activeFont == 'Brush Script') {
@@ -1351,7 +1351,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     const SizedBox(width: 8),
                     Text(
                       AppLocalizations.of(context).journalNewMemory,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ],
                 ),
@@ -1404,20 +1404,20 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    Text('Cover: ', style: GoogleFonts.poppins(fontSize: 11, color: Colors.white)),
+                    Text('Cover: ', style: GoogleFonts.manrope(fontSize: 11, color: Colors.white)),
                     _buildCoverColorDot(const Color(0xFF8B4513)),
                     _buildCoverColorDot(const Color(0xFFFBCFE8)),
                     _buildCoverColorDot(const Color(0xFFC084FC)),
                     _buildCoverColorDot(const Color(0xFF1E3A8A)),
                     _buildCoverColorDot(const Color(0xFF065F46)),
                     const SizedBox(width: 8),
-                    Text('Ribbon: ', style: GoogleFonts.poppins(fontSize: 11, color: Colors.white)),
+                    Text('Ribbon: ', style: GoogleFonts.manrope(fontSize: 11, color: Colors.white)),
                     _buildRibbonDot(const Color(0xFFD97706)),
                     _buildRibbonDot(const Color(0xFFE11D48)),
                     _buildRibbonDot(const Color(0xFF059669)),
-                    _buildRibbonDot(const Color(0xFF7C3AED)),
+                    _buildRibbonDot(BlushyColors.accent),
                     const SizedBox(width: 8),
-                    Text('Desk: ', style: GoogleFonts.poppins(fontSize: 11, color: Colors.white)),
+                    Text('Desk: ', style: GoogleFonts.manrope(fontSize: 11, color: Colors.white)),
                     _buildDeskChip('Wood', DeskSurfaceTheme.wood),
                     _buildDeskChip('Marble', DeskSurfaceTheme.marble),
                     _buildDeskChip('Pink', DeskSurfaceTheme.pink),
@@ -1474,7 +1474,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
           color: _selectedDeskTheme == theme ? BlushyColors.primary : Colors.black26,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Text(label, style: GoogleFonts.poppins(fontSize: 10, color: Colors.white)),
+        child: Text(label, style: GoogleFonts.manrope(fontSize: 10, color: Colors.white)),
       ),
     );
   }
@@ -1528,7 +1528,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                             '${_getTimeBasedGreetingPrefix()}, $displayName',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.playfairDisplay(
+                            style: GoogleFonts.instrumentSerif(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
                               color: BlushyColors.text,
@@ -1538,7 +1538,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                             "Today's mood? Record your thoughts below",
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                            style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
                           ),
                         ],
                       );
@@ -1571,7 +1571,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search memories, stickers & templates...',
-                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
+                  hintStyle: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText),
                   prefixIcon: const Icon(Icons.search_rounded, size: 18, color: BlushyColors.secondaryText),
                   filled: true,
                   fillColor: BlushyColors.cardBg,
@@ -1613,7 +1613,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                                   "Today's Memory Summary",
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                                  style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
                                 ),
                               ),
                             ],
@@ -1630,7 +1630,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                               'Emotion: $_currentEmotionLabel',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF0369A1)),
+                              style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF0369A1)),
                             ),
                           ),
                         ),
@@ -1640,13 +1640,13 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     if (_reflectionLoading)
                       Text(
                         AppLocalizations.of(context).journalReadingYourEntries,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                             fontSize: 12, color: BlushyColors.secondaryText),
                       )
                     else if (_backendReflection != null) ...[
                       Text(
                         _backendReflection!,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                             fontSize: 12,
                             fontStyle: FontStyle.italic,
                             color: BlushyColors.secondaryText),
@@ -1667,7 +1667,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                                     ),
                                     child: Text(
                                       theme,
-                                      style: GoogleFonts.poppins(
+                                      style: GoogleFonts.manrope(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
                                         color: BlushyColors.primary,
@@ -1683,7 +1683,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                           Expanded(
                             child: Text(
                               AppLocalizations.of(context).journalNothingToReflect,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(
                                   fontSize: 12, color: BlushyColors.secondaryText),
                             ),
                           ),
@@ -1691,7 +1691,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                             onPressed: () =>
                                 _fetchBackendMemorySummary(showSpinner: true),
                             child: Text('Refresh',
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.manrope(
                                     fontSize: 12, color: BlushyColors.primary)),
                           ),
                         ],
@@ -1717,7 +1717,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               Row(
                 children: [
                   const Text('📜 ', style: TextStyle(fontSize: 18)),
-                  Text('Smart Memory Timeline', style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                  Text('Smart Memory Timeline', style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1730,9 +1730,9 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                       children: [
                         const Icon(Icons.filter_vintage_rounded, size: 48, color: BlushyColors.border),
                         const SizedBox(height: 12),
-                        Text(AppLocalizations.of(context).journalNoMemoriesFound, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
+                        Text(AppLocalizations.of(context).journalNoMemoriesFound, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
                         const SizedBox(height: 4),
-                        Text('Tap "New Memory" or record a voice reflection.', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
+                        Text('Tap "New Memory" or record a voice reflection.', style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText)),
                       ],
                     ),
                   ),
@@ -1751,7 +1751,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(text, style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: BlushyColors.text)),
+        Text(text, style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w500, color: BlushyColors.text)),
       ],
     );
   }
@@ -1777,7 +1777,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Daily Ambient Environment Sounds', style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                      Text('Daily Ambient Environment Sounds', style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
                       IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
                     ],
                   ),
@@ -1806,7 +1806,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   Widget _buildAmbientChip(String label, AmbientTheme theme, JournalAmbientAudio audio, StateSetter setModalState) {
     final isSelected = audio.currentTheme == theme;
     return ChoiceChip(
-      label: Text(label, style: GoogleFonts.poppins(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+      label: Text(label, style: GoogleFonts.manrope(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
       selected: isSelected,
       selectedColor: BlushyColors.primary.withValues(alpha: 0.2),
       onSelected: (val) {
@@ -1872,7 +1872,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   const SizedBox(width: 4),
                   Text(
                     shared ? 'Shared' : AppLocalizations.of(context).jrnShare,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 11,
                       fontWeight: shared ? FontWeight.w600 : FontWeight.w400,
                       color: shared ? BlushyColors.primary : BlushyColors.secondaryText,
@@ -1945,7 +1945,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 Expanded(
                   child: Text(
                     entry.title,
-                    style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: theme['textColor'] as Color),
+                    style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.w700, color: theme['textColor'] as Color),
                   ),
                 ),
                 Container(
@@ -1956,7 +1956,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   child: Text(
                     entry.templateName,
-                    style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: theme['textColor'] as Color),
+                    style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w600, color: theme['textColor'] as Color),
                   ),
                 ),
               ],
@@ -1974,7 +1974,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               children: [
                 Text(
                   '${entry.dateTime.month}/${entry.dateTime.day}/${entry.dateTime.year} • ${entry.dateTime.hour}:${entry.dateTime.minute.toString().padLeft(2, '0')}',
-                  style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                  style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -2017,7 +2017,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     child: Container(width: 38, height: 4, decoration: BoxDecoration(color: BlushyColors.border, borderRadius: BorderRadius.circular(10))),
                   ),
                   const SizedBox(height: 16),
-                  Text(AppLocalizations.of(context).journalCreateNew, style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text)),
+                  Text(AppLocalizations.of(context).journalCreateNew, style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text)),
                   const SizedBox(height: 12),
                   _buildOptionTile(
                     icon: Icons.edit_note_rounded,
@@ -2163,8 +2163,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             backgroundColor: BlushyColors.primary.withValues(alpha: 0.1),
             child: Icon(icon, color: BlushyColors.primary, size: 20),
           ),
-          title: Text(title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
-          subtitle: Text(subtitle, style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
+          title: Text(title, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
+          subtitle: Text(subtitle, style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText)),
           trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: BlushyColors.secondaryText),
           onTap: onTap,
         ),
@@ -2186,11 +2186,11 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(AppLocalizations.of(context).journalSelectTemplate, style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text)),
+                Text(AppLocalizations.of(context).journalSelectTemplate, style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text)),
                 const SizedBox(height: 12),
                 ..._templates.map((tpl) => ListTile(
                       leading: const Icon(Icons.star_outline_rounded, color: BlushyColors.primary),
-                      title: Text(tpl, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+                      title: Text(tpl, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500)),
                       onTap: () {
                         Navigator.pop(context);
                         _createNewEntry(title: tpl, templateName: tpl);
@@ -2234,7 +2234,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                         Expanded(
                           child: TextField(
                             controller: _titleController,
-                            style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text),
+                            style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text),
                             decoration: const InputDecoration(
                               hintText: 'Entry Title...',
                               border: InputBorder.none,
@@ -2283,7 +2283,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               children: [
                 Text(
                   'Feeling: ',
-                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.secondaryText),
+                  style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.secondaryText),
                 ),
                 const SizedBox(width: 8),
                 Row(
@@ -2552,7 +2552,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     const SizedBox(width: 2),
                     Text(
                       'Move',
-                      style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.black38),
+                      style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.black38),
                     ),
                   ],
                 ),
@@ -2655,7 +2655,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             const SizedBox(width: 8),
             Text(
               'Voice Note ($durationText)',
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text),
+              style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text),
             ),
           ],
         ),
@@ -2679,11 +2679,11 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               children: [
                 const Icon(Icons.auto_awesome_rounded, size: 14, color: BlushyColors.primary),
                 const SizedBox(width: 4),
-                Text('DOCSY INSIGHTS', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
+                Text('DOCSY INSIGHTS', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
               ],
             ),
             const SizedBox(height: 6),
-            Text(item.content as String, style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, height: 1.3)),
+            Text(item.content as String, style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.text, height: 1.3)),
           ],
         ),
       );
@@ -2835,7 +2835,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             const SizedBox(width: 4),
             Text(
               label,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? BlushyColors.primary : BlushyColors.secondaryText,
@@ -2868,7 +2868,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               child: Center(
                 child: Text(
                   stk['name'] as String,
-                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                  style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.text),
                 ),
               ),
             ),
@@ -2903,7 +2903,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               child: Center(
                 child: Text(
                   tp['name'] as String,
-                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                  style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.text),
                 ),
               ),
             ),
@@ -2926,7 +2926,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 border: Border.all(color: BlushyColors.border),
               ),
               child: Center(
-                child: Text('Add Polaroid Frame', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.text)),
+                child: Text('Add Polaroid Frame', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.text)),
               ),
             ),
           ),
@@ -2941,7 +2941,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 border: Border.all(color: const Color(0xFFFBCFE8)),
               ),
               child: Center(
-                child: Text('Pink Rose Frame', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF831843))),
+                child: Text('Pink Rose Frame', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF831843))),
               ),
             ),
           ),
@@ -2968,7 +2968,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               child: Center(
                 child: Text(
                   f,
-                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: isSel ? Colors.white : BlushyColors.text),
+                  style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: isSel ? Colors.white : BlushyColors.text),
                 ),
               ),
             ),
@@ -3078,11 +3078,11 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 children: [
                   const Icon(Icons.auto_awesome_rounded, color: Color(0xFFD97706), size: 20),
                   const SizedBox(width: 8),
-                  Text('Docsy Title Suggestions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Docsy Title Suggestions', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 6),
-              Text('Pick a title that matches your reflection mood:', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+              Text('Pick a title that matches your reflection mood:', style: GoogleFonts.manrope(fontSize: 12, color: Colors.grey[600])),
               const SizedBox(height: 16),
               ...suggestions.map((title) => ListTile(
                     leading: const Icon(Icons.edit_note_rounded, color: Color(0xFFD97706)),
@@ -3119,15 +3119,15 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     children: [
                       const Icon(Icons.shield_rounded, color: Color(0xFF10B981), size: 20),
                       const SizedBox(width: 8),
-                      Text(AppLocalizations.of(context).journalAiPrivacyControls, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(AppLocalizations.of(context).journalAiPrivacyControls, style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(AppLocalizations.of(context).journalAiPrivacySub, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                  Text(AppLocalizations.of(context).journalAiPrivacySub, style: GoogleFonts.manrope(fontSize: 12, color: Colors.grey[600])),
                   const SizedBox(height: 12),
                   SwitchListTile(
-                    title: Text(AppLocalizations.of(context).journalTitleGeneration, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                    subtitle: Text('Suggest thoughtful entry titles', style: GoogleFonts.poppins(fontSize: 11)),
+                    title: Text(AppLocalizations.of(context).journalTitleGeneration, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: Text('Suggest thoughtful entry titles', style: GoogleFonts.manrope(fontSize: 11)),
                     value: _insightScheduler.enableTitles,
                     activeTrackColor: const Color(0xFF10B981),
                     onChanged: (val) {
@@ -3135,8 +3135,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     },
                   ),
                   SwitchListTile(
-                    title: Text(AppLocalizations.of(context).journalSmartSearch, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                    subtitle: Text(AppLocalizations.of(context).journalSmartSearchSub, style: GoogleFonts.poppins(fontSize: 11)),
+                    title: Text(AppLocalizations.of(context).journalSmartSearch, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: Text(AppLocalizations.of(context).journalSmartSearchSub, style: GoogleFonts.manrope(fontSize: 11)),
                     value: _insightScheduler.enableSearch,
                     activeTrackColor: const Color(0xFF10B981),
                     onChanged: (val) {
@@ -3144,8 +3144,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     },
                   ),
                   SwitchListTile(
-                    title: Text('Memory Links', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                    subtitle: Text('Discover explainable links between memories', style: GoogleFonts.poppins(fontSize: 11)),
+                    title: Text('Memory Links', style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: Text('Discover explainable links between memories', style: GoogleFonts.manrope(fontSize: 11)),
                     value: _insightScheduler.enableMemoryLinks,
                     activeTrackColor: const Color(0xFF10B981),
                     onChanged: (val) {
@@ -3153,8 +3153,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     },
                   ),
                   SwitchListTile(
-                    title: Text(AppLocalizations.of(context).journalCloudAi, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                    subtitle: Text(AppLocalizations.of(context).journalCloudAiSub, style: GoogleFonts.poppins(fontSize: 11)),
+                    title: Text(AppLocalizations.of(context).journalCloudAi, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: Text(AppLocalizations.of(context).journalCloudAiSub, style: GoogleFonts.manrope(fontSize: 11)),
                     value: _insightScheduler.enableCloudAi,
                     activeTrackColor: const Color(0xFF10B981),
                     onChanged: (val) {
@@ -3192,7 +3192,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(book.title, style: GoogleFonts.caveat(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF92400E))),
-              Text(book.datePeriodStr, style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFFB45309))),
+              Text(book.datePeriodStr, style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFFB45309))),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -3203,7 +3203,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 ],
               ),
               const SizedBox(height: 16),
-              Text('Favorite Reflection Moment:', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF92400E))),
+              Text('Favorite Reflection Moment:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF92400E))),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -3215,7 +3215,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  child: Text(AppLocalizations.of(context).journalCloseMemoryBook, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text(AppLocalizations.of(context).journalCloseMemoryBook, style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -3256,7 +3256,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 children: [
                   const Icon(Icons.search_rounded, color: Color(0xFFD97706)),
                   const SizedBox(width: 8),
-                  Text('Smart Context Search', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Smart Context Search', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               content: SizedBox(
@@ -3278,7 +3278,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     ),
                     const SizedBox(height: 12),
                     if (results.isEmpty)
-                      Text(AppLocalizations.of(context).journalNoSearchMatch, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey))
+                      Text(AppLocalizations.of(context).journalNoSearchMatch, style: GoogleFonts.manrope(fontSize: 11, color: Colors.grey))
                     else
                       Flexible(
                         child: ListView.builder(
@@ -3289,8 +3289,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                             final connections = _connectionsService.findConnections(res.entry, currentEntries());
                             final explanation = connections.isNotEmpty ? connections.first.explanation : res.matchedConcept;
                             return ListTile(
-                              title: Text(res.entry.title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                              subtitle: Text(explanation, style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFFD97706))),
+                              title: Text(res.entry.title, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+                              subtitle: Text(explanation, style: GoogleFonts.manrope(fontSize: 10, color: const Color(0xFFD97706))),
                               onTap: () {
                                 Navigator.pop(context);
                                 final target = _entries.firstWhere((e) => e.id == res.entry.id, orElse: () => _entries.first);
@@ -3316,8 +3316,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFFDE68A))),
       child: Column(
         children: [
-          Text(count, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
-          Text(label, style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF92400E))),
+          Text(count, style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
+          Text(label, style: GoogleFonts.manrope(fontSize: 11, color: const Color(0xFF92400E))),
         ],
       ),
     );
@@ -3340,7 +3340,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(AppLocalizations.of(context).journalPaperTheme, style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text)),
+                Text(AppLocalizations.of(context).journalPaperTheme, style: GoogleFonts.instrumentSerif(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text)),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -3358,7 +3358,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                Text(AppLocalizations.of(context).journalFontStyle, style: GoogleFonts.playfairDisplay(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text)),
+                Text(AppLocalizations.of(context).journalFontStyle, style: GoogleFonts.instrumentSerif(fontSize: 16, fontWeight: FontWeight.w700, color: BlushyColors.text)),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -3400,7 +3400,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               children: [
                 Text(
                   _isTranscribing ? AppLocalizations.of(context).jrnTranscribing : AppLocalizations.of(context).jrnRecordingVoiceNote,
-                  style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text),
+                  style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text),
                 ),
                 const SizedBox(height: 20),
                 if (_isTranscribing)
@@ -3418,7 +3418,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 if (!_isTranscribing)
                   Text(
                     '00:${_recordingDuration.toString().padLeft(2, '0')}',
-                    style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: BlushyColors.primary),
+                    style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w700, color: BlushyColors.primary),
                   ),
                 const SizedBox(height: 20),
                 if (!_isTranscribing)
@@ -3429,7 +3429,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
-                    child: Text(AppLocalizations.of(context).journalDoneRecording, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                    child: Text(AppLocalizations.of(context).journalDoneRecording, style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
@@ -3552,7 +3552,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
             children: [
               Text(
                 'Edit Color',
-                style: GoogleFonts.playfairDisplay(fontSize: 22, fontWeight: FontWeight.w700, color: BlushyColors.text),
+                style: GoogleFonts.instrumentSerif(fontSize: 22, fontWeight: FontWeight.w700, color: BlushyColors.text),
               ),
               const SizedBox(height: 16),
               Row(
@@ -3571,10 +3571,10 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                   Expanded(
                     child: TextField(
                       controller: _hexController,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
                       decoration: InputDecoration(
                         labelText: 'Hex Code',
-                        labelStyle: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                        labelStyle: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         focusedBorder: OutlineInputBorder(
@@ -3592,7 +3592,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
               // Red Slider
               Row(
                 children: [
-                  SizedBox(width: 45, child: Text('Red', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
+                  SizedBox(width: 45, child: Text('Red', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
                   Expanded(
                     child: SliderTheme(
                       data: SliderThemeData(
@@ -3613,14 +3613,14 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 32, child: Text('$_red', textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700))),
+                  SizedBox(width: 32, child: Text('$_red', textAlign: TextAlign.right, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700))),
                 ],
               ),
 
               // Green Slider
               Row(
                 children: [
-                  SizedBox(width: 45, child: Text('Green', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
+                  SizedBox(width: 45, child: Text('Green', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
                   Expanded(
                     child: SliderTheme(
                       data: SliderThemeData(
@@ -3641,14 +3641,14 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 32, child: Text('$_green', textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700))),
+                  SizedBox(width: 32, child: Text('$_green', textAlign: TextAlign.right, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700))),
                 ],
               ),
 
               // Blue Slider
               Row(
                 children: [
-                  SizedBox(width: 45, child: Text('Blue', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
+                  SizedBox(width: 45, child: Text('Blue', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
                   Expanded(
                     child: SliderTheme(
                       data: SliderThemeData(
@@ -3669,12 +3669,12 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 32, child: Text('$_blue', textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700))),
+                  SizedBox(width: 32, child: Text('$_blue', textAlign: TextAlign.right, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700))),
                 ],
               ),
 
               const SizedBox(height: 16),
-              Text('Basic Colors', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.secondaryText)),
+              Text('Basic Colors', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.secondaryText)),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
@@ -3707,7 +3707,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text(AppLocalizations.of(context).jrnCancel, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: BlushyColors.secondaryText)),
+                    child: Text(AppLocalizations.of(context).jrnCancel, style: GoogleFonts.manrope(fontWeight: FontWeight.w600, color: BlushyColors.secondaryText)),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -3721,7 +3721,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                     ),
-                    child: Text(AppLocalizations.of(context).journalApply, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                    child: Text(AppLocalizations.of(context).journalApply, style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),

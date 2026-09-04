@@ -48,7 +48,7 @@ class _ThemeMarketplaceWidgetState extends State<ThemeMarketplaceWidget> {
     return Scaffold(
       backgroundColor: BlushyColors.background,
       appBar: AppBar(
-        title: Text('Modular Theme Engine 🎨', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        title: Text('Modular Theme Engine 🎨', style: GoogleFonts.instrumentSerif(fontWeight: FontWeight.bold)),
         backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
@@ -69,11 +69,11 @@ class _ThemeMarketplaceWidgetState extends State<ThemeMarketplaceWidget> {
                     children: [
                       Container(width: 24, height: 24, decoration: BoxDecoration(color: pack.coverColor, shape: BoxShape.circle)),
                       const SizedBox(width: 10),
-                      Text(pack.name, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold)),
+                      Text(pack.name, style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  Text('Mix & Match Components:', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[700])),
+                  Text('Mix & Match Components:', style: GoogleFonts.manrope(fontSize: 11, color: Colors.grey[700])),
                   const SizedBox(height: 6),
                   Wrap(
                     spacing: 8,

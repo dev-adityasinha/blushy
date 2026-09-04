@@ -20,15 +20,15 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text(AppLocalizations.of(context).puHowSharingWorks, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context).puHowSharingWorks, style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
         content: Text(
           "Blushy respects individual privacy. Your partner holds granular control over their information. They can toggled permissions for cycle updates, appointments, care requests, and fertility windows at any time in their Partner Mode settings panel.",
-          style: GoogleFonts.poppins(fontSize: 13, height: 1.5, color: BlushyColors.text),
+          style: GoogleFonts.manrope(fontSize: 13, height: 1.5, color: BlushyColors.text),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).puUnderstand, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+            child: Text(AppLocalizations.of(context).puUnderstand, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
           ),
         ],
       ),
@@ -62,7 +62,7 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
         elevation: 0,
         title: Text(
           "Partner",
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+          style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
         ),
         centerTitle: true,
       ),
@@ -79,13 +79,13 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
                     Text(
                       "Nothing has been shared yet.",
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       "She decides what appears here. When she shares milestones, appointments, or goals, they will appear in this space.",
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText, height: 1.5),
+                      style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText, height: 1.5),
                     ),
                     const SizedBox(height: 32),
                     ElevatedButton(
@@ -98,7 +98,7 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
                       ),
                       child: Text(
                         "Learn how sharing works",
-                        style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
                   ],
@@ -109,12 +109,12 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
                 children: [
                   Text(
                     "Shared With You",
-                    style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.bold, color: BlushyColors.text),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     "Information shared from her account",
-                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                    style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                   ),
                   const SizedBox(height: 24),
 
@@ -191,12 +191,12 @@ class _PartnerUsScreenState extends State<PartnerUsScreen> {
               children: [
                 Text(
                   title.toUpperCase(),
-                  style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
+                  style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText, letterSpacing: 1.0),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   value,
-                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                  style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
                 ),
               ],
             ),

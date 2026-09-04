@@ -273,7 +273,7 @@ class _DeskEnvironmentWidgetState extends State<DeskEnvironmentWidget> with Tick
                     children: [
                       const Icon(Icons.edit_rounded, color: Color(0xFFD4AF37), size: 28),
                       const SizedBox(width: 16),
-                      Text('👓 Reading Glasses', style: GoogleFonts.poppins(fontSize: 10, color: Colors.white54)),
+                      Text('👓 Reading Glasses', style: GoogleFonts.manrope(fontSize: 10, color: Colors.white54)),
                     ],
                   ),
                 ),

@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
+import '../../shared/blushy_surface.dart';
+import '../../theme/scale.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/theme.dart' hide BlushyColors;
 
@@ -17,7 +19,7 @@ import '../../core/cycle_calculator.dart';
 import '../../core/stage_config.dart';
 import '../../services/api_auth_service.dart';
 import '../../services/api_period_service.dart';
-import '../home/widgets/cycle_card.dart';
+import '../home/widgets/cycle_anatomy_painter.dart';
 import '../../services/html_file_helper.dart';
 import '../../shared/section_heading.dart';
 
@@ -101,18 +103,18 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
               ),
               Row(
                 children: [
-                  const Icon(Icons.attachment_rounded, color: Color(0xFF6F42F5), size: 22),
+                  const Icon(Icons.attachment_rounded, color: BlushyColors.primary, size: 22),
                   const SizedBox(width: 10),
                   Text(
                     "Upload Health Document or Scan",
-                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
               Text(
                 "Docsy will read, analyze, and explain your medical reports, lab results, and health scans with doctor-level clarity.",
-                style: GoogleFonts.poppins(fontSize: 11.5, color: BlushyColors.secondaryText, height: 1.4),
+                style: GoogleFonts.manrope(fontSize: 11.5, color: BlushyColors.secondaryText, height: 1.4),
               ),
               const SizedBox(height: 20),
               Row(
@@ -123,7 +125,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                       icon: Icons.picture_as_pdf_rounded,
                       title: AppLocalizations.of(context).sMedicalReportPdf,
                       subtitle: "Lab tests, blood work, prescriptions",
-                      color: const Color(0xFFDC2626),
+                      color: BlushyColors.primary,
                       accept: '.pdf,application/pdf',
                     ),
                   ),
@@ -134,7 +136,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                       icon: Icons.image_rounded,
                       title: "Health Scan / Photo",
                       subtitle: "Ultrasound, doctor note, symptoms",
-                      color: const Color(0xFF6F42F5),
+                      color: BlushyColors.primary,
                       accept: 'image/*,.jpg,.jpeg,.png,.webp',
                     ),
                   ),
@@ -167,7 +169,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Attached: ${file.name} (${file.formattedSize}). Ask Docsy a question or press Send!'),
-              backgroundColor: const Color(0xFF6F42F5),
+              backgroundColor: BlushyColors.primary,
             ),
           );
         }
@@ -201,12 +203,12 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
             const SizedBox(height: 12),
             Text(
               title,
-              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
+              style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText, height: 1.3),
+              style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.secondaryText, height: 1.3),
             ),
           ],
         ),
@@ -250,13 +252,14 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
       }
     });
 
-    _loadChatHistory();
-
-    if (widget.initialQuestion != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _sendUserMessage(widget.initialQuestion!);
-      });
-    }
+    // The question the screen was opened with is sent once the history is
+    // in. Sent before that, the history's arrival replaced the list and the
+    // question's own bubble went with it, so Docsy answered a message that
+    // was not on screen.
+    _loadChatHistory().then((_) {
+      if (!mounted || widget.initialQuestion == null) return;
+      _sendUserMessage(widget.initialQuestion!);
+    });
   }
 
   Future<void> _loadChatHistory() async {
@@ -265,8 +268,13 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
 
     setState(() {
       if (history.isNotEmpty) {
-        _messages.clear();
-        _messages.addAll(history);
+        // Anything said on this screen while the history was loading stays
+        // on top of it, in the order it happened.
+        final local = List<Map<String, String>>.from(_messages);
+        _messages
+          ..clear()
+          ..addAll(history)
+          ..addAll(local.where((m) => !history.contains(m)));
         return;
       }
       // Nothing to come back to, so she opens rather than waiting to be spoken
@@ -508,7 +516,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         // Discard reply: account switched while request was in-flight
         return;
       }
-      
+
       // Merge any backend captures into BlushyOSState
       if (chatResult.moodCapture != null && chatResult.moodCapture!['updated'] == true) {
         final moodStr = chatResult.moodCapture!['mood']?.toString();
@@ -782,7 +790,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                     if (_messages.isEmpty && !_isThinking) ...[
                       Text(
                         AppLocalizations.of(context).siaConversationStarters,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: BlushyColors.primary,
@@ -834,19 +842,30 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
     return GestureDetector(
       onTap: () => _sendUserMessage(label),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+            horizontal: BlushySpace.md, vertical: BlushySpace.md),
+        constraints: const BoxConstraints(maxWidth: 180),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: BlushyColors.primary.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BlushyColors.border),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: BlushyColors.text,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.auto_awesome,
+                size: 14, color: BlushyColors.primary),
+            const SizedBox(width: BlushySpace.sm),
+            Flexible(
+              child: Text(
+                label,
+                style: BlushyType.caption(
+                  color: BlushyColors.text,
+                  weight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -883,7 +902,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                 Expanded(
                   child: Text(
                     msg['title'] ?? 'Please seek care',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: accent,
@@ -895,13 +914,13 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
             const SizedBox(height: 10),
             Text(
               msg['text'] ?? '',
-              style: GoogleFonts.poppins(fontSize: 14, height: 1.5, color: const Color(0xFF2B2B2B)),
+              style: GoogleFonts.manrope(fontSize: 14, height: 1.5, color: const Color(0xFF2B2B2B)),
             ),
             if (msg['emergencyNumber'] != null) ...[
               const SizedBox(height: 14),
               Text(
                 'Emergency number: ${msg['emergencyNumber']}',
-                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: accent),
+                style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: accent),
               ),
             ],
             if (resources.isNotEmpty) ...[
@@ -911,7 +930,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                   padding: const EdgeInsets.only(bottom: 3),
                   child: Text(
                     r,
-                    style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF5A5A5A)),
+                    style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF5A5A5A)),
                   ),
                 ),
               ),
@@ -920,7 +939,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
               const SizedBox(height: 12),
               Text(
                 'Source: ${msg['source']}',
-                style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF8A8A8A)),
+                style: GoogleFonts.manrope(fontSize: 10, color: const Color(0xFF8A8A8A)),
               ),
             ],
           ],
@@ -959,15 +978,15 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                   Icon(
                     shared ? Icons.people_alt_rounded : Icons.people_outline_rounded,
                     size: 13,
-                    color: shared ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
+                    color: shared ? BlushyColors.primary : BlushyColors.secondaryText,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     shared ? 'Shared' : 'Share',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 10,
                       fontWeight: shared ? FontWeight.w700 : FontWeight.w500,
-                      color: shared ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
+                      color: shared ? BlushyColors.primary : BlushyColors.secondaryText,
                     ),
                   ),
                 ],
@@ -1054,17 +1073,28 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
   }
 
   Widget _buildDaySeparator(DateTime day) {
+    // A rule through the label rather than a lone word: the separator has to
+    // read as a break in the conversation, and centred grey text on its own
+    // reads as another message.
+    Widget rule() => Expanded(
+          child: Container(height: 1, color: BlushyColors.border),
+        );
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Center(
-        child: Text(
-          _dayLabel(day),
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: BlushyColors.secondaryText,
-          ),
-        ),
+      padding: const EdgeInsets.symmetric(vertical: BlushySpace.lg),
+      child: Row(
+        children: [
+          rule(),
+          const SizedBox(width: BlushySpace.sm),
+          const Icon(Icons.auto_awesome, size: 10, color: BlushyColors.secondary),
+          const SizedBox(width: BlushySpace.sm),
+          Text(_dayLabel(day),
+              style: BlushyType.caption(weight: FontWeight.w500)),
+          const SizedBox(width: BlushySpace.sm),
+          const Icon(Icons.auto_awesome, size: 10, color: BlushyColors.secondary),
+          const SizedBox(width: BlushySpace.sm),
+          rule(),
+        ],
       ),
     );
   }
@@ -1097,10 +1127,6 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
             isSia ? MainAxisAlignment.start : MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isSia) ...[
-            const _ChatAvatar(isSia: true),
-            const SizedBox(width: 8),
-          ],
           Flexible(
             // Capped, not just flexible. The header inside is a Row with a
             // Spacer, so it takes MainAxisSize.max and stretches the bubble to
@@ -1111,41 +1137,36 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                 maxWidth: MediaQuery.of(context).size.width * 0.74,
               ),
               child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: BlushySpace.card,
           decoration: BoxDecoration(
             color: isSia ? Colors.white : const Color(0xFFF3EFEA),
-            borderRadius: BorderRadius.circular(12),
-            border: isSia ? Border.all(color: BlushyColors.border) : null,
-            boxShadow: [
-              BoxShadow(
-                color: BlushyColors.text.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            // Rounded like a bubble and lifted by the shadow alone. The
+            // border was drawing a box around every message.
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: BlushySurface.shadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Text(
-                    // Just her name over her own messages; the tab already
-                    // says who this is.
-                    isSia ? 'Docsy' : 'You',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: isSia ? const Color(0xFF6F42F5) : BlushyColors.text,
+              // No avatars, and no "You": which side a bubble sits on says
+              // who is speaking. Docsy's bubbles carry her name, and the
+              // share control -- the pair is one stored conversation, so one
+              // control on her side shares the whole exchange.
+              if (isSia)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Docsy',
+                        style: BlushyType.heading(
+                          color: BlushyColors.primary,
+                          weight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  // Only on Docsy's side of an exchange: the pair is one stored
-                  // conversation, so one control shares the whole exchange
-                  // rather than offering the same thing twice.
-                  if (isSia) _buildShareExchangeButton(msg),
-                ],
-              ),
+                    _buildShareExchangeButton(msg),
+                  ],
+                ),
               if (msg['fileName'] != null) ...[
                 const SizedBox(height: 8),
                 Container(
@@ -1153,7 +1174,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF6F42F5).withValues(alpha: 0.2)),
+                    border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1161,13 +1182,13 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                       Icon(
                         msg['isPdf'] == 'true' ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
                         size: 18,
-                        color: msg['isPdf'] == 'true' ? const Color(0xFFDC2626) : const Color(0xFF6F42F5),
+                        color: msg['isPdf'] == 'true' ? BlushyColors.primary : BlushyColors.primary,
                       ),
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
                           "${msg['fileName']} • ${msg['fileSize'] ?? ''}",
-                          style: GoogleFonts.poppins(fontSize: 11.5, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w600, color: BlushyColors.text),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -1180,17 +1201,17 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6F42F5).withValues(alpha: 0.08),
+                    color: BlushyColors.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.verified_rounded, size: 14, color: Color(0xFF6F42F5)),
+                      const Icon(Icons.verified_rounded, size: 14, color: BlushyColors.primary),
                       const SizedBox(width: 6),
                       Text(
                         "Analysis of ${msg['analyzedFile']}",
-                        style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF6F42F5)),
+                        style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.bold, color: BlushyColors.primary),
                       ),
                     ],
                   ),
@@ -1199,7 +1220,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
               const SizedBox(height: 8),
               Text(
                 msg['text'] ?? '',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 13,
                   color: BlushyColors.text,
                   height: 1.45,
@@ -1217,7 +1238,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                   alignment: Alignment.centerRight,
                   child: Text(
                     _timeLabel(sentAt),
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 9,
                       color: BlushyColors.secondaryText,
                     ),
@@ -1229,10 +1250,6 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         ),
           ),
           ),
-          if (!isSia) ...[
-            const SizedBox(width: 8),
-            const _ChatAvatar(isSia: false),
-          ],
         ],
       ),
     );
@@ -1253,7 +1270,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
           children: [
             Text(
               AppLocalizations.of(context).sLutealRecoveryActionChecklist,
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700),
+              style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 10),
             _buildCheckItem('Log afternoon hydration intake', true),
@@ -1270,14 +1287,14 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         decoration: BoxDecoration(
           color: BlushyColors.background,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF6F42F5).withValues(alpha: 0.15)),
+          border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
             Container(
               width: 36,
               height: 36,
-              decoration: const BoxDecoration(color: Color(0xFF6F42F5), shape: BoxShape.circle),
+              decoration: const BoxDecoration(color: BlushyColors.primary, shape: BoxShape.circle),
               child: const Icon(Icons.play_arrow_rounded, color: Colors.white),
             ),
             const SizedBox(width: 12),
@@ -1287,11 +1304,11 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                 children: [
                   Text(
                     'Calm Breathing Exercise',
-                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF6F42F5)),
+                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: BlushyColors.primary),
                   ),
                   Text(
                     'A slow breathing exercise • 5 min',
-                    style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                    style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.secondaryText),
                   ),
                 ],
               ),
@@ -1318,7 +1335,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 12,
                 color: initialChecked ? BlushyColors.secondaryText : BlushyColors.text,
                 decoration: initialChecked ? TextDecoration.lineThrough : null,
@@ -1349,12 +1366,12 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
               const SizedBox(
                 width: 12,
                 height: 12,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6F42F5)),
+                child: CircularProgressIndicator(strokeWidth: 2, color: BlushyColors.primary),
               ),
               const SizedBox(width: 10),
               Text(
                 AppLocalizations.of(context).siaThinking,
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
               ),
             ],
           ),
@@ -1369,16 +1386,14 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         horizontal: BlushyTheme.getPagePadding(context),
         vertical: 16.0,
       ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: BlushyColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: BlushyColors.shadow,
-            blurRadius: 10,
-            offset: Offset(0, -4),
-          ),
-        ],
+      // A card sitting above the page rather than a bar welded to the bottom
+      // of it, so it matches the nav below and the cards above.
+      // Full width, rising from the bottom with rounded top corners, as on
+      // the reference.
+      decoration: const BoxDecoration(
+        color: BlushyColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(top: BlushySurface.edge),
       ),
       child: Column(
         children: [
@@ -1407,11 +1422,11 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
             const SizedBox(height: 8),
             Text(
               'Recording voice... 00:${_recordingSeconds.toString().padLeft(2, '0')} (Tap Mic to finish)',
-              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFEF4444)),
+              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFEF4444)),
             ),
             const SizedBox(height: 8),
           ],
-          
+
           if (_attachedFile != null) ...[
             Container(
               margin: const EdgeInsets.only(bottom: 10),
@@ -1419,13 +1434,13 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
               decoration: BoxDecoration(
                 color: const Color(0xFFF3EFEA),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF6F42F5).withValues(alpha: 0.3)),
+                border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
                   Icon(
                     _attachedFile!.isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
-                    color: _attachedFile!.isPdf ? const Color(0xFFDC2626) : const Color(0xFF6F42F5),
+                    color: _attachedFile!.isPdf ? BlushyColors.primary : BlushyColors.primary,
                     size: 20,
                   ),
                   const SizedBox(width: 10),
@@ -1435,12 +1450,12 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                       children: [
                         Text(
                           _attachedFile!.name,
-                          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           "${_attachedFile!.formattedSize} • Ready for Docsy review",
-                          style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.secondaryText),
                         ),
                       ],
                     ),
@@ -1467,41 +1482,42 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: _attachedFile != null ? const Color(0xFF6F42F5).withValues(alpha: 0.1) : Colors.transparent,
+                    color: _attachedFile != null ? BlushyColors.primary.withValues(alpha: 0.1) : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     _attachedFile != null ? Icons.add_circle_rounded : Icons.add_circle_outline_rounded,
-                    color: _attachedFile != null ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
-                    size: 24,
+                    color: _attachedFile != null ? BlushyColors.primary : BlushyColors.secondaryText,
+                    size: 30,
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
+                // A fixed height. A long message scrolls inside the field
+                // rather than growing it, so the bar never changes shape.
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  height: 52,
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF9F7F5),
-                    borderRadius: BorderRadius.circular(12),
+                    color: BlushyColors.background,
+                    borderRadius: BorderRadius.circular(28),
                     border: Border.all(color: BlushyColors.border),
                   ),
                   child: TextField(
                     controller: _chatController,
-                    // Wraps onto a new line instead of scrolling the text
-                    // sideways past the cursor. Capped so a long message grows
-                    // the field a little and then scrolls within itself,
-                    // rather than pushing the send button off screen.
-                    minLines: 1,
-                    maxLines: 5,
+                    expands: true,
+                    minLines: null,
+                    maxLines: null,
+                    textAlignVertical: TextAlignVertical.center,
                     keyboardType: TextInputType.multiline,
                     textCapitalization: TextCapitalization.sentences,
-                    style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.text),
                     decoration: InputDecoration(
                       hintText: _attachedFile != null
                           ? "Ask Docsy about ${_attachedFile!.name}..."
                           : _placeholders[_placeholderIndex],
-                      hintStyle: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                      hintStyle: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -1529,12 +1545,10 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                   }
                 },
                 child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: _isListeningVoice 
-                        ? BlushyColors.primary 
-                        : const Color(0xFF6F42F5),
+                  width: 52,
+                  height: 52,
+                  decoration: const BoxDecoration(
+                    color: BlushyColors.primary,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -1542,7 +1556,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
                         ? Icons.send_rounded
                         : (_isListeningVoice ? Icons.stop_rounded : Icons.mic_rounded),
                     color: Colors.white,
-                    size: 16,
+                    size: 22,
                   ),
                 ),
               );
@@ -1659,7 +1673,7 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
               Flexible(
                 child: Text(
                   "SLEEP",
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 7.0,
                     fontWeight: FontWeight.bold,
                     color: BlushyColors.secondaryText,
@@ -1671,7 +1685,7 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
               const SizedBox(width: 2),
               Text(
                 "${avgHours.toStringAsFixed(1)}h",
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 7.5,
                   fontWeight: FontWeight.bold,
                   color: BlushyColors.text,
@@ -1698,7 +1712,7 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
                         child: Container(
                           height: 1,
                           color: (index % 2 == 0)
-                              ? const Color(0xFF6F42F5).withValues(alpha: 0.4)
+                              ? BlushyColors.primary.withValues(alpha: 0.4)
                               : Colors.transparent,
                         ),
                       ),
@@ -1743,7 +1757,7 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
                               fit: BoxFit.scaleDown,
                               child: Text(
                               "${h.toStringAsFixed(1)}h",
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(
                                 fontSize: 7.5,
                                 fontWeight: (isActiveToday || isSelected) ? FontWeight.bold : FontWeight.w500,
                                 color: (isActiveToday || isSelected) ? BlushyColors.primary : BlushyColors.secondaryText,
@@ -1760,7 +1774,7 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
                               decoration: BoxDecoration(
                                 gradient: isActiveToday
                                     ? const LinearGradient(
-                                        colors: [Color(0xFF6F42F5), Color(0xFFF76B8A)],
+                                        colors: [BlushyColors.primary, BlushyColors.secondary],
                                         begin: Alignment.bottomCenter,
                                         end: Alignment.topCenter,
                                       )
@@ -1798,7 +1812,7 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                   d['day'] as String,
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 7.5,
                                     fontWeight: isActiveToday ? FontWeight.bold : FontWeight.w600,
                                     color: isActiveToday ? Colors.white : BlushyColors.secondaryText,
@@ -1828,12 +1842,12 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.bedtime_rounded, size: 16, color: Color(0xFF6F42F5)),
+                  const Icon(Icons.bedtime_rounded, size: 16, color: BlushyColors.primary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       "${days[_selectedBarIndex!]['day']} Sleep: ${days[_selectedBarIndex!]['hours']} Hours • ${days[_selectedBarIndex!]['quality']}",
-                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                   ),
                 ],
@@ -1841,35 +1855,6 @@ class _MiniWeeklySleepBarChartState extends State<_MiniWeeklySleepBarChart> {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// The face beside a message: Docsy on her side, the reader on hers.
-class _ChatAvatar extends StatelessWidget {
-  const _ChatAvatar({required this.isSia});
-
-  final bool isSia;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: isSia
-            ? const Color(0xFF6F42F5).withValues(alpha: 0.12)
-            : BlushyColors.primary.withValues(alpha: 0.10),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Icon(
-        // The same mark the tab bar uses for her, so the two read as one
-        // character.
-        isSia ? Icons.auto_awesome_motion_rounded : Icons.person_rounded,
-        size: 17,
-        color: isSia ? const Color(0xFF6F42F5) : BlushyColors.primary,
       ),
     );
   }
@@ -1921,7 +1906,7 @@ void _showMoodCheckInModal(BuildContext context, BlushyOSState state) {
                     child: Text(
                       AppLocalizations.of(context).siaHowFeelingToday,
                       maxLines: 1,
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                   ),
                 ),
@@ -1985,7 +1970,7 @@ void _showMoodCheckInModal(BuildContext context, BlushyOSState state) {
                             label,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                            style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text),
                           ),
                         ),
                       ],
@@ -2036,7 +2021,7 @@ void _showEnergyCheckInModal(BuildContext context, BlushyOSState state) {
                 const SizedBox(width: 10),
                 Text(
                   AppLocalizations.of(context).siaEnergyLevel,
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                  style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                 ),
                 const Spacer(),
                 IconButton(
@@ -2079,12 +2064,12 @@ void _showEnergyCheckInModal(BuildContext context, BlushyOSState state) {
                           const SizedBox(width: 14),
                           Text(
                             label,
-                            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                            style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
                           ),
                           const Spacer(),
                           Text(
                             'Level $level/10',
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                            style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                           ),
                         ],
                       ),
@@ -2121,11 +2106,11 @@ void _showSleepCheckInModal(BuildContext context, BlushyOSState state, String cu
           children: [
             Row(
               children: [
-                const Icon(Icons.bedtime_rounded, color: Color(0xFF6F42F5), size: 24),
+                const Icon(Icons.bedtime_rounded, color: BlushyColors.primary, size: 24),
                 const SizedBox(width: 10),
                 Text(
                   AppLocalizations.of(context).siaLogSleep,
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                  style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                 ),
                 const Spacer(),
                 IconButton(
@@ -2137,7 +2122,7 @@ void _showSleepCheckInModal(BuildContext context, BlushyOSState state, String cu
             const SizedBox(height: 8),
             Text(
               'Select how many hours of rest you logged last night:',
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -2164,7 +2149,7 @@ void _showSleepCheckInModal(BuildContext context, BlushyOSState state, String cu
                     ),
                     child: Text(
                       '${hours}h',
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                   ),
                 );
@@ -2203,7 +2188,7 @@ void _showCycleDetailsModal(BuildContext context, BlushyOSState state, String ph
                 const SizedBox(width: 10),
                 Text(
                   'Cycle Phase Overview',
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                  style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                 ),
                 const Spacer(),
                 IconButton(
@@ -2225,17 +2210,17 @@ void _showCycleDetailsModal(BuildContext context, BlushyOSState state, String ph
                 children: [
                   Text(
                     '$phaseText • $dayText',
-                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.primary),
+                    style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.primary),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'Average Cycle Length: $cycleLen days',
-                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                    style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     'During the $phaseText, your progesterone levels peak. Gentle walks, hydration, and light stretching can help manage any energy dips.',
-                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.text, height: 1.4),
+                    style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.text, height: 1.4),
                   ),
                 ],
               ),
@@ -2309,7 +2294,7 @@ void _showCycleDetailsModal(BuildContext context, BlushyOSState state, String ph
                   }
                 },
                 icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                label: Text(AppLocalizations.of(context).siaLogPeriodStart, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold)),
+                label: Text(AppLocalizations.of(context).siaLogPeriodStart, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 16),
@@ -2351,7 +2336,7 @@ Widget _buildEditorialContextCard({
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.secondaryText, fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -2371,7 +2356,7 @@ Widget _buildEditorialContextCard({
           const SizedBox(height: 2),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -2457,8 +2442,8 @@ class _TodaysContextSectionState extends State<TodaysContextSection> {
                           progressVal = 0.0;
                         }
 
-                        final String sleepText = (wb.sleepQuality != null && wb.sleepQuality! > 0) 
-                            ? "${wb.sleepQuality}h logged" 
+                        final String sleepText = (wb.sleepQuality != null && wb.sleepQuality! > 0)
+                            ? "${wb.sleepQuality}h logged"
                             : "Not Logged";
 
                         // Show what she picked, not the number it was scored as.
@@ -2537,7 +2522,7 @@ class _TodaysContextSectionState extends State<TodaysContextSection> {
                               children: [
                                 const Icon(Icons.child_care_rounded, size: 28, color: BlushyColors.primary),
                                 const SizedBox(height: 4),
-                                Text("Week $weeks", style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+                                Text("Week $weeks", style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
                               ],
                             ),
                           );
@@ -2550,7 +2535,7 @@ class _TodaysContextSectionState extends State<TodaysContextSection> {
                               children: [
                                 const Icon(Icons.favorite_rounded, size: 28, color: BlushyColors.primary),
                                 const SizedBox(height: 4),
-                                Text("Recovery Phase", style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+                                Text("Recovery Phase", style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
                               ],
                             ),
                           );
@@ -2565,7 +2550,7 @@ class _TodaysContextSectionState extends State<TodaysContextSection> {
                               children: [
                                 const Icon(Icons.favorite_border_rounded, size: 28, color: BlushyColors.primary),
                                 const SizedBox(height: 4),
-                                Text("Fertility Tracking", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+                                Text("Fertility Tracking", style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
                               ],
                             ),
                           );
@@ -2578,7 +2563,7 @@ class _TodaysContextSectionState extends State<TodaysContextSection> {
                               children: [
                                 const Icon(Icons.spa_rounded, size: 28, color: BlushyColors.primary),
                                 const SizedBox(height: 4),
-                                Text("Wellness Balance", style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+                                Text("Wellness Balance", style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary)),
                               ],
                             ),
                           );
@@ -2590,12 +2575,11 @@ class _TodaysContextSectionState extends State<TodaysContextSection> {
                             child: FittedBox(
                               fit: BoxFit.contain,
                               child: SizedBox(
-                                width: 160,
-                                height: 60,
+                                width: 120,
+                                height: 120,
                                 child: CustomPaint(
-                                  painter: SignatureCyclePathPainter(
+                                  painter: CycleAnatomyPainter(
                                     progress: progressVal,
-                                    activePhase: cyclePhaseText,
                                     cycleLength: pc.cycleLength ?? 28,
                                     periodLength: 5,
                                   ),
@@ -2659,7 +2643,7 @@ class _TodaysContextSectionState extends State<TodaysContextSection> {
                                 const SizedBox(width: 4),
                                 Text(
                                   energyText,
-                                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                                  style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
                                 ),
                               ],
                             ),
@@ -2689,7 +2673,7 @@ class _TodaysContextSectionState extends State<TodaysContextSection> {
                                 const SizedBox(width: 6),
                                 Text(
                                   moodText,
-                                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                                  style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
                                 ),
                               ],
                             ),

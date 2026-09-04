@@ -154,7 +154,7 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
         ),
         title: Text(
           "Partner Profile",
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+          style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
         ),
         centerTitle: true,
       ),
@@ -173,8 +173,8 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      color: BlushyColors.surface,
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: Row(
@@ -191,22 +191,22 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                             children: [
                               Text(
                                 _userName,
-                                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                                style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                               ),
                               Text(
                                 _userEmail,
-                                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                                style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
                               ),
                               const SizedBox(height: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE8F5E9),
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: BlushyColors.successSoft,
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
                                   "Partner Mode • Supporting Her 💙",
-                                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF2E7D32)),
+                                  style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.success),
                                 ),
                               ),
                             ],
@@ -220,15 +220,15 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                   // Connection Status Card
                   Text(
                     "Connected Partner",
-                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      color: BlushyColors.surface,
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: Row(
@@ -236,8 +236,8 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF3FAF6),
-                            borderRadius: BorderRadius.circular(12),
+                            color: BlushyColors.successSoft,
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Icon(Icons.favorite_rounded, color: BlushyColors.success, size: 24),
                         ),
@@ -248,11 +248,11 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                             children: [
                               Text(
                                 connectedPartnerName,
-                                style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                                style: GoogleFonts.manrope(height: 1.5, fontSize: 15, fontWeight: FontWeight.bold, color: BlushyColors.text),
                               ),
                               Text(
                                 _activeConnection != null ? "Active connection • Live data enabled" : "No partner paired yet",
-                                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                                style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
                               ),
                             ],
                           ),
@@ -265,21 +265,21 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                   // Preferences & Support Settings
                   Text(
                     "App Preferences",
-                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      color: BlushyColors.surface,
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: Column(
                       children: [
                         ListTile(
                           leading: const Icon(Icons.notifications_outlined, color: BlushyColors.primary),
-                          title: Text('Push Notifications', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-                          subtitle: Text('Get Docsy daily support alerts', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
+                          title: Text('Push Notifications', style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600)),
+                          subtitle: Text('Get Docsy daily support alerts', style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText)),
                           trailing: _notificationsSaving
                               ? const SizedBox(
                                   width: 20,
@@ -297,8 +297,8 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                         const Divider(height: 1),
                         ListTile(
                           leading: const Icon(Icons.lock_outline_rounded, color: BlushyColors.primary),
-                          title: Text('Privacy & Sharing', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-                          subtitle: Text('Learn how your shared data is protected', style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText)),
+                          title: Text('Privacy & Sharing', style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600)),
+                          subtitle: Text('Learn how your shared data is protected', style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText)),
                           trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: BlushyColors.secondaryText),
                           onTap: () {
                             Navigator.of(context).push(
@@ -324,11 +324,11 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
                       icon: const Icon(Icons.logout_rounded, color: Colors.red),
                       label: Text(
                         "Sign Out",
-                        style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red),
                       ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: Color(0xFFFFCDD2)),
+                        side: const BorderSide(color: BlushyColors.lutealSoft),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),

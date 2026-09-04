@@ -4,7 +4,7 @@ import 'colors.dart';
 
 class BlushyTypography {
   static TextStyle headlineLarge(BuildContext context) {
-    return GoogleFonts.poppins(
+    return GoogleFonts.manrope(
       fontSize: 34,
       fontWeight: FontWeight.w700,
       color: BlushyColors.text,
@@ -13,7 +13,7 @@ class BlushyTypography {
   }
 
   static TextStyle headlineMedium(BuildContext context) {
-    return GoogleFonts.poppins(
+    return GoogleFonts.manrope(
       fontSize: 24,
       fontWeight: FontWeight.w700,
       color: BlushyColors.text,
@@ -22,7 +22,7 @@ class BlushyTypography {
   }
 
   static TextStyle titleMedium(BuildContext context) {
-    return GoogleFonts.poppins(
+    return GoogleFonts.manrope(
       fontSize: 16,
       fontWeight: FontWeight.w600,
       color: BlushyColors.text,
@@ -31,7 +31,7 @@ class BlushyTypography {
   }
 
   static TextStyle bodyLarge(BuildContext context) {
-    return GoogleFonts.poppins(
+    return GoogleFonts.manrope(
       fontSize: 15,
       fontWeight: FontWeight.w400,
       color: BlushyColors.text,
@@ -40,7 +40,7 @@ class BlushyTypography {
   }
 
   static TextStyle bodyMedium(BuildContext context) {
-    return GoogleFonts.poppins(
+    return GoogleFonts.manrope(
       fontSize: 13,
       fontWeight: FontWeight.w400,
       color: BlushyColors.secondaryText,
@@ -49,7 +49,7 @@ class BlushyTypography {
   }
 
   static TextStyle labelLarge(BuildContext context) {
-    return GoogleFonts.poppins(
+    return GoogleFonts.manrope(
       fontSize: 11,
       fontWeight: FontWeight.w600,
       color: BlushyColors.text,

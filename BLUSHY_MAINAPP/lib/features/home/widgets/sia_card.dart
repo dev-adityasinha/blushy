@@ -39,7 +39,7 @@ class BlushySiaCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Docsy noticed increased fatigue',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.accent,
@@ -53,7 +53,7 @@ class BlushySiaCard extends StatelessWidget {
           // One sentence insight
           Text(
             'Your recent sleep and hormonal changes may explain today\'s lower energy.',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: BlushyColors.text,
@@ -65,7 +65,7 @@ class BlushySiaCard extends StatelessWidget {
           // One sentence explaining why
           Text(
             'Coinciding with a 5.7h sleep deficit and entering your luteal phase, recovery is recommended.',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 12,
               color: BlushyColors.secondaryText,
               height: 1.4,
@@ -102,7 +102,7 @@ class BlushySiaCard extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: isPrimary ? Colors.white : BlushyColors.text,

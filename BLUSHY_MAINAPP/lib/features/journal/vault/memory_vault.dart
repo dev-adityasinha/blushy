@@ -48,7 +48,7 @@ class _MemoryVaultWidgetState extends State<MemoryVaultWidget> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('New Custom Vault Collection', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+          title: Text('New Custom Vault Collection', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
           content: TextField(
             controller: titleCtrl,
             decoration: const InputDecoration(hintText: 'e.g. Wedding, College, Books...'),
@@ -83,7 +83,7 @@ class _MemoryVaultWidgetState extends State<MemoryVaultWidget> {
     return Scaffold(
       backgroundColor: BlushyColors.background,
       appBar: AppBar(
-        title: Text('Memory Vault 🏆', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        title: Text('Memory Vault 🏆', style: GoogleFonts.instrumentSerif(fontWeight: FontWeight.bold)),
         backgroundColor: BlushyColors.background,
         elevation: 0,
         actions: [
@@ -126,9 +126,9 @@ class _MemoryVaultWidgetState extends State<MemoryVaultWidget> {
                 children: [
                   Text(col.emoji, style: const TextStyle(fontSize: 40)),
                   const SizedBox(height: 10),
-                  Text(col.title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center),
+                  Text(col.title, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center),
                   const SizedBox(height: 4),
-                  Text('${widget.entries.length} Memories', style: GoogleFonts.poppins(fontSize: 11, color: Colors.black54)),
+                  Text('${widget.entries.length} Memories', style: GoogleFonts.manrope(fontSize: 11, color: Colors.black54)),
                 ],
               ),
             ),

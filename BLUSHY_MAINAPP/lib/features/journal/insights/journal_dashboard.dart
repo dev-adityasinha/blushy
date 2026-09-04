@@ -111,7 +111,7 @@ class _JournalDashboardWidgetState extends State<JournalDashboardWidget> {
       appBar: AppBar(
         title: Text(
           'Journal insights',
-          style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+          style: GoogleFonts.instrumentSerif(fontWeight: FontWeight.bold),
         ),
         backgroundColor: BlushyColors.background,
         elevation: 0,
@@ -128,7 +128,7 @@ class _JournalDashboardWidgetState extends State<JournalDashboardWidget> {
                       'Nothing to measure yet. Write an entry and your journal '
                       'will start describing itself here.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+                      style: GoogleFonts.manrope(fontSize: 13, color: Colors.grey[700]),
                     ),
                   ),
                 )
@@ -174,14 +174,14 @@ class _JournalDashboardWidgetState extends State<JournalDashboardWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                   fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF92400E))),
           const SizedBox(height: 6),
           Text(mainValue,
-              style: GoogleFonts.playfairDisplay(
+              style: GoogleFonts.instrumentSerif(
                   fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
           const SizedBox(height: 6),
-          Text(description, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[700])),
+          Text(description, style: GoogleFonts.manrope(fontSize: 11, color: Colors.grey[700])),
         ],
       ),
     );

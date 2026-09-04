@@ -90,7 +90,11 @@ function withStorage(uploadMiddleware, allowedExtensions, folder, {
   return (req, res, next) => {
     uploadMiddleware(req, res, async (error) => {
       if (error || !req.file) {
-        next(error);
+        // A body multer cannot parse (a truncated or malformed multipart
+        // form, a file over the limit) is the caller's mistake, not a
+        // server fault; multer's own errors carry no status and fell
+        // through as 500.
+        next(error && !error.statusCode ? createHttpError(400, error.message || 'Invalid upload.') : error);
         return;
       }
 

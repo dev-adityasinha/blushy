@@ -60,20 +60,18 @@ bool _fabExtended(WidgetTester tester) =>
 void main() {
   useIsolatedStorage();
 
-  testWidgets('every filter is a chip with an icon before its name',
+  testWidgets('every filter is a chip with its name',
       (tester) async {
     await withTestImages(() async {
       await _open(tester);
 
-      for (final label in const ['Home', 'Trending', 'Latest', 'Following']) {
+      for (final label in const ['Home', 'Trending', 'Latest', 'Following', 'My Posts']) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
 
       // The icon sits inside the chip, to the left of the name.
-      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.people_rounded), findsOneWidget);
+      // No icons: five names fill the row on their own.
+      expect(find.byIcon(Icons.home_rounded), findsNothing);
     });
   });
 
@@ -107,41 +105,27 @@ void main() {
     });
   });
 
-  testWidgets('all four filters fit on screen, with nothing to scroll',
+  testWidgets('five filters share the width, and nothing scrolls',
       (tester) async {
-    // They used to run off the edge behind a horizontal scroll, which hid
-    // "Following" behind a gesture nobody had a reason to try.
+    // Five names in one row, each scaled to its share rather than cut or
+    // pushed past the edge -- so every filter is on screen at once.
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
     await withTestImages(() async {
       await _open(tester);
+      expect(tester.takeException(), isNull, reason: 'nothing overflows');
 
-      expect(tester.takeException(), isNull);
-
-      for (final label in const ['Home', 'Trending', 'Latest', 'Following']) {
+      for (final label in const ['Home', 'Trending', 'Latest', 'Following', 'My Posts']) {
         final rect = tester.getRect(find.text(label));
         expect(rect.left, greaterThanOrEqualTo(0.0), reason: label);
         expect(rect.right, lessThanOrEqualTo(320.0),
             reason: '$label runs past the right edge');
       }
-    });
-  });
-
-  testWidgets('the four chips are the same width', (tester) async {
-    // What "uneven" meant: they were content-sized and scaled independently,
-    // so no two matched. Font metrics differ under the test font, so this
-    // pins the geometry rather than the text -- equal boxes, evenly spaced.
-    tester.view.physicalSize = const Size(360, 800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
-    await withTestImages(() async {
-      await _open(tester);
 
       final widths = <double>[
-        for (final label in const ['Home', 'Trending', 'Latest', 'Following'])
+        for (final label in const ['Home', 'Trending', 'Latest', 'Following', 'My Posts'])
           tester
               .getSize(find
                   .ancestor(
@@ -151,12 +135,18 @@ void main() {
                   .first)
               .width,
       ];
-
       for (final w in widths) {
-        expect(w, closeTo(widths.first, 0.01),
-            reason: 'chips: $widths');
+        expect(w, closeTo(widths.first, 0.01), reason: 'chips: $widths');
       }
     });
+  });
+
+  test('My Posts asks the server for its own feed type', () {
+    // Four filters are their own lowercased label. This one is not, and
+    // lowercasing it would request a feed the server does not have.
+    expect(BlushyCommunityScreen.feedTypeFor('My Posts'), 'mine');
+    expect(BlushyCommunityScreen.feedTypeFor('Home'), 'home');
+    expect(BlushyCommunityScreen.feedTypeFor('Following'), 'following');
   });
 
   testWidgets('selecting a filter does not resize or embolden it',

@@ -107,7 +107,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
             : null,
         title: Text(
           "Ask Docsy",
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: BlushyColors.text,
@@ -131,13 +131,13 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                           Text(
                             "Ask Docsy about supporting her",
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                            style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             "Learn about health stages, communication tips, and practical support guides.",
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                            style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                           ),
                           const SizedBox(height: 24),
                           ...suggestions.map((suggestion) {
@@ -158,7 +158,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                                     Expanded(
                                       child: Text(
                                         suggestion,
-                                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                                        style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text),
                                       ),
                                     ),
                                   ],
@@ -188,7 +188,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                             constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                             child: Text(
                               msg["text"]!,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(
                                 fontSize: 13,
                                 color: isUser ? Colors.white : BlushyColors.text,
                                 height: 1.45,
@@ -211,10 +211,10 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen> {
                   Expanded(
                     child: TextField(
                       controller: _queryController,
-                      style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.text),
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context).psAskAboutHerActive,
-                        hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
+                        hintStyle: GoogleFonts.manrope(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
                         border: InputBorder.none,
                       ),
                       onSubmitted: _sendQuery,

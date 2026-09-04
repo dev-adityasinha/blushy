@@ -264,7 +264,7 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
                               Text(
                                 widget.title.toUpperCase(),
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.playfairDisplay(
+                                style: GoogleFonts.instrumentSerif(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFFD4AF37),
@@ -304,7 +304,7 @@ class _JournalCoverWidgetState extends State<JournalCoverWidget> with TickerProv
                               Text(
                                 'Tap to open diary (Decorative Unlock)',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(fontSize: 10, color: Colors.white60, letterSpacing: 0.8),
+                                style: GoogleFonts.manrope(fontSize: 10, color: Colors.white60, letterSpacing: 0.8),
                               ),
                             ],
                           ),

@@ -28,7 +28,7 @@ class _JournalSettingsScreenState extends State<JournalSettingsScreen> {
     return Scaffold(
       backgroundColor: BlushyColors.background,
       appBar: AppBar(
-        title: Text('${t.settingsTitle} ⚙️', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold)),
+        title: Text('${t.settingsTitle} ⚙️', style: GoogleFonts.instrumentSerif(fontWeight: FontWeight.bold)),
         backgroundColor: BlushyColors.background,
         elevation: 0,
       ),
@@ -37,29 +37,29 @@ class _JournalSettingsScreenState extends State<JournalSettingsScreen> {
         children: [
           _buildSectionHeader('Subsystem Feature Flags'),
           SwitchListTile(
-            title: Text(t.settingsSiaAssistant, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text(t.settingsSiaAssistantSub, style: GoogleFonts.poppins(fontSize: 11)),
+            title: Text(t.settingsSiaAssistant, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: Text(t.settingsSiaAssistantSub, style: GoogleFonts.manrope(fontSize: 11)),
             value: _enableAiAssistant,
             activeTrackColor: const Color(0xFF10B981),
             onChanged: (val) => setState(() => _enableAiAssistant = val),
           ),
           SwitchListTile(
-            title: Text(t.settingsMemoryBooks, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text(t.settingsMemoryBooksSub, style: GoogleFonts.poppins(fontSize: 11)),
+            title: Text(t.settingsMemoryBooks, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: Text(t.settingsMemoryBooksSub, style: GoogleFonts.manrope(fontSize: 11)),
             value: _enableMemoryBooks,
             activeTrackColor: const Color(0xFF10B981),
             onChanged: (val) => setState(() => _enableMemoryBooks = val),
           ),
           SwitchListTile(
-            title: Text(t.settingsContentGarden, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text(t.settingsContentGardenSub, style: GoogleFonts.poppins(fontSize: 11)),
+            title: Text(t.settingsContentGarden, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: Text(t.settingsContentGardenSub, style: GoogleFonts.manrope(fontSize: 11)),
             value: _enableGarden,
             activeTrackColor: const Color(0xFF10B981),
             onChanged: (val) => setState(() => _enableGarden = val),
           ),
           SwitchListTile(
-            title: Text(t.settingsTimeCapsules, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text(t.settingsTimeCapsulesSub, style: GoogleFonts.poppins(fontSize: 11)),
+            title: Text(t.settingsTimeCapsules, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: Text(t.settingsTimeCapsulesSub, style: GoogleFonts.manrope(fontSize: 11)),
             value: _enableTimeCapsules,
             activeTrackColor: const Color(0xFF10B981),
             onChanged: (val) => setState(() => _enableTimeCapsules = val),
@@ -67,22 +67,22 @@ class _JournalSettingsScreenState extends State<JournalSettingsScreen> {
           const Divider(height: 32),
           _buildSectionHeader('Accessibility Suite'),
           SwitchListTile(
-            title: Text(t.settingsReducedMotion, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text(t.settingsReducedMotionSub, style: GoogleFonts.poppins(fontSize: 11)),
+            title: Text(t.settingsReducedMotion, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: Text(t.settingsReducedMotionSub, style: GoogleFonts.manrope(fontSize: 11)),
             value: _enableReducedMotion,
             activeTrackColor: const Color(0xFF10B981),
             onChanged: (val) => setState(() => _enableReducedMotion = val),
           ),
           SwitchListTile(
-            title: Text(t.settingsHighContrast, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text(t.settingsHighContrastSub, style: GoogleFonts.poppins(fontSize: 11)),
+            title: Text(t.settingsHighContrast, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: Text(t.settingsHighContrastSub, style: GoogleFonts.manrope(fontSize: 11)),
             value: _enableHighContrast,
             activeTrackColor: const Color(0xFF10B981),
             onChanged: (val) => setState(() => _enableHighContrast = val),
           ),
           SwitchListTile(
-            title: Text(t.settingsLargeHandles, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text(t.settingsLargeHandlesSub, style: GoogleFonts.poppins(fontSize: 11)),
+            title: Text(t.settingsLargeHandles, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: Text(t.settingsLargeHandlesSub, style: GoogleFonts.manrope(fontSize: 11)),
             value: _enableLargeHandles,
             activeTrackColor: const Color(0xFF10B981),
             onChanged: (val) => setState(() => _enableLargeHandles = val),
@@ -91,8 +91,8 @@ class _JournalSettingsScreenState extends State<JournalSettingsScreen> {
           _buildSectionHeader('Platform Infrastructure'),
           ListTile(
             leading: const Icon(Icons.analytics_rounded, color: Color(0xFFD97706)),
-            title: Text(t.settingsDiagnostics, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: Text(t.settingsDiagnosticsSub, style: GoogleFonts.poppins(fontSize: 11)),
+            title: Text(t.settingsDiagnostics, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: Text(t.settingsDiagnosticsSub, style: GoogleFonts.manrope(fontSize: 11)),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const JournalDiagnosticsScreen()));
@@ -105,9 +105,9 @@ class _JournalSettingsScreenState extends State<JournalSettingsScreen> {
             ListTile(
               leading: const Icon(Icons.fact_check_rounded, color: Color(0xFFD97706)),
               title: Text('Content review',
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                  style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
               subtitle: Text('Read and approve health content before it is served',
-                  style: GoogleFonts.poppins(fontSize: 11)),
+                  style: GoogleFonts.manrope(fontSize: 11)),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.pushNamed(context, '/admin/content-review'),
             ),
@@ -121,7 +121,7 @@ class _JournalSettingsScreenState extends State<JournalSettingsScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title,
-        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD97706)),
+        style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFD97706)),
       ),
     );
   }

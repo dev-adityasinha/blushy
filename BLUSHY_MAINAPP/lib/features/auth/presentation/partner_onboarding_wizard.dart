@@ -167,10 +167,10 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
       title = "What should we call you?";
       content = TextField(
         controller: _nameController,
-        style: GoogleFonts.poppins(fontSize: 16, color: BlushyColors.text),
+        style: GoogleFonts.manrope(fontSize: 16, color: BlushyColors.text),
         decoration: InputDecoration(
           hintText: AppLocalizations.of(context).poYourPreferredName,
-          hintStyle: GoogleFonts.poppins(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
+          hintStyle: GoogleFonts.manrope(color: BlushyColors.secondaryText.withValues(alpha: 0.5)),
           border: const UnderlineInputBorder(borderSide: BorderSide(color: BlushyColors.primary)),
         ),
         onChanged: (val) {
@@ -273,12 +273,12 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
             children: [
               Text(
                 "QUESTION ${_currentStepIndex + 1} OF 4",
-                style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w800, color: BlushyColors.primary, letterSpacing: 1.5),
+                style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w800, color: BlushyColors.primary, letterSpacing: 1.5),
               ),
               const SizedBox(height: 12),
               Text(
                 title,
-                style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.bold, color: BlushyColors.text, height: 1.25),
+                style: GoogleFonts.manrope(fontSize: 26, fontWeight: FontWeight.bold, color: BlushyColors.text, height: 1.25),
               ),
               const SizedBox(height: 32),
               Expanded(child: SingleChildScrollView(child: content)),
@@ -294,7 +294,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
                 ),
                 child: Text(
                   "Continue",
-                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
             ],
@@ -326,7 +326,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
             Expanded(
               child: Text(
                 label,
-                style: GoogleFonts.poppins(fontSize: 14, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: BlushyColors.text),
+                style: GoogleFonts.manrope(fontSize: 14, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: BlushyColors.text),
               ),
             ),
             if (isSelected)
@@ -364,19 +364,19 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
               Text(
                 "Her privacy comes first.",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 32, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                style: GoogleFonts.manrope(fontSize: 32, fontWeight: FontWeight.bold, color: BlushyColors.text),
               ),
               const SizedBox(height: 16),
               Text(
                 "She decides what you can see.\nYou'll only receive information and insights she's chosen to share.",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 15, color: BlushyColors.secondaryText, height: 1.5),
+                style: GoogleFonts.manrope(fontSize: 15, color: BlushyColors.secondaryText, height: 1.5),
               ),
               const SizedBox(height: 24),
               Text(
                 "Everything she shares with you is controlled by her. You will not automatically see private metrics like symptoms, journal records, or private Docsy conversations.",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.8), height: 1.45),
+                style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.8), height: 1.45),
               ),
               const Spacer(),
               ElevatedButton(
@@ -389,7 +389,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
                 ),
                 child: Text(
                   "Continue",
-                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
             ],
@@ -412,13 +412,13 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
               Text(
                 "Setting up Partner Mode...",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                style: GoogleFonts.manrope(fontSize: 28, fontWeight: FontWeight.bold, color: BlushyColors.text),
               ),
               const SizedBox(height: 12),
               Text(
                 "${(_buildProgress * 100).toInt()}% Complete",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.primary, fontWeight: FontWeight.bold),
+                style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.primary, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               ClipRRect(
@@ -448,7 +448,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
                         const SizedBox(width: 12),
                         Text(
                           step['title'] as String,
-                          style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.text),
                         ),
                       ],
                     ),
@@ -480,13 +480,13 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
               Text(
                 "Partner Space Ready",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 32, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                style: GoogleFonts.manrope(fontSize: 32, fontWeight: FontWeight.bold, color: BlushyColors.text),
               ),
               const SizedBox(height: 12),
               Text(
                 "You're ready to show up for your partner, supported by Blushy relationship guides.",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.secondaryText, height: 1.5),
+                style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText, height: 1.5),
               ),
               const Spacer(),
               ElevatedButton(
@@ -499,7 +499,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
                 ),
                 child: Text(
                   "Enter Partner Mode",
-                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
             ],

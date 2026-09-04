@@ -55,6 +55,7 @@ dependencies:
   just_audio: ^0.9.40
   file_picker: ^8.1.2
   http_parser: ^4.0.2
+  lottie: ^3.5.1
 
 
 dev_dependencies:
@@ -62,6 +63,9 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  # Drives the midnight rollover timer on a fake clock, so the test does
+  # not have to wait until midnight to know whether it fires.
+  fake_async: ^1.3.0
 
 flutter:
 
@@ -70,6 +74,9 @@ flutter:
 
   assets:
     - assets/
+    # Optional check-in card animations. Empty by default: the cards draw
+    # their own scenes and use a file here only if one is added.
+    - assets/lottie/
     - assets/color/flowers/
     - assets/color/bush/
     - assets/mono/flowers/

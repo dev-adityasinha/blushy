@@ -404,7 +404,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('🎉 Connected with your partner successfully!'),
-            backgroundColor: Color(0xFF10B981),
+            backgroundColor: BlushyColors.success,
           ),
         );
         _fetchPartnerData();
@@ -479,7 +479,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Connected! Your shared partner portal is now live 🎉'),
-                          backgroundColor: Color(0xFF10B981),
+                          backgroundColor: BlushyColors.success,
                         ),
                       );
                     }
@@ -501,7 +501,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('🎉 $partnerEmail accepted your request! Live connection active.'),
-            backgroundColor: const Color(0xFF10B981),
+            backgroundColor: BlushyColors.success,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -754,7 +754,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         ),
                         Text(
                           _tabs[_selectedTabIndex],
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(height: 1.5, 
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: BlushyColors.text,
@@ -922,7 +922,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         Expanded(
                           child: Text(
                             dialogTitle,
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(height: 1.5, 
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: BlushyColors.text,
@@ -946,7 +946,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           padding: const EdgeInsets.only(bottom: 12.0),
                           child: Text(
                             dynamicNeeds['message'].toString(),
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(height: 1.5, 
                               fontSize: 13,
                               color: BlushyColors.text.withValues(alpha: 0.7),
                             ),
@@ -956,7 +956,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         child: ListView.separated(
                           shrinkWrap: true,
                           itemCount: customNeedsList.length,
-                          separatorBuilder: (_, _) => const Divider(height: 1, color: Color(0xFFE8DFD8)),
+                          separatorBuilder: (_, _) => const Divider(height: 1, color: BlushyColors.border),
                           itemBuilder: (context, index) {
                             final item = customNeedsList[index];
                             final String label = (item is Map ? item['label'] : null) ?? item.toString();
@@ -968,7 +968,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                               contentPadding: const EdgeInsets.symmetric(vertical: 4),
                               title: Text(
                                 label,
-                                style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                                style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
                               ),
                               subtitle: (source != null || category != null)
                                   ? Padding(
@@ -980,11 +980,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: BlushyColors.primary.withValues(alpha: 0.1),
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius: BorderRadius.circular(20),
                                               ),
                                               child: Text(
                                                 category,
-                                                style: GoogleFonts.poppins(
+                                                style: GoogleFonts.manrope(height: 1.5, 
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w600,
                                                   color: BlushyColors.primary,
@@ -996,7 +996,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                             Expanded(
                                               child: Text(
                                                 source,
-                                                style: GoogleFonts.poppins(
+                                                style: GoogleFonts.manrope(height: 1.5, 
                                                   fontSize: 11,
                                                   color: Colors.grey.shade600,
                                                 ),
@@ -1021,15 +1021,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                          color: BlushyColors.surface,
+                          borderRadius: BorderRadius.circular(20),
+
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1039,10 +1033,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFFE8F5E9),
+                                    color: BlushyColors.successSoft,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.spa, size: 24, color: Color(0xFF2E7D32)),
+                                  child: const Icon(Icons.spa, size: 24, color: BlushyColors.success),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -1051,15 +1045,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                     children: [
                                       Text(
                                         isUserWoman ? "He's feeling peaceful" : "She's feeling peaceful",
-                                        style: GoogleFonts.poppins(
+                                        style: GoogleFonts.manrope(height: 1.5, 
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF2E7D32),
+                                          color: BlushyColors.success,
                                         ),
                                       ),
                                       Text(
                                         "No distress or special needs logged",
-                                        style: GoogleFonts.poppins(
+                                        style: GoogleFonts.manrope(height: 1.5, 
                                           fontSize: 12,
                                           color: Colors.grey.shade600,
                                         ),
@@ -1075,7 +1069,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                   (isUserWoman
                                       ? "He hasn't logged any discomfort or asked for specific help recently."
                                       : "She hasn't logged any discomfort or asked for specific help recently."),
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(
                                 fontSize: 13,
                                 height: 1.4,
                                 color: BlushyColors.text.withValues(alpha: 0.85),
@@ -1086,8 +1080,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: BlushyColors.background,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE8DFD8)),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: BlushyColors.border),
                               ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1098,7 +1092,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                     child: Text(
                                       dynamicNeeds['tip']?.toString() ??
                                           "Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
-                                      style: GoogleFonts.poppins(
+                                      style: GoogleFonts.manrope(
                                         fontSize: 12,
                                         height: 1.4,
                                         color: BlushyColors.text,
@@ -1122,13 +1116,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         ),
                         child: Text(
                           AppLocalizations.of(context).pGotIt,
-                          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ] else ...[
                       Text(
                         AppLocalizations.of(context).pHereAreGeneralWays,
-                        style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade600),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 13, color: Colors.grey.shade600),
                       ),
                       const SizedBox(height: 8),
                       Flexible(
@@ -1137,7 +1131,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           children: defaultNeeds.map((need) {
                             return ListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: Text(need["label"]!, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
+                              title: Text(need["label"]!, style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600)),
                               trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: BlushyColors.primary),
                               onTap: () {
                                 Navigator.pop(context);
@@ -1164,12 +1158,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text(tip, style: GoogleFonts.poppins(fontSize: 14, height: 1.5, color: BlushyColors.text)),
+        title: Text(title, style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
+        content: Text(tip, style: GoogleFonts.manrope(fontSize: 14, height: 1.5, color: BlushyColors.text)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).pGotIt, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
+            child: Text(AppLocalizations.of(context).pGotIt, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
           ),
         ],
       ),
@@ -1281,19 +1275,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFFF1F2), Color(0xFFFFE4E6)],
+              colors: [BlushyColors.lutealSoft, BlushyColors.lutealSoft],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFFDA4AF), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFE11D48).withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: BlushyColors.secondary, width: 1.2),
+
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1315,7 +1303,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       children: [
                         Text(
                           'Incoming Partner Request',
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(height: 1.5, 
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: BlushyColors.primary,
@@ -1324,10 +1312,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         ),
                         Text(
                           senderEmail,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(height: 1.5, 
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF1E293B),
+                            color: BlushyColors.text,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1337,13 +1325,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: BlushyColors.surface,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFFDA4AF)),
+                      border: Border.all(color: BlushyColors.secondary),
                     ),
                     child: Text(
                       'Live Pending',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 9.5,
                         fontWeight: FontWeight.bold,
                         color: BlushyColors.primary,
@@ -1355,7 +1343,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const SizedBox(height: 10),
               Text(
                 'Accept to connect your spaces and begin sharing cycles, insights, and live couple chat.',
-                style: GoogleFonts.poppins(fontSize: 11.5, color: const Color(0xFF475569)),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 11.5, color: BlushyColors.secondaryText),
               ),
               const SizedBox(height: 14),
               Row(
@@ -1363,8 +1351,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 children: [
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF64748B),
-                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      foregroundColor: BlushyColors.secondaryText,
+                      side: const BorderSide(color: BlushyColors.border),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -1374,7 +1362,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         await _fetchPartnerData();
                       }
                     },
-                    child: Text(AppLocalizations.of(context).partnerDecline, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+                    child: Text(AppLocalizations.of(context).partnerDecline, style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                   const SizedBox(width: 10),
                   ElevatedButton.icon(
@@ -1393,14 +1381,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Connected! Your Partner Space is now live 🎉'),
-                              backgroundColor: Color(0xFF10B981),
+                              backgroundColor: BlushyColors.success,
                             ),
                           );
                         }
                       }
                     },
                     icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
-                    label: Text('Accept Request', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold)),
+                    label: Text('Accept Request', style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -1436,7 +1424,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         Text(
           'Partner Portal',
           textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: BlushyColors.text,
@@ -1446,7 +1434,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 12,
             color: BlushyColors.secondaryText,
             fontWeight: FontWeight.w500,
@@ -1465,7 +1453,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           icon: const Icon(Icons.person_add_rounded, size: 18, color: Colors.white),
           label: Text(
             AppLocalizations.of(context).pConnect,
-            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
+            style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold),
           ),
         ),
       ],
@@ -1496,7 +1484,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           'This one needs two',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: BlushyColors.text,
@@ -1506,7 +1494,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           'Everything in the portal is something you and your partner do '
           'together, so it stays closed until there is someone on the other '
           'side. Send an invite and it opens the moment they accept.',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 13,
             height: 1.5,
             color: BlushyColors.secondaryText,
@@ -1517,7 +1505,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(
               'Close',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(height: 1.5, 
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: BlushyColors.secondaryText,
@@ -1540,7 +1528,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             },
             child: Text(
               'Connect',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(height: 1.5, 
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
               ),
@@ -1588,16 +1576,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: BlushyColors.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: BlushyColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: BlushyColors.dark.withValues(alpha: 0.01),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1629,7 +1611,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     children: [
                       Text(
                         "$partnerNameOrEmail's Portal",
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
                           color: BlushyColors.text,
@@ -1638,7 +1620,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       ),
                       Text(
                         statusSubtitle,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 10,
                           color: BlushyColors.primary,
                           fontWeight: FontWeight.w600,
@@ -1664,21 +1646,21 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   icon: const Icon(Icons.chat_bubble_rounded, size: 13, color: Colors.white),
                   label: Text(
                     'Open Chat',
-                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 6),
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: BlushyColors.success,
-                    side: const BorderSide(color: Color(0xFFD6F1DF)),
+                    side: const BorderSide(color: BlushyColors.successSoft),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () => _showHelpOptionsDialog(context),
                   child: Text(
                     AppLocalizations.of(context).pTips,
-                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -1699,7 +1681,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   const SizedBox(width: 8),
                   Text(
                     "Argument Mode",
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(height: 1.5, 
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: active ? BlushyColors.danger : BlushyColors.text,
@@ -1719,7 +1701,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       ),
                       child: Text(
                         'Manage',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: BlushyColors.primary,
@@ -1750,13 +1732,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: active ? const Color(0xFFFDF2F2) : BlushyColors.background,
-                          borderRadius: BorderRadius.circular(12),
+                          color: active ? BlushyColors.lutealSoft : BlushyColors.background,
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: active ? BlushyColors.secondary : BlushyColors.border),
                         ),
                         child: Text(
                           active ? "ON" : "OFF",
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(height: 1.5, 
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                             color: active ? BlushyColors.success : BlushyColors.secondaryText,
@@ -1775,7 +1757,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             'updates stop reaching them until you switch it off. Shared '
             'activities and milestones keep working, and nothing already '
             'shared is deleted.',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 10,
               height: 1.45,
               color: BlushyColors.secondaryText,
@@ -1786,8 +1768,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF9F9),
-                borderRadius: BorderRadius.circular(12),
+                color: BlushyColors.background,
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: BlushyColors.secondary),
               ),
               child: Row(
@@ -1797,7 +1779,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   Expanded(
                     child: Text(
                       "Argument Mode is ON. Your partner won't receive any new personal insights until you turn it off.",
-                      style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.danger, height: 1.4),
+                      style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.danger, height: 1.4),
                     ),
                   ),
                 ],
@@ -1817,15 +1799,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     Icon(
                       _isMessageDecoderActive ? Icons.circle : Icons.circle_outlined,
                       size: 10,
-                      color: _isMessageDecoderActive ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
+                      color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       "Her Message Decoder",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: _isMessageDecoderActive ? const Color(0xFF6F42F5) : BlushyColors.text,
+                        color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.text,
                       ),
                     ),
                   ],
@@ -1837,18 +1819,18 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: _isMessageDecoderActive ? const Color(0xFFF3EFFF) : BlushyColors.background,
-                          borderRadius: BorderRadius.circular(12),
+                          color: _isMessageDecoderActive ? BlushyColors.lutealSoft : BlushyColors.background,
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: _isMessageDecoderActive ? const Color(0xFF9D7BFF) : BlushyColors.border,
+                            color: _isMessageDecoderActive ? BlushyColors.accent : BlushyColors.border,
                           ),
                         ),
                         child: Text(
                           _isMessageDecoderActive ? "ON" : "OFF",
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(height: 1.5, 
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
-                            color: _isMessageDecoderActive ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
+                            color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
                           ),
                         ),
                       ),
@@ -1862,18 +1844,18 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFBF9FF),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFD6C8FF)),
+                  color: BlushyColors.background,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: BlushyColors.lutealSoft),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.auto_awesome_rounded, size: 14, color: Color(0xFF6F42F5)),
+                    const Icon(Icons.auto_awesome_rounded, size: 14, color: BlushyColors.primary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         "Decoder is ON. Docsy will translate what she is coming to tell based on her live cycle phase, mood, and sleep levels in Messenger.",
-                        style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF5A31D8), height: 1.4),
+                        style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.primary, height: 1.4),
                       ),
                     ),
                   ],
@@ -1972,7 +1954,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           const SizedBox(width: 10),
                           Text(
                             'Partner Connections',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(height: 1.5, 
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: BlushyColors.text,
@@ -1990,7 +1972,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       labelColor: BlushyColors.primary,
                       unselectedLabelColor: BlushyColors.secondaryText,
                       indicatorColor: BlushyColors.primary,
-                      labelStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                      labelStyle: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w600),
                       // Invite first: the modal is opened by someone with no
                       // partner far more often than by someone managing one,
                       // and it used to open on an empty Connections list.
@@ -2035,13 +2017,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const SizedBox(height: 12),
               Text(
                 AppLocalizations.of(context).partnerNoConnection,
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 16, fontWeight: FontWeight.w600, color: BlushyColors.text),
               ),
               const SizedBox(height: 6),
               Text(
                 AppLocalizations.of(context).partnerSendInviteExplainer,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
               ),
             ],
           ),
@@ -2063,8 +2045,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: BlushyColors.surface,
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: BlushyColors.border),
           ),
           child: Row(
@@ -2080,11 +2062,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   children: [
                     Text(
                       partnerEmail,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                     Text(
                       'Role: $role • Status: $status',
-                      style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
                     ),
                   ],
                 ),
@@ -2138,7 +2120,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 },
                 child: Text(
                   AppLocalizations.of(context).partnerDisconnect,
-                  style: GoogleFonts.poppins(fontSize: 11, color: Colors.red, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: Colors.red, fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -2202,7 +2184,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       const SizedBox(width: 10),
                       Text(
                         'Partner Privacy Settings',
-                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                       ),
                     ],
                   ),
@@ -2211,7 +2193,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     isOwner
                         ? 'Control what health & wellness updates are shared with your partner in real time.'
                         : 'These privacy settings are managed by your partner.',
-                    style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
                   ),
                   const SizedBox(height: 16),
                   _buildPrivacySwitch('Menstrual Cycle Rhythm', 'Share current cycle day and phase', perms['shareCycle'] == true, isOwner, (val) {
@@ -2249,7 +2231,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             );
                           }
                         },
-                        child: Text(AppLocalizations.of(context).pSavePermissions, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
+                        child: Text(AppLocalizations.of(context).pSavePermissions, style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.bold)),
                       ),
                     ),
                 ],
@@ -2267,8 +2249,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       onChanged: enabled ? onChanged : null,
       activeThumbColor: BlushyColors.primary,
       contentPadding: EdgeInsets.zero,
-      title: Text(title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText)),
+      title: Text(title, style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle, style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText)),
     );
   }
 
@@ -2287,12 +2269,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const SizedBox(height: 12),
               Text(
                 AppLocalizations.of(context).partnerNoPendingRequests,
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 16, fontWeight: FontWeight.w600, color: BlushyColors.text),
               ),
               const SizedBox(height: 6),
               Text(
                 'Incoming and outgoing partner invitations will appear here.',
-                style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
               ),
             ],
           ),
@@ -2306,7 +2288,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         if (hasIncoming) ...[
           Text(
             'INCOMING REQUESTS',
-            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText, letterSpacing: 1.1),
+            style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText, letterSpacing: 1.1),
           ),
           const SizedBox(height: 8),
           ..._incomingInvitations.map((inv) {
@@ -2316,8 +2298,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: BlushyColors.surface,
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.3)),
               ),
               child: Column(
@@ -2325,7 +2307,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 children: [
                   Text(
                     '$senderEmail wants to connect with you.',
-                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -2343,7 +2325,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             setModalState(() {});
                           }
                         },
-                        child: Text(AppLocalizations.of(context).pReject, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[700])),
+                        child: Text(AppLocalizations.of(context).pReject, style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: Colors.grey[700])),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
@@ -2365,7 +2347,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             }
                           }
                         },
-                        child: Text(AppLocalizations.of(context).partnerAccept, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+                        child: Text(AppLocalizations.of(context).partnerAccept, style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
@@ -2378,7 +2360,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           const SizedBox(height: 16),
           Text(
             'OUTGOING REQUESTS',
-            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText, letterSpacing: 1.1),
+            style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText, letterSpacing: 1.1),
           ),
           const SizedBox(height: 8),
           ..._outgoingInvitations.map((inv) {
@@ -2388,8 +2370,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: BlushyColors.surface,
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: BlushyColors.border),
               ),
               child: Row(
@@ -2402,11 +2384,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       children: [
                         Text(
                           receiverEmail,
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.text),
                         ),
                         Text(
                           'Status: $status',
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
                         ),
                       ],
                     ),
@@ -2415,11 +2397,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       AppLocalizations.of(context).pPending,
-                      style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amber[800]),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amber[800]),
                     ),
                   ),
                 ],
@@ -2439,12 +2421,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         children: [
           Text(
             'Connect With Your Partner',
-            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
+            style: GoogleFonts.manrope(height: 1.5, fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
           ),
           const SizedBox(height: 6),
           Text(
             'Enter your partner\'s registered email address to send a connection request.',
-            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+            style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
           ),
           const SizedBox(height: 20),
           TextField(
@@ -2530,7 +2512,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   : const Icon(Icons.send_rounded, size: 18),
               label: Text(
                 _isSendingInvite ? 'Sending...' : 'Send Invitation',
-                style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -2540,7 +2522,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const Expanded(child: Divider()),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('OR', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText)),
+                child: Text('OR', style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText)),
               ),
               const Expanded(child: Divider()),
             ],
@@ -2549,8 +2531,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: BlushyColors.surface,
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: BlushyColors.border),
             ),
             child: Column(
@@ -2562,14 +2544,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     const SizedBox(width: 8),
                     Text(
                       AppLocalizations.of(context).partnerInviteLinkTitle,
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Generate a private, single-use link to share directly via WhatsApp, SMS, or messaging apps.',
-                  style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                  style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -2611,14 +2593,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       messenger.showSnackBar(
                         const SnackBar(
                           content: Text('Invite link copied to clipboard! 📋'),
-                          backgroundColor: Color(0xFF10B981),
+                          backgroundColor: BlushyColors.success,
                         ),
                       );
                     },
                     icon: const Icon(Icons.copy_rounded, size: 16),
                     label: Text(
                       'Generate & Copy Link',
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -2636,7 +2618,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               style: TextButton.styleFrom(foregroundColor: BlushyColors.primary),
               label: Text(
                 AppLocalizations.of(context).partnerHaveInviteCode,
-                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -2673,23 +2655,23 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           children: [
             Text(
               AppLocalizations.of(context).pShareThisInvitation,
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
               'Send them the link, or read out the code for them to enter in their app. It expires in 48 hours.',
-              style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 13, color: BlushyColors.secondaryText),
             ),
             const SizedBox(height: 20),
             SelectableText(
               url,
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.primary),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.primary),
             ),
             if (code != null) ...[
               const SizedBox(height: 20),
               Text(
                 'INVITE CODE',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(height: 1.5, 
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.5,
@@ -2716,7 +2698,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   if (sheetContext.mounted) Navigator.of(sheetContext).pop();
                 },
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                label: Text('Copy link', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                label: Text('Copy link', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -2757,7 +2739,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('🎉 Connected with your partner successfully!'),
-                backgroundColor: Color(0xFF10B981),
+                backgroundColor: BlushyColors.success,
               ),
             );
             _fetchPartnerData();
@@ -2776,12 +2758,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               children: [
                 Text(
                   AppLocalizations.of(context).partnerEnterInviteCode,
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Paste the code your partner shared with you.',
-                  style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
+                  style: GoogleFonts.manrope(height: 1.5, fontSize: 13, color: BlushyColors.secondaryText),
                 ),
                 const SizedBox(height: 20),
                 TextField(
@@ -2805,7 +2787,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: submit,
-                    child: Text(AppLocalizations.of(context).pConnect, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                    child: Text(AppLocalizations.of(context).pConnect, style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -2836,7 +2818,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           'title': 'Partner Connected',
           'time': 'Connected with $partnerIdentifier • $connectionDuration',
           'icon': Icons.favorite_rounded,
-          'color': const Color(0xFFFDF2F2),
+          'color': BlushyColors.lutealSoft,
           'enabled': true,
           'onTap': () => setState(() => _selectedTabIndex = 2), // Messenger
         }
@@ -2845,7 +2827,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           'title': 'Invite Your Partner',
           'time': 'Link accounts to unlock live cycle sharing and messaging',
           'icon': Icons.person_add_rounded,
-          'color': const Color(0xFFFDF2F2),
+          'color': BlushyColors.lutealSoft,
           'enabled': true,
           'onTap': () => _showPartnerConnectionsModal(),
         },
@@ -2858,7 +2840,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           'title': 'Privacy & Sharing',
           'time': 'Choose what your partner can see. Nothing is shared until you say so.',
           'icon': Icons.shield_outlined,
-          'color': const Color(0xFFF3EEFA),
+          'color': BlushyColors.lutealSoft,
           'enabled': true,
           'onTap': () => _openSharingPanel(),
         },
@@ -2866,7 +2848,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         'title': 'Bouquet',
         'time': 'Send a postcard and a flower bloom',
         'icon': Icons.local_florist_rounded,
-        'color': const Color(0xFFFDF2F2),
+        'color': BlushyColors.lutealSoft,
         'enabled': _hasPartner,
         'onTap': () => _openPartnerTab(1),
       },
@@ -2874,7 +2856,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         'title': 'Message',
         'time': 'Chat privately with your partner',
         'icon': Icons.chat_bubble_outline_rounded,
-        'color': const Color(0xFFF3EEFA),
+        'color': BlushyColors.lutealSoft,
         'enabled': _hasPartner,
         'onTap': () => _openPartnerTab(2),
       },
@@ -2882,7 +2864,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         'title': 'Shared Activity',
         'time': 'Gratitude Checklist & Couple Challenges',
         'icon': Icons.task_alt_rounded,
-        'color': const Color(0xFFF3FAF6),
+        'color': BlushyColors.successSoft,
         'enabled': _hasPartner,
         'onTap': () => _openPartnerTab(3),
       },
@@ -2890,7 +2872,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         'title': 'Time Capsule Letters',
         'time': 'Sealed milestones and personal messages',
         'icon': Icons.mail_outline_rounded,
-        'color': const Color(0xFFFFF9F2),
+        'color': BlushyColors.background,
         'enabled': _hasPartner,
         'onTap': () => _openPartnerTab(4),
       },
@@ -2898,7 +2880,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         'title': 'Memory Book',
         'time': 'The scrapbook the two of you keep',
         'icon': Icons.photo_library_outlined,
-        'color': const Color(0xFFF3FAF6),
+        'color': BlushyColors.successSoft,
         'enabled': _hasPartner,
         'onTap': () => _openPartnerTab(5),
       },
@@ -2907,7 +2889,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           'title': 'Ask Relationship AI',
           'time': 'Talk something through with Docsy',
           'icon': Icons.psychology_alt_rounded,
-          'color': const Color(0xFFF3EEFA),
+          'color': BlushyColors.lutealSoft,
           'enabled': _hasPartner,
           'onTap': () => _openPartnerTab(6),
         },
@@ -2915,7 +2897,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         'title': 'Surprise',
         'time': 'Send a small gift, unannounced',
         'icon': Icons.card_giftcard_rounded,
-        'color': const Color(0xFFFFF9F2),
+        'color': BlushyColors.background,
         'enabled': _hasPartner,
         'onTap': () => _openPartnerTab(7),
       },
@@ -2929,7 +2911,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 ? 'Nothing planted yet (Tap to tend)'
                 : '$_flowersCount flowers, $_treesCount trees together (Tap to tend)'),
         'icon': Icons.local_florist_rounded,
-        'color': const Color(0xFFF3FAF6),
+        'color': BlushyColors.successSoft,
         'enabled': _hasPartner,
         'onTap': () {
           // The garden is shared, so growing one alone is the same empty room
@@ -2963,16 +2945,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  color: BlushyColors.surface,
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: BlushyColors.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: BlushyColors.dark.withValues(alpha: 0.01),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+
                 ),
                 child: Row(
                   children: [
@@ -2991,12 +2967,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         children: [
                           Text(
                             evt['title'] as String,
-                            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                            style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
                           ),
                           const SizedBox(height: 3),
                           Text(
                             evt['time'] as String,
-                            style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                            style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.secondaryText),
                           ),
                         ],
                       ),
@@ -3049,7 +3025,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 0),
           child: Text(
             'Recent Moments',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(height: 1.5, 
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -3077,15 +3053,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: BlushyColors.background,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: BlushyColors.border),
-                    boxShadow: [
-                      BoxShadow(
-                        color: BlushyColors.dark.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3094,12 +3064,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       const SizedBox(height: 14),
                       Text(
                         mom['title'] as String,
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         mom['desc'] as String,
-                        style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.secondaryText),
                       ),
                     ],
                   ),
@@ -3144,7 +3114,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               CircleAvatar(
                 backgroundColor: BlushyColors.primary.withValues(alpha: 0.1),
                 radius: 18,
-                child: Text('💌', style: GoogleFonts.poppins(fontSize: 16)),
+                child: Text('💌', style: GoogleFonts.manrope(height: 1.5, fontSize: 16)),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -3153,11 +3123,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   children: [
                     Text(
                       currentRole == 'partner' ? 'Her Space' : 'Partner',
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.w700),
                     ),
                     Text(
                       AppLocalizations.of(context).pLiveSynchronized,
-                      style: GoogleFonts.poppins(fontSize: 9, color: BlushyColors.success, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 9, color: BlushyColors.success, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -3167,10 +3137,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _isMessageDecoderActive ? const Color(0xFFF3EFFF) : BlushyColors.background,
-                    borderRadius: BorderRadius.circular(12),
+                    color: _isMessageDecoderActive ? BlushyColors.lutealSoft : BlushyColors.background,
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: _isMessageDecoderActive ? const Color(0xFF9D7BFF) : BlushyColors.border,
+                      color: _isMessageDecoderActive ? BlushyColors.accent : BlushyColors.border,
                     ),
                   ),
                   child: Row(
@@ -3179,15 +3149,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       Icon(
                         Icons.auto_awesome_rounded,
                         size: 12,
-                        color: _isMessageDecoderActive ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
+                        color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         _isMessageDecoderActive ? 'Decoder ON' : 'Decoder OFF',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
-                          color: _isMessageDecoderActive ? const Color(0xFF6F42F5) : BlushyColors.secondaryText,
+                          color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
                         ),
                       ),
                     ],
@@ -3217,12 +3187,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         const SizedBox(height: 10),
                         Text(
                           AppLocalizations.of(context).partnerNoMessages,
-                          style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 13, color: BlushyColors.secondaryText, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           AppLocalizations.of(context).partnerSayHello,
-                          style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
                         ),
                       ],
                     ),
@@ -3281,7 +3251,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFF3EFEA),
+                    color: BlushyColors.taupe,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.add_rounded, color: BlushyColors.dark, size: 18),
@@ -3292,8 +3262,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF9F7F5),
-                    borderRadius: BorderRadius.circular(12),
+                    color: BlushyColors.background,
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: BlushyColors.border),
                   ),
                   child: Row(
@@ -3301,7 +3271,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       Expanded(
                         child: TextField(
                           controller: _msgController,
-                          style: GoogleFonts.poppins(fontSize: 13),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 13),
                           decoration: const InputDecoration(
                             hintText: 'Talk to Partner...',
                             border: InputBorder.none,
@@ -3335,8 +3305,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       margin: const EdgeInsets.symmetric(vertical: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: BlushyColors.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Column(
@@ -3348,19 +3318,19 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const SizedBox(width: 8),
               Text(
                 msg['title'] ?? '',
-                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.warning),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.w700, color: BlushyColors.warning),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             msg['subtitle'] ?? '',
-            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+            style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           Text(
             msg['text'] ?? '',
-            style: GoogleFonts.poppins(fontSize: 11, color: BlushyColors.secondaryText),
+            style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
           ),
           const SizedBox(height: 12),
           GestureDetector(
@@ -3372,7 +3342,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
-              child: Text(AppLocalizations.of(context).pCompleteCheckIn, style: GoogleFonts.poppins(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700)),
+              child: Text(AppLocalizations.of(context).pCompleteCheckIn, style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -3402,16 +3372,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           width: 290,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isMe ? const Color(0xFFFFF0F3) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFF2C6D0), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFE8A0B4).withValues(alpha: 0.18),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            color: isMe ? BlushyColors.lutealSoft : BlushyColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: BlushyColors.secondary, width: 1.5),
+
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3421,7 +3385,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFFADDE3),
+                      color: BlushyColors.lutealSoft,
                       shape: BoxShape.circle,
                     ),
                     child: const Text('💐', style: TextStyle(fontSize: 22)),
@@ -3433,11 +3397,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       children: [
                         Text(
                           isMe ? 'You sent a Bouquet' : '$senderName sent a Bouquet',
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
                         ),
                         Text(
                           AppLocalizations.of(context).pDigitalFlowerGift,
-                          style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFFE8A0B4), fontWeight: FontWeight.w600),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.secondary, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -3449,16 +3413,16 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFAF0F2)),
+                  color: BlushyColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: BlushyColors.lutealSoft),
                 ),
                 child: Text(
                   '“$message”',
                   style: GoogleFonts.caveat(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF5C3841),
+                    color: BlushyColors.text,
                     height: 1.3,
                   ),
                 ),
@@ -3474,8 +3438,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8A0B4),
-                    borderRadius: BorderRadius.circular(12),
+                    color: BlushyColors.secondary,
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   alignment: Alignment.center,
                   child: Row(
@@ -3485,7 +3449,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       const SizedBox(width: 6),
                       Text(
                         'Open Bouquet & Garden',
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ],
                   ),
@@ -3497,7 +3461,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   alignment: Alignment.bottomRight,
                   child: Text(
                     timeDisplay,
-                    style: GoogleFonts.poppins(fontSize: 9, color: BlushyColors.secondaryText),
+                    style: GoogleFonts.manrope(height: 1.5, fontSize: 9, color: BlushyColors.secondaryText),
                   ),
                 ),
               ],
@@ -3559,7 +3523,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 decoration: isMe
                     ? BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [BlushyColors.primary, Color(0xFFFF4B5C)],
+                          colors: [BlushyColors.primary, BlushyColors.primary],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -3569,30 +3533,18 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           bottomLeft: Radius.circular(18),
                           bottomRight: Radius.circular(18),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: BlushyColors.primary.withValues(alpha: 0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+
                       )
                     : BoxDecoration(
-                        color: Colors.white,
+                        color: BlushyColors.surface,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(4),
                           topRight: Radius.circular(18),
                           bottomLeft: Radius.circular(18),
                           bottomRight: Radius.circular(18),
                         ),
-                        border: Border.all(color: const Color(0xFFE8E2D9), width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        border: Border.all(color: BlushyColors.border, width: 1.2),
+
                       ),
                 child: Column(
                   crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -3602,18 +3554,18 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.play_arrow_rounded, color: isMe ? Colors.white : const Color(0xFF6F42F5)),
+                          Icon(Icons.play_arrow_rounded, color: isMe ? Colors.white : BlushyColors.primary),
                           const SizedBox(width: 6),
                           ...List.generate(12, (index) => Container(
                             margin: const EdgeInsets.symmetric(horizontal: 1.5),
                             width: 2,
                             height: 6.0 + math.Random().nextDouble() * 12.0,
-                            color: isMe ? Colors.white70 : const Color(0xFF6F42F5),
+                            color: isMe ? Colors.white70 : BlushyColors.primary,
                           )),
                           const SizedBox(width: 8),
                           Text(
                             msg['duration'] ?? '',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(height: 1.5, 
                               fontSize: 10,
                               color: isMe ? Colors.white70 : BlushyColors.secondaryText,
                             ),
@@ -3623,11 +3575,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     ] else ...[
                       Text(
                         msg['text'] ?? '',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13.5,
                           height: 1.4,
                           fontWeight: FontWeight.w500,
-                          color: isMe ? Colors.white : const Color(0xFF2D2529),
+                          color: isMe ? Colors.white : BlushyColors.text,
                         ),
                       ),
                     ],
@@ -3635,7 +3587,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       const SizedBox(height: 3),
                       Text(
                         timeDisplay,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 9,
                           color: isMe ? Colors.white.withValues(alpha: 0.75) : BlushyColors.secondaryText.withValues(alpha: 0.7),
                         ),
@@ -3654,9 +3606,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3EFFF),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFD6C8FF)),
+                        color: BlushyColors.lutealSoft,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: BlushyColors.lutealSoft),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -3665,19 +3617,19 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             const SizedBox(
                               width: 10,
                               height: 10,
-                              child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xFF6F42F5)),
+                              child: CircularProgressIndicator(strokeWidth: 1.5, color: BlushyColors.primary),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               AppLocalizations.of(context).partnerSiaDecoding,
-                              style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF6F42F5)),
+                              style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w600, color: BlushyColors.primary),
                             ),
                           ] else ...[
-                            const Icon(Icons.auto_awesome_rounded, size: 12, color: Color(0xFF6F42F5)),
+                            const Icon(Icons.auto_awesome_rounded, size: 12, color: BlushyColors.primary),
                             const SizedBox(width: 4),
                             Text(
                               "✨ Decode with Docsy",
-                              style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF6F42F5)),
+                              style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary),
                             ),
                           ],
                         ],
@@ -3691,39 +3643,33 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.76),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFAF7FF),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFD6C8FF), width: 1.2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF6F42F5).withValues(alpha: 0.06),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: BlushyColors.background,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: BlushyColors.lutealSoft, width: 1.2),
+
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6F42F5), size: 14),
+                          const Icon(Icons.auto_awesome_rounded, color: BlushyColors.primary, size: 14),
                           const SizedBox(width: 6),
                           Text(
                             "Docsy Decoded Meaning",
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF6F42F5)),
+                            style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.primary),
                           ),
                           const Spacer(),
                           if (decodedData['emotionalTone'] != null)
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6F42F5).withValues(alpha: 0.1),
+                                color: BlushyColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 decodedData['emotionalTone'],
-                                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: const Color(0xFF6F42F5)),
+                                style: GoogleFonts.manrope(height: 1.5, fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.primary),
                               ),
                             ),
                         ],
@@ -3731,18 +3677,18 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       const SizedBox(height: 6),
                       Text(
                         decodedData['decodedMeaning'] ?? '',
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF2C2240), height: 1.35),
+                        style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text, height: 1.35),
                       ),
                       if (decodedData['cycleMoodContext'] != null && decodedData['cycleMoodContext'].toString().isNotEmpty) ...[
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.favorite_rounded, size: 11, color: Color(0xFFE8A0B4)),
+                            const Icon(Icons.favorite_rounded, size: 11, color: BlushyColors.secondary),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 decodedData['cycleMoodContext'],
-                                style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                                style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.secondaryText),
                               ),
                             ),
                           ],
@@ -3753,21 +3699,21 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: BlushyColors.surface,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFEFE8FC)),
+                            border: Border.all(color: BlushyColors.lutealSoft),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 AppLocalizations.of(context).partnerSuggestedReply,
-                                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
+                                style: GoogleFonts.manrope(height: 1.5, fontSize: 9, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 "“${decodedData['recommendedReply']}”",
-                                style: GoogleFonts.poppins(fontSize: 11, fontStyle: FontStyle.italic, color: BlushyColors.text),
+                                style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontStyle: FontStyle.italic, color: BlushyColors.text),
                               ),
                               const SizedBox(height: 6),
                               Align(
@@ -3781,12 +3727,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF6F42F5),
+                                      color: BlushyColors.primary,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
                                       AppLocalizations.of(context).partnerUseReply,
-                                      style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                                      style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                                     ),
                                   ),
                                 ),
@@ -3800,12 +3746,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.lightbulb_outline_rounded, size: 12, color: Color(0xFFFFA000)),
+                            const Icon(Icons.lightbulb_outline_rounded, size: 12, color: BlushyColors.accent),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 "Tip: ${decodedData['actionTip']}",
-                                style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF6A5A38), height: 1.3),
+                                style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.secondaryText, height: 1.3),
                               ),
                             ),
                           ],
@@ -3830,15 +3776,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           width: 280,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: BlushyColors.surface,
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 AppLocalizations.of(context).pAiCommunicationHub,
-                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               _buildOverlayActionItem('Rewrite Kindly', Icons.auto_awesome_rounded, () {
@@ -3870,7 +3816,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   Widget _buildOverlayActionItem(String label, IconData icon, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: BlushyColors.primary, size: 18),
-      title: Text(label, style: GoogleFonts.poppins(fontSize: 12)),
+      title: Text(label, style: GoogleFonts.manrope(height: 1.5, fontSize: 12)),
       onTap: onTap,
     );
   }
@@ -3974,11 +3920,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(AppLocalizations.of(context).partnerDateIdeas,
-                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(
               'Based on what your partner has shared. Tap one to send it.',
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
             ),
             const SizedBox(height: 16),
             Flexible(
@@ -3999,20 +3945,20 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: BlushyColors.border),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(title,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                   fontSize: 13, fontWeight: FontWeight.w600)),
                           if (description.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
                               description,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                 fontSize: 11,
                                 color: BlushyColors.secondaryText,
                               ),
@@ -4119,7 +4065,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 : Icon(icon, color: BlushyColors.primary, size: 18),
           ),
           const SizedBox(height: 6),
-          Text(label, style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.text)),
+          Text(label, style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.text)),
         ],
       ),
     );
@@ -4138,7 +4084,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             Expanded(
               child: Text(
                 AppLocalizations.of(context).partnerSharedActivities,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(height: 1.5, 
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                   color: BlushyColors.secondaryText,
@@ -4177,7 +4123,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         children: [
           Text(
             headline,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(height: 1.5, 
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -4186,7 +4132,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           const SizedBox(height: 6),
           Text(
             body,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 12.5,
               height: 1.5,
               color: BlushyColors.secondaryText,
@@ -4252,7 +4198,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   children: [
                     Text(
                       activity.title,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: BlushyColors.text,
@@ -4261,7 +4207,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     const SizedBox(height: 2),
                     Text(
                       activity.description,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 12,
                         color: BlushyColors.secondaryText,
                       ),
@@ -4269,7 +4215,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     const SizedBox(height: 4),
                     Text(
                       statusLine,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: activity.isCompleted
@@ -4303,8 +4249,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: BlushyColors.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: BlushyColors.border),
       ),
       child: Row(
@@ -4316,11 +4262,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w700),
               ),
               Text(
                 sub,
-                style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.secondaryText),
               ),
             ],
           ),
@@ -4407,11 +4353,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.edit_note_rounded, color: Color(0xFF6F42F5), size: 24),
+                      const Icon(Icons.edit_note_rounded, color: BlushyColors.primary, size: 24),
                       const SizedBox(width: 10),
                       Text(
                         "Write a Love Letter",
-                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
                       ),
                     ],
                   ),
@@ -4429,13 +4375,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             margin: const EdgeInsets.only(right: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: isSel ? const Color(0xFF6F42F5) : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: isSel ? const Color(0xFF6F42F5) : BlushyColors.border),
+                              color: isSel ? BlushyColors.primary : BlushyColors.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: isSel ? BlushyColors.primary : BlushyColors.border),
                             ),
                             child: Text(
                               style,
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.manrope(height: 1.5, 
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: isSel ? Colors.white : BlushyColors.text,
@@ -4452,13 +4398,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      color: BlushyColors.surface,
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: BlushyColors.border),
                     ),
                     child: TextField(
                       controller: titleController,
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold),
                       decoration: const InputDecoration(
                         hintText: "Letter Title (e.g. For our special day)",
                         border: InputBorder.none,
@@ -4472,15 +4418,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        color: BlushyColors.surface,
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: BlushyColors.border),
                       ),
                       child: TextField(
                         controller: bodyController,
                         maxLines: null,
                         expands: true,
-                        style: GoogleFonts.poppins(fontSize: 13, height: 1.6),
+                        style: GoogleFonts.manrope(fontSize: 13, height: 1.6),
                         decoration: const InputDecoration(
                           hintText: "Pour your heart out here... Your thoughts, gratitude, or memories for your partner.",
                           border: InputBorder.none,
@@ -4495,7 +4441,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     children: [
                       Checkbox(
                         value: sealForAnniversary,
-                        activeColor: const Color(0xFF6F42F5),
+                        activeColor: BlushyColors.primary,
                         onChanged: (val) => setModalState(() => sealForAnniversary = val ?? false),
                       ),
                       Expanded(
@@ -4504,7 +4450,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           // sets a flag on the letter; nothing delivers it on
                           // a date, so it no longer promises that.
                           "Seal it, and open it together later",
-                          style: GoogleFonts.poppins(fontSize: 11.5, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 11.5, color: BlushyColors.secondaryText),
                         ),
                       ),
                     ],
@@ -4517,7 +4463,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     height: 48,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6F42F5),
+                        backgroundColor: BlushyColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -4589,7 +4535,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                 ? 'Letter sealed and sent to your partner.'
                                 : 'Letter saved. It will not have reached your partner.'),
                             backgroundColor: delivered
-                                ? const Color(0xFF10B981)
+                                ? BlushyColors.success
                                 : BlushyColors.primary,
                           ),
                         );
@@ -4597,7 +4543,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       icon: const Icon(Icons.mark_email_read_rounded, size: 18),
                       label: Text(
                         "Seal & Send to Partner 💌",
-                        style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -4622,7 +4568,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           decoration: BoxDecoration(
             color: BlushyColors.background,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: const Color(0xFFE8DCCF)),
+            border: Border.all(color: BlushyColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -4643,10 +4589,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6F42F5).withValues(alpha: 0.1),
+                      color: BlushyColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.mail_rounded, color: Color(0xFF6F42F5), size: 20),
+                    child: const Icon(Icons.mail_rounded, color: BlushyColors.primary, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -4655,11 +4601,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       children: [
                         Text(
                           letter['title'] ?? 'Love Letter',
-                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text),
                         ),
                         Text(
                           letter['stationery'] ?? 'Stationery',
-                          style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.secondaryText),
                         ),
                       ],
                     ),
@@ -4676,21 +4622,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    color: BlushyColors.surface,
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: BlushyColors.border),
-                    boxShadow: [
-                      BoxShadow(
-                        color: BlushyColors.dark.withValues(alpha: 0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+
                   ),
                   child: SingleChildScrollView(
                     child: Text(
                       letter['body'] ?? '',
-                      style: GoogleFonts.poppins(fontSize: 13.5, height: 1.7, color: const Color(0xFF2D2529)),
+                      style: GoogleFonts.manrope(fontSize: 13.5, height: 1.7, color: BlushyColors.text),
                     ),
                   ),
                 ),
@@ -4714,19 +4654,19 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           children: [
             Text(
               AppLocalizations.of(context).partnerLettersTitle,
-              style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 9, fontWeight: FontWeight.w700, color: BlushyColors.secondaryText),
             ),
             ElevatedButton.icon(
               onPressed: () => _showWriteLetterModal(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6F42F5),
+                backgroundColor: BlushyColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
               icon: const Icon(Icons.create_rounded, size: 14),
-              label: Text(AppLocalizations.of(context).partnerWriteLetter, style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold)),
+              label: Text(AppLocalizations.of(context).partnerWriteLetter, style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -4735,8 +4675,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           Container(
             height: 140,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: BlushyColors.surface,
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: BlushyColors.border),
             ),
             alignment: Alignment.center,
@@ -4744,7 +4684,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             child: Text(
               AppLocalizations.of(context).partnerNoLetters,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
             ),
           ),
         ...letters.map((letter) {
@@ -4757,16 +4697,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  color: BlushyColors.surface,
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: BlushyColors.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: BlushyColors.dark.withValues(alpha: 0.01),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+
                 ),
                 child: Row(
                   children: [
@@ -4774,13 +4708,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: isSealed
-                            ? const Color(0xFFFFF9F2)
-                            : const Color(0xFF6F42F5).withValues(alpha: 0.08),
+                            ? BlushyColors.background
+                            : BlushyColors.primary.withValues(alpha: 0.08),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         isSealed ? Icons.lock_clock_rounded : Icons.mail_rounded,
-                        color: isSealed ? const Color(0xFFF59E0B) : const Color(0xFF6F42F5),
+                        color: isSealed ? BlushyColors.accent : BlushyColors.primary,
                         size: 20,
                       ),
                     ),
@@ -4791,14 +4725,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         children: [
                           Text(
                             letter['title'] ?? 'Letter',
-                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
+                            style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold, color: BlushyColors.text),
                           ),
                           const SizedBox(height: 3),
                           Text(
                             isSealed
                                 ? 'Sealed Time Capsule • Tap to read'
                                 : (letter['isFromMe'] == true ? 'Sent to Partner • Tap to view' : 'Received from Partner • Tap to read'),
-                            style: GoogleFonts.poppins(fontSize: 10.5, color: BlushyColors.secondaryText),
+                            style: GoogleFonts.manrope(height: 1.5, fontSize: 10.5, color: BlushyColors.secondaryText),
                           ),
                         ],
                       ),
@@ -4841,7 +4775,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           children: [
             Text(
               AppLocalizations.of(context).partnerMemoryBook,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(height: 1.5, 
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
                 color: BlushyColors.secondaryText,
@@ -4850,7 +4784,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             if (completed.isNotEmpty)
               Text(
                 completed.length == 1 ? '1 memory' : '${completed.length} memories',
-                style: GoogleFonts.poppins(fontSize: 10, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.secondaryText),
               ),
           ],
         ),
@@ -4866,8 +4800,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           Container(
             height: 160,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: BlushyColors.surface,
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: BlushyColors.border),
             ),
             alignment: Alignment.center,
@@ -4875,7 +4809,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             child: Text(
               AppLocalizations.of(context).partnerNoMemories,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
             ),
           )
         else
@@ -4886,8 +4820,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: BlushyColors.surface,
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: BlushyColors.border),
               ),
               child: Row(
@@ -4895,13 +4829,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFF3EEFA),
+                      color: BlushyColors.lutealSoft,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.check_rounded,
                       size: 20,
-                      color: Color(0xFF6F42F5),
+                      color: BlushyColors.primary,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -4911,7 +4845,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       children: [
                         Text(
                           activity.title,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(height: 1.5, 
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: BlushyColors.text,
@@ -4920,7 +4854,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         const SizedBox(height: 3),
                         Text(
                           _describeMemory(activity, finishedByMe),
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(height: 1.5, 
                             fontSize: 10.5,
                             color: BlushyColors.secondaryText,
                           ),
@@ -4932,15 +4866,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6F42F5).withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
+                        color: BlushyColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '${activity.completionCount}x',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF6F42F5),
+                          color: BlushyColors.primary,
                         ),
                       ),
                     ),
@@ -4980,36 +4914,36 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFFF3EEFA),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE4D6F1)),
+            color: BlushyColors.lutealSoft,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: BlushyColors.lutealSoft),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 AppLocalizations.of(context).partnerSiaAdviceTitle,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(height: 1.5, 
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF6F42F5),
+                  color: BlushyColors.primary,
                 ),
               ),
               const SizedBox(height: 10),
               if (connectionId == null)
                 Text(
                   'Connect with your partner first, and Docsy can help you think things through together.',
-                  style: GoogleFonts.poppins(fontSize: 12, height: 1.45),
+                  style: GoogleFonts.manrope(fontSize: 12, height: 1.45),
                 )
               else if (state.argumentModeActive)
                 Text(
                   AppLocalizations.of(context).pYourPartnerHasChosen,
-                  style: GoogleFonts.poppins(fontSize: 12, height: 1.45),
+                  style: GoogleFonts.manrope(fontSize: 12, height: 1.45),
                 )
               else
                 Text(
                   AppLocalizations.of(context).partnerSiaAdviceExplainer,
-                  style: GoogleFonts.poppins(fontSize: 12, height: 1.45),
+                  style: GoogleFonts.manrope(fontSize: 12, height: 1.45),
                 ),
             ],
           ),
@@ -5021,16 +4955,16 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE4D6F1)),
+                color: BlushyColors.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: BlushyColors.lutealSoft),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     _relationshipAnswer!,
-                    style: GoogleFonts.poppins(fontSize: 13, height: 1.5),
+                    style: GoogleFonts.manrope(fontSize: 13, height: 1.5),
                   ),
                   if (_relationshipUsedPartnerData != null) ...[
                     const SizedBox(height: 10),
@@ -5040,7 +4974,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           // knows something and advice that is guessing.
                           ? 'Based on what your partner shares with you.'
                           : 'Your partner has not shared data Docsy could use here.',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(height: 1.5, 
                         fontSize: 10,
                         color: BlushyColors.secondaryText,
                       ),
@@ -5054,7 +4988,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           if (_relationshipError != null) ...[
             Text(
               _relationshipError!,
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.primary),
+              style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.primary),
             ),
             const SizedBox(height: 12),
           ],
@@ -5063,15 +4997,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             minLines: 2,
             maxLines: 4,
             maxLength: 1000,
-            style: GoogleFonts.poppins(fontSize: 13),
+            style: GoogleFonts.manrope(height: 1.5, fontSize: 13),
             decoration: InputDecoration(
               hintText: AppLocalizations.of(context).pWhatWouldYouLike,
-              hintStyle: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
+              hintStyle: GoogleFonts.manrope(height: 1.5, fontSize: 13, color: BlushyColors.secondaryText),
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE4D6F1)),
+                borderSide: const BorderSide(color: BlushyColors.lutealSoft),
               ),
             ),
           ),
@@ -5079,7 +5013,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6F42F5),
+                backgroundColor: BlushyColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -5094,7 +5028,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   : const Icon(Icons.psychology_alt_rounded, size: 16),
               label: Text(
                 _relationshipLoading ? 'Thinking…' : 'Ask Docsy',
-                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold),
+                style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -5219,7 +5153,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         onPressed: _onFloatingActionTap,
         label: Text(
           _getFloatingActionText(),
-          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+          style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
         ),
         icon: Icon(_getFloatingActionIcon(), color: Colors.white, size: 16),
       ),

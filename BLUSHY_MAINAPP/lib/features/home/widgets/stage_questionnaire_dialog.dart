@@ -913,7 +913,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                       ),
                       child: Text(
                         widget.isEditing ? "EDIT TOPIC ANSWERS" : "ADD TOPIC",
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: BlushyColors.primary,
@@ -924,7 +924,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                     const SizedBox(width: 8),
                     Text(
                       widget.stageTitle,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: BlushyColors.text,
@@ -1001,7 +1001,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                     ),
                     child: Text(
                       "Back",
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
+                      style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1026,7 +1026,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                             isLastStep
                                 ? (widget.isEditing ? "Save & Update Dashboard" : "Complete & Add to Dashboard")
                                 : "Continue",
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
@@ -1061,12 +1061,12 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       children: [
         Text(
           title,
-          style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w600, color: BlushyColors.text),
+          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 6),
         Text(
           subtitle,
-          style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 20),
         ...options.map((opt) {
@@ -1112,7 +1112,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                     Expanded(
                       child: Text(
                         opt,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 14,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                           color: BlushyColors.text,
@@ -1140,12 +1140,12 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       children: [
         Text(
           title,
-          style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w600, color: BlushyColors.text),
+          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 6),
         Text(
           subtitle,
-          style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 20),
         ...options.map((opt) {
@@ -1195,7 +1195,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                     Expanded(
                       child: Text(
                         opt,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 14,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                           color: BlushyColors.text,
@@ -1223,12 +1223,12 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       children: [
         Text(
           title,
-          style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w600, color: BlushyColors.text),
+          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 6),
         Text(
           subtitle,
-          style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 24),
         InkWell(
@@ -1282,7 +1282,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                       _selectedDate == null
                           ? "Tap to select date"
                           : "${_selectedDate!.day} / ${_selectedDate!.month} / ${_selectedDate!.year}",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: _selectedDate == null ? BlushyColors.secondaryText : BlushyColors.text,
@@ -1300,7 +1300,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
           CheckboxListTile(
             title: Text(
               "I don't remember the exact date",
-              style: GoogleFonts.poppins(fontSize: 14, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
             ),
             value: _answers['${storageKey}_unknown'] == true,
             activeColor: BlushyColors.primary,

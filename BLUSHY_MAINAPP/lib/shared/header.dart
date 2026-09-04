@@ -4,6 +4,8 @@ import '../theme/colors.dart';
 import '../services/language_preference.dart';
 import '../features/home/widgets/my_health_screen.dart';
 import '../core/theme.dart' hide BlushyColors;
+import 'blushy_surface.dart';
+import '../theme/scale.dart';
 
 import '../services/auth_storage.dart';
 import '../features/partner/presentation/partner_profile_screen.dart';
@@ -33,7 +35,9 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
       color: BlushyColors.background,
       child: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: BlushyTheme.getPagePadding(context), vertical: 12.0),
+          padding: EdgeInsets.symmetric(
+              horizontal: BlushyTheme.getPagePadding(context),
+              vertical: BlushySpace.sm),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -52,7 +56,16 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
                       const SizedBox(width: 4),
                     ],
                     if (title == null)
-                      const _Wordmark()
+                      // Scales down rather than overflowing on a narrow phone
+                      // or under a wide fallback font. The controls on the
+                      // right are fixed; the name is the part that can give.
+                      const Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: _Wordmark(),
+                        ),
+                      )
                     else
                       Expanded(
                         // The name is given to screen readers as written. The
@@ -67,7 +80,7 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
                             title!.toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: _headerLeadingSize,
                               fontWeight: FontWeight.w700,
                               // Spaced like the wordmark it stands in for;
@@ -94,35 +107,44 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
                     builder: (context, code, _) => GestureDetector(
                       onTap: () => _showLanguagePicker(context),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: BlushyColors.border),
-                          borderRadius: BorderRadius.circular(12),
+                        padding: const EdgeInsets.fromLTRB(
+                            BlushySpace.md, BlushySpace.sm, BlushySpace.sm, BlushySpace.sm),
+                        decoration: const BoxDecoration(
+                          color: BlushyColors.surface,
+                          // A quiet outlined pill, like the two round buttons
+                          // beside it, so the three read as one set of
+                          // controls.
+                          borderRadius: BorderRadius.all(Radius.circular(24)),
+                          border: Border.fromBorderSide(BlushySurface.edge),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.language_rounded, size: 14, color: BlushyColors.secondaryText),
-                            const SizedBox(width: 4),
+                            const Icon(Icons.language_rounded,
+                                size: 15, color: BlushyColors.text),
+                            const SizedBox(width: BlushySpace.xs),
                             Text(
                               LanguagePreference.shortLabel,
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                              style: BlushyType.caption(
                                 color: BlushyColors.text,
+                                weight: FontWeight.w600,
                               ),
                             ),
+                            // Says the chip opens something. It was a bare
+                            // label that happened to be tappable.
+                            const Icon(Icons.keyboard_arrow_down_rounded,
+                                size: 16, color: BlushyColors.text),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: BlushySpace.sm),
 
                   // The way into the notification inbox. The server has been
                   // recording these all along with nothing to open them.
                   const _NotificationBell(),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: BlushySpace.sm),
 
                   // Profile Button
                   GestureDetector(
@@ -139,15 +161,16 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
                       }
                     },
                     child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: BlushyColors.border),
+                      width: BlushySpace.control,
+                      height: BlushySpace.control,
+                      decoration: const BoxDecoration(
+                        color: BlushyColors.surface,
                         shape: BoxShape.circle,
+                        border: Border.fromBorderSide(BlushySurface.edge),
                       ),
                       alignment: Alignment.center,
-                      child: const Icon(Icons.person_outline_rounded, size: 16, color: BlushyColors.text),
+                      child: const Icon(Icons.person_outline_rounded,
+                          size: 18, color: BlushyColors.text),
                     ),
                   ),
                 ],
@@ -169,13 +192,14 @@ class _Wordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The display face, per the spec: the wordmark is the brand anchor and
+    // sets the editorial tone before anything else on the page does.
     return RichText(
-      text: const TextSpan(
-        style: TextStyle(
-          fontFamily: 'Ada Hybrid',
+      text: TextSpan(
+        style: GoogleFonts.instrumentSerif(
           fontSize: _headerLeadingSize,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.5,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0.5,
         ),
         children: [
           TextSpan(
@@ -216,7 +240,7 @@ void _showLanguagePicker(BuildContext context) {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
             child: Text(
               'App language',
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+              style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           Padding(
@@ -227,12 +251,12 @@ void _showLanguagePicker(BuildContext context) {
               // before the app itself was localised.
               'Changes the language across the app, including how Docsy '
               'replies. Anything not translated yet stays in English.',
-              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+              style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
             ),
           ),
           ...LanguagePreference.supported.entries.map(
             (entry) => ListTile(
-              title: Text(entry.value, style: GoogleFonts.poppins(fontSize: 14)),
+              title: Text(entry.value, style: GoogleFonts.manrope(fontSize: 14)),
               trailing: LanguagePreference.code == entry.key
                   ? const Icon(Icons.check_rounded, color: BlushyColors.primary)
                   : null,
@@ -291,17 +315,17 @@ class _NotificationBellState extends State<_NotificationBell> {
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: BlushyColors.border),
+            width: BlushySpace.control,
+            height: BlushySpace.control,
+            decoration: const BoxDecoration(
+              color: BlushyColors.surface,
               shape: BoxShape.circle,
+              border: Border.fromBorderSide(BlushySurface.edge),
             ),
             alignment: Alignment.center,
             child: const Icon(
               Icons.notifications_none_rounded,
-              size: 16,
+              size: 18,
               color: BlushyColors.text,
             ),
           ),

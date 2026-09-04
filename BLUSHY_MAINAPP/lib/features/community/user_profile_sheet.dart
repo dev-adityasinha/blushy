@@ -207,7 +207,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                             ? AppLocalizations.of(context).upAnonymousProfile
                             : AppLocalizations.of(context).upFailedToLoadProfile,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           height: 1.5,
                           color: BlushyColors.secondaryText,
@@ -248,7 +248,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                             _profile!.displayName.isNotEmpty
                                 ? _profile!.displayName[0].toUpperCase()
                                 : 'U',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontWeight: FontWeight.w700,
                               fontSize: 20,
                               color: BlushyColors.text,
@@ -262,7 +262,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                             children: [
                               Text(
                                 _profile!.displayName,
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.manrope(
                                   fontSize: 16.5,
                                   fontWeight: FontWeight.w700,
                                   color: BlushyColors.text,
@@ -275,7 +275,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                                   const SizedBox(width: 4),
                                   Text(
                                     '${_profile!.karma} Karma',
-                                    style: GoogleFonts.poppins(
+                                    style: GoogleFonts.manrope(
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w500,
                                       color: BlushyColors.secondaryText,
@@ -306,7 +306,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                                   )
                                 : Text(
                                     _profile!.isFollowing ? 'Following' : 'Follow',
-                                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600),
                                   ),
                           )
                       ],
@@ -326,7 +326,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                     // Bio section
                     Text(
                       'Biography',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: BlushyColors.secondaryText,
@@ -344,7 +344,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                         child: TextField(
                           controller: _bioController,
                           maxLines: 3,
-                          style: GoogleFonts.poppins(fontSize: 13.5, color: BlushyColors.text),
+                          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.text),
                           decoration: const InputDecoration(
                             hintText: 'Tell the community about yourself...',
                             border: InputBorder.none,
@@ -359,7 +359,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                             onPressed: () => setState(() => _isEditingBio = false),
                             child: Text(
                               AppLocalizations.of(context).upCancel,
-                              style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                              style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -373,7 +373,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                             ),
                             child: Text(
                               AppLocalizations.of(context).upSave,
-                              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                              style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ],
@@ -381,7 +381,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                     ] else ...[
                       Text(
                         _profile!.bio.isNotEmpty ? _profile!.bio : 'No biography added yet.',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.manrope(
                           fontSize: 13.5,
                           color: BlushyColors.text.withValues(alpha: 0.8),
                           height: 1.5,
@@ -394,7 +394,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                           icon: const Icon(Icons.edit_rounded, size: 14, color: BlushyColors.primary),
                           label: Text(
                             'Edit Biography',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
                               color: BlushyColors.primary,
@@ -419,7 +419,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
       children: [
         Text(
           '$value',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: BlushyColors.text,
@@ -428,7 +428,7 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 11,
             color: BlushyColors.secondaryText.withValues(alpha: 0.7),
           ),

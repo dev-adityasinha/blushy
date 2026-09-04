@@ -270,6 +270,17 @@ class CycleState {
   final String? restrictedReason;
   final String? restrictedMessage;
 
+  /// Days of bleeding, from the server's `currentCycle.periodDurationDays`
+  /// (a median of logged periods, or the stated figure). Null where the
+  /// server did not send one. This was in the payload all along and was
+  /// parsed by PeriodPrediction but not here, so the home tab drew a
+  /// constant 5 while the logged figure sat in the same response.
+  final int? periodLengthDays;
+
+  /// The cycle length the server calculated, or null where it did not send
+  /// one.
+  final int? cycleLengthDays;
+
   const CycleState({
     this.lifeStage,
     this.cycleTrackingAvailable = true,
@@ -296,6 +307,8 @@ class CycleState {
     this.lateNotice,
     this.restrictedReason,
     this.restrictedMessage,
+    this.periodLengthDays,
+    this.cycleLengthDays,
   });
 
   /// The predicted date is always an estimate, never a confirmed date
@@ -315,6 +328,8 @@ class CycleState {
       hasData: json['hasData'] == true,
       trackingState: json['trackingState']?.toString(),
       currentCycleDay: ApiParse.intOrNull(current['currentCycleDay']),
+      periodLengthDays: ApiParse.intOrNull(current['periodDurationDays']),
+      cycleLengthDays: ApiParse.intOrNull(json['cycleLengthDays']),
       phase: current['phase']?.toString(),
       cycleStartDate: current['cycleStartDate']?.toString(),
       isCurrentPeriod: current['isCurrentPeriod'] == true,

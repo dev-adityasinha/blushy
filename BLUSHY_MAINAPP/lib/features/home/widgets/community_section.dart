@@ -31,7 +31,7 @@ class BlushyCommunitySection extends StatelessWidget {
                 children: [
                   Text(
                     'Community Spotlight',
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: BlushyColors.text,
@@ -48,7 +48,7 @@ class BlushyCommunitySection extends StatelessWidget {
                     ),
                     child: Text(
                       isPersonalized ? "✨ AI Personalized" : "✨ $fallbackLabel",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 9,
                         fontWeight: FontWeight.w600,
                         color: isPersonalized ? BlushyColors.primary : BlushyColors.secondaryText,
@@ -69,7 +69,7 @@ class BlushyCommunitySection extends StatelessWidget {
                       ? Center(
                           child: Text(
                             "No community posts yet.",
-                            style: GoogleFonts.poppins(fontSize: 12, color: BlushyColors.secondaryText),
+                            style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                           ),
                         )
                       : ListView.separated(
@@ -127,7 +127,7 @@ class BlushyCommunitySection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     tagLabel,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.manrope(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       color: BlushyColors.primary,
@@ -138,7 +138,7 @@ class BlushyCommunitySection extends StatelessWidget {
                 ),
                 Text(
                   post.authorName,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: BlushyColors.secondaryText,
@@ -149,7 +149,7 @@ class BlushyCommunitySection extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               post.title.isNotEmpty ? post.title : post.text,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: BlushyColors.text,
@@ -161,7 +161,7 @@ class BlushyCommunitySection extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               post.text,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 11,
                 color: BlushyColors.secondaryText,
                 height: 1.4,
@@ -180,7 +180,7 @@ class BlushyCommunitySection extends StatelessWidget {
                     const SizedBox(width: 2),
                     Text(
                       "${post.score} votes",
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: BlushyColors.accent,
@@ -190,7 +190,7 @@ class BlushyCommunitySection extends StatelessWidget {
                 ),
                 Text(
                   "${post.commentCount} comments",
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(
                     fontSize: 9,
                     color: BlushyColors.secondaryText,
                   ),

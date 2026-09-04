@@ -197,6 +197,8 @@ class ApiSiaService {
     try {
       final formData = FormData();
       formData.fields.add(MapEntry('message', userMessage));
+      formData.fields.add(
+          MapEntry('languageCode', LanguagePreference.code));
       if (healthContext != null && healthContext.isNotEmpty) {
         formData.fields.add(MapEntry('context', healthContext.toString()));
       }
@@ -348,6 +350,7 @@ class ApiSiaService {
     try {
       final response = await _dio.post(
         '/ai/voice/session',
+        data: {'languageCode': LanguagePreference.code},
         options: _authOptions(),
       );
       if (response.data is Map<String, dynamic>) {
@@ -371,6 +374,7 @@ class ApiSiaService {
     try {
       final parts = mimeType.split('/');
       final formData = FormData.fromMap({
+        'languageCode': LanguagePreference.code,
         'file': MultipartFile.fromBytes(
           bytes,
           filename: filename,

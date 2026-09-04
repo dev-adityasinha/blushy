@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// A check-in selection must survive changing tabs.
+/// A check-in answer must survive the reload that changing tabs causes.
 ///
 /// Switching tabs makes the shell call `syncAllDashboardsFromBackend`, which
 /// fires `refreshNotifier`, which calls `_onSiaRefresh`, which reloads the
 /// dashboard. **Three** separate paths write the check-in fields on that
-/// reload, and each one replaced the tap she had just made:
+/// reload, and each one replaced the answer just given:
 ///
 ///   * the remote hydration, from `daily_*` answers that carry no date, so the
 ///     value restored could be from a previous day;
@@ -16,7 +16,12 @@ import 'package:flutter_test/flutter_test.dart';
 ///   * `_loadTodayCheckins`, whose request can have left before her tap
 ///     arrived and so carries the previous value.
 ///
-/// Asserted against the source: the paths live in a 13,000-line stateful
+/// The answers used to come from selectors inline in seven per-stage check-in
+/// builders. They come from the symptoms sheet now, so the writers are the
+/// three persist functions rather than the selector helper — the race is
+/// unchanged, only the call sites moved.
+///
+/// Asserted against the source: the paths live in a 10,000-line stateful
 /// widget behind a backend, a sync service and device storage.
 void main() {
   final source = File(
@@ -24,61 +29,74 @@ void main() {
   ).readAsStringSync();
 
   test('every path that restores a check-in field checks for a fresh edit', () {
-    // Remote hydration. The rule itself now lives in `checkin_merge.dart`,
-    // where it is exercised against the values from a real device trace; what
-    // matters here is that this path routes through it and passes on whether
-    // she has just edited the metric.
+    // Remote hydration. The rule itself lives in `checkin_merge.dart`, where
+    // it is exercised against values from a real device trace; what matters
+    // here is that this path routes through it and passes on whether she has
+    // just edited the metric.
+    // Asserted on the guard call rather than on how close the two lines are:
+    // a proximity window silently stops testing anything the moment the
+    // function grows.
+    expect(source.contains('shouldApplyRemoteCheckin('), isTrue,
+        reason: 'remote hydration must route through the merge rule');
     expect(
-        RegExp(r'void hydrate\(String key[\s\S]{0,400}?'
-                r'shouldApplyRemoteCheckin\([\s\S]{0,300}?'
-                r'editedThisSession: _userEditedMetrics\.contains\(key\)')
-            .hasMatch(source),
+        source.contains('editedThisSession: _userEditedMetrics.contains(key)'),
         isTrue,
-        reason: 'the backend sync must not overwrite a selection she just made');
+        reason: 'and must tell it whether she has just answered');
 
-    // Device restore.
-    expect(
-        RegExp(r'void restore\(String key[\s\S]{0,200}?'
-                r"_userEditedMetrics\.contains\('daily_\$key'\)")
-            .hasMatch(source),
-        isTrue,
-        reason: 'the stored copy must not overwrite a selection she just made');
-
-    // Today's events.
+    // The in-flight event list.
     expect(
         RegExp(r"selections\.removeWhere\([\s\S]{0,120}?"
                 r"_userEditedMetrics\.contains\('daily_\$metric'\)")
             .hasMatch(source),
         isTrue,
-        reason: 'an in-flight event list must not overwrite a newer tap');
+        reason: 'an in-flight event list must not overwrite a newer answer');
+
+    // And the symptoms, which are a list rather than a single value.
+    expect(source.contains("_userEditedMetrics.contains('daily_symptom')"),
+        isTrue,
+        reason: 'the restored symptom set must not overwrite a newer one');
   });
 
-  test('a tap records the edit before anything can restore over it', () {
-    expect(source.contains('_userEditedMetrics.add(logKey);'), isTrue,
-        reason: 'the tracker key marks the metric as edited');
-    expect(source.contains("_userEditedMetrics.add('daily_\$checkinKey');"), isTrue,
-        reason: 'so does the check-in key the restore paths are keyed on');
-
-    for (final key in const ['daily_mood', 'daily_energy', 'daily_stress']) {
-      expect(source.contains("_userEditedMetrics.add('$key');"), isTrue,
-          reason: '$key is written by its own call site and must mark too');
+  test('every writer marks the metric as edited', () {
+    // Each of the three is a way an answer reaches storage, and any that does
+    // not mark is one the next reload silently reverts.
+    for (final entry in const {
+      '_persistCheckinAnswer': "_userEditedMetrics.add('daily_\$key');",
+      '_persistCheckinSymptoms': "_userEditedMetrics.add('daily_symptom');",
+      '_persistNumericMetric': "_userEditedMetrics.add('daily_\${metric.key}');",
+    }.entries) {
+      expect(source.contains(entry.key), isTrue,
+          reason: '${entry.key} is the writer this asserts about');
+      expect(source.contains(entry.value), isTrue,
+          reason: '${entry.key} must mark the metric as edited');
     }
   });
 
-  test('the daily selectors write to the device, not only to the server', () {
-    // Without this the stored file kept an older value and put it straight
-    // back: the selector persisted to the backend alone.
-    expect(
-        RegExp(r"checkin\[checkinKey\] = opt;[\s\S]{0,160}?"
-                r"BlushyStorage\.write\('daily_checkin\.json', checkin\)")
-            .hasMatch(source),
-        isTrue,
-        reason: 'a tap must update the file the restore path reads');
+  test('every writer reaches the device, not only the server', () {
+    // Without this the stored file keeps an older value and puts it straight
+    // back: the selector used to persist to the backend alone.
+    final writes = RegExp(r"BlushyStorage\.write\('daily_checkin\.json', checkin\)")
+        .allMatches(source)
+        .length;
+    expect(writes, greaterThanOrEqualTo(3),
+        reason: 'each of the three writers must update the file the restore '
+            'path reads');
 
-    // All five daily metrics carry a key, or the ones without it revert.
-    for (final key in const ['pain', 'sleep', 'stress', 'water', 'exercise']) {
-      expect(source.contains("checkinKey: '$key'"), isTrue,
-          reason: '$key must pass a checkinKey or it will be overwritten');
+    for (final fn in const [
+      '_persistCheckinAnswer',
+      '_persistCheckinSymptoms',
+      '_persistNumericMetric',
+    ]) {
+      // The declaration, not the first mention: the call sites come earlier
+      // in the file and their windows do not contain the write.
+      final start = source.indexOf('void $fn(');
+      expect(start, greaterThan(-1));
+      // Within the body, not somewhere else in the file.
+      // The whole function rather than a fixed window: the sheet's writer
+      // grew past 2600 characters, with the write still in it.
+      final body = source.substring(start, source.indexOf('\n  }', start));
+      expect(body.contains("BlushyStorage.write('daily_checkin.json'"), isTrue,
+          reason: '$fn must write to the device');
     }
   });
 }

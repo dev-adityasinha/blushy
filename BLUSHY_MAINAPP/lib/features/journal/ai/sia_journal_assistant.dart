@@ -90,7 +90,7 @@ class _SiaJournalAssistantState extends State<SiaJournalAssistant> {
               const SizedBox(width: 6),
               Text(
                 'Docsy Suggestion',
-                style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF92400E)),
+                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF92400E)),
               ),
               const Spacer(),
               IconButton(
@@ -149,7 +149,7 @@ class _SiaJournalAssistantState extends State<SiaJournalAssistant> {
               children: [
                 TextButton(
                   onPressed: () => _generateSuggestion(_activeType),
-                  child: Text(AppLocalizations.of(context).sjaRegenerate, style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFFB45309))),
+                  child: Text(AppLocalizations.of(context).sjaRegenerate, style: GoogleFonts.manrope(fontSize: 11, color: const Color(0xFFB45309))),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -164,7 +164,7 @@ class _SiaJournalAssistantState extends State<SiaJournalAssistant> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   ),
-                  child: Text('Accept', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: Text('Accept', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ],
             ),
@@ -188,7 +188,7 @@ class _SiaJournalAssistantState extends State<SiaJournalAssistant> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(
             fontSize: 10,
             fontWeight: FontWeight.w600,
             color: isSelected ? Colors.white : const Color(0xFF92400E),

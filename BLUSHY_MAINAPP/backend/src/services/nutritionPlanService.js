@@ -40,7 +40,10 @@ class NutritionPlanService {
             { role: 'system', content: 'Return ONLY valid JSON, no markdown.' },
             { role: 'user', content: prompt },
           ],
-          max_tokens: 4000,
+          // A 30-day plan with four meals a day runs well past 10k tokens.
+          // At 4000 the reply was cut mid-JSON every time and failed as
+          // "invalid format", which said nothing about why.
+          max_tokens: 16000,
         }),
       });
     } catch (error) {
@@ -59,6 +62,10 @@ class NutritionPlanService {
     const assistantMessage = payload.choices?.[0]?.message?.content || '';
     if (!assistantMessage) {
       throw createHttpError(502, 'No meal plan generated. Please try again.');
+    }
+    if (payload.choices?.[0]?.finish_reason === 'length') {
+      logger.error('Nutrition plan reply was cut off at the token limit', { length: assistantMessage.length });
+      throw createHttpError(502, 'The meal plan came back incomplete. Please try again.');
     }
 
     let planData;
@@ -93,8 +100,11 @@ class NutritionPlanService {
     return {
       generatedAt: rawData.generatedAt || now,
       updatedAt: now,
+      // Dated from today, always. The model has no idea what day it is and
+      // wrote dates from its training data, so a plan made today opened
+      // as one from two years ago.
       days: rawData.days.slice(0, 30).map((day, index) => ({
-        date: typeof day.date === 'string' ? day.date : new Date(Date.now() + index * 86400000).toISOString().slice(0, 10),
+        date: new Date(Date.now() + index * 86400000).toISOString().slice(0, 10),
         morning: this.normalizeMeals(day.morning),
         afternoon: this.normalizeMeals(day.afternoon),
         evening: this.normalizeMeals(day.evening),

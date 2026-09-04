@@ -3,7 +3,11 @@ import { commentRepository } from '../repositories/commentRepository.js';
 import { followRepository } from '../repositories/followRepository.js';
 import { profileRepository } from '../repositories/profileRepository.js';
 import { userRepository } from '../repositories/userRepository.js';
-import { personalizedCommunityService } from '../services/personalizedCommunityService.js';
+import {
+  personalizedCommunityService,
+  getUserSignals,
+  calculateRelevanceScore,
+} from '../services/personalizedCommunityService.js';
 import { createHttpError } from '../utils/httpError.js';
 import {
   moderateNewPost,
@@ -138,10 +142,62 @@ export async function reportPost(req, res, next) {
   }
 }
 
+/**
+ * Orders the Home feed by how much each post has to do with this person.
+ *
+ * The scoring already existed and was wired only to the home page's
+ * personalized sections: life stage and symptoms weigh +8 each, cycle phase
+ * +6, followed communities +5, previously upvoted topics +4, with small
+ * bonuses for recency and engagement. The Community tab meanwhile queried
+ * `{ privacy: 'public' }` and showed everyone the same list in date order.
+ *
+ * This ranks rather than filters. Nothing is hidden -- on a community this
+ * young, filtering by stage could leave someone with an empty tab, which reads
+ * as broken rather than as curated. Relevant posts move up; the rest follow.
+ *
+ * Left alone deliberately:
+ *  - `latest` and `trending` promise an order in their own names, and a person
+ *    choosing them is asking for that order rather than for ours.
+ *  - a search, where the query is the intent and reordering it by life stage
+ *    would bury the thing that was actually searched for.
+ *  - anyone with no signals yet, who gets exactly what they got before.
+ */
+export async function rankForViewer(posts, userId, type, search) {
+  const feedType = type || 'home';
+  const searching = typeof search === 'string' && search.trim().length > 0;
+  if (feedType !== 'home' || searching || posts.length < 2) return posts;
+
+  let signals;
+  try {
+    signals = await getUserSignals(userId);
+  } catch (error) {
+    // Ranking is an improvement on an order that already works, so a failure
+    // to read the signals must not cost anyone their feed.
+    //
+    // Logged rather than swallowed: while this was being written the catch
+    // hid a missing import, and the feed simply stopped being ranked with
+    // nothing anywhere to say so.
+    console.warn(`listFeed: ranking skipped for ${userId}: ${error?.message ?? error}`);
+    return posts;
+  }
+  if (!signals?.hasPersonalSignals) return posts;
+
+  // Decorated with the index so equal scores keep the order they arrived in,
+  // which is the date order the query produced.
+  return posts
+    .map((post, index) => ({
+      post,
+      index,
+      relevance: calculateRelevanceScore(post, signals),
+    }))
+    .sort((a, b) => b.relevance - a.relevance || a.index - b.index)
+    .map((entry) => entry.post);
+}
+
 export async function listFeed(req, res, next) {
   try {
     const auth = await requireAuthUserAsync(req);
-    const { type, search } = req.query; // latest, trending, following, home
+    const { type, search } = req.query; // latest, trending, following, home, mine
     const posts = await postRepository.listFeed(auth.userId, type || 'home', {
       // Bounded so a pasted essay cannot become the query.
       search: typeof search === 'string' ? search.slice(0, 120) : '',
@@ -154,7 +210,7 @@ export async function listFeed(req, res, next) {
       viewerRole: auth.role ?? req.user?.role,
     });
 
-    res.status(200).json({ posts: visible });
+    res.status(200).json({ posts: await rankForViewer(visible, auth.userId, type, search) });
   } catch (error) {
     next(error);
   }

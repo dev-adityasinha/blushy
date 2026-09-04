@@ -10,29 +10,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'helpers/isolated_storage.dart';
 import 'helpers/test_image_http.dart';
 
-/// A check-in tap has to reach the device, not only the server.
+/// A check-in answer has to reach the device, not only the server.
 ///
 /// The selector wrote the value to the backend and nowhere else, while the
 /// dashboard restores these fields from `daily_checkin.json` on every reload —
 /// and changing tabs causes a reload. So the file still held the previous
 /// answer and put it straight back.
 ///
-/// This drives the real dashboard rather than reading its source.
+/// The answer is given on the symptoms sheet now rather than on an inline
+/// check-in selector, so this drives it through the sheet. The race it guards
+/// is unchanged: what is written on save must survive the dashboard being
+/// rebuilt from nothing.
 void main() {
   useIsolatedStorage();
 
   setUp(() {
-    // A taller surface than the 800x600 default.
-    //
-    // The dashboard is a lazy scrollable, so only what fits is built, and
-    // `find.text` cannot see the rest. Today's Context now renders above the
-    // summary on every stage, which pushed "TODAY'S LOGGED SIGNALS" off a
-    // 600px surface and left this test looking at a value that was never
-    // built. The width is unchanged so the same tablet layout is exercised;
-    // the pain cards sit far below either height and stay unbuilt, which the
-    // last assertion depends on.
-    final view = TestWidgetsFlutterBinding.ensureInitialized().platformDispatcher.views.first;
-    view.physicalSize = const Size(800, 1200);
+    // Taller than the 800x600 default. The dashboard and the sheet are both
+    // lazy scrollables, so only what fits is built and `find.text` cannot see
+    // the rest.
+    final view = TestWidgetsFlutterBinding.ensureInitialized()
+        .platformDispatcher
+        .views
+        .first;
+    view.physicalSize = const Size(800, 6000);
     view.devicePixelRatio = 1.0;
     addTearDown(() {
       view.resetPhysicalSize();
@@ -49,7 +49,6 @@ void main() {
       onboardingCompleted: true,
     );
 
-    // The pain card is gated on her onboarding answers.
     BlushyStorage.write('user_profile.json', {
       'profile': {
         'lifeStage': 'reproductiveYears',
@@ -79,7 +78,34 @@ void main() {
         ),
       );
 
-  testWidgets('the summary shows the option she picked, not the old one',
+  /// Opens the sheet from the check-in and answers Pain with "Mild".
+  ///
+  /// 'Mild' is unique to the pain group at this stage: the other groups that
+  /// offer it (hot flashes, night sweats, brain fog, joint pain) are
+  /// perimenopause and menopause only.
+  Future<void> answerPainMild(WidgetTester tester) async {
+    // In through the Pain row of Today's Logged Signals, which opens the
+    // sheet. The check-in's "Nothing logged yet" prompt used to be the way in,
+    // but with pain already stored the check-in no longer says nothing was
+    // logged -- correctly -- so that prompt is not on the page.
+    //
+    // ensureVisible rather than scrollUntilVisible: on the tall test surface
+    // the row is already built, and scrollUntilVisible then scrolls past it.
+    final painLabel = find.text('Pain').first;
+    await tester.ensureVisible(painLabel);
+    await tester.pump();
+
+    await tester.tap(painLabel, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Mild'), warnIfMissed: false);
+    await tester.pump();
+
+    await tester.tap(find.textContaining('Save'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the summary shows the answer she gave, not the old one',
       (tester) async {
     // What the device already holds. This is the value that kept coming back.
     BlushyStorage.write('daily_checkin.json', {
@@ -95,24 +121,7 @@ void main() {
       expect(find.text('Severe'), findsWidgets,
           reason: 'the stored answer should be showing to begin with');
 
-      // The card is below the fold, and the dashboard is a lazy scrollable.
-      await tester.scrollUntilVisible(
-        find.text('PAIN LEVEL'),
-        300,
-        scrollable: find.byType(Scrollable).first,
-        maxScrolls: 60,
-      );
-      await tester.pump();
-
-      final painCard = find.ancestor(
-        of: find.text('PAIN LEVEL'),
-        matching: find.byType(Column),
-      );
-      await tester.tap(
-        find.descendant(of: painCard.first, matching: find.text('Mild')),
-        warnIfMissed: false,
-      );
-      await tester.pump();
+      await answerPainMild(tester);
 
       // The reload a tab change causes, in its harshest form.
       await tester.pumpWidget(const SizedBox.shrink());
@@ -124,12 +133,6 @@ void main() {
     tester.takeException();
 
     // Scoped to the summary's own "Pain" row rather than the whole page.
-    //
-    // This used to search the page, on the grounds that the pain cards were
-    // below the fold and unbuilt, so any Mild or Severe on screen had to be
-    // the summary. The check-in now sits near the top of every dashboard, so
-    // those cards are built and offer "Severe" as an unselected option -- true
-    // of the page, and nothing to do with what the summary reports.
     final painRow = find.ancestor(
       of: find.text('Pain'),
       matching: find.byType(Row),
@@ -157,23 +160,7 @@ void main() {
       await tester.pumpWidget(host());
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.scrollUntilVisible(
-        find.text('PAIN LEVEL'),
-        300,
-        scrollable: find.byType(Scrollable).first,
-        maxScrolls: 60,
-      );
-      await tester.pump();
-
-      final painCard = find.ancestor(
-        of: find.text('PAIN LEVEL'),
-        matching: find.byType(Column),
-      );
-      await tester.tap(
-        find.descendant(of: painCard.first, matching: find.text('Mild')),
-        warnIfMissed: false,
-      );
-      await tester.pump();
+      await answerPainMild(tester);
 
       // Worst case: the dashboard is built from nothing, as it would be after
       // navigating away and back. It must come back showing her answer.

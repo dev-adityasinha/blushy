@@ -113,7 +113,7 @@ class ScrapbookToolbarWidget extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: GoogleFonts.poppins(fontSize: 10, color: color, fontWeight: FontWeight.w500),
+              style: GoogleFonts.manrope(fontSize: 10, color: color, fontWeight: FontWeight.w500),
             ),
           ],
         ),

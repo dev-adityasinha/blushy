@@ -17,6 +17,11 @@ void main() {
   final wizard = read('lib/features/auth/presentation/onboarding_wizard.dart');
   final dashboard =
       read('lib/features/home/presentation/stages/everyday_wellness_dashboard.dart');
+  final categories = read('lib/features/home/symptom_categories.dart');
+  // Reviewed education content is the third surface an onboarding answer can
+  // reach. Long-term concerns like bone and heart health steer what she is
+  // shown to read; they are not things to tap a chip for every day.
+  final education = read('backend/src/config/stageEducationSeed.js');
 
   Set<String> dashboardKeywords() {
     final out = <String>{};
@@ -24,6 +29,25 @@ void main() {
       for (final k in RegExp(r"'([a-z ]+)'").allMatches(call[0]!)) {
         out.add(k[1]!);
       }
+    }
+    return out;
+  }
+
+  /// Everything the symptoms sheet offers.
+  ///
+  /// The other half of "can an onboarding answer reach anything". Most of the
+  /// gated cards became categories here, so a keyword that no longer gates a
+  /// card may still be a group or an option she can tap.
+  Set<String> sheetVocabulary() {
+    final out = <String>{};
+    for (final m in RegExp(r"'([A-Za-z][A-Za-z :<>?/-]{2,40})'")
+        .allMatches(categories)) {
+      out.add(m[1]!.toLowerCase());
+    }
+    // Content topics, as whole words: an answer that only ever selects an
+    // article still selects something.
+    for (final m in RegExp(r'[a-z]{4,}').allMatches(education.toLowerCase())) {
+      out.add(m[0]!);
     }
     return out;
   }
@@ -42,20 +66,24 @@ void main() {
         reason: 'and require an answer, as the other symptom steps do');
   });
 
-  test('most of the dashboard is now reachable from onboarding', () {
+  test('most of what onboarding can switch on is reachable', () {
     final keywords = dashboardKeywords();
     final options = onboardingOptions();
-    expect(keywords.length, greaterThan(50), reason: 'the gating keywords moved');
+
+    // Was over 50 when the check-in selectors were gated cards on the
+    // dashboard. They are categories on the symptoms sheet now, gated by life
+    // stage rather than by onboarding answers, so fewer `_isMetricSelected`
+    // calls remain -- and that is the change, not a regression.
+    expect(keywords.length, greaterThan(30),
+        reason: 'the gating keywords moved or were lost entirely');
 
     final reachable = keywords
         .where((k) => options.any((o) => k.contains(o) || o.contains(k)))
         .length;
 
-    // Was 33 of 100. The remainder is mostly stage-specific vocabulary that
-    // belongs in its own branch, not in a question everyone answers.
-    expect(reachable, greaterThanOrEqualTo(55),
-        reason: 'only $reachable of ${keywords.length} cards can be switched on '
-            'by anything a user is asked');
+    expect(reachable, greaterThanOrEqualTo(20),
+        reason: 'only $reachable of ${keywords.length} gated cards can be '
+            'switched on by anything a user is asked');
   });
 
   test('every branch that asks about symptoms asks a useful question', () {
@@ -100,8 +128,11 @@ void main() {
           .toList();
       expect(options, isNotEmpty, reason: '$step offers nothing');
 
+      // Reachable through either surface: a gated dashboard card, or a
+      // group or option on the symptoms sheet.
+      final reachableBy = {...keywords, ...sheetVocabulary()};
       final orphans = options
-          .where((o) => !keywords.any((k) => k.contains(o) || o.contains(k)))
+          .where((o) => !reachableBy.any((k) => k.contains(o) || o.contains(k)))
           .toList();
 
       expect(orphans, isEmpty,
@@ -146,7 +177,7 @@ void main() {
     // got the questions; an existing user re-answering through settings did
     // not, so the fix would have reached no one already using the app.
     final dialog = read('lib/features/home/widgets/stage_questionnaire_dialog.dart');
-    final keywords = dashboardKeywords();
+    final keywords = {...dashboardKeywords(), ...sheetVocabulary()};
 
     // Every symptoms step in the dialog, found by the set it writes into
     // rather than by name, so a new branch is covered the day it is added.

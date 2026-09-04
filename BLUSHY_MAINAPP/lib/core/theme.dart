@@ -52,88 +52,88 @@ class BlushyTypography {
     }
   }
 
-  static TextStyle displayXL({Color color = BlushyColors.dark}) => GoogleFonts.poppins(
+  static TextStyle displayXL({Color color = BlushyColors.dark}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(26, 32),
     fontWeight: FontWeight.w300,
     height: 1.1,
     color: color,
   );
 
-  static TextStyle displayL({Color color = BlushyColors.dark}) => GoogleFonts.poppins(
+  static TextStyle displayL({Color color = BlushyColors.dark}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(38, 44),
     fontWeight: FontWeight.w700,
     height: 1.0,
     color: color,
   );
 
-  static TextStyle heading1({Color color = BlushyColors.dark}) => GoogleFonts.poppins(
+  static TextStyle heading1({Color color = BlushyColors.dark}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(22, 26),
     fontWeight: FontWeight.w700,
     height: 1.2,
     color: color,
   );
 
-  static TextStyle heading2({Color color = BlushyColors.dark}) => GoogleFonts.poppins(
+  static TextStyle heading2({Color color = BlushyColors.dark}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(20, 22),
     fontWeight: FontWeight.w600,
     height: 1.3,
     color: color,
   );
 
-  static TextStyle heading3({Color color = BlushyColors.dark}) => GoogleFonts.poppins(
+  static TextStyle heading3({Color color = BlushyColors.dark}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(17, 20),
     fontWeight: FontWeight.w600,
     height: 1.3,
     color: color,
   );
 
-  static TextStyle bodyLarge({Color color = BlushyColors.text}) => GoogleFonts.poppins(
+  static TextStyle bodyLarge({Color color = BlushyColors.text}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(16, 17),
     fontWeight: FontWeight.w400,
     height: 1.6,
     color: color,
   );
 
-  static TextStyle body({Color color = BlushyColors.text}) => GoogleFonts.poppins(
+  static TextStyle body({Color color = BlushyColors.text}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(15, 16),
     fontWeight: FontWeight.w400,
     height: 1.55,
     color: color,
   );
 
-  static TextStyle bodySmall({Color color = BlushyColors.text}) => GoogleFonts.poppins(
+  static TextStyle bodySmall({Color color = BlushyColors.text}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(13, 14),
     fontWeight: FontWeight.w400,
     height: 1.5,
     color: color,
   );
 
-  static TextStyle caption({Color color = BlushyColors.secondaryText}) => GoogleFonts.poppins(
+  static TextStyle caption({Color color = BlushyColors.secondaryText}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(11, 12),
     fontWeight: FontWeight.w500,
     height: 1.4,
     color: color,
   );
 
-  static TextStyle button({Color color = Colors.white}) => GoogleFonts.poppins(
+  static TextStyle button({Color color = Colors.white}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(14, 15),
     fontWeight: FontWeight.w600,
     color: color,
   );
 
-  static TextStyle navLabel({Color color = BlushyColors.text}) => GoogleFonts.poppins(
+  static TextStyle navLabel({Color color = BlushyColors.text}) => GoogleFonts.manrope(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: color,
   );
 
-  static TextStyle chipLabel({Color color = BlushyColors.text}) => GoogleFonts.poppins(
+  static TextStyle chipLabel({Color color = BlushyColors.text}) => GoogleFonts.manrope(
     fontSize: _getResponsiveSize(12, 13),
     fontWeight: FontWeight.w600,
     color: color,
   );
 
-  static TextStyle sectionLabel({Color color = BlushyColors.primary}) => GoogleFonts.poppins(
+  static TextStyle sectionLabel({Color color = BlushyColors.primary}) => GoogleFonts.manrope(
     fontSize: 11,
     fontWeight: FontWeight.w700,
     letterSpacing: 11 * 0.18,
@@ -145,7 +145,8 @@ class BlushyTheme {
   static double getPagePadding(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     if (width < 600) {
-      return 16.0;
+      // 20 on phones, per the home design spec's 20-24.
+      return 20.0;
     } else if (width < 1200) {
       return 32.0;
     } else {
@@ -154,16 +155,9 @@ class BlushyTheme {
   }
 
   static BoxDecoration get premiumCardDecoration => BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: BlushyColors.surface,
+        borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: BlushyColors.border, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: BlushyColors.text.withValues(alpha: 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
       );
 
   /// The corner radius the whole app is built on.
@@ -172,7 +166,9 @@ class BlushyTheme {
   /// and fields read as rectangles with the corners taken off rather than as
   /// pills. Genuinely round things -- avatars, the radio marker, the raised nav
   /// button -- are circles via BoxShape.circle and are unaffected by this.
-  static const double radius = 12;
+  // 20, per the home design spec's control radius. Everything themed --
+  // buttons, dialogs, inputs, chips, cards -- takes it from here.
+  static const double radius = 20;
 
   static RoundedRectangleBorder get shape =>
       RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
@@ -187,46 +183,43 @@ class BlushyTheme {
         surface: BlushyColors.surface,
         error: BlushyColors.accent,
       ),
-      fontFamily: 'Courier', // Fallback to Courier/Georgia for elegant editorial layout headings if platform sans isn't styled
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          fontFamily: 'Georgia',
-          fontSize: 32,
-          fontWeight: FontWeight.w700,
-          color: BlushyColors.dark,
-          letterSpacing: -0.5,
-          height: 1.2,
+      // Manrope for the interface, Instrument Serif for the editorial sizes,
+      // per the home design spec. Anything that reads from the theme rather
+      // than from BlushyType gets the same two faces.
+      textTheme: GoogleFonts.manropeTextTheme().copyWith(
+        displayLarge: GoogleFonts.instrumentSerif(
+          fontSize: 40,
+          fontWeight: FontWeight.w400,
+          color: BlushyColors.text,
+          height: 1.08,
         ),
-        displayMedium: TextStyle(
-          fontFamily: 'Georgia',
+        displayMedium: GoogleFonts.instrumentSerif(
+          fontSize: 30,
+          fontWeight: FontWeight.w400,
+          color: BlushyColors.text,
+          height: 1.15,
+        ),
+        titleLarge: GoogleFonts.instrumentSerif(
           fontSize: 24,
-          fontWeight: FontWeight.w700,
-          color: BlushyColors.dark,
-          height: 1.3,
+          fontWeight: FontWeight.w400,
+          color: BlushyColors.text,
         ),
-        titleLarge: TextStyle(
-          fontFamily: 'Georgia',
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: BlushyColors.dark,
-        ),
-        bodyLarge: TextStyle(
+        bodyLarge: GoogleFonts.manrope(
           fontSize: 16,
           fontWeight: FontWeight.w400,
-          color: BlushyColors.dark,
+          color: BlushyColors.text,
           height: 1.5,
-          letterSpacing: 0.1,
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: GoogleFonts.manrope(
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: BlushyColors.secondaryText,
           height: 1.5,
         ),
-        labelLarge: TextStyle(
+        labelLarge: GoogleFonts.manrope(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: BlushyColors.dark,
+          color: BlushyColors.text,
           letterSpacing: 0.8,
         ),
       ),
@@ -254,7 +247,7 @@ class BlushyTheme {
         color: BlushyColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(radius),
           side: const BorderSide(color: BlushyColors.border, width: 1),
         ),
         margin: EdgeInsets.zero,

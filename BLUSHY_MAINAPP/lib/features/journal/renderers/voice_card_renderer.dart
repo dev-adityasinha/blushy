@@ -54,9 +54,9 @@ class VoiceCardRenderer extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text('Voice Memory', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF92400E))),
+                  Text('Voice Memory', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF92400E))),
                   const SizedBox(width: 6),
-                  Text('• $dateStr', style: GoogleFonts.poppins(fontSize: 9, color: const Color(0xFFB45309))),
+                  Text('• $dateStr', style: GoogleFonts.manrope(fontSize: 9, color: const Color(0xFFB45309))),
                 ],
               ),
               const SizedBox(height: 4),
@@ -73,7 +73,7 @@ class VoiceCardRenderer extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(duration, style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFFB45309))),
+              Text(duration, style: GoogleFonts.manrope(fontSize: 10, color: const Color(0xFFB45309))),
             ],
           ),
         ],

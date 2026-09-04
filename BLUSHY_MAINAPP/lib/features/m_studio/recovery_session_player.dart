@@ -126,7 +126,7 @@ class _RecoverySessionPlayerState extends State<RecoverySessionPlayer> {
         iconTheme: const IconThemeData(color: BlushyColors.dark),
         title: Text(
           widget.title,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.manrope(height: 1.5, 
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: BlushyColors.text,
@@ -149,7 +149,7 @@ class _RecoverySessionPlayerState extends State<RecoverySessionPlayer> {
                 alignment: Alignment.centerRight,
                 child: Text(
                   'Step ${_stepIndex + 1} of ${widget.steps.length} • $_remaining left',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(height: 1.5, 
                     fontSize: 11,
                     color: BlushyColors.secondaryText,
                   ),
@@ -163,7 +163,7 @@ class _RecoverySessionPlayerState extends State<RecoverySessionPlayer> {
                       _finished ? 'Done.' : _currentStep.instruction,
                       key: ValueKey(_finished ? 'done' : _stepIndex),
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.manrope(
                         fontSize: 22,
                         height: 1.5,
                         fontWeight: FontWeight.w500,
@@ -177,7 +177,7 @@ class _RecoverySessionPlayerState extends State<RecoverySessionPlayer> {
                 Text(
                   AppLocalizations.of(context).rspThatIsTheWhole,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.manrope(height: 1.5, 
                     fontSize: 12,
                     color: BlushyColors.secondaryText,
                   ),
@@ -199,7 +199,7 @@ class _RecoverySessionPlayerState extends State<RecoverySessionPlayer> {
                       : (_running ? _pause : _start),
                   child: Text(
                     _finished ? 'Close' : (_running ? 'Pause' : 'Start'),
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                    style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

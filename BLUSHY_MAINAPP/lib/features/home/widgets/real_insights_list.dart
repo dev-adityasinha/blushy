@@ -57,7 +57,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
             Expanded(
               child: Text(
                 widget.title,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: BlushyColors.text,
@@ -99,7 +99,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
         children: [
           Text(
             insight.title,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -108,7 +108,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
           const SizedBox(height: 6),
           Text(
             insight.description,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 12.5,
               height: 1.5,
               color: BlushyColors.secondaryText,
@@ -143,7 +143,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(
+        style: GoogleFonts.manrope(
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: muted ? BlushyColors.secondaryText : BlushyColors.primary,
@@ -166,7 +166,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
         children: [
           Text(
             headline,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13.5,
               fontWeight: FontWeight.bold,
               color: BlushyColors.text,
@@ -175,7 +175,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
           const SizedBox(height: 5),
           Text(
             body,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 12,
               height: 1.45,
               color: BlushyColors.secondaryText,

@@ -50,10 +50,7 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
     ApiAuthService().getOnboardingAnswers().then((remoteAnswers) {
       if (remoteAnswers.isNotEmpty && mounted) {
         setState(() {
-          _onboardingData = {
-            ..._onboardingData,
-            ...remoteAnswers,
-          };
+          _onboardingData = {..._onboardingData, ...remoteAnswers};
         });
       }
     });
@@ -63,7 +60,6 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
     return EverydayWellnessDashboard(stageKey: rawStage);
   }
 
-
   @override
   Widget build(BuildContext context) {
     final osState = BlushyOSProvider.of(context);
@@ -71,23 +67,28 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
 
     Widget body;
     if (activeStages.length > 1) {
-      body = EverydayWellnessDashboard(
-        activeStages: activeStages,
-      );
+      body = EverydayWellnessDashboard(activeStages: activeStages);
     } else {
-      final String rawStage = (activeStages.isNotEmpty ? activeStages.first : null) ??
+      final String rawStage =
+          (activeStages.isNotEmpty ? activeStages.first : null) ??
           (osState.personalContext.lifeStage ??
-              _onboardingData['lifeStage'] ??
-              _onboardingData['life_stage'] ??
-              _onboardingData['stage'] ??
-              'firstPeriodNotStarted')
-          .toString()
-          .trim();
+                  _onboardingData['lifeStage'] ??
+                  _onboardingData['life_stage'] ??
+                  _onboardingData['stage'] ??
+                  'firstPeriodNotStarted')
+              .toString()
+              .trim();
       body = _buildStageDashboard(rawStage);
     }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      // The wash sits behind the whole page rather than inside the scrollable,
+      // so it stays put while the content moves over it -- which is what makes
+      // it read as a backdrop and not as the first card.
+      // The wash lives on the Today's Cycle card rather than behind the whole
+      // page: two of them, in two tints, fought each other. HomeBackdrop is
+      // still there if a page-wide one is wanted instead.
       body: Column(
         children: [
           // Onboarding finishes locally, but the cards behind it are filled by
@@ -112,7 +113,7 @@ class DeveloperContextSimulator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = BlushyOSProvider.of(context);
-    
+
     return Drawer(
       child: SafeArea(
         child: ListView(
@@ -120,34 +121,57 @@ class DeveloperContextSimulator extends StatelessWidget {
           children: [
             Text(
               "Developer Context Simulator",
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+              style: GoogleFonts.manrope(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const Divider(),
             if (onLifeStageChanged != null) ...[
-              const Text("Simulate LifeStage / Branch", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              const Text(
+                "Simulate LifeStage / Branch",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: [
-                  {'label': 'Branch A (Prep)', 'val': 'firstPeriodNotStarted'},
-                  {'label': 'Branch B (Started)', 'val': 'firstPeriodStarted'},
-                  {'label': 'Wellness (Default)', 'val': 'everydayWellness'},
-                ].map((item) {
-                  return ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Close drawer
-                      onLifeStageChanged!(item['val'] as String);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary.withValues(alpha: 0.08),
-                      foregroundColor: BlushyColors.primary,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: Text(item['label'] as String, style: const TextStyle(fontSize: 11)),
-                  );
-                }).toList(),
+                children:
+                    [
+                      {
+                        'label': 'Branch A (Prep)',
+                        'val': 'firstPeriodNotStarted',
+                      },
+                      {
+                        'label': 'Branch B (Started)',
+                        'val': 'firstPeriodStarted',
+                      },
+                      {
+                        'label': 'Wellness (Default)',
+                        'val': 'everydayWellness',
+                      },
+                    ].map((item) {
+                      return ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Close drawer
+                          onLifeStageChanged!(item['val'] as String);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BlushyColors.primary.withValues(
+                            alpha: 0.08,
+                          ),
+                          foregroundColor: BlushyColors.primary,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          item['label'] as String,
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                      );
+                    }).toList(),
               ),
               const SizedBox(height: 12),
               SizedBox(
@@ -179,12 +203,17 @@ class DeveloperContextSimulator extends StatelessWidget {
                     BlushyStorage.write('user_profile.json', {});
                   },
                   icon: const Icon(Icons.refresh_rounded, size: 16),
-                  label: const Text("Reset to Onboarding Step", style: TextStyle(fontSize: 11)),
+                  label: const Text(
+                    "Reset to Onboarding Step",
+                    style: TextStyle(fontSize: 11),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BlushyColors.danger.withValues(alpha: 0.1),
                     foregroundColor: BlushyColors.danger,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
@@ -214,12 +243,19 @@ class DeveloperContextSimulator extends StatelessWidget {
               onChanged: (val) => state.setPeriodActive(val),
             ),
             const Divider(),
-            const Text("Special Journeys / Stages", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              "Special Journeys / Stages",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             CheckboxListTile(
               title: const Text("First Periods Journey"),
-              value: state.personalContext.medicalConditions.contains('First Periods'),
+              value: state.personalContext.medicalConditions.contains(
+                'First Periods',
+              ),
               onChanged: (val) {
-                final conds = Set<String>.from(state.personalContext.medicalConditions);
+                final conds = Set<String>.from(
+                  state.personalContext.medicalConditions,
+                );
                 if (val == true) {
                   conds.add('First Periods');
                 } else {
@@ -229,7 +265,8 @@ class DeveloperContextSimulator extends StatelessWidget {
                   PersonalContext(
                     userName: state.personalContext.userName,
                     dateOfBirth: state.personalContext.dateOfBirth,
-                    trackingPreference: state.personalContext.trackingPreference,
+                    trackingPreference:
+                        state.personalContext.trackingPreference,
                     cyclePattern: state.personalContext.cyclePattern,
                     confidence: state.personalContext.confidence,
                     lifeContexts: state.personalContext.lifeContexts,
@@ -246,36 +283,61 @@ class DeveloperContextSimulator extends StatelessWidget {
               },
             ),
             const Divider(),
-            const Text("Life Contexts", style: TextStyle(fontWeight: FontWeight.bold)),
-            ...LifeContext.values.map((lc) => CheckboxListTile(
-              title: Text(lc.name),
-              value: state.personalContext.lifeContexts.contains(lc),
-              onChanged: (val) => state.toggleLifeContext(lc),
-            )),
+            const Text(
+              "Life Contexts",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            ...LifeContext.values.map(
+              (lc) => CheckboxListTile(
+                title: Text(lc.name),
+                value: state.personalContext.lifeContexts.contains(lc),
+                onChanged: (val) => state.toggleLifeContext(lc),
+              ),
+            ),
             const Divider(),
-            const Text("Symptoms", style: TextStyle(fontWeight: FontWeight.bold)),
-            ...['fatigue', 'pain', 'poor sleep', 'low energy'].map((s) => CheckboxListTile(
-              title: Text(s),
-              value: state.wellbeingState.symptoms.contains(s),
-              onChanged: (val) => state.toggleSymptom(s),
-            )),
+            const Text(
+              "Symptoms",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            ...['fatigue', 'pain', 'poor sleep', 'low energy'].map(
+              (s) => CheckboxListTile(
+                title: Text(s),
+                value: state.wellbeingState.symptoms.contains(s),
+                onChanged: (val) => state.toggleSymptom(s),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDropdown<T>(String label, List<T> items, T currentVal, ValueChanged<T?> onChanged) {
+  Widget _buildDropdown<T>(
+    String label,
+    List<T> items,
+    T currentVal,
+    ValueChanged<T?> onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          ),
           DropdownButton<T>(
             value: currentVal,
             isExpanded: true,
-            items: items.map((e) => DropdownMenuItem(value: e, child: Text(e.toString().split('.').last))).toList(),
+            items: items
+                .map(
+                  (e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(e.toString().split('.').last),
+                  ),
+                )
+                .toList(),
             onChanged: onChanged,
           ),
         ],
@@ -308,20 +370,29 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
     });
 
     try {
-      final res = await ApiAuthService().getDetailedWebExplanation(widget.title, widget.summary);
+      final res = await ApiAuthService().getDetailedWebExplanation(
+        widget.title,
+        widget.summary,
+      );
       if (mounted) {
         setState(() {
           _isLoading = false;
           _detailedContent = res.isNotEmpty
               ? res
-              : _generateFallbackDetailedExplanation(widget.title, widget.summary);
+              : _generateFallbackDetailedExplanation(
+                  widget.title,
+                  widget.summary,
+                );
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _detailedContent = _generateFallbackDetailedExplanation(widget.title, widget.summary);
+          _detailedContent = _generateFallbackDetailedExplanation(
+            widget.title,
+            widget.summary,
+          );
         });
       }
     }
@@ -355,11 +426,18 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
           Expanded(
             child: Text(
               widget.title,
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text),
+              style: GoogleFonts.manrope(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: BlushyColors.text,
+              ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close_rounded, color: BlushyColors.secondaryText),
+            icon: const Icon(
+              Icons.close_rounded,
+              color: BlushyColors.secondaryText,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -385,18 +463,31 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.short_text_rounded, size: 16, color: BlushyColors.primary),
+                        const Icon(
+                          Icons.short_text_rounded,
+                          size: 16,
+                          color: BlushyColors.primary,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           "SUMMARY OVERVIEW",
-                          style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w800, color: BlushyColors.primary, letterSpacing: 1.2),
+                          style: GoogleFonts.manrope(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: BlushyColors.primary,
+                            letterSpacing: 1.2,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
                       widget.summary,
-                      style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text, height: 1.45),
+                      style: GoogleFonts.manrope(
+                        fontSize: 13,
+                        color: BlushyColors.text,
+                        height: 1.45,
+                      ),
                     ),
                   ],
                 ),
@@ -410,25 +501,41 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFDFBF7),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: BlushyColors.primary.withValues(alpha: 0.3), width: 1.0),
+                    border: Border.all(
+                      color: BlushyColors.primary.withValues(alpha: 0.3),
+                      width: 1.0,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.auto_awesome, size: 16, color: BlushyColors.primary),
+                          const Icon(
+                            Icons.auto_awesome,
+                            size: 16,
+                            color: BlushyColors.primary,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             "AI WEB SEARCH DETAILED INSIGHTS",
-                            style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w800, color: BlushyColors.primary, letterSpacing: 1.2),
+                            style: GoogleFonts.manrope(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: BlushyColors.primary,
+                              letterSpacing: 1.2,
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Text(
                         _detailedContent!,
-                        style: GoogleFonts.poppins(fontSize: 13, color: BlushyColors.text, height: 1.55),
+                        style: GoogleFonts.manrope(
+                          fontSize: 13,
+                          color: BlushyColors.text,
+                          height: 1.55,
+                        ),
                       ),
                     ],
                   ),
@@ -463,7 +570,11 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                       Text(
                         "Docsy AI is searching the web and analyzing detailed insights for '${widget.title}'...",
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(fontSize: 12, fontStyle: FontStyle.italic, color: BlushyColors.secondaryText),
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: BlushyColors.secondaryText,
+                        ),
                       ),
                     ],
                   ),
@@ -473,15 +584,25 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _fetchDetailedAiExplanation,
-                    icon: const Icon(Icons.auto_awesome, size: 18, color: Colors.white),
+                    icon: const Icon(
+                      Icons.auto_awesome,
+                      size: 18,
+                      color: Colors.white,
+                    ),
                     label: Text(
                       "Deep Dive with AI (Web Search)",
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: GoogleFonts.manrope(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: BlushyColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                   ),
@@ -496,14 +617,16 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(
             AppLocalizations.of(context).hClose,
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: BlushyColors.primary),
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.bold,
+              color: BlushyColors.primary,
+            ),
           ),
         ),
       ],
     );
   }
 }
-
 
 /// Slim "still loading" strip shown above the dashboard while state syncs.
 class _DashboardSyncBanner extends StatelessWidget {
@@ -530,7 +653,7 @@ class _DashboardSyncBanner extends StatelessWidget {
           Flexible(
             child: Text(
               'Updating your dashboard…',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: BlushyColors.secondaryText,

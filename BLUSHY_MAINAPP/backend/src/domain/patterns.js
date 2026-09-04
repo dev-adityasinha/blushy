@@ -235,6 +235,145 @@ function computeCorrelationInsights(events, windowStart, windowEnd) {
 }
 
 /**
+ * The daily metrics a symptom can be set against.
+ *
+ * All of them come from the check-in, which is why symptoms and the check-in
+ * are both needed: neither alone produces a cross-signal observation.
+ */
+const SYMPTOM_CORRELATES = [
+  {
+    key: 'sleep',
+    eventType: 'sleep_logged',
+    extract: (e) => Number(e?.payload?.durationHours),
+    noun: 'sleep',
+    describe: (symptom, r) => (r < 0
+      ? `Based on your recent logs, ${symptom} was recorded more often on days following shorter sleep.`
+      : `Based on your recent logs, ${symptom} was recorded more often on days following longer sleep.`),
+  },
+  {
+    key: 'stress',
+    eventType: 'stress_logged',
+    extract: (e) => Number(e?.payload?.level),
+    noun: 'stress',
+    describe: (symptom, r) => (r > 0
+      ? `Based on your recent logs, ${symptom} was recorded more often on days with higher logged stress.`
+      : `Based on your recent logs, ${symptom} was recorded more often on days with lower logged stress.`),
+  },
+  {
+    key: 'energy',
+    eventType: 'energy_logged',
+    extract: (e) => Number(e?.payload?.level),
+    noun: 'energy',
+    describe: (symptom, r) => (r < 0
+      ? `Based on your recent logs, ${symptom} was recorded more often on days with lower logged energy.`
+      : `Based on your recent logs, ${symptom} was recorded more often on days with higher logged energy.`),
+  },
+];
+
+/**
+ * Which days count as "she logged that day".
+ *
+ * This is the crux of correlating a symptom with anything. A symptom is
+ * present or absent, and absence only means something on a day she actually
+ * logged: on a day she opened nothing, the symptom is unknown, not absent.
+ * Taking every day in the window as a zero would manufacture a correlation out
+ * of the days she happened not to use the app.
+ *
+ * So the day set is the days the *other* metric was recorded, and the symptom
+ * is 0 on those days unless it was reported.
+ */
+function symptomDays(events) {
+  const days = new Map();
+  for (const event of events) {
+    if (event.eventType !== 'symptom_logged') continue;
+    const key = dayKey(event.timestamp);
+    if (!key) continue;
+    const symptom = String(event?.payload?.symptom ?? '').toLowerCase().trim();
+    if (!symptom) continue;
+    const bucket = days.get(symptom) ?? { days: new Map() };
+    const ids = bucket.days.get(key) ?? [];
+    ids.push(event.eventId ?? event.id);
+    bucket.days.set(key, ids);
+    days.set(symptom, bucket);
+  }
+  return days;
+}
+
+/**
+ * Cross-signal insights: a symptom set against a daily metric.
+ *
+ * Point-biserial, which is Pearson over a 0/1 series, so the same correlation
+ * helper and the same reporting floor apply. Gated on
+ * MIN_PAIRED_OBSERVATIONS like every other correlation here: one day is never
+ * a pattern, and a symptom logged once cannot correlate with anything.
+ */
+function computeSymptomCorrelationInsights(events, windowStart, windowEnd) {
+  const insights = [];
+  const bySymptom = symptomDays(events);
+
+  for (const [symptom, bucket] of bySymptom.entries()) {
+    // A symptom seen on almost no days, or on every day, has no variance to
+    // correlate. `correlation` returns null for a flat series, but skipping
+    // early keeps the work down.
+    if (bucket.days.size < 2) continue;
+
+    for (const correlate of SYMPTOM_CORRELATES) {
+      const metric = dailyValues(events, correlate.eventType, correlate.extract);
+      if (metric.size === 0) continue;
+
+      const xs = [];
+      const ys = [];
+      const sourceEventIds = [];
+      let presentDays = 0;
+
+      for (const [day, entry] of metric.entries()) {
+        const symptomIds = bucket.days.get(day);
+        const present = symptomIds ? 1 : 0;
+        if (present) presentDays += 1;
+        xs.push(present);
+        ys.push(entry.value);
+        sourceEventIds.push(...entry.eventIds, ...(symptomIds ?? []));
+      }
+
+      if (xs.length < MIN_PAIRED_OBSERVATIONS) continue;
+      // Needs both kinds of day to say anything: all-present or all-absent is
+      // a flat series.
+      if (presentDays === 0 || presentDays === xs.length) continue;
+
+      const r = correlation(xs, ys);
+      if (r === null) continue;
+      if (Math.abs(r) < MIN_REPORTABLE_CORRELATION) continue;
+
+      insights.push({
+        type: `symptom_${correlate.key}`,
+        title: `${symptom.charAt(0).toUpperCase()}${symptom.slice(1)} and ${correlate.noun}`,
+        description: correlate.describe(symptom, r),
+        sourceEventIds: [...new Set(sourceEventIds)],
+        periodStart: windowStart,
+        periodEnd: windowEnd,
+        confidence: Math.round(Math.abs(r) * 100) / 100,
+        strength: strengthLabel(r),
+        direction: r > 0 ? 'positive' : 'negative',
+        observationCount: xs.length,
+        // Stated on every insight this engine emits: an association is not a
+        // cause, and no surface downstream may promote it into one.
+        causalClaim: false,
+        status: INSIGHT_STATUS.ACTIVE,
+        engineVersion: PATTERN_ENGINE_VERSION,
+        source: 'rule',
+        metadata: {
+          symptom,
+          correlate: correlate.key,
+          daysWithSymptom: presentDays,
+        },
+      });
+    }
+  }
+
+  return insights;
+}
+
+/**
  * Frequency insights: which symptoms recur, and how often. Purely descriptive.
  */
 function computeSymptomFrequencyInsights(events, windowStart, windowEnd) {
@@ -379,6 +518,7 @@ export function computePatterns({
 
   const insights = [
     ...computeCorrelationInsights(inWindow, windowStart, windowEnd),
+    ...computeSymptomCorrelationInsights(inWindow, windowStart, windowEnd),
     ...computeSymptomFrequencyInsights(inWindow, windowStart, windowEnd),
     ...(allowCycleInsights ? computeCyclePhaseInsights(inWindow, windowStart, windowEnd, cycleDayResolver) : []),
   ];
