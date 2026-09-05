@@ -19,7 +19,7 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Blushy - Smart Cycle & Wellbeing Assistant">
-  <meta name="google-signin-client_id" content="1026935398251-f1uvakds07sran9i87kgq1oon3vu4uo4.apps.googleusercontent.com">
+  <meta name="google-signin-client_id" content="442211490165-7q61q8fa1i447spte47no1rhqfa9ooo3.apps.googleusercontent.com">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -42,6 +42,31 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <!--
+    No service worker. The app is built with pwa-strategy=none, and any
+    worker left from an earlier build is removed here, along with its
+    caches, so a deploy is what people get on their next load rather than
+    whatever their browser kept. A page that had a worker reloads once.
+  -->
+  <script>
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        if (!regs.length) return;
+        var clear = 'caches' in window
+          ? caches.keys().then(function (keys) { return Promise.all(keys.map(function (k) { return caches.delete(k); })); })
+          : Promise.resolve();
+        Promise.all(regs.map(function (r) { return r.unregister(); }))
+          .then(function () { return clear; })
+          .then(function () {
+            if (!sessionStorage.getItem('blushy-sw-cleared')) {
+              sessionStorage.setItem('blushy-sw-cleared', '1');
+              location.reload();
+            }
+          });
+      }).catch(function () {});
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

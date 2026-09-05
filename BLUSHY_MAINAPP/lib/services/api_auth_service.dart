@@ -700,7 +700,11 @@ class ApiAuthService implements AuthService {
     }
 
     if (e.type == DioExceptionType.connectionError) {
-      return 'Unable to connect to server. Please check if the backend server is running.';
+      // Names the host, so a report of this message says which backend the
+      // build was pointed at; the sentence alone could not tell a wrong
+      // base URL from a server that was down.
+      return 'Unable to connect to server at ${e.requestOptions.uri.origin}. '
+          'Please check if the backend server is running.';
     }
 
     final fullMsg = '${e.message ?? ''} ${e.error?.toString() ?? ''}';
@@ -712,7 +716,8 @@ class ApiAuthService implements AuthService {
         fullMsg.contains('Connection refused') ||
         fullMsg.contains('ClientException') ||
         fullMsg.contains('onError callback')) {
-      return 'Unable to connect to server. Please check if the backend server is running.';
+      return 'Unable to connect to server at ${e.requestOptions.uri.origin}. '
+          'Please check if the backend server is running.';
     }
 
     if (e.response?.statusCode != null) {
@@ -741,6 +746,9 @@ class ApiAuthService implements AuthService {
         msg.contains('ClientException') ||
         msg.contains('onError callback') ||
         msg.contains('DioException')) {
+      // A message that already names the host (from _extractErrorMessage)
+      // is kept as it is; only a bare transport error is replaced.
+      if (msg.contains('Unable to connect to server at ')) return msg;
       return 'Unable to connect to server. Please check if the backend server is running.';
     }
     return msg;

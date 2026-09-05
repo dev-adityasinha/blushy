@@ -305,6 +305,21 @@ class ApiContractClient {
     final state = _parseState(body['state']?.toString());
     final rawData = body['data'];
 
+    // A refusal carries its reasons in `data` -- which stage she is in, whether
+    // a confirmation would do, what context is missing -- and no payload of
+    // the requested type. Parsing it as one lost every reason, so a refused
+    // stage change read as "could not be saved" whatever the server said.
+    if (state == ApiState.error) {
+      return ApiResult<T>(
+        state: ApiState.error,
+        errorCode: body['errorCode']?.toString(),
+        errorMessage: body['error'] is Map ? (body['error'] as Map)['message']?.toString() : null,
+        meta: body['meta'] is Map<String, dynamic>
+            ? body['meta'] as Map<String, dynamic>
+            : (rawData is Map ? Map<String, dynamic>.from(rawData) : null),
+      );
+    }
+
     T? parsed;
     if (rawData != null && parse != null) {
       try {
@@ -336,6 +351,12 @@ class ApiContractClient {
     );
   }
 
+  /// A client to send with instead of the package's top-level functions;
+  /// tests hand in a MockClient. Null in the app.
+  static http.Client? clientOverride;
+
+  static http.Client get _http => clientOverride ?? http.Client();
+
   static Future<ApiResult<T>> get<T>(
     String path, {
     Map<String, String>? query,
@@ -344,7 +365,7 @@ class ApiContractClient {
     final uri = Uri.parse('$_base$path').replace(
       queryParameters: query == null || query.isEmpty ? null : query,
     );
-    return _send<T>(() => http.get(uri, headers: _headers()), parse,
+    return _send<T>(() => _http.get(uri, headers: _headers()), parse,
         repeatable: _isRepeatable('GET'));
   }
 
@@ -355,7 +376,7 @@ class ApiContractClient {
     T Function(dynamic data)? parse,
   }) {
     return _send<T>(
-      () => http.post(
+      () => _http.post(
         Uri.parse('$_base$path'),
         headers: _headers(idempotencyKey: idempotencyKey),
         body: body == null ? null : jsonEncode(body),
@@ -371,7 +392,7 @@ class ApiContractClient {
     T Function(dynamic data)? parse,
   }) {
     return _send<T>(
-      () => http.put(
+      () => _http.put(
         Uri.parse('$_base$path'),
         headers: _headers(),
         body: body == null ? null : jsonEncode(body),
@@ -387,7 +408,7 @@ class ApiContractClient {
     T Function(dynamic data)? parse,
   }) {
     return _send<T>(
-      () => http.patch(
+      () => _http.patch(
         Uri.parse('$_base$path'),
         headers: _headers(),
         body: body == null ? null : jsonEncode(body),
@@ -407,7 +428,7 @@ class ApiContractClient {
       queryParameters: query == null || query.isEmpty ? null : query,
     );
     return _send<T>(
-      () => http.delete(
+      () => _http.delete(
         uri,
         headers: _headers(),
         body: body == null ? null : jsonEncode(body),

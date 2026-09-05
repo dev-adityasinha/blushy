@@ -29,6 +29,29 @@ class CheckinFollowUp {
     required this.noValue,
   });
 
+  /// A card as stored for the day, and as Docsy sends it.
+  factory CheckinFollowUp.fromJson(Map<String, dynamic> json) {
+    return CheckinFollowUp(
+      id: json['id'].toString(),
+      question: json['question'].toString(),
+      becauseOf: List.unmodifiable(
+        (json['becauseOf'] as List? ?? const []).map((e) => e.toString()),
+      ),
+      metric: json['metric'].toString(),
+      yesValue: json['yesValue'].toString(),
+      noValue: json['noValue'].toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'question': question,
+        'becauseOf': becauseOf,
+        'metric': metric,
+        'yesValue': yesValue,
+        'noValue': noValue,
+      };
+
   /// Stable across a day, so an answer can be stored and read back.
   final String id;
 
@@ -199,6 +222,51 @@ class CheckinFollowUps {
   }
 
   /// Every metric a follow-up can write, for the guard test.
+  /// The metrics Docsy may ask about and the answers each may carry. The
+  /// same contract the server enforces, checked again here: a card whose
+  /// answer has nowhere to go is not shown, whoever wrote it.
+  static const Map<String, List<String>> allowedValues = {
+    'sleep': ['<6h', '6-8h', '>8h', '7-8h'],
+    'water': ['1L', '2L', '3L'],
+    'exercise': ['Active', 'Light', 'None'],
+    'stress': ['Low', 'Moderate', 'High'],
+    'energy': ['High', 'Medium', 'Low'],
+    'mood': ['Happy', 'Okay', 'Calm', 'Low', 'Irritable'],
+    'pain': ['None', 'Mild', 'Severe'],
+  };
+
+  /// Docsy's cards, kept only where they respect the contract.
+  static List<CheckinFollowUp> fromModel(dynamic raw) {
+    final list = raw is List ? raw : (raw is Map ? raw['cards'] : null);
+    if (list is! List) return const [];
+    final seen = <String>{};
+    final out = <CheckinFollowUp>[];
+    for (final item in list) {
+      if (item is! Map) continue;
+      final metric = item['metric']?.toString().trim().toLowerCase() ?? '';
+      final allowed = allowedValues[metric];
+      if (allowed == null || seen.contains(metric)) continue;
+      final question = item['question']?.toString().trim() ?? '';
+      if (question.length < 8 || question.length > 120 || !question.endsWith('?')) continue;
+      final yes = item['yesValue']?.toString().trim() ?? '';
+      final no = item['noValue']?.toString().trim() ?? '';
+      if (!allowed.contains(yes) || !allowed.contains(no) || yes == no) continue;
+      seen.add(metric);
+      out.add(CheckinFollowUp(
+        id: 'ai_$metric',
+        question: question,
+        becauseOf: List.unmodifiable(
+          (item['becauseOf'] as List? ?? const []).map((e) => e.toString()).where((e) => e.isNotEmpty),
+        ),
+        metric: metric,
+        yesValue: yes,
+        noValue: no,
+      ));
+      if (out.length >= maxCards) break;
+    }
+    return out;
+  }
+
   static Set<String> get metrics => {for (final q in _questions) q.metric};
 
   /// Every value a follow-up can write, for the guard test.

@@ -7,6 +7,8 @@ import '../../theme/colors.dart';
 import '../../services/api_auth_service.dart';
 import 'presentation/stages/everyday_wellness_dashboard.dart';
 import '../../l10n/app_localizations.dart';
+import '../sia/open_docsy.dart';
+import '../../shared/docsy_star.dart';
 
 enum HomeWidgetType {
   hero,
@@ -346,270 +348,120 @@ class DeveloperContextSimulator extends StatelessWidget {
   }
 }
 
-class ArticleDetailDialog extends StatefulWidget {
+class ArticleDetailDialog extends StatelessWidget {
   final String title;
   final String summary;
+
+  /// What Docsy is asked when the button is tapped. Defaults to the title.
+  final String? question;
 
   const ArticleDetailDialog({
     super.key,
     required this.title,
     required this.summary,
+    this.question,
   });
 
-  @override
-  State<ArticleDetailDialog> createState() => _ArticleDetailDialogState();
-}
-
-class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
-  bool _isLoading = false;
-  String? _detailedContent;
-
-  Future<void> _fetchDetailedAiExplanation() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final res = await ApiAuthService().getDetailedWebExplanation(
-        widget.title,
-        widget.summary,
-      );
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _detailedContent = res.isNotEmpty
-              ? res
-              : _generateFallbackDetailedExplanation(
-                  widget.title,
-                  widget.summary,
-                );
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _detailedContent = _generateFallbackDetailedExplanation(
-            widget.title,
-            widget.summary,
-          );
-        });
-      }
-    }
-  }
-
-  String _generateFallbackDetailedExplanation(String title, String summary) {
-    return "### Comprehensive AI & Web Search Synthesis: ${widget.title}\n\n"
-        "**Biological & Physiological Overview**\n"
-        "${widget.summary}\n\n"
-        "Clinical wellness data shows that daily lifestyle habits directly influence neuroendocrine and autonomic nervous system regulation. "
-        "Tracking your core metrics allows Docsy AI to identify subtle hormonal and energy baseline fluctuations early.\n\n"
-        "**Key Scientific Insights**\n"
-        "• **Circadian & Metabolic Harmony**: Regular sleep and meal timing stabilize cortisol, preventing afternoon energy crashes.\n"
-        "• **Vagal Tone & Stress Recovery**: Diaphragmatic breathing and hydration balance parasympathetic nervous system responses.\n"
-        "• **Cycle Synergy**: Estrogen and progesterone transitions alter metabolic rate and hydration needs across cycle phases.\n\n"
-        "**Actionable Recommendations**\n"
-        "1. **Structured Routines**: Maintain consistent daily check-ins within your preferred morning or evening window.\n"
-        "2. **Optimal Fluid Intake**: Hydrate continuously throughout high-activity or high-stress workdays.\n"
-        "3. **Docsy Companion Check-Ins**: Log daily symptoms to help Docsy refine your dynamic health insights.";
-  }
+  String get _question => question ?? 'Tell me more about "$title".';
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: BlushyColors.background,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      contentPadding: const EdgeInsets.all(24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             child: Text(
-              widget.title,
+              title,
               style: GoogleFonts.manrope(
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: BlushyColors.text,
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(
-              Icons.close_rounded,
-              color: BlushyColors.secondaryText,
-            ),
             onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close, color: BlushyColors.secondaryText),
           ),
         ],
       ),
-      content: SizedBox(
-        width: 520,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Summary Box (Existing 2-3 lines)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: BlushyColors.border, width: 0.8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.short_text_rounded,
-                          size: 16,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: BlushyColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.short_text, size: 16, color: BlushyColors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        "SUMMARY OVERVIEW",
+                        style: GoogleFonts.manrope(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
                           color: BlushyColors.primary,
+                          letterSpacing: 1.2,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          "SUMMARY OVERVIEW",
-                          style: GoogleFonts.manrope(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: BlushyColors.primary,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.summary,
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        color: BlushyColors.text,
-                        height: 1.45,
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    summary,
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      color: BlushyColors.text,
+                      height: 1.55,
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                // Docsy answers in her own thread, with the question shown as
+                // hers first. The dialog closes so the thread is what she
+                // comes back to.
+                onPressed: () {
+                  final question = _question;
+                  Navigator.pop(context);
+                  openDocsyWith(context, question);
+                },
+                icon: const DocsyStar(size: 18, color: Colors.white),
+                label: Text(
+                  "Ask Docsy",
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BlushyColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // AI Detailed Explanation Section
-              if (_detailedContent != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFDFBF7),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: BlushyColors.primary.withValues(alpha: 0.3),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.auto_awesome,
-                            size: 16,
-                            color: BlushyColors.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            "AI WEB SEARCH DETAILED INSIGHTS",
-                            style: GoogleFonts.manrope(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: BlushyColors.primary,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _detailedContent!,
-                        style: GoogleFonts.manrope(
-                          fontSize: 13,
-                          color: BlushyColors.text,
-                          height: 1.55,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else if (_isLoading) ...[
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: BlushyColors.border),
-                  ),
-                  child: Column(
-                    children: [
-                      // Shaped like the paragraph that replaces it, so the card
-                      // does not resize when the text lands. The line below
-                      // stays: it says why this is slow, which a placeholder
-                      // cannot.
-                      const Shimmer(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SkeletonLine(),
-                            SizedBox(height: 8),
-                            SkeletonLine(),
-                            SizedBox(height: 8),
-                            SkeletonLine(widthFactor: 0.7),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "Docsy AI is searching the web and analyzing detailed insights for '${widget.title}'...",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.manrope(
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                          color: BlushyColors.secondaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _fetchDetailedAiExplanation,
-                    icon: const Icon(
-                      Icons.auto_awesome,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                    label: Text(
-                      "Deep Dive with AI (Web Search)",
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       actions: [
@@ -628,7 +480,6 @@ class _ArticleDetailDialogState extends State<ArticleDetailDialog> {
   }
 }
 
-/// Slim "still loading" strip shown above the dashboard while state syncs.
 class _DashboardSyncBanner extends StatelessWidget {
   const _DashboardSyncBanner();
 

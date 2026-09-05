@@ -4,6 +4,7 @@ import '../../../core/state.dart';
 import '../../../core/storage.dart';
 import '../../../theme/colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/sia_dashboard_service.dart';
 
 class StageQuestionnaireDialog extends StatefulWidget {
   final String stageKey;
@@ -104,14 +105,14 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
     // Hygiene
     if (opt.contains('hygiene') && saved.contains('hygiene')) return true;
     // Sports / School / Active
-    if ((opt.contains('sport') || opt.contains('school') || opt.contains('active')) && 
+    if ((opt.contains('sport') || opt.contains('school') || opt.contains('active')) &&
         (saved.contains('sport') || saved.contains('school') || saved.contains('active'))) {
       return true;
     }
     // Tracking
     if (opt.contains('track') && (saved.contains('track') || saved.contains('predict') || saved.contains('period'))) return true;
     // Mood / Emotions / Anxiety / PMS
-    if ((opt.contains('mood') || opt.contains('emotion') || opt.contains('pms') || opt.contains('anxiety')) && 
+    if ((opt.contains('mood') || opt.contains('emotion') || opt.contains('pms') || opt.contains('anxiety')) &&
         (saved.contains('mood') || saved.contains('emotion') || saved.contains('pms') || saved.contains('anxiety'))) {
       return true;
     }
@@ -468,6 +469,24 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                   "No current treatment",
                 ],
               ),
+          () => _buildMultiSelectStep(
+                title: "What would you like help with?",
+                subtitle: "Your home page shows the cards for what you pick.",
+                selectedSet: _selectedGoals,
+                options: [
+                  "Manage pain",
+                  "Regular periods",
+                  "Skin and hair",
+                  "Weight",
+                  "Energy",
+                  "Mood",
+                  "Sleep",
+                  "Nutrition",
+                  "Exercise",
+                  "Medication reminders",
+                  "Appointments",
+                ],
+              ),
         ];
         break;
 
@@ -525,6 +544,25 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                   "Back pain",
                   "Anxiety",
                   "Sleep disruption / insomnia",
+                ],
+              ),
+          () => _buildMultiSelectStep(
+                // Asked here as on every other stage, so the home can put
+                // what she wants help with first.
+                title: "What would you like help with?",
+                subtitle: "Your home page shows the cards for what you pick.",
+                selectedSet: _selectedGoals,
+                options: [
+                  "Ovulation timing",
+                  "Fertility tracking",
+                  "Nutrition",
+                  "Sleep",
+                  "Stress",
+                  "Exercise",
+                  "Mental wellbeing",
+                  "Partner support",
+                  "Appointments",
+                  "Medication reminders",
                 ],
               ),
         ];
@@ -744,12 +782,14 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
       if (_currentStep == 0) return _selectedConditions.isNotEmpty;
       if (_currentStep == 1) return _selectedSymptoms.isNotEmpty;
       if (_currentStep == 2) return _answers['hormonal_treatment'] != null;
+      if (_currentStep == 3) return _selectedGoals.isNotEmpty;
     }
     if (stage == 'tryingToConceive') {
       if (_currentStep == 0) return _answers['ttc_duration'] != null;
       if (_currentStep == 1) return _answers['ttc_tracking_method'] != null;
       if (_currentStep == 2) return _answers['ttc_treatment'] != null;
       if (_currentStep == 3) return _selectedSymptoms.isNotEmpty;
+      if (_currentStep == 4) return _selectedGoals.isNotEmpty;
     }
     if (stage == 'pregnancy') {
       if (_currentStep == 0) return _selectedDate != null;
@@ -835,6 +875,10 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
 
       final state = BlushyOSProvider.of(context);
       state.addLifeStageWithAnswers(widget.stageKey, finalAnswers);
+      // The home is already built behind this dialog and keeps its own copy
+      // of the answers; this asks it to read them again, so the signal rows
+      // and card order follow the new stage's picks at once.
+      SiaDashboardService().triggerRefresh();
 
       if (mounted) {
         widget.onCompleted?.call();

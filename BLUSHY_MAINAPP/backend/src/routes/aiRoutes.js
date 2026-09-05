@@ -17,6 +17,7 @@ import {
   getDailyDiscoverTopicsAndCards,
   getTodayMemorySummary,
   getHealthInsights,
+  getCheckinFollowUps,
 } from '../controllers/aiController.js';
 import { optionalAuth } from '../middleware/optionalAuth.js';
 import { requireAuth } from '../middleware/requireAuth.js';
@@ -28,6 +29,7 @@ const router = Router();
 router.post('/chat', requireAuth, uploadPartnerAttachment, createChatReply);
 router.post('/transcribe', requireAuth, uploadPartnerAttachment, transcribeAudio);
 router.post('/voice/session', requireAuth, createVoiceSession);
+router.post('/checkin-followups', requireAuth, getCheckinFollowUps);
 router.get('/medical-reports', requireAuth, getMedicalReports);
 router.get('/history', requireAuth, getChatHistory);
 router.get('/daily-summaries', requireAuth, getMyDailySummaries);

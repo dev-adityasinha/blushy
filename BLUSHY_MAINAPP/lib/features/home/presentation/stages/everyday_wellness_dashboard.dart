@@ -39,6 +39,7 @@ import '../../../../shared/api_state_card.dart';
 import '../doctor_summary_screen.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../sia/sia_screen.dart';
+import '../../../sia/open_docsy.dart';
 import '../../home_screen.dart';
 import '../../../../shared/section_heading.dart';
 import '../../blushy_shell.dart';
@@ -49,6 +50,7 @@ import '../../widgets/home_insight_cards.dart';
 import '../../widgets/monthly_journey_card.dart';
 import '../../widgets/auto_carousel_cards.dart';
 import '../../../../theme/scale.dart';
+import '../../home_section_order.dart';
 
 String _getTimeBasedGreetingPrefix() {
   final istNow = DateTime.now().toUtc().add(
@@ -449,27 +451,62 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
     if (mounted) setState(() {});
   }
 
+  /// A stage home's sections in the order she asked for at onboarding.
+  List<Widget> _orderedHome(List<HomeSection> sections, {required Widget gap}) {
+    List<String> picks(dynamic v) {
+      if (v is List) return v.map((e) => e.toString()).toList();
+      if (v is String && v.isNotEmpty) return [v];
+      return const <String>[];
+    }
+
+    Map<String, dynamic> profile;
+    try {
+      final data = BlushyStorage.read('user_profile.json');
+      final p = data['profile'];
+      profile = p is Map ? Map<String, dynamic>.from(p) : Map<String, dynamic>.from(data);
+    } catch (_) {
+      profile = _onboardingData;
+    }
+
+    final stage = _resolveStageKey(_currentPc);
+    final byStage = profile['stage_answers'];
+    final forStage = byStage is Map ? byStage[stage] : null;
+    final stagePicks = forStage is Map ? Map<String, dynamic>.from(forStage) : null;
+
+    final answers = profile['answers'];
+    final goals = stagePicks != null && (stagePicks['goals'] != null || stagePicks['not_started_learn'] != null)
+        ? [
+            ...picks(stagePicks['goals']),
+            ...picks(stagePicks['not_started_learn']),
+            ...picks(stagePicks['desired_help']),
+          ]
+        : [
+            ...picks(profile['goals']),
+            if (answers is Map) ...picks(answers['goals']),
+            ...picks(profile['not_started_learn']),
+          ];
+    final symptoms = stagePicks != null && stagePicks['symptoms'] != null
+        ? picks(stagePicks['symptoms'])
+        : [
+            ...picks(profile['symptoms']),
+            if (answers is Map) ...picks(answers['symptoms']),
+          ];
+    return HomeSectionOrder.layout(sections, gap: gap, goals: goals, symptoms: symptoms);
+  }
+
   /// The life stage the dashboard is rendering.
-  ///
-  /// The precedence is the one the stage switch has always used: an explicit
-  /// key from the caller, then the first active stage, then the stored profile
-  /// or onboarding answers. Declared once so the symptoms sheet cannot resolve
-  /// it differently and offer a set of groups that does not match the stage.
   String _resolveStageKey(PersonalContext pc) {
     if (widget.stageKey != null && widget.stageKey!.isNotEmpty) {
       return widget.stageKey!;
     }
-    final active = pc.activeLifeStages.isNotEmpty
-        ? pc.activeLifeStages.first
-        : null;
+    final active = StageConflictEngine.dominantStage(widget.activeStages ?? pc.activeLifeStages);
     return (active ??
             (pc.lifeStage ??
                 _onboardingData['lifeStage'] ??
                 _onboardingData['life_stage'] ??
                 _onboardingData['stage'] ??
                 'firstPeriodNotStarted'))
-        .toString()
-        .trim();
+        .toString();
   }
 
   /// Today's check-in.

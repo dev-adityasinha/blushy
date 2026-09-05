@@ -27,7 +27,7 @@ enum AuthFormMode { login, signup }
 const String _googleWebClientId = String.fromEnvironment(
   'GOOGLE_WEB_CLIENT_ID',
   defaultValue:
-      '1026935398251-f1uvakds07sran9i87kgq1oon3vu4uo4.apps.googleusercontent.com',
+      '442211490165-7q61q8fa1i447spte47no1rhqfa9ooo3.apps.googleusercontent.com',
 );
 
 class SignupScreen extends StatefulWidget {
@@ -208,7 +208,16 @@ class _SignupScreenState extends State<SignupScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = ApiAuthService.cleanErrorMessage(e);
+          // The Google path fails in more places than the network -- the
+          // popup, Google's own checks on the client ID and origin, the
+          // token exchange -- and every one of them was reported as "unable
+          // to connect", which sent people to check a server that was fine.
+          // The cause is named instead.
+          final raw = e.toString().replaceFirst(RegExp(r'^Exception: '), '');
+          final cleaned = ApiAuthService.cleanErrorMessage(e);
+          _errorMessage = cleaned.startsWith('Unable to connect')
+              ? 'Google sign-in failed: $raw'
+              : cleaned;
         });
       }
     } finally {

@@ -11,6 +11,7 @@ import '../../../shared/confirm_sign_out.dart';
 import '../../../services/sia_dashboard_service.dart';
 import '../../journal/settings/journal_settings_screen.dart';
 import '../../journal/themes/theme_marketplace.dart';
+import '../settings_draft.dart';
 
 class MyHealthScreen extends StatefulWidget {
   const MyHealthScreen({super.key});
@@ -459,7 +460,10 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
   /// Writes a finished draft through to state. Called by Save, never by a
   /// field.
   void _commitDraft(BuildContext ctx, PersonalContext draft) {
-    _saveField(ctx, (_) => draft);
+    // The stages come from the live profile, never from the draft: the
+    // selector on this page saves a stage change at once, and a Save after
+    // it used to write the snapshot's old stages back over it.
+    _saveField(ctx, (current) => keepCurrentStages(draft, current));
   }
 
   /// Sends the fields that live on the server rather than on PersonalContext.
