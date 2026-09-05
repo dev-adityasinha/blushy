@@ -8,6 +8,7 @@ import 'stage_questionnaire_dialog.dart';
 import '../stage_transition.dart';
 import 'stage_conflict_dialog.dart';
 import '../../../services/api_blushy_service.dart';
+import '../../../core/stage_reconcile.dart';
 
 class LifeStageInfo {
   final String key;
@@ -241,7 +242,10 @@ class LifeStageSelectorCard extends StatelessWidget {
   String _getOnboardingStage(BuildContext context) {
     final osState = BlushyOSProvider.of(context);
     if (osState.personalContext.activeLifeStages.isNotEmpty) {
-      return osState.personalContext.activeLifeStages.first;
+      // The stage she chose last, not the first stored: the chip used to stay
+      // on the original stage however many were added after it.
+      return currentStageOf(osState.personalContext.activeLifeStages, osState.personalContext.lifeStage) ??
+          osState.personalContext.activeLifeStages.first;
     }
     if (osState.personalContext.lifeStage != null && osState.personalContext.lifeStage!.isNotEmpty) {
       return osState.personalContext.lifeStage!;
@@ -412,7 +416,7 @@ class LifeStageSelectorCard extends StatelessWidget {
                               ..removeAll(conflictResult.conflictingActiveStages)
                               ..add(stage.key);
 
-                            osState.setActiveLifeStages(newStages);
+                            osState.setActiveLifeStages(newStages, chosen: stage.key);
                             if (!context.mounted) return;
                             if (outcome.questionnaireDone) {
                               onStageUpdated?.call();
@@ -439,12 +443,16 @@ class LifeStageSelectorCard extends StatelessWidget {
                           stageTitle: stage.title,
                         );
                         if (!outcome.moved) return;
+                        // The server has her in the new stage now; the app
+                        // follows at once. This used to wait for the
+                        // questionnaire, so closing it -- or leaving the page
+                        // during a slow server -- left the app on the old
+                        // stage until the next launch synced it.
+                        osState.setActiveLifeStages(
+                            Set<String>.from(activeStages)..add(stage.key),
+                            chosen: stage.key);
                         if (!context.mounted) return;
                         if (outcome.questionnaireDone) {
-                          // The questionnaire ran before the server let her
-                          // in; the stage is active from here.
-                          osState.setActiveLifeStages(
-                              Set<String>.from(activeStages)..add(stage.key));
                           onStageUpdated?.call();
                           return;
                         }

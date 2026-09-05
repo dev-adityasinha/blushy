@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'api_base_url.dart';
 import 'auth_storage.dart';
 import '../models/community_models.dart';
+import 'cold_start_retry.dart';
 
 class ApiCommunityService {
   static final ApiCommunityService _instance = ApiCommunityService._internal();
@@ -23,7 +24,8 @@ class ApiCommunityService {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
-  ));
+  ))
+    ..interceptors.add(ColdStartRetryInterceptor());
 
   // In-memory user-scoped cache: Map<userId, DashboardPersonalizedCommunityPayload>
   final Map<String, DashboardPersonalizedCommunityPayload> _userScopedCache = {};

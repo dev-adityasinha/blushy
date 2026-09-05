@@ -10,6 +10,7 @@ import '../services/api_partner_service.dart';
 import 'cycle_calculator.dart';
 import 'storage.dart';
 import 'onboarding_answers.dart';
+import 'stage_reconcile.dart';
 
 enum AppEntryState {
   unauthenticated,
@@ -454,13 +455,13 @@ class BlushyOSState extends ChangeNotifier {
           final pc = data['personalContext'];
           final List<dynamic> rawMedications = pc['medications'] ?? [];
           final meds = rawMedications.map((m) => Medication.fromJson(m)).toList();
-          
+
           final String? savedLifeStage = pc['lifeStage'];
           final List<dynamic>? rawActiveStages = pc['activeLifeStages'];
-          Set<String> activeStages = rawActiveStages != null 
-              ? rawActiveStages.map((e) => e.toString()).toSet() 
+          Set<String> activeStages = rawActiveStages != null
+              ? rawActiveStages.map((e) => e.toString()).toSet()
               : (savedLifeStage != null ? {savedLifeStage} : {});
-          
+
           // Fallback to user_profile.json if activeStages is empty
           if (activeStages.isEmpty) {
             try {
@@ -478,7 +479,7 @@ class BlushyOSState extends ChangeNotifier {
           if (activeStages.isEmpty) {
             activeStages = {'reproductiveYears'};
           }
-          
+
           _personalContext = PersonalContext(
             userName: pc['userName'],
             dateOfBirth: pc['dateOfBirth'] != null ? DateTime.parse(pc['dateOfBirth']) : null,
@@ -753,6 +754,14 @@ class BlushyOSState extends ChangeNotifier {
         }
         if (lifeStage != null && activeLifeStages.isEmpty) {
           activeLifeStages.add(lifeStage);
+        }
+        // The server's stage arrives in its own words (`hormonal_health`) and
+        // may not be in the list at all -- a move confirmed by the server but
+        // never written locally. The list is brought into line with it, so
+        // a restart lands on the page the change did.
+        if (lifeStage != null) {
+          activeLifeStages = reconcileActiveStages(activeLifeStages, lifeStage);
+          lifeStage = appStageKey(lifeStage);
         }
 
         DataConfidence confidence = DataConfidence.low;
@@ -1282,17 +1291,24 @@ class BlushyOSState extends ChangeNotifier {
     super.dispose();
   }
 
-  void setActiveLifeStages(Set<String> stages) {
+  /// Sets the active stages; [chosen] is the one she just picked, which
+  /// becomes the current stage. Without it, the current stage stays what it
+  /// was if still active, else the last stage in the set. The first stage
+  /// stored used to win, so adding a stage never changed the page.
+  void setActiveLifeStages(Set<String> stages, {String? chosen}) {
     final currentStages = Set<String>.from(stages);
     if (currentStages.isEmpty) {
       currentStages.add(_personalContext.lifeStage ?? 'reproductiveYears');
     }
+    final String current = (chosen != null && currentStages.contains(chosen))
+        ? chosen
+        : (currentStages.contains(_personalContext.lifeStage) ? _personalContext.lifeStage! : currentStages.last);
 
     try {
       final currentData = BlushyStorage.read('user_profile.json');
       final profile = Map<String, dynamic>.from(currentData['profile'] ?? {});
       profile['activeLifeStages'] = currentStages.toList();
-      profile['lifeStage'] = currentStages.first;
+      profile['lifeStage'] = current;
       currentData['profile'] = profile;
       BlushyStorage.write('user_profile.json', currentData);
     } catch (_) {}
@@ -1301,7 +1317,7 @@ class BlushyOSState extends ChangeNotifier {
       userName: _personalContext.userName,
       dateOfBirth: _personalContext.dateOfBirth,
       weight: _personalContext.weight,
-      lifeStage: currentStages.first,
+      lifeStage: current,
       activeLifeStages: currentStages,
       dueDate: _personalContext.dueDate,
       babyBirthDate: _personalContext.babyBirthDate,
@@ -1325,7 +1341,7 @@ class BlushyOSState extends ChangeNotifier {
     if (_isAuthenticated) {
       ApiAuthService().saveOnboardingAnswers({
         'active_life_stages': currentStages.toList(),
-        'life_stage': currentStages.first,
+        'life_stage': current,
       }).catchError((_) => <String, dynamic>{});
     }
   }
@@ -1547,7 +1563,7 @@ class BlushyOSState extends ChangeNotifier {
     notifyListeners();
   }
 
-  
+
   // Developer context simulation methods
   void setTrackingPreference(CycleTrackingPreference pref) {
     _personalContext = PersonalContext(
@@ -1614,12 +1630,12 @@ class BlushyOSState extends ChangeNotifier {
       newContexts.add(lc);
       if (lc != LifeContext.none) newContexts.remove(LifeContext.none);
       if (lc == LifeContext.none) {
-        newContexts.clear(); 
+        newContexts.clear();
         newContexts.add(LifeContext.none);
       }
     }
     if (newContexts.isEmpty) newContexts.add(LifeContext.none);
-    
+
     _personalContext = PersonalContext(
       userName: _personalContext.userName,
       trackingPreference: _personalContext.trackingPreference,
@@ -1675,7 +1691,7 @@ class BlushyOSState extends ChangeNotifier {
   // Legacy variables for backward compatibility if needed in UI
   String get cyclePhase => _personalContext.cyclePhase ?? 'Unknown';
   int get cycleDay => _personalContext.cycleDay ?? 0;
-  
+
   // Active navigation view state
   int currentViewIndex = 0; // 0: Today, 1: Journey, 2: Explore, 3: Docsy
 

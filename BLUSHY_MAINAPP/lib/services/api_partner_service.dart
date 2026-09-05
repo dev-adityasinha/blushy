@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'api_base_url.dart';
 import 'auth_storage.dart';
+import 'cold_start_retry.dart';
 
 /// A relationship activity whose state belongs to the connection, so both
 /// partners see the same thing.
@@ -58,7 +59,8 @@ class ApiPartnerService {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
-  ));
+  ))
+    ..interceptors.add(ColdStartRetryInterceptor());
 
   Options _authOptions() {
     final token = AuthStorage.getToken();

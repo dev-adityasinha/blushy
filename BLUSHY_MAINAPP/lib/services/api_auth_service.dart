@@ -5,6 +5,7 @@ import '../features/auth/presentation/auth_service.dart';
 import 'api_base_url.dart';
 import 'auth_storage.dart';
 import 'offline_event_queue.dart';
+import 'cold_start_retry.dart';
 
 class ApiAuthService implements AuthService {
   late final Dio _dio;
@@ -15,10 +16,15 @@ class ApiAuthService implements AuthService {
           BaseOptions(
             baseUrl: baseUrl ?? resolveApiBaseUrl(),
             connectTimeout: const Duration(seconds: 35),
-            receiveTimeout: const Duration(seconds: 35),
+            // Long enough to absorb a cold start (measured at 27s); the
+            // other clients already waited this long, sign-in did not.
+            receiveTimeout: const Duration(seconds: 60),
             headers: {'Content-Type': 'application/json'},
           ),
         );
+    if (!_dio.interceptors.any((i) => i is ColdStartRetryInterceptor)) {
+      _dio.interceptors.add(ColdStartRetryInterceptor());
+    }
   }
 
   @override

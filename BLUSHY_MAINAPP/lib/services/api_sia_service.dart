@@ -5,6 +5,7 @@ import '../models/blushy_models.dart';
 import 'api_base_url.dart';
 import 'language_preference.dart';
 import 'auth_storage.dart';
+import 'cold_start_retry.dart';
 
 /// One night's summary of the user's real conversation with Docsy, generated
 /// server-side from actual chat history.
@@ -58,7 +59,8 @@ class ApiSiaService {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
-  ));
+  ))
+    ..interceptors.add(ColdStartRetryInterceptor());
 
   Options _authOptions() {
     final token = AuthStorage.getToken();

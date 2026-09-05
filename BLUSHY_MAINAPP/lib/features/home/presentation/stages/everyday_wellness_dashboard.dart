@@ -14,7 +14,6 @@ import '../../../../theme/colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/voice_note_bottom_sheet.dart';
 import '../../../../services/api_auth_service.dart';
-import '../../../../core/stage_conflict_engine.dart';
 import '../../models.dart';
 import '../../widgets/checkin_card_stack.dart';
 import '../../widgets/cycle_card.dart';
@@ -50,6 +49,7 @@ import '../../widgets/home_insight_cards.dart';
 import '../../widgets/monthly_journey_card.dart';
 import '../../../../theme/scale.dart';
 import '../../home_section_order.dart';
+import '../../../../core/stage_reconcile.dart';
 
 String _getTimeBasedGreetingPrefix() {
   final istNow = DateTime.now().toUtc().add(
@@ -514,8 +514,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
     if (widget.stageKey != null && widget.stageKey!.isNotEmpty) {
       return widget.stageKey!;
     }
-    // The stage that decides what is tracked, not the first one stored.
-    final active = StageConflictEngine.dominantStage(widget.activeStages ?? pc.activeLifeStages);
+    // The stage she chose last, while it is still active; the ranking only
+    // decides when nothing was chosen or the choice is gone.
+    final active = currentStageOf(widget.activeStages ?? pc.activeLifeStages, pc.lifeStage);
     return (active ??
             (pc.lifeStage ??
                 _onboardingData['lifeStage'] ??
