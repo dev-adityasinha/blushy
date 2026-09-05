@@ -29,7 +29,13 @@ class _CycleLength {
   final int days;
 }
 
-class _RealCycleHistoryState extends State<RealCycleHistory> {
+class _RealCycleHistoryState extends State<RealCycleHistory>
+    with AutomaticKeepAliveClientMixin {
+  // A section of the lazy home list: kept alive so it loads once, not on
+  // every scroll back into view.
+  @override
+  bool get wantKeepAlive => true;
+
   ApiResult<List<Map<String, dynamic>>> _result = const ApiResult.loading();
 
   @override
@@ -66,6 +72,7 @@ class _RealCycleHistoryState extends State<RealCycleHistory> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final loading = _result.state == ApiState.loading;
     final lengths = loading ? const <_CycleLength>[] : _lengths();
 

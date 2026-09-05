@@ -30,8 +30,15 @@ class RealInsightsList extends StatefulWidget {
   State<RealInsightsList> createState() => _RealInsightsListState();
 }
 
-class _RealInsightsListState extends State<RealInsightsList> {
+class _RealInsightsListState extends State<RealInsightsList>
+    with AutomaticKeepAliveClientMixin {
   ApiResult<List<Insight>> _result = const ApiResult.loading();
+
+  // The home is a lazy list: a section scrolled off the screen is disposed
+  // and rebuilt when it comes back, which here meant a fresh request and a
+  // spinner on every pass. Kept alive, it loads once per visit to the tab.
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -47,6 +54,7 @@ class _RealInsightsListState extends State<RealInsightsList> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final insights = _result.data ?? const <Insight>[];
 
     return Column(

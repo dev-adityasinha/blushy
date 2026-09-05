@@ -35,10 +35,11 @@ import '../../symptom_categories.dart';
 import '../../symptom_category_preference.dart';
 import '../../../../services/daily_rollover.dart';
 import '../../../../services/offline_event_queue.dart';
+import '../../../../services/api_sia_service.dart';
 import '../../../../shared/api_state_card.dart';
 import '../doctor_summary_screen.dart';
 import '../../../../models/blushy_models.dart';
-import '../../../sia/sia_screen.dart';
+import '../../../sia/open_docsy.dart';
 import '../../home_screen.dart';
 import '../../../../shared/section_heading.dart';
 import '../../blushy_shell.dart';
@@ -48,6 +49,7 @@ import '../../widgets/greeting_card.dart' show GreetingCard;
 import '../../widgets/home_insight_cards.dart';
 import '../../widgets/monthly_journey_card.dart';
 import '../../../../theme/scale.dart';
+import '../../home_section_order.dart';
 
 String _getTimeBasedGreetingPrefix() {
   final istNow = DateTime.now().toUtc().add(
@@ -454,13 +456,66 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
   /// key from the caller, then the first active stage, then the stored profile
   /// or onboarding answers. Declared once so the symptoms sheet cannot resolve
   /// it differently and offer a set of groups that does not match the stage.
+
+  /// A stage home's sections in the order she asked for at onboarding.
+  ///
+  /// The wizard's "what would you like help with" and "which of these do
+  /// you notice" picks were stored and never read: every home rendered
+  /// its sections in one fixed order. Sections about what she picked now
+  /// come first; see [HomeSectionOrder].
+  List<Widget> _orderedHome(List<HomeSection> sections, {required Widget gap}) {
+    List<String> picks(dynamic v) {
+      if (v is List) return v.map((e) => e.toString()).toList();
+      if (v is String && v.isNotEmpty) return [v];
+      return const <String>[];
+    }
+
+    // Read live rather than from the copy taken at start-up: a stage switch
+    // writes its picks to storage and this home is already on screen.
+    Map<String, dynamic> profile;
+    try {
+      final data = BlushyStorage.read('user_profile.json');
+      final p = data['profile'];
+      profile = p is Map ? Map<String, dynamic>.from(p) : Map<String, dynamic>.from(data);
+    } catch (_) {
+      profile = _onboardingData;
+    }
+
+    // The picks made for the stage on screen come first. They are stored
+    // per stage by the stage-switch questionnaire, so a woman who moved
+    // from cycle tracking to pregnancy is not ordered by her cycle picks.
+    final stage = _resolveStageKey(_currentPc);
+    final byStage = profile['stage_answers'];
+    final forStage = byStage is Map ? byStage[stage] : null;
+    final stagePicks = forStage is Map ? Map<String, dynamic>.from(forStage) : null;
+
+    final answers = profile['answers'];
+    final goals = stagePicks != null && (stagePicks['goals'] != null || stagePicks['not_started_learn'] != null)
+        ? [
+            ...picks(stagePicks['goals']),
+            ...picks(stagePicks['not_started_learn']),
+            ...picks(stagePicks['desired_help']),
+          ]
+        : [
+            ...picks(profile['goals']),
+            if (answers is Map) ...picks(answers['goals']),
+            ...picks(profile['not_started_learn']),
+          ];
+    final symptoms = stagePicks != null && stagePicks['symptoms'] != null
+        ? picks(stagePicks['symptoms'])
+        : [
+            ...picks(profile['symptoms']),
+            if (answers is Map) ...picks(answers['symptoms']),
+          ];
+    return HomeSectionOrder.layout(sections, gap: gap, goals: goals, symptoms: symptoms);
+  }
+
   String _resolveStageKey(PersonalContext pc) {
     if (widget.stageKey != null && widget.stageKey!.isNotEmpty) {
       return widget.stageKey!;
     }
-    final active = pc.activeLifeStages.isNotEmpty
-        ? pc.activeLifeStages.first
-        : null;
+    // The stage that decides what is tracked, not the first one stored.
+    final active = StageConflictEngine.dominantStage(widget.activeStages ?? pc.activeLifeStages);
     return (active ??
             (pc.lifeStage ??
                 _onboardingData['lifeStage'] ??
@@ -579,11 +634,88 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
   /// Empty on a day with nothing logged, so the check-in stays as short as it
   /// was. The rules are in [CheckinFollowUps] rather than here so they can be
   /// tested without building this widget.
+  /// Docsy's cards for today's symptoms, when she has written them.
+  ///
+  /// Asked once per set of symptoms per day and kept in today's check-in
+  /// file, so the cards are the same on every open and an answer given to
+  /// one can be read back by id. When Docsy has nothing (offline, a reply
+  /// that failed the contract), the rule table asks instead.
+  List<CheckinFollowUp>? _docsyFollowUps;
+  String? _docsyFollowUpsKey;
+  bool _docsyFollowUpsLoading = false;
+
+  String _docsyFollowUpsKeyFor(Iterable<String> labels) {
+    final sorted = labels.map((l) => l.trim().toLowerCase()).where((l) => l.isNotEmpty).toList()..sort();
+    return '${_todayKey()}|${sorted.join(',')}';
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Today's cards from the check-in file, if they were written for the
+  /// same symptoms.
+  List<CheckinFollowUp>? _storedDocsyFollowUps(String key) {
+    try {
+      final stored = BlushyStorage.read('daily_checkin.json')['docsy_followups'];
+      if (stored is Map && stored['key'] == key && stored['cards'] is List) {
+        return [
+          for (final c in stored['cards'] as List)
+            if (c is Map) CheckinFollowUp.fromJson(Map<String, dynamic>.from(c)),
+        ];
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  void _refreshDocsyFollowUps() {
+    final labels = _loggedLabels.toList();
+    final key = _docsyFollowUpsKeyFor(labels);
+    if (_docsyFollowUpsKey == key) return;
+    final stored = _storedDocsyFollowUps(key);
+    if (stored != null) {
+      setState(() {
+        _docsyFollowUpsKey = key;
+        _docsyFollowUps = stored;
+      });
+      return;
+    }
+    if (labels.isEmpty || _docsyFollowUpsLoading) {
+      _docsyFollowUpsKey = key;
+      _docsyFollowUps = null;
+      return;
+    }
+    _docsyFollowUpsLoading = true;
+    ApiSiaService()
+        .getCheckinFollowUps(symptoms: labels, date: _todayKey(), stage: _resolveStageKey(_currentPc))
+        .then((result) {
+      if (!mounted) return;
+      final cards = CheckinFollowUps.fromModel(result['cards']);
+      // Still today's symptoms? Otherwise the answer is for a set she has
+      // since changed, and the next refresh asks again.
+      if (_docsyFollowUpsKeyFor(_loggedLabels) != key) return;
+      try {
+        final checkin = BlushyStorage.read('daily_checkin.json');
+        checkin['docsy_followups'] = {
+          'key': key,
+          'cards': [for (final c in cards) c.toJson()],
+        };
+        BlushyStorage.write('daily_checkin.json', checkin);
+      } catch (_) {}
+      setState(() {
+        _docsyFollowUpsKey = key;
+        _docsyFollowUps = cards.isEmpty ? null : cards;
+      });
+    }).whenComplete(() => _docsyFollowUpsLoading = false);
+  }
+
   Widget _buildGeneratedFollowUps() {
-    // Answered cards leave the deck. They used to stay, with a tick on the
-    // chip, and come round again on every swipe -- which read as the app not
-    // having heard the answer.
-    final cards = CheckinFollowUps.forSymptoms(_loggedLabels)
+    final docsy = _docsyFollowUps;
+    final source = docsy != null && docsy.isNotEmpty && _docsyFollowUpsKey == _docsyFollowUpsKeyFor(_loggedLabels)
+        ? docsy
+        : CheckinFollowUps.forSymptoms(_loggedLabels);
+    final cards = source
         .where((card) => !_followUpAnswered(card))
         .toList();
     if (cards.isEmpty) return const SizedBox.shrink();
@@ -771,7 +903,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
     await SymptomLogSheet.show(
       context,
       initialSelection: _loggedSymptoms,
-      onSave: _persistCheckinSymptoms,
+      onSave: (picked) {
+        _persistCheckinSymptoms(picked);
+        _refreshDocsyFollowUps();
+      },
       // Weight and basal temperature are rows on the same sheet, saved on the
       // same confirm rather than through a second dialog.
       initialNumeric: {
@@ -1830,6 +1965,10 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
     _flushOfflineQueue();
     // Today's check-in selections, so they follow the account across devices.
     _loadTodayCheckins();
+    // Docsy's check-in cards for whatever is already logged today.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _refreshDocsyFollowUps();
+    });
     SiaDashboardService().refreshNotifier.addListener(_onSiaRefresh);
   }
 
@@ -2214,12 +2353,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
     final state = BlushyOSProvider.of(context);
     final pc = state.personalContext;
 
-    final List<String> effectiveActiveStages =
-        widget.activeStages ?? pc.activeLifeStages.toList();
-    if (widget.stageKey == null && effectiveActiveStages.length > 1) {
-      return _buildUnifiedMultiStageHomeOS(effectiveActiveStages, pc, state);
-    }
-
+    // With several stages active the home is the dominant stage's own, as
+    // it is with one. It used to be a composite -- a "focus topic" header
+    // per stage over a generic list -- which read as a broken page.
     final String currentStage = _resolveStageKey(pc);
 
     final String normalized = currentStage
@@ -2270,228 +2406,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
       default:
         return _buildEverydayWellnessHomeOS(pc, state);
     }
-  }
-
-  // --- UNIFIED MULTI-STAGE INTELLIGENT DASHBOARD ---
-
-  bool _shouldShowCycleTracker(List<String> stages) {
-    for (final s in stages) {
-      final norm = s.replaceAll('_', '').replaceAll(' ', '').toLowerCase();
-      if (norm != 'firstperiodnotstarted' &&
-          norm != 'notstarted' &&
-          norm != 'puberty' &&
-          norm != 'menopause') {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  Widget _buildUnifiedMultiSiaInsights(List<String> stages) {
-    return _buildLivingSiaInsights();
-  }
-
-  Widget _buildStageSectionHeader(String stageKey) {
-    final title = StageConflictEngine.getStageTitle(stageKey);
-    final icon = StageConflictEngine.getStageIcon(stageKey);
-    return Padding(
-      padding: const EdgeInsets.only(top: 24.0, bottom: 12.0),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: BlushyColors.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 16, color: BlushyColors.primary),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: GoogleFonts.manrope(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: BlushyColors.text,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: BlushyColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              AppLocalizations.of(context).dashFocusTopic,
-              style: GoogleFonts.manrope(
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                color: BlushyColors.primary,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Container(
-              height: 1,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    BlushyColors.primary.withValues(alpha: 0.25),
-                    BlushyColors.primary.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStageSpecificUniqueContent(
-    String stageKey,
-    PersonalContext pc,
-    BlushyOSState state,
-    bool isMobile, {
-    bool skipJourney = false,
-    bool skipPatterns = false,
-  }) {
-    final norm = stageKey.replaceAll('_', '').replaceAll(' ', '').toLowerCase();
-    switch (norm) {
-      case 'firstperiodstarted':
-      case 'started':
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildUnderstandMyCycle(),
-            SizedBox(height: isMobile ? 32 : 48),
-            _buildStartedConnect(),
-            if (!skipJourney) ...[
-              SizedBox(height: isMobile ? 32 : 48),
-              _buildStartedJourney(),
-            ],
-          ],
-        );
-      case 'firstperiodnotstarted':
-      case 'notstarted':
-      case 'puberty':
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildContinueLearning(),
-            SizedBox(height: isMobile ? 32 : 48),
-            _buildCuriousToday(),
-            SizedBox(height: isMobile ? 32 : 48),
-            _buildConnect(),
-            if (!skipJourney) ...[
-              SizedBox(height: isMobile ? 32 : 48),
-              _buildGrowingJourney(),
-            ],
-          ],
-        );
-      case 'reproductiveyears':
-      case 'livingwithmycycle':
-      case 'cycle':
-      default:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!skipPatterns) ...[
-              _buildLivingPatterns(),
-              SizedBox(height: isMobile ? 32 : 48),
-            ],
-            if (!skipJourney) ...[
-              SizedBox(height: isMobile ? 32 : 48),
-              _buildLivingJourney(),
-            ],
-          ],
-        );
-    }
-  }
-
-  Widget _buildUnifiedMultiStageHomeOS(
-    List<String> stages,
-    PersonalContext pc,
-    BlushyOSState state,
-  ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double width = constraints.maxWidth;
-        final bool isMobile = width < 768;
-        final bool isTablet = width >= 768 && width <= 1200;
-        final double horizontalPadding = isMobile ? 16 : (isTablet ? 24 : 48);
-        final double verticalPadding = isMobile ? 24 : 40;
-
-        return _wrapDashboardLayout(
-          scaffoldKey: _scaffoldKey,
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              width: min(1440.0, width - (isMobile ? 0.0 : 64.0)),
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontalPadding,
-                vertical: verticalPadding,
-              ),
-              child: ListView(
-                shrinkWrap: _effectiveShrinkWrap,
-                physics: _effectiveScrollPhysics,
-                children: [
-                  // 2. ACTIVE FOCUS TOPIC HEADERS (RENDERED ONLY AT THE START)
-                  ...stages.map((stageKey) {
-                    return _buildStageSectionHeader(stageKey);
-                  }),
-                  SizedBox(height: isMobile ? 24 : 36),
-
-                  // 3. DEDUPLICATED CYCLE TRACKER (Only 1 authoritative cycle / uterus card)
-                  if (_shouldShowCycleTracker(stages)) ...[
-                    _buildLivingTodayCycle(),
-                    SizedBox(height: isMobile ? 32 : 48),
-                  ],
-
-                  // 4. UNIFIED DAILY CHECK-IN (All mood emojis in 1 row + merged health signals)
-                  _buildLivingCheckIn(),
-                  SizedBox(height: isMobile ? 32 : 48),
-
-                  // 5. COMBINED DOCSY INSIGHTS
-                  _buildUnifiedMultiSiaInsights(stages),
-                  SizedBox(height: isMobile ? 32 : 48),
-
-                  // 6. SINGLE MERGED CYCLE PATTERNS & INSIGHTS
-                  _buildLivingPatterns(),
-                  SizedBox(height: isMobile ? 32 : 48),
-
-                  // 7. STAGE-SPECIFIC DISTINCT MODULES (Focus headers are placed at the start only)
-                  ...stages.map((stageKey) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildStageSpecificUniqueContent(
-                          stageKey,
-                          pc,
-                          state,
-                          isMobile,
-                          skipJourney: true,
-                          skipPatterns: true,
-                        ),
-                        SizedBox(height: isMobile ? 32 : 48),
-                      ],
-                    );
-                  }),
-
-                  // 8. SINGLE MERGED MONTHLY REFLECTION & JOURNEY
-                  _buildLivingJourney(),
-                  SizedBox(height: isMobile ? 32 : 48),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   // --- FIRST PERIODS OS REDESIGN ---
@@ -3604,31 +3518,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
   }
 
   void _openAskSiaChat(BuildContext context, String? initialQuestion) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: BlushyColors.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            child: BlushySiaScreen(initialQuestion: initialQuestion),
-          ),
-        ),
-      ),
-    ).then((_) {
-      if (mounted) {
-        SiaDashboardService().triggerRefresh();
-        setState(() {});
-      }
-    });
+    openDocsyWith(context, initialQuestion);
   }
 
   late final ScrollController _homeScrollController = ScrollController();
@@ -3662,21 +3552,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     vertical: 24,
                   ),
                   children: [
-                    _buildSiasDailyLetter(displayName),
-                    const SizedBox(height: 32),
-                    _buildCheckIn(),
-                    const SizedBox(height: 32),
-                    _buildLivingSiaInsights(),
-                    const SizedBox(height: 32),
-                    _buildLivingPatterns(),
-                    const SizedBox(height: 32),
-                    _buildConnect(),
-                    const SizedBox(height: 32),
-                    _buildContinueLearning(),
-                    const SizedBox(height: 32),
-                    _buildCuriousToday(),
-                    const SizedBox(height: 32),
-                    _buildGrowingJourney(),
+                    ..._orderedHome([
+                      HomeSection('checkin', _buildSiasDailyLetter(displayName), pinned: true),
+                      HomeSection('checkin', _buildCheckIn(), pinned: true),
+                      HomeSection('insights', _buildLivingSiaInsights()),
+                      HomeSection('patterns', _buildLivingPatterns()),
+                      HomeSection('partner', _buildConnect()),
+                      HomeSection('learn', _buildContinueLearning()),
+                      HomeSection('learn', _buildCuriousToday()),
+                      HomeSection('journey', _buildGrowingJourney()),
+                    ], gap: const SizedBox(height: 32)),
                   ],
                 ),
               ),
@@ -3696,21 +3581,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     vertical: 36,
                   ),
                   children: [
-                    _buildSiasDailyLetter(displayName),
-                    const SizedBox(height: 48),
-                    _buildCheckIn(),
-                    const SizedBox(height: 32),
-                    _buildLivingSiaInsights(),
-                    const SizedBox(height: 48),
-                    _buildLivingPatterns(),
-                    const SizedBox(height: 48),
-                    _buildConnect(),
-                    const SizedBox(height: 48),
-                    _buildContinueLearning(),
-                    const SizedBox(height: 48),
-                    _buildCuriousToday(),
-                    const SizedBox(height: 48),
-                    _buildGrowingJourney(),
+                    ..._orderedHome([
+                      HomeSection('checkin', _buildSiasDailyLetter(displayName), pinned: true),
+                      HomeSection('checkin', _buildCheckIn(), pinned: true),
+                      HomeSection('insights', _buildLivingSiaInsights()),
+                      HomeSection('patterns', _buildLivingPatterns()),
+                      HomeSection('partner', _buildConnect()),
+                      HomeSection('learn', _buildContinueLearning()),
+                      HomeSection('learn', _buildCuriousToday()),
+                      HomeSection('journey', _buildGrowingJourney()),
+                    ], gap: const SizedBox(height: 48)),
                   ],
                 ),
               ),
@@ -3735,17 +3615,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     // Row 1: Docsy Daily Letter (12 columns)
                     _buildSiasDailyLetter(displayName),
                     const SizedBox(height: 24),
-                    _buildCheckIn(),
-                    const SizedBox(height: 32),
-                    _buildLivingSiaInsights(),
-                    const SizedBox(height: 24),
-                    _buildLivingPatterns(),
+                    ..._orderedHome([
+                      HomeSection('checkin', _buildCheckIn()),
+                      HomeSection('insights', _buildLivingSiaInsights()),
+                      HomeSection('patterns', _buildLivingPatterns()),
+                    ], gap: const SizedBox(height: 32)),
                     const SizedBox(height: 48),
-
                     // Row 2: Continue Learning (12 columns)
                     _buildContinueLearning(),
                     const SizedBox(height: 48),
-
                     // Row 3: Left Column (8 columns) | Right Column (4 columns)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3878,8 +3756,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                 ),
               ],
               const SizedBox(height: 18),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
                 children: [
                   ElevatedButton(
                     onPressed: onPrimaryTap,
@@ -3904,7 +3783,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     ),
                   ),
                   if (secondaryBtnText != null && onSecondaryTap != null) ...[
-                    const SizedBox(width: 10),
                     OutlinedButton(
                       onPressed: onSecondaryTap,
                       style: OutlinedButton.styleFrom(
@@ -4046,18 +3924,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
               ),
               const SizedBox(height: 16),
               // Color Indicators
-              Row(
+              FittedBox(fit: BoxFit.scaleDown, child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildStartedLegendDot("Menstrual", BlushyColors.primary),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800)),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Luteal", BlushyColors.accent),
+                  ..._orderedHome([
+                    HomeSection('other', _buildStartedLegendDot("Menstrual", BlushyColors.primary)),
+                    HomeSection('other', _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E))),
+                    HomeSection('other', _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800))),
+                    HomeSection('other', _buildStartedLegendDot("Luteal", BlushyColors.accent)),
+                  ], gap: const SizedBox(width: 14)),
                 ],
-              ),
+              )),
               const SizedBox(height: 32),
 
               // Calendar Preview of the last 30 days
@@ -4229,8 +4106,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                runSpacing: 12,
                 children: moodOptions.map((opt) {
                   final checkinData = BlushyStorage.read('daily_checkin.json');
                   final savedFeeling =
@@ -5119,21 +4997,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     vertical: 24,
                   ),
                   children: [
-                    _buildMyFirstCycles(),
-                    const SizedBox(height: 32),
-                    _buildHowAreYouToday(),
-                    const SizedBox(height: 32),
-                    _buildCheckIn(),
-                    const SizedBox(height: 32),
-                    _buildLivingSiaInsights(),
-                    const SizedBox(height: 32),
-                    _buildLivingPatterns(),
-                    const SizedBox(height: 32),
-                    _buildStartedConnect(),
-                    const SizedBox(height: 32),
-                    _buildUnderstandMyCycle(),
-                    const SizedBox(height: 32),
-                    _buildStartedJourney(),
+                    ..._orderedHome([
+                      HomeSection('cycle', _buildMyFirstCycles(), pinned: true),
+                      HomeSection('checkin', _buildHowAreYouToday(), pinned: true),
+                      HomeSection('checkin', _buildCheckIn()),
+                      HomeSection('insights', _buildLivingSiaInsights()),
+                      HomeSection('patterns', _buildLivingPatterns()),
+                      HomeSection('partner', _buildStartedConnect()),
+                      HomeSection('learn', _buildUnderstandMyCycle()),
+                      HomeSection('journey', _buildStartedJourney()),
+                    ], gap: const SizedBox(height: 32)),
                   ],
                 ),
               ),
@@ -5153,21 +5026,16 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     vertical: 36,
                   ),
                   children: [
-                    _buildMyFirstCycles(),
-                    const SizedBox(height: 48),
-                    _buildHowAreYouToday(),
-                    const SizedBox(height: 48),
-                    _buildCheckIn(),
-                    const SizedBox(height: 32),
-                    _buildLivingSiaInsights(),
-                    const SizedBox(height: 48),
-                    _buildLivingPatterns(),
-                    const SizedBox(height: 48),
-                    _buildStartedConnect(),
-                    const SizedBox(height: 48),
-                    _buildUnderstandMyCycle(),
-                    const SizedBox(height: 48),
-                    _buildStartedJourney(),
+                    ..._orderedHome([
+                      HomeSection('cycle', _buildMyFirstCycles(), pinned: true),
+                      HomeSection('checkin', _buildHowAreYouToday(), pinned: true),
+                      HomeSection('checkin', _buildCheckIn()),
+                      HomeSection('insights', _buildLivingSiaInsights()),
+                      HomeSection('patterns', _buildLivingPatterns()),
+                      HomeSection('partner', _buildStartedConnect()),
+                      HomeSection('learn', _buildUnderstandMyCycle()),
+                      HomeSection('journey', _buildStartedJourney()),
+                    ], gap: const SizedBox(height: 48)),
                   ],
                 ),
               ),
@@ -5191,15 +5059,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                   shrinkWrap: _effectiveShrinkWrap,
                   physics: _effectiveScrollPhysics,
                   children: [
-                    _buildMyFirstCycles(),
-                    const SizedBox(height: 24),
-                    _buildHowAreYouToday(),
-                    const SizedBox(height: 24),
-                    _buildCheckIn(),
-                    const SizedBox(height: 32),
-                    _buildLivingSiaInsights(),
-                    const SizedBox(height: 24),
-                    _buildLivingPatterns(),
+                    ..._orderedHome([
+                      HomeSection('cycle', _buildMyFirstCycles(), pinned: true),
+                      HomeSection('checkin', _buildHowAreYouToday(), pinned: true),
+                      HomeSection('checkin', _buildCheckIn()),
+                      HomeSection('insights', _buildLivingSiaInsights()),
+                      HomeSection('patterns', _buildLivingPatterns()),
+                    ], gap: const SizedBox(height: 24)),
                     const SizedBox(height: 24),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -5233,11 +5099,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
     );
   }
 
-  void _showArticleDialog(BuildContext context, String title, String summary) {
+  void _showArticleDialog(BuildContext context, String title, String summary, {String? question}) {
     showDialog(
       context: context,
       builder: (dialogContext) =>
-          ArticleDetailDialog(title: title, summary: summary),
+          ArticleDetailDialog(title: title, summary: summary, question: question),
     );
   }
 
@@ -6126,7 +5992,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SectionHeading(AppLocalizations.of(context).dashPatternsTitle),
+              Expanded(child: SectionHeading(AppLocalizations.of(context).dashPatternsTitle)),
               // Refresh recomputes from current logs; it does not create a
               // duplicate insight (spec section 9).
               IconButton(
@@ -6400,15 +6266,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     vertical: 24,
                   ),
                   children: [
-                    _buildLivingTodayCycle(),
-                    const SizedBox(height: 32),
-                    _buildLivingCheckIn(),
-                    const SizedBox(height: 32),
-                    _buildLivingSiaInsights(),
-                    const SizedBox(height: 32),
-                    _buildLivingPatterns(),
-                    const SizedBox(height: 32),
-                    _buildLivingJourney(),
+                    ..._orderedHome([
+                      HomeSection('cycle', _buildLivingTodayCycle(), pinned: true),
+                      HomeSection('checkin', _buildLivingCheckIn(), pinned: true),
+                      HomeSection('insights', _buildLivingSiaInsights()),
+                      HomeSection('patterns', _buildLivingPatterns()),
+                      HomeSection('journey', _buildLivingJourney()),
+                    ], gap: const SizedBox(height: 32)),
                   ],
                 ),
               ),
@@ -6426,15 +6290,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                   vertical: 36,
                 ),
                 children: [
-                  _buildLivingTodayCycle(),
-                  const SizedBox(height: 48),
-                  _buildLivingCheckIn(),
-                  const SizedBox(height: 48),
-                  _buildLivingSiaInsights(),
-                  const SizedBox(height: 48),
-                  _buildLivingPatterns(),
-                  const SizedBox(height: 48),
-                  _buildLivingJourney(),
+                  ..._orderedHome([
+                    HomeSection('cycle', _buildLivingTodayCycle(), pinned: true),
+                    HomeSection('checkin', _buildLivingCheckIn(), pinned: true),
+                    HomeSection('insights', _buildLivingSiaInsights()),
+                    HomeSection('patterns', _buildLivingPatterns()),
+                    HomeSection('journey', _buildLivingJourney()),
+                  ], gap: const SizedBox(height: 48)),
                 ],
               ),
             ),
@@ -6606,18 +6468,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
               ),
               const SizedBox(height: 16),
               // Color Indicators
-              Row(
+              FittedBox(fit: BoxFit.scaleDown, child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildStartedLegendDot("Menstrual", BlushyColors.primary),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E)),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800)),
-                  const SizedBox(width: 14),
-                  _buildStartedLegendDot("Luteal", BlushyColors.accent),
+                  ..._orderedHome([
+                    HomeSection('other', _buildStartedLegendDot("Menstrual", BlushyColors.primary)),
+                    HomeSection('other', _buildStartedLegendDot("Follicular", const Color(0xFFFF9B9E))),
+                    HomeSection('other', _buildStartedLegendDot("Ovulation", const Color(0xFFFFB800))),
+                    HomeSection('other', _buildStartedLegendDot("Luteal", BlushyColors.accent)),
+                  ], gap: const SizedBox(width: 14)),
                 ],
-              ),
+              )),
               const SizedBox(height: 32),
 
               // Recent Cycle History horizontal blocks
@@ -7081,7 +6942,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Row(
+                  FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight, child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
@@ -7116,7 +6977,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                         ),
                       ),
                     ],
-                  ),
+                  )),
                 ],
               ),
             ),
@@ -7682,29 +7543,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
-                      _buildHormonalCycleHealth(),
-                      const SizedBox(height: 32),
-                      _buildHormonalCheckIn(),
-                      const SizedBox(height: 32),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 32),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 32),
-                      _buildHormonalSiaInsights(),
-                      const SizedBox(height: 32),
-                      _buildHormonalPatterns(),
-                      const SizedBox(height: 32),
-                      _buildConditionProfileCard(),
-                      const SizedBox(height: 32),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
-                      _buildHormonalCarePlan(),
-                      const SizedBox(height: 32),
-                      _buildHormonalLearn(),
-                      const SizedBox(height: 32),
-                      _buildHormonalTimeline(),
-                      const SizedBox(height: 32),
-                      _buildHormonalJourney(),
+                      ..._orderedHome([
+                        HomeSection('cycle', _buildHormonalCycleHealth(), pinned: true),
+                        HomeSection('checkin', _buildHormonalCheckIn(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildHormonalSiaInsights()),
+                        HomeSection('patterns', _buildHormonalPatterns()),
+                        HomeSection('condition', _buildConditionProfileCard()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('careplan', _buildHormonalCarePlan()),
+                        HomeSection('learn', _buildHormonalLearn()),
+                        HomeSection('timeline', _buildHormonalTimeline()),
+                        HomeSection('journey', _buildHormonalJourney()),
+                      ], gap: const SizedBox(height: 32)),
                     ],
                   ),
                 ),
@@ -7726,29 +7578,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 36,
                     ),
                     children: [
-                      _buildHormonalCycleHealth(),
-                      const SizedBox(height: 48),
-                      _buildHormonalCheckIn(),
-                      const SizedBox(height: 48),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 48),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-                      _buildHormonalSiaInsights(),
-                      const SizedBox(height: 48),
-                      _buildHormonalPatterns(),
-                      const SizedBox(height: 48),
-                      _buildConditionProfileCard(),
-                      const SizedBox(height: 48),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 48),
-                      _buildHormonalCarePlan(),
-                      const SizedBox(height: 48),
-                      _buildHormonalLearn(),
-                      const SizedBox(height: 48),
-                      _buildHormonalTimeline(),
-                      const SizedBox(height: 48),
-                      _buildHormonalJourney(),
+                      ..._orderedHome([
+                        HomeSection('cycle', _buildHormonalCycleHealth(), pinned: true),
+                        HomeSection('checkin', _buildHormonalCheckIn(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildHormonalSiaInsights()),
+                        HomeSection('patterns', _buildHormonalPatterns()),
+                        HomeSection('condition', _buildConditionProfileCard()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('careplan', _buildHormonalCarePlan()),
+                        HomeSection('learn', _buildHormonalLearn()),
+                        HomeSection('timeline', _buildHormonalTimeline()),
+                        HomeSection('journey', _buildHormonalJourney()),
+                      ], gap: const SizedBox(height: 48)),
                     ],
                   ),
                 ),
@@ -7772,13 +7615,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     controller: _hormonalHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      _buildHormonalCycleHealth(),
-                      const SizedBox(height: 24),
-                      _buildHormonalCheckIn(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
+                      ..._orderedHome([
+                        HomeSection('cycle', _buildHormonalCycleHealth()),
+                        HomeSection('checkin', _buildHormonalCheckIn()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                      ], gap: const SizedBox(height: 24)),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -7789,15 +7631,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildHormonalSiaInsights(),
-                                const SizedBox(height: 32),
-                                _buildConditionProfileCard(),
-                                const SizedBox(height: 48),
-                                _buildAppointmentSummaryCard(),
-                                const SizedBox(height: 48),
-                                _buildHormonalCarePlan(),
-                                const SizedBox(height: 48),
-                                _buildHormonalLearn(),
+                                ..._orderedHome([
+                                  HomeSection('insights', _buildHormonalSiaInsights(), pinned: true),
+                                  HomeSection('condition', _buildConditionProfileCard(), pinned: true),
+                                  HomeSection('appointments', _buildAppointmentSummaryCard()),
+                                  HomeSection('careplan', _buildHormonalCarePlan()),
+                                  HomeSection('learn', _buildHormonalLearn()),
+                                ], gap: const SizedBox(height: 32)),
                               ],
                             ),
                           ),
@@ -7808,11 +7648,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                             flex: 35,
                             child: Column(
                               children: [
-                                _buildHormonalPatterns(),
-                                const SizedBox(height: 48),
-                                _buildHormonalTimeline(),
-                                const SizedBox(height: 48),
-                                _buildHormonalJourney(),
+                                ..._orderedHome([
+                                  HomeSection('patterns', _buildHormonalPatterns()),
+                                  HomeSection('timeline', _buildHormonalTimeline()),
+                                  HomeSection('journey', _buildHormonalJourney()),
+                                ], gap: const SizedBox(height: 48)),
                               ],
                             ),
                           ),
@@ -7969,42 +7809,41 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                   ),
                   const SizedBox(height: 16),
                   // Color Indicators
-                  Row(
+                  FittedBox(fit: BoxFit.scaleDown, child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildStartedLegendDot("Menstrual", BlushyColors.primary),
-                      const SizedBox(width: 14),
-                      _buildStartedLegendDot(
+                      ..._orderedHome([
+                        HomeSection('other', _buildStartedLegendDot("Menstrual", BlushyColors.primary)),
+                        HomeSection('other', _buildStartedLegendDot(
                         "Follicular",
                         const Color(0xFFFF9B9E),
-                      ),
-                      const SizedBox(width: 14),
-                      _buildStartedLegendDot(
+                      )),
+                        HomeSection('other', _buildStartedLegendDot(
                         "Ovulation",
                         const Color(0xFFFFB800),
-                      ),
-                      const SizedBox(width: 14),
-                      _buildStartedLegendDot("Luteal", BlushyColors.accent),
+                      )),
+                        HomeSection('other', _buildStartedLegendDot("Luteal", BlushyColors.accent)),
+                      ], gap: const SizedBox(width: 14)),
                     ],
-                  ),
+                  )),
                   const SizedBox(height: 32),
 
                   // Timeline Metrics Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildMetricLabel(
+                      Expanded(child: _buildMetricLabel(
                         "Fertile Window",
                         cycleData['fertileWindow'] as String,
-                      ),
-                      _buildMetricLabel(
+                      )),
+                      Expanded(child: _buildMetricLabel(
                         "Expected Period",
                         cycleData['expectedPeriod'] as String,
-                      ),
-                      _buildMetricLabel(
+                      )),
+                      Expanded(child: _buildMetricLabel(
                         "Rec. Test Day",
                         cycleData['recTestDay'] as String,
-                      ),
+                      )),
                     ],
                   ),
                 ],
@@ -8230,14 +8069,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     size: 20,
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  Expanded(child: Text(
                     AppLocalizations.of(context).dashSharedTimelineReminders,
                     style: GoogleFonts.manrope(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.text,
                     ),
-                  ),
+                  )),
                 ],
               ),
               const SizedBox(height: 16),
@@ -8368,27 +8207,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
-                      _buildTtcTimeline(),
-                      const SizedBox(height: 32),
-                      _buildTtcCheckIn(),
-                      const SizedBox(height: 32),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 32),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 32),
-                      _buildTtcInsights(),
-                      const SizedBox(height: 32),
-                      _buildTtcPatterns(),
-                      const SizedBox(height: 32),
-                      _buildTtcPartner(),
-                      const SizedBox(height: 32),
-                      _buildTtcPlan(),
-                      const SizedBox(height: 32),
-                      _buildTtcLearn(),
-                      const SizedBox(height: 32),
-                      _buildTtcJourneyTimeline(),
-                      const SizedBox(height: 32),
-                      _buildTtcMonthlyReflection(),
+                      ..._orderedHome([
+                        HomeSection('timeline', _buildTtcTimeline(), pinned: true),
+                        HomeSection('checkin', _buildTtcCheckIn(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildTtcInsights()),
+                        HomeSection('patterns', _buildTtcPatterns()),
+                        HomeSection('partner', _buildTtcPartner()),
+                        HomeSection('plan', _buildTtcPlan()),
+                        HomeSection('learn', _buildTtcLearn()),
+                        HomeSection('timeline', _buildTtcJourneyTimeline()),
+                        HomeSection('reflection', _buildTtcMonthlyReflection()),
+                      ], gap: const SizedBox(height: 32)),
                     ],
                   ),
                 ),
@@ -8410,27 +8241,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 36,
                     ),
                     children: [
-                      _buildTtcTimeline(),
-                      const SizedBox(height: 48),
-                      _buildTtcCheckIn(),
-                      const SizedBox(height: 48),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 48),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-                      _buildTtcInsights(),
-                      const SizedBox(height: 48),
-                      _buildTtcPatterns(),
-                      const SizedBox(height: 48),
-                      _buildTtcPartner(),
-                      const SizedBox(height: 48),
-                      _buildTtcPlan(),
-                      const SizedBox(height: 48),
-                      _buildTtcLearn(),
-                      const SizedBox(height: 48),
-                      _buildTtcJourneyTimeline(),
-                      const SizedBox(height: 48),
-                      _buildTtcMonthlyReflection(),
+                      ..._orderedHome([
+                        HomeSection('timeline', _buildTtcTimeline(), pinned: true),
+                        HomeSection('checkin', _buildTtcCheckIn(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildTtcInsights()),
+                        HomeSection('patterns', _buildTtcPatterns()),
+                        HomeSection('partner', _buildTtcPartner()),
+                        HomeSection('plan', _buildTtcPlan()),
+                        HomeSection('learn', _buildTtcLearn()),
+                        HomeSection('timeline', _buildTtcJourneyTimeline()),
+                        HomeSection('reflection', _buildTtcMonthlyReflection()),
+                      ], gap: const SizedBox(height: 48)),
                     ],
                   ),
                 ),
@@ -8454,13 +8277,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     controller: _ttcHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      _buildTtcTimeline(),
-                      const SizedBox(height: 24),
-                      _buildTtcCheckIn(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
+                      ..._orderedHome([
+                        HomeSection('timeline', _buildTtcTimeline()),
+                        HomeSection('checkin', _buildTtcCheckIn()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                      ], gap: const SizedBox(height: 24)),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -8471,13 +8293,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildTtcInsights(),
-                                const SizedBox(height: 48),
-                                _buildTtcPartner(),
-                                const SizedBox(height: 48),
-                                _buildTtcPlan(),
-                                const SizedBox(height: 48),
-                                _buildTtcLearn(),
+                                ..._orderedHome([
+                                  HomeSection('insights', _buildTtcInsights()),
+                                  HomeSection('partner', _buildTtcPartner()),
+                                  HomeSection('plan', _buildTtcPlan()),
+                                  HomeSection('learn', _buildTtcLearn()),
+                                ], gap: const SizedBox(height: 48)),
                               ],
                             ),
                           ),
@@ -8488,11 +8309,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                             flex: 35,
                             child: Column(
                               children: [
-                                _buildTtcPatterns(),
-                                const SizedBox(height: 48),
-                                _buildTtcJourneyTimeline(),
-                                const SizedBox(height: 48),
-                                _buildTtcMonthlyReflection(),
+                                ..._orderedHome([
+                                  HomeSection('patterns', _buildTtcPatterns()),
+                                  HomeSection('timeline', _buildTtcJourneyTimeline()),
+                                  HomeSection('reflection', _buildTtcMonthlyReflection()),
+                                ], gap: const SizedBox(height: 48)),
                               ],
                             ),
                           ),
@@ -8700,6 +8521,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                         context,
                         "Development this week",
                         "Week by week development notes will appear here once they have been reviewed. Your midwife or doctor is the best source in the meantime.",
+                                              question: _pregnancyWeek() == null
+                            ? "What is happening in my baby's development this week?"
+                            : "What is happening in week ${_pregnancyWeek()} of my pregnancy?",
                       );
                     },
                     style: OutlinedButton.styleFrom(
@@ -8781,14 +8605,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     size: 20,
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  Expanded(child: Text(
                     AppLocalizations.of(context).dashPregnancyPrepLists,
                     style: GoogleFonts.manrope(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.text,
                     ),
-                  ),
+                  )),
                 ],
               ),
               const SizedBox(height: 16),
@@ -9034,14 +8858,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     size: 20,
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  Expanded(child: Text(
                     AppLocalizations.of(context).dashSharedPregnancyTimeline,
                     style: GoogleFonts.manrope(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.text,
                     ),
-                  ),
+                  )),
                 ],
               ),
               const SizedBox(height: 16),
@@ -9145,31 +8969,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
-                      _buildPregnancyBabyThisWeek(),
-                      const SizedBox(height: 32),
-                      _buildPregnancyCheckIn(),
-                      const SizedBox(height: 32),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 32),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 32),
-                      _buildPregnancyInsights(),
-                      const SizedBox(height: 32),
-                      _buildPregnancyPartner(),
-                      const SizedBox(height: 32),
-                      _buildPregnancyJourneyTimeline(),
-                      const SizedBox(height: 32),
-                      _buildPregnancyCarePlan(),
-                      const SizedBox(height: 32),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
-                      _buildPregnancyPrep(),
-                      const SizedBox(height: 32),
-                      _buildPregnancyLearn(),
-                      const SizedBox(height: 32),
-                      _buildPregnancyJourney(),
-                      const SizedBox(height: 32),
-                      _buildPregnancyReflection(),
+                      ..._orderedHome([
+                        HomeSection('baby', _buildPregnancyBabyThisWeek(), pinned: true),
+                        HomeSection('checkin', _buildPregnancyCheckIn(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildPregnancyInsights()),
+                        HomeSection('partner', _buildPregnancyPartner()),
+                        HomeSection('timeline', _buildPregnancyJourneyTimeline()),
+                        HomeSection('careplan', _buildPregnancyCarePlan()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('prep', _buildPregnancyPrep()),
+                        HomeSection('learn', _buildPregnancyLearn()),
+                        HomeSection('journey', _buildPregnancyJourney()),
+                        HomeSection('reflection', _buildPregnancyReflection()),
+                      ], gap: const SizedBox(height: 32)),
                     ],
                   ),
                 ),
@@ -9191,31 +9005,21 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 36,
                     ),
                     children: [
-                      _buildPregnancyBabyThisWeek(),
-                      const SizedBox(height: 48),
-                      _buildPregnancyCheckIn(),
-                      const SizedBox(height: 48),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 48),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-                      _buildPregnancyInsights(),
-                      const SizedBox(height: 48),
-                      _buildPregnancyPartner(),
-                      const SizedBox(height: 48),
-                      _buildPregnancyJourneyTimeline(),
-                      const SizedBox(height: 48),
-                      _buildPregnancyCarePlan(),
-                      const SizedBox(height: 48),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 48),
-                      _buildPregnancyPrep(),
-                      const SizedBox(height: 48),
-                      _buildPregnancyLearn(),
-                      const SizedBox(height: 48),
-                      _buildPregnancyJourney(),
-                      const SizedBox(height: 48),
-                      _buildPregnancyReflection(),
+                      ..._orderedHome([
+                        HomeSection('baby', _buildPregnancyBabyThisWeek(), pinned: true),
+                        HomeSection('checkin', _buildPregnancyCheckIn(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildPregnancyInsights()),
+                        HomeSection('partner', _buildPregnancyPartner()),
+                        HomeSection('timeline', _buildPregnancyJourneyTimeline()),
+                        HomeSection('careplan', _buildPregnancyCarePlan()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('prep', _buildPregnancyPrep()),
+                        HomeSection('learn', _buildPregnancyLearn()),
+                        HomeSection('journey', _buildPregnancyJourney()),
+                        HomeSection('reflection', _buildPregnancyReflection()),
+                      ], gap: const SizedBox(height: 48)),
                     ],
                   ),
                 ),
@@ -9239,11 +9043,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     controller: _pregnancyHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      _buildPregnancyCheckIn(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
+                      ..._orderedHome([
+                        HomeSection('checkin', _buildPregnancyCheckIn()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                      ], gap: const SizedBox(height: 24)),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -9260,7 +9064,6 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                         ],
                       ),
                       const SizedBox(height: 48),
-
                       // Row 3: Left Panel (8 cols) | Right Sidebar (4 cols)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -9271,17 +9074,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildPregnancyInsights(),
-                                const SizedBox(height: 48),
-                                _buildPregnancyPartner(),
-                                const SizedBox(height: 48),
-                                _buildPregnancyCarePlan(),
-                                const SizedBox(height: 48),
-                                _buildAppointmentSummaryCard(),
-                                const SizedBox(height: 48),
-                                _buildPregnancyPrep(),
-                                const SizedBox(height: 48),
-                                _buildPregnancyLearn(),
+                                ..._orderedHome([
+                                  HomeSection('insights', _buildPregnancyInsights(), pinned: true),
+                                  HomeSection('partner', _buildPregnancyPartner(), pinned: true),
+                                  HomeSection('careplan', _buildPregnancyCarePlan()),
+                                  HomeSection('appointments', _buildAppointmentSummaryCard()),
+                                  HomeSection('prep', _buildPregnancyPrep()),
+                                  HomeSection('learn', _buildPregnancyLearn()),
+                                ], gap: const SizedBox(height: 48)),
                               ],
                             ),
                           ),
@@ -9301,7 +9101,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                         ],
                       ),
                       const SizedBox(height: 40),
-                    ],
+                         ],
                   ),
                 ),
               ),
@@ -9377,8 +9177,9 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                runSpacing: 12,
                 children: moodOptions.map((opt) {
                   final checkinData = BlushyStorage.read('daily_checkin.json');
                   final savedFeeling =
@@ -9746,14 +9547,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     size: 20,
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  Expanded(child: Text(
                     AppLocalizations.of(context).dashMotherBabyCoordinatedTasks,
                     style: GoogleFonts.manrope(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: BlushyColors.text,
                     ),
-                  ),
+                  )),
                 ],
               ),
               const SizedBox(height: 16),
@@ -9778,11 +9579,14 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                           ),
                         ),
                       ),
-                      Text(
-                        c['val']!,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
-                          color: BlushyColors.secondaryText,
+                      Flexible(
+                        child: Text(
+                          c['val']!,
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            color: BlushyColors.secondaryText,
+                          ),
                         ),
                       ),
                     ],
@@ -9994,29 +9798,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
-                      _buildPostpartumRecoveryTimeline(),
-                      const SizedBox(height: 32),
-                      _buildPostpartumWellbeing(),
-                      const SizedBox(height: 32),
-                      _buildCheckIn(),
-                      const SizedBox(height: 32),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 32),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 32),
-                      _buildPostpartumInsights(),
-                      const SizedBox(height: 32),
-                      _buildPostpartumCarePlan(),
-                      const SizedBox(height: 32),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
-                      _buildPostpartumBabyAndYou(),
-                      const SizedBox(height: 32),
-                      _buildPostpartumLearn(),
-                      const SizedBox(height: 32),
-                      _buildPostpartumJourney(),
-                      const SizedBox(height: 32),
-                      _buildPostpartumReflection(),
+                      ..._orderedHome([
+                        HomeSection('timeline', _buildPostpartumRecoveryTimeline(), pinned: true),
+                        HomeSection('wellbeing', _buildPostpartumWellbeing(), pinned: true),
+                        HomeSection('checkin', _buildCheckIn()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildPostpartumInsights()),
+                        HomeSection('careplan', _buildPostpartumCarePlan()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('baby', _buildPostpartumBabyAndYou()),
+                        HomeSection('learn', _buildPostpartumLearn()),
+                        HomeSection('journey', _buildPostpartumJourney()),
+                        HomeSection('reflection', _buildPostpartumReflection()),
+                      ], gap: const SizedBox(height: 32)),
                     ],
                   ),
                 ),
@@ -10038,29 +9833,20 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 36,
                     ),
                     children: [
-                      _buildPostpartumRecoveryTimeline(),
-                      const SizedBox(height: 48),
-                      _buildPostpartumWellbeing(),
-                      const SizedBox(height: 48),
-                      _buildCheckIn(),
-                      const SizedBox(height: 32),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 48),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-                      _buildPostpartumInsights(),
-                      const SizedBox(height: 48),
-                      _buildPostpartumCarePlan(),
-                      const SizedBox(height: 48),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 48),
-                      _buildPostpartumBabyAndYou(),
-                      const SizedBox(height: 48),
-                      _buildPostpartumLearn(),
-                      const SizedBox(height: 48),
-                      _buildPostpartumJourney(),
-                      const SizedBox(height: 48),
-                      _buildPostpartumReflection(),
+                      ..._orderedHome([
+                        HomeSection('timeline', _buildPostpartumRecoveryTimeline(), pinned: true),
+                        HomeSection('wellbeing', _buildPostpartumWellbeing(), pinned: true),
+                        HomeSection('checkin', _buildCheckIn()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildPostpartumInsights()),
+                        HomeSection('careplan', _buildPostpartumCarePlan()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('baby', _buildPostpartumBabyAndYou()),
+                        HomeSection('learn', _buildPostpartumLearn()),
+                        HomeSection('journey', _buildPostpartumJourney()),
+                        HomeSection('reflection', _buildPostpartumReflection()),
+                      ], gap: const SizedBox(height: 48)),
                     ],
                   ),
                 ),
@@ -10084,15 +9870,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     controller: _postpartumHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      _buildPostpartumRecoveryTimeline(),
-                      const SizedBox(height: 24),
-                      _buildPostpartumWellbeing(),
-                      const SizedBox(height: 24),
-                      _buildCheckIn(),
-                      const SizedBox(height: 32),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
+                      ..._orderedHome([
+                        HomeSection('timeline', _buildPostpartumRecoveryTimeline(), pinned: true),
+                        HomeSection('wellbeing', _buildPostpartumWellbeing(), pinned: true),
+                        HomeSection('checkin', _buildCheckIn()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                      ], gap: const SizedBox(height: 24)),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -10103,15 +9887,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildPostpartumInsights(),
-                                const SizedBox(height: 48),
-                                _buildPostpartumCarePlan(),
-                                _buildAppointmentSummaryCard(),
-                                const SizedBox(height: 32),
-                                const SizedBox(height: 48),
-                                _buildPostpartumBabyAndYou(),
-                                const SizedBox(height: 48),
-                                _buildPostpartumLearn(),
+                                ..._orderedHome([
+                                  HomeSection('insights', _buildPostpartumInsights(), pinned: true),
+                                  HomeSection('careplan', _buildPostpartumCarePlan(), pinned: true),
+                                  HomeSection('appointments', _buildAppointmentSummaryCard()),
+                                  HomeSection('baby', _buildPostpartumBabyAndYou()),
+                                  HomeSection('learn', _buildPostpartumLearn()),
+                                ], gap: const SizedBox(height: 48)),
                               ],
                             ),
                           ),
@@ -10305,19 +10087,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
               const SizedBox(height: 24),
 
               // Ovary Legend/Color Indicators
-              Row(
+              FittedBox(fit: BoxFit.scaleDown, child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildStartedLegendDot("Period", const Color(0xFFC78280)),
-                  const SizedBox(width: 12),
-                  _buildStartedLegendDot("Follicular", const Color(0xFFE2B7A8)),
-                  const SizedBox(width: 12),
-                  _buildStartedLegendDot(
+                  ..._orderedHome([
+                    HomeSection('other', _buildStartedLegendDot("Period", const Color(0xFFC78280))),
+                    HomeSection('other', _buildStartedLegendDot("Follicular", const Color(0xFFE2B7A8))),
+                    HomeSection('other', _buildStartedLegendDot(
                     "Luteal/Late",
                     const Color(0xFFE8987E),
-                  ),
+                  )),
+                  ], gap: const SizedBox(width: 12)),
                 ],
-              ),
+              )),
               const Divider(height: 36, color: Color(0xFFF5F0EB)),
 
               Text(
@@ -10677,27 +10459,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
-                      _buildPeriChangingCycle(pc),
-                      const SizedBox(height: 32),
-                      _buildPeriWellbeing(),
-                      const SizedBox(height: 32),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 32),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 32),
-                      _buildPeriInsights(),
-                      const SizedBox(height: 32),
-                      _buildPeriPatterns(),
-                      const SizedBox(height: 32),
-                      _buildPeriCarePlan(),
-                      const SizedBox(height: 32),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
-                      _buildPeriLearn(),
-                      const SizedBox(height: 32),
-                      _buildPeriTransition(),
-                      const SizedBox(height: 32),
-                      _buildPeriReflection(),
+                      ..._orderedHome([
+                        HomeSection('other', _buildPeriChangingCycle(pc), pinned: true),
+                        HomeSection('wellbeing', _buildPeriWellbeing(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildPeriInsights()),
+                        HomeSection('patterns', _buildPeriPatterns()),
+                        HomeSection('careplan', _buildPeriCarePlan()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('learn', _buildPeriLearn()),
+                        HomeSection('timeline', _buildPeriTransition()),
+                        HomeSection('reflection', _buildPeriReflection()),
+                      ], gap: const SizedBox(height: 32)),
                     ],
                   ),
                 ),
@@ -10719,27 +10493,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 36,
                     ),
                     children: [
-                      _buildPeriChangingCycle(pc),
-                      const SizedBox(height: 48),
-                      _buildPeriWellbeing(),
-                      const SizedBox(height: 48),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 48),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-                      _buildPeriInsights(),
-                      const SizedBox(height: 48),
-                      _buildPeriPatterns(),
-                      const SizedBox(height: 48),
-                      _buildPeriCarePlan(),
-                      const SizedBox(height: 48),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 48),
-                      _buildPeriLearn(),
-                      const SizedBox(height: 48),
-                      _buildPeriTransition(),
-                      const SizedBox(height: 48),
-                      _buildPeriReflection(),
+                      ..._orderedHome([
+                        HomeSection('other', _buildPeriChangingCycle(pc), pinned: true),
+                        HomeSection('wellbeing', _buildPeriWellbeing(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildPeriInsights()),
+                        HomeSection('patterns', _buildPeriPatterns()),
+                        HomeSection('careplan', _buildPeriCarePlan()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('learn', _buildPeriLearn()),
+                        HomeSection('timeline', _buildPeriTransition()),
+                        HomeSection('reflection', _buildPeriReflection()),
+                      ], gap: const SizedBox(height: 48)),
                     ],
                   ),
                 ),
@@ -10763,13 +10529,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     controller: _periHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      _buildPeriChangingCycle(pc),
-                      const SizedBox(height: 24),
-                      _buildPeriWellbeing(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
+                      ..._orderedHome([
+                        HomeSection('other', _buildPeriChangingCycle(pc)),
+                        HomeSection('wellbeing', _buildPeriWellbeing()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                      ], gap: const SizedBox(height: 24)),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -10780,15 +10545,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildPeriInsights(),
-                                const SizedBox(height: 48),
-                                _buildPeriPatterns(),
-                                const SizedBox(height: 48),
-                                _buildPeriCarePlan(),
-                                _buildAppointmentSummaryCard(),
-                                const SizedBox(height: 32),
-                                const SizedBox(height: 48),
-                                _buildPeriLearn(),
+                                ..._orderedHome([
+                                  HomeSection('insights', _buildPeriInsights(), pinned: true),
+                                  HomeSection('patterns', _buildPeriPatterns(), pinned: true),
+                                  HomeSection('careplan', _buildPeriCarePlan()),
+                                  HomeSection('appointments', _buildAppointmentSummaryCard()),
+                                  HomeSection('learn', _buildPeriLearn()),
+                                ], gap: const SizedBox(height: 48)),
                               ],
                             ),
                           ),
@@ -11131,7 +10894,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
         SizedBox(
           // Sized for the UI face at its current size and leading; the
           // cards' columns overflowed the old height by up to 90px.
-          height: 320,
+          height: 340,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -11433,27 +11196,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
-                      _buildMenoCheckIn(),
-                      const SizedBox(height: 32),
-                      _buildMenoWellbeing(),
-                      const SizedBox(height: 32),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 32),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 32),
-                      _buildMenoInsights(),
-                      const SizedBox(height: 32),
-                      _buildMenoPatterns(),
-                      const SizedBox(height: 32),
-                      _buildMenoCarePlan(),
-                      const SizedBox(height: 32),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 32),
-                      _buildMenoLearn(),
-                      const SizedBox(height: 32),
-                      _buildMenoWellnessJourney(),
-                      const SizedBox(height: 32),
-                      _buildMenoReflection(),
+                      ..._orderedHome([
+                        HomeSection('checkin', _buildMenoCheckIn(), pinned: true),
+                        HomeSection('wellbeing', _buildMenoWellbeing(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildMenoInsights()),
+                        HomeSection('patterns', _buildMenoPatterns()),
+                        HomeSection('careplan', _buildMenoCarePlan()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('learn', _buildMenoLearn()),
+                        HomeSection('journey', _buildMenoWellnessJourney()),
+                        HomeSection('reflection', _buildMenoReflection()),
+                      ], gap: const SizedBox(height: 32)),
                     ],
                   ),
                 ),
@@ -11475,27 +11230,19 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 36,
                     ),
                     children: [
-                      _buildMenoCheckIn(),
-                      const SizedBox(height: 48),
-                      _buildMenoWellbeing(),
-                      const SizedBox(height: 48),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 48),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-                      _buildMenoInsights(),
-                      const SizedBox(height: 48),
-                      _buildMenoPatterns(),
-                      const SizedBox(height: 48),
-                      _buildMenoCarePlan(),
-                      const SizedBox(height: 48),
-                      _buildAppointmentSummaryCard(),
-                      const SizedBox(height: 48),
-                      _buildMenoLearn(),
-                      const SizedBox(height: 48),
-                      _buildMenoWellnessJourney(),
-                      const SizedBox(height: 48),
-                      _buildMenoReflection(),
+                      ..._orderedHome([
+                        HomeSection('checkin', _buildMenoCheckIn(), pinned: true),
+                        HomeSection('wellbeing', _buildMenoWellbeing(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildMenoInsights()),
+                        HomeSection('patterns', _buildMenoPatterns()),
+                        HomeSection('careplan', _buildMenoCarePlan()),
+                        HomeSection('appointments', _buildAppointmentSummaryCard()),
+                        HomeSection('learn', _buildMenoLearn()),
+                        HomeSection('journey', _buildMenoWellnessJourney()),
+                        HomeSection('reflection', _buildMenoReflection()),
+                      ], gap: const SizedBox(height: 48)),
                     ],
                   ),
                 ),
@@ -11519,13 +11266,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     controller: _menoHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      _buildMenoCheckIn(),
-                      const SizedBox(height: 24),
-                      _buildMenoWellbeing(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
+                      ..._orderedHome([
+                        HomeSection('checkin', _buildMenoCheckIn()),
+                        HomeSection('wellbeing', _buildMenoWellbeing()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                      ], gap: const SizedBox(height: 24)),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -11536,15 +11282,13 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildMenoInsights(),
-                                const SizedBox(height: 48),
-                                _buildMenoPatterns(),
-                                const SizedBox(height: 48),
-                                _buildMenoCarePlan(),
-                                _buildAppointmentSummaryCard(),
-                                const SizedBox(height: 32),
-                                const SizedBox(height: 48),
-                                _buildMenoLearn(),
+                                ..._orderedHome([
+                                  HomeSection('insights', _buildMenoInsights(), pinned: true),
+                                  HomeSection('patterns', _buildMenoPatterns(), pinned: true),
+                                  HomeSection('careplan', _buildMenoCarePlan()),
+                                  HomeSection('appointments', _buildAppointmentSummaryCard()),
+                                  HomeSection('learn', _buildMenoLearn()),
+                                ], gap: const SizedBox(height: 48)),
                               ],
                             ),
                           ),
@@ -11747,7 +11491,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
+                  Expanded(child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -11767,7 +11511,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                         ),
                       ),
                     ],
-                  ),
+                  )),
                 ],
               ),
               const SizedBox(height: 24),
@@ -12192,25 +11936,18 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 24,
                     ),
                     children: [
-                      _buildBranchSwitcher(state),
-                      const SizedBox(height: 32),
-                      _buildWellnessCheckIn(),
-                      const SizedBox(height: 32),
-                      _buildWellnessDashboard(),
-                      const SizedBox(height: 32),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 32),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 32),
-                      _buildWellnessInsights(),
-                      const SizedBox(height: 32),
-                      _buildWellnessHabitCards(),
-                      const SizedBox(height: 32),
-                      _buildWellnessPlan(),
-                      const SizedBox(height: 32),
-                      _buildWellnessJourney(),
-                      const SizedBox(height: 32),
-                      _buildWellnessReflection(),
+                      ..._orderedHome([
+                        HomeSection('checkin', _buildBranchSwitcher(state), pinned: true),
+                        HomeSection('checkin', _buildWellnessCheckIn(), pinned: true),
+                        HomeSection('dashboard', _buildWellnessDashboard()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildWellnessInsights()),
+                        HomeSection('habits', _buildWellnessHabitCards()),
+                        HomeSection('plan', _buildWellnessPlan()),
+                        HomeSection('journey', _buildWellnessJourney()),
+                        HomeSection('reflection', _buildWellnessReflection()),
+                      ], gap: const SizedBox(height: 32)),
                     ],
                   ),
                 ),
@@ -12232,23 +11969,17 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                       vertical: 36,
                     ),
                     children: [
-                      _buildWellnessCheckIn(),
-                      const SizedBox(height: 48),
-                      _buildWellnessDashboard(),
-                      const SizedBox(height: 48),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 48),
-                      _buildLivingPatterns(),
-                      const SizedBox(height: 48),
-                      _buildWellnessInsights(),
-                      const SizedBox(height: 48),
-                      _buildWellnessHabitCards(),
-                      const SizedBox(height: 48),
-                      _buildWellnessPlan(),
-                      const SizedBox(height: 48),
-                      _buildWellnessJourney(),
-                      const SizedBox(height: 48),
-                      _buildWellnessReflection(),
+                      ..._orderedHome([
+                        HomeSection('checkin', _buildWellnessCheckIn(), pinned: true),
+                        HomeSection('dashboard', _buildWellnessDashboard(), pinned: true),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                        HomeSection('insights', _buildWellnessInsights()),
+                        HomeSection('habits', _buildWellnessHabitCards()),
+                        HomeSection('plan', _buildWellnessPlan()),
+                        HomeSection('journey', _buildWellnessJourney()),
+                        HomeSection('reflection', _buildWellnessReflection()),
+                      ], gap: const SizedBox(height: 48)),
                     ],
                   ),
                 ),
@@ -12272,13 +12003,12 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                     controller: _wellnessHomeScrollController,
                     physics: const BouncingScrollPhysics(),
                     children: [
-                      _buildWellnessCheckIn(),
-                      const SizedBox(height: 24),
-                      _buildWellnessDashboard(),
-                      const SizedBox(height: 24),
-                      _buildLivingSiaInsights(),
-                      const SizedBox(height: 24),
-                      _buildLivingPatterns(),
+                      ..._orderedHome([
+                        HomeSection('checkin', _buildWellnessCheckIn()),
+                        HomeSection('dashboard', _buildWellnessDashboard()),
+                        HomeSection('insights', _buildLivingSiaInsights()),
+                        HomeSection('patterns', _buildLivingPatterns()),
+                      ], gap: const SizedBox(height: 24)),
                       const SizedBox(height: 24),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -12289,11 +12019,11 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildWellnessInsights(),
-                                const SizedBox(height: 48),
-                                _buildWellnessHabitCards(),
-                                const SizedBox(height: 48),
-                                _buildWellnessPlan(),
+                                ..._orderedHome([
+                                  HomeSection('insights', _buildWellnessInsights()),
+                                  HomeSection('habits', _buildWellnessHabitCards()),
+                                  HomeSection('plan', _buildWellnessPlan()),
+                                ], gap: const SizedBox(height: 48)),
                               ],
                             ),
                           ),

@@ -329,6 +329,36 @@ class ApiSiaService {
   }
 
   /// Fetches AI health insights: `GET /ai/health-insights`
+  /// Docsy's check-in cards for today's logged symptoms.
+  ///
+  /// `{date, cards, source}`; `source` is 'docsy' when the model wrote the
+  /// cards and 'none' when it could not, in which case the caller falls
+  /// back to the rule table. Empty on any failure, for the same reason.
+  Future<Map<String, dynamic>> getCheckinFollowUps({
+    required List<String> symptoms,
+    required String date,
+    String? stage,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/ai/checkin-followups',
+        data: {
+          'symptoms': symptoms,
+          'date': date,
+          'stage': ?stage,
+        },
+        options: _aiOptions(),
+      );
+      if (response.data is Map<String, dynamic>) {
+        return response.data as Map<String, dynamic>;
+      }
+      return {};
+    } catch (e) {
+      debugPrint('BlushySia: Error fetching check-in follow-ups: $e');
+      return {};
+    }
+  }
+
   Future<Map<String, dynamic>> getHealthInsights() async {
     try {
       final response = await _dio.get(

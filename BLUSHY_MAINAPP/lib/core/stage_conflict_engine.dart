@@ -38,6 +38,9 @@ const Map<String, StageConflictRule> kStageConflictRules = {
       'postpartum',
       'perimenopause',
       'menopause',
+      'reproductiveYears',
+      'hormonalHealth',
+      'tryingToConceive',
     ],
     userFacingMessage: "First Period (Started) focuses on early teenage puberty cycles. Activating maternity or menopause tracks will transition your profile.",
     reason: "First Period (Started) focuses on early teenage puberty cycles.",
@@ -48,6 +51,9 @@ const Map<String, StageConflictRule> kStageConflictRules = {
     incompatibleWith: [
       'firstPeriodNotStarted',
       'menopause',
+      'pregnancy',
+      'postpartum',
+      'firstPeriodStarted',
     ],
     userFacingMessage: "Living with My Cycle tracks active ovulatory phases. Activating pre-menarche or post-menopause tracks will transition your profile.",
     reason: "Reproductive cycle tracking requires active menstrual cycles.",
@@ -72,6 +78,10 @@ const Map<String, StageConflictRule> kStageConflictRules = {
       'tryingToConceive',
       'menopause',
       'postpartum',
+      'firstPeriodStarted',
+      'reproductiveYears',
+      'hormonalHealth',
+      'perimenopause',
     ],
     userFacingMessage: "Congratulations on your pregnancy! Activating the Pregnancy track will complete your Trying to Conceive tracking and pause standard cycle predictions.",
     reason: "Active pregnancy pauses cycle tracking and conception timelines.",
@@ -83,6 +93,10 @@ const Map<String, StageConflictRule> kStageConflictRules = {
       'firstPeriodNotStarted',
       'pregnancy',
       'menopause',
+      'firstPeriodStarted',
+      'reproductiveYears',
+      'hormonalHealth',
+      'perimenopause',
     ],
     userFacingMessage: "Postpartum begins following delivery, replacing active pregnancy tracking with fourth-trimester recovery and newborn feeding care.",
     reason: "Postpartum begins after delivery, replacing active pregnancy tracking.",
@@ -94,6 +108,8 @@ const Map<String, StageConflictRule> kStageConflictRules = {
       'firstPeriodNotStarted',
       'firstPeriodStarted',
       'menopause',
+      'pregnancy',
+      'postpartum',
     ],
     userFacingMessage: "Perimenopause tracks transitional cycle rhythm shifts. It cannot co-exist with pre-puberty or complete post-menopause tracks.",
     reason: "Perimenopause represents the active transition phase prior to complete menopause.",
@@ -135,6 +151,42 @@ class StageConflictResult {
 }
 
 class StageConflictEngine {
+  /// The stages in the order that decides what the home tracks when more
+  /// than one is active. Pregnancy outranks everything: nothing about a
+  /// cycle applies while it runs. Then the stages with no cycle, then the
+  /// ones that track one, most specific first. Everyday wellness is last:
+  /// it adds to a stage and never replaces one.
+  static const List<String> stagePriority = [
+    'pregnancy',
+    'postpartum',
+    'menopause',
+    'perimenopause',
+    'tryingToConceive',
+    'hormonalHealth',
+    'reproductiveYears',
+    'firstPeriodStarted',
+    'firstPeriodNotStarted',
+    'everydayWellness',
+  ];
+
+  /// The stage that decides the home and the symptom groups.
+  ///
+  /// With several stages active this used to be whichever came first in the
+  /// set -- insertion order, in practice the oldest choice -- so a woman who
+  /// added pregnancy kept a cycle home. Keys are matched loosely, the way
+  /// the dashboard matches them, so `trying_to_conceive` finds its place.
+  static String? dominantStage(Iterable<String> stages) {
+    String squash(String k) => k.replaceAll('_', '').replaceAll(' ', '').toLowerCase();
+    final active = stages.where((s) => s.trim().isNotEmpty).toList();
+    if (active.isEmpty) return null;
+    for (final ranked in stagePriority) {
+      for (final s in active) {
+        if (squash(s) == squash(ranked)) return s;
+      }
+    }
+    return active.first;
+  }
+
   static String getStageTitle(String key) {
     switch (key) {
       case 'firstPeriodNotStarted':

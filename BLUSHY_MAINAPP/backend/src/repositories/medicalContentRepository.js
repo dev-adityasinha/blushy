@@ -314,28 +314,37 @@ export async function seedContentIfMissing(entries = [], actorId = 'system_seed'
     if (existing) continue;
 
     const now = new Date();
-    await db.collection(COLLECTION).insertOne({
-      content_id: entry.contentId,
-      title: entry.title,
-      body: entry.body,
-      summary: entry.summary ?? null,
-      source: entry.source ?? null,
-      reviewer: entry.reviewer ?? null,
-      review_date: entry.reviewDate ?? null,
-      review_due_date: entry.reviewDueDate ?? null,
-      version: entry.version ?? '1.0.0',
-      locale: entry.locale ?? 'en',
-      region: entry.region ?? null,
-      life_stages: normalizeArray(entry.lifeStages),
-      topics: normalizeArray(entry.topics),
-      audience: entry.audience ?? 'female_user',
-      status: entry.status ?? CONTENT_STATES.APPROVED,
-      content_type: entry.contentType ?? 'article',
-      reading_time_minutes: entry.readingTimeMinutes ?? null,
-      media_url: entry.mediaUrl ?? null,
-      created_at: now,
-      updated_at: now,
-    });
+    try {
+      await db.collection(COLLECTION).insertOne({
+        content_id: entry.contentId,
+        title: entry.title,
+        body: entry.body,
+        summary: entry.summary ?? null,
+        source: entry.source ?? null,
+        reviewer: entry.reviewer ?? null,
+        review_date: entry.reviewDate ?? null,
+        review_due_date: entry.reviewDueDate ?? null,
+        version: entry.version ?? '1.0.0',
+        locale: entry.locale ?? 'en',
+        region: entry.region ?? null,
+        life_stages: normalizeArray(entry.lifeStages),
+        topics: normalizeArray(entry.topics),
+        audience: entry.audience ?? 'female_user',
+        status: entry.status ?? CONTENT_STATES.APPROVED,
+        content_type: entry.contentType ?? 'article',
+        reading_time_minutes: entry.readingTimeMinutes ?? null,
+        media_url: entry.mediaUrl ?? null,
+        created_at: now,
+        updated_at: now,
+      });
+    } catch (error) {
+      // Two instances seeding at once -- two test processes, or two servers
+      // booting together -- both pass the findOne above and race to insert.
+      // The unique index refuses the second; that is the content being
+      // there already, not a failure.
+      if (error?.code === 11000) continue;
+      throw error;
+    }
     await recordAudit(entry.contentId, 'seeded', actorId, null);
     created += 1;
   }

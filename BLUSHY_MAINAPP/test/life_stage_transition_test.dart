@@ -32,7 +32,7 @@ void main() {
     expect(serverCall, greaterThan(-1));
     expect(serverCall, lessThan(localWrite),
         reason: 'the transition must be attempted before local state moves');
-    expect(RegExp(r'if \(!moved\) return;').hasMatch(card), isTrue,
+    expect(RegExp(r'if \(!(moved|outcome\.moved)\) return;').hasMatch(card), isTrue,
         reason: 'a refused transition must stop, not fall through');
   });
 

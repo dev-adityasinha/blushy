@@ -5,6 +5,7 @@ import '../../../core/storage.dart';
 import '../../../core/stage_conflict_engine.dart';
 import '../../../theme/colors.dart';
 import 'stage_questionnaire_dialog.dart';
+import '../stage_transition.dart';
 import 'stage_conflict_dialog.dart';
 import '../../../services/api_blushy_service.dart';
 
@@ -95,17 +96,66 @@ const List<LifeStageInfo> kAllLifeStages = [
 /// showed the new one. The change also lived on one device.
 ///
 /// Returns true when the account actually moved.
-Future<bool> transitionLifeStage(
+/// What a stage change came to.
+class TransitionOutcome {
+  const TransitionOutcome({required this.moved, this.questionnaireDone = false});
+
+  /// The server now has her in the new stage.
+  final bool moved;
+
+  /// The stage questionnaire already ran on the way (its answers were needed
+  /// before the server would allow the change), so the caller must not open
+  /// it a second time.
+  final bool questionnaireDone;
+}
+
+/// Moves her to [toStage] on the server, and says how it went.
+///
+/// The server may refuse once and ask for something: a confirmation, which
+/// is put to her; the stage's required context, which the stage
+/// questionnaire collects before the change is retried; or nothing will do,
+/// because there is no direct path between the two stages, and she is told
+/// so. Every refusal used to read as "could not be saved".
+Future<TransitionOutcome> transitionLifeStage(
   BuildContext context, {
   required String toStage,
   required String stageTitle,
+  Map<String, dynamic> branchContext = const {},
 }) async {
-  var result = await LifeStageApi.transition(toStage: toStage);
+  var result = await LifeStageApi.transition(toStage: toStage, context: branchContext);
+  var questionnaireDone = false;
 
-  // The server asks rather than assuming for the sensitive moves. Confirming
-  // is the user's to give, so it is asked for here and the call repeated.
-  if (!result.isReady && (result.meta?['requiresConfirmation'] == true)) {
-    if (!context.mounted) return false;
+  if (!result.isReady && result.errorCode == 'ALREADY_IN_STAGE') {
+    return const TransitionOutcome(moved: true);
+  }
+
+  if (!result.isReady && result.errorCode == 'MISSING_BRANCH_CONTEXT') {
+    if (!context.mounted) return const TransitionOutcome(moved: false);
+    final completed = await StageQuestionnaireDialog.show(
+      context,
+      stageKey: toStage,
+      stageTitle: stageTitle,
+      isEditing: false,
+    );
+    if (completed != true) return const TransitionOutcome(moved: false);
+    questionnaireDone = true;
+    Map<String, dynamic> profile;
+    try {
+      final data = BlushyStorage.read('user_profile.json');
+      profile = data['profile'] is Map ? Map<String, dynamic>.from(data['profile']) : Map<String, dynamic>.from(data);
+    } catch (_) {
+      profile = const {};
+    }
+    final ctx = {...branchContext, ...branchContextFromAnswers(toStage, savedStageAnswers(profile, toStage))};
+    result = await LifeStageApi.transition(toStage: toStage, context: ctx);
+    if (!result.isReady && result.errorCode == 'CONFIRMATION_REQUIRED') {
+      // Confirmed below with the same context.
+      branchContext = ctx;
+    }
+  }
+
+  if (!result.isReady && (result.meta?['requiresConfirmation'] == true || result.errorCode == 'CONFIRMATION_REQUIRED')) {
+    if (!context.mounted) return TransitionOutcome(moved: false, questionnaireDone: questionnaireDone);
     final agreed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -135,17 +185,47 @@ Future<bool> transitionLifeStage(
       ),
     );
 
-    if (agreed != true) return false;
-    result = await LifeStageApi.transition(toStage: toStage, confirmed: true);
+    if (agreed != true) return TransitionOutcome(moved: false, questionnaireDone: questionnaireDone);
+    result = await LifeStageApi.transition(toStage: toStage, confirmed: true, context: branchContext);
+
+    if (!result.isReady && result.errorCode == 'MISSING_BRANCH_CONTEXT' && !questionnaireDone) {
+      // Confirmed first, context second: collect it and finish the move.
+      if (!context.mounted) return const TransitionOutcome(moved: false);
+      final completed = await StageQuestionnaireDialog.show(
+        context,
+        stageKey: toStage,
+        stageTitle: stageTitle,
+        isEditing: false,
+      );
+      if (completed != true) return const TransitionOutcome(moved: false);
+      questionnaireDone = true;
+      Map<String, dynamic> profile;
+      try {
+        final data = BlushyStorage.read('user_profile.json');
+        profile = data['profile'] is Map ? Map<String, dynamic>.from(data['profile']) : Map<String, dynamic>.from(data);
+      } catch (_) {
+        profile = const {};
+      }
+      final ctx = {...branchContext, ...branchContextFromAnswers(toStage, savedStageAnswers(profile, toStage))};
+      result = await LifeStageApi.transition(toStage: toStage, confirmed: true, context: ctx);
+    }
+  }
+
+  if (!result.isReady && result.errorCode == 'ALREADY_IN_STAGE') {
+    return TransitionOutcome(moved: true, questionnaireDone: questionnaireDone);
   }
 
   if (!result.isReady && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.errorMessage ?? 'That change could not be saved.')),
+      SnackBar(
+        content: Text(result.errorMessage ??
+            transitionRefusalMessage(result.errorCode, result.meta, stageTitle)),
+        duration: const Duration(seconds: 4),
+      ),
     );
   }
 
-  return result.isReady;
+  return TransitionOutcome(moved: result.isReady, questionnaireDone: questionnaireDone);
 }
 
 class LifeStageSelectorCard extends StatelessWidget {
@@ -321,12 +401,12 @@ class LifeStageSelectorCard extends StatelessWidget {
                             // written straight away, so the account and the
                             // screen could disagree about which stage she was
                             // in -- and the server kept serving the old one.
-                            final moved = await transitionLifeStage(
+                            final outcome = await transitionLifeStage(
                               context,
                               toStage: stage.key,
                               stageTitle: stage.title,
                             );
-                            if (!moved) return;
+                            if (!outcome.moved) return;
 
                             final newStages = Set<String>.from(activeStages)
                               ..removeAll(conflictResult.conflictingActiveStages)
@@ -334,6 +414,10 @@ class LifeStageSelectorCard extends StatelessWidget {
 
                             osState.setActiveLifeStages(newStages);
                             if (!context.mounted) return;
+                            if (outcome.questionnaireDone) {
+                              onStageUpdated?.call();
+                              return;
+                            }
                             final bool? completed = await StageQuestionnaireDialog.show(
                               context,
                               stageKey: stage.key,
@@ -349,13 +433,21 @@ class LifeStageSelectorCard extends StatelessWidget {
                           onStageUpdated?.call();
                         }
                       } else {
-                        final moved = await transitionLifeStage(
+                        final outcome = await transitionLifeStage(
                           context,
                           toStage: stage.key,
                           stageTitle: stage.title,
                         );
-                        if (!moved) return;
+                        if (!outcome.moved) return;
                         if (!context.mounted) return;
+                        if (outcome.questionnaireDone) {
+                          // The questionnaire ran before the server let her
+                          // in; the stage is active from here.
+                          osState.setActiveLifeStages(
+                              Set<String>.from(activeStages)..add(stage.key));
+                          onStageUpdated?.call();
+                          return;
+                        }
 
                         final bool? completed = await StageQuestionnaireDialog.show(
                           context,

@@ -37,7 +37,13 @@ class RealJourneyTimeline extends StatefulWidget {
   State<RealJourneyTimeline> createState() => _RealJourneyTimelineState();
 }
 
-class _RealJourneyTimelineState extends State<RealJourneyTimeline> {
+class _RealJourneyTimelineState extends State<RealJourneyTimeline>
+    with AutomaticKeepAliveClientMixin {
+  // A section of the lazy home list: kept alive so it loads once, not on
+  // every scroll back into view.
+  @override
+  bool get wantKeepAlive => true;
+
   ApiResult<Timeline> _result = const ApiResult.loading();
 
   @override
@@ -65,6 +71,7 @@ class _RealJourneyTimelineState extends State<RealJourneyTimeline> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final entries = _result.data?.entries ?? const <TimelineEntry>[];
 
     return Column(

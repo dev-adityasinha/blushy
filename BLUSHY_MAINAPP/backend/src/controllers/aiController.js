@@ -29,6 +29,7 @@ import { evaluateUserSafety, buildSafetyFlow, gateAiOutput } from '../services/s
 import fs from 'node:fs';
 import { env } from '../utils/env.js';
 import { aiChatSummaryRepository } from '../repositories/aiChatSummaryRepository.js';
+import { generateCheckinFollowUps } from '../services/checkinFollowupService.js';
 
 function getUserKey(req, _role = 'woman') {
   const userId = req.user?.userId;
@@ -2209,3 +2210,27 @@ export async function getTodayMemorySummary(req, res, next) {
 
 
 
+
+/**
+ * POST /ai/checkin-followups
+ * Body: { symptoms: string[], date?: 'YYYY-MM-DD', stage?: string }
+ *
+ * Docsy's check-in cards for today's logged symptoms. `source` is 'docsy'
+ * when the model wrote them and 'none' when it could not, in which case
+ * the app falls back to its own rule table.
+ */
+export async function getCheckinFollowUps(req, res, next) {
+  try {
+    const userId = req.user?.userId || req.user?.id || req.user?._id;
+    const body = req.body ?? {};
+    const symptoms = Array.isArray(body.symptoms) ? body.symptoms : [];
+    const date = typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date)
+      ? body.date
+      : new Date().toISOString().slice(0, 10);
+    const stage = typeof body.stage === 'string' ? body.stage.slice(0, 40) : null;
+    const result = await generateCheckinFollowUps({ userId, date, symptoms, stage });
+    res.status(200).json({ date, ...result });
+  } catch (error) {
+    next(error);
+  }
+}
