@@ -485,7 +485,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Log in instead?'),
+                  child: const Text('Sign in instead?'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -668,7 +668,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         ),
         const SizedBox(height: 8),
         Text(
-          "Log in to retrieve your personalized health workspace.",
+          "Sign in to retrieve your personalized health workspace.",
           style: GoogleFonts.manrope(
             fontSize: 15,
             color: BlushyColors.secondaryText,
@@ -713,7 +713,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         ),
         const SizedBox(height: 32),
         _buildButton(
-          label: 'Log in',
+          label: 'Sign in',
           onPressed: _handleLoginSubmit,
           isLoading: _isLoading,
         ),

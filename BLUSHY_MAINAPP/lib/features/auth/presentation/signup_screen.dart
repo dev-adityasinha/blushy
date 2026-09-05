@@ -741,7 +741,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                   alignment: Alignment.center,
                                   child: Text(
-                                    'Log In',
+                                    'Sign In',
                                     style: TextStyle(
                                       fontFamily: 'Manrope',
                                       fontSize: 13.5,
@@ -979,28 +979,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    // Display Name (Signup mode only)
-                    if (_mode == AuthFormMode.signup) ...[
-                      _buildFieldLabel('Display name'),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _nameController,
-                        style: const TextStyle(
-                          fontFamily: 'Manrope',
-                          fontSize: 13.5,
-                          color: textDark,
-                          letterSpacing: 0.2,
-                        ),
-                        decoration: _buildInputDecoration('Your name', Icons.person_outline),
-                        validator: (val) {
-                          if (_mode == AuthFormMode.signup && (val == null || val.trim().isEmpty)) {
-                            return 'Please enter your name';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
 
                     // Email Field
                     _buildFieldLabel('Email'),
@@ -1429,7 +1407,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         GestureDetector(
                           onTap: () => _switchMode(_mode == AuthFormMode.login ? AuthFormMode.signup : AuthFormMode.login),
                           child: Text(
-                            _mode == AuthFormMode.login ? 'Create one' : 'Log in',
+                            _mode == AuthFormMode.login ? 'Create one' : 'Sign in',
                             style: const TextStyle(
                               fontFamily: 'Manrope',
                               fontSize: 13,
