@@ -1,0 +1,58 @@
+{
+  "checkins": [
+    {
+      "id": "chk_1789054813198",
+      "bodyFeeling": "comfortable",
+      "sleepQuality": "night_sweats",
+      "energyLevel": "moderate",
+      "moodState": "steady",
+      "hotFlashes": "none",
+      "jointDiscomfort": "none",
+      "vaginalComfort": "normal",
+      "bleedingLogged": false,
+      "isNothingMuchToday": false,
+      "userNotes": "",
+      "loggedAt": "2026-09-10T15:40:13.198Z"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q_bone_density",
+      "text": "When should I have my first DEXA bone density scan?",
+      "category": "Bone & Muscle",
+      "createdAt": "2026-09-10T15:39:37.027Z"
+    },
+    {
+      "id": "q_gsm_relief",
+      "text": "Is localized low-dose vaginal estrogen safe for long-term comfort?",
+      "category": "Intimate & Urinary",
+      "createdAt": "2026-09-10T15:39:37.028Z"
+    },
+    {
+      "id": "q_cholesterol",
+      "text": "Should we re-check my fasting lipid panel now that my periods have ended?",
+      "category": "Heart & Metabolic",
+      "createdAt": "2026-09-10T15:39:37.028Z"
+    }
+  ],
+  "treatments": [
+    {
+      "id": "t_transdermal_patch",
+      "name": "Estradiol Transdermal Patch",
+      "category": "Hormone Therapy (MHT)",
+      "dose": "50 mcg/day twice weekly",
+      "startDate": "2026-08-13T15:39:37.028Z",
+      "notes": "Started for nighttime hot flashes and sleep maintenance."
+    },
+    {
+      "id": "t_vit_d3_k2",
+      "name": "Vitamin D3 (2000 IU) + K2",
+      "category": "Bone & Muscle Supplement",
+      "dose": "1 capsule daily with morning meal",
+      "startDate": "2026-07-27T15:39:37.028Z",
+      "notes": "Prescribed to support calcium bone mineralization."
+    }
+  ],
+  "lifeMode": "normal",
+  "privateMode": false
+}

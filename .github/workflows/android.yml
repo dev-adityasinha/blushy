@@ -1,0 +1,225 @@
+name: Android
+
+# Builds the APK off the machine that cannot build it.
+#
+# Smart App Control on the development machine refuses `dart.exe`, and Gradle
+# shells out to it, so `flutter build apk` fails there while analyze, test and
+# pub get all work through the SDK's other binaries. This produces the APK
+# instead, on every push and on demand.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'BLUSHY_MAINAPP/**'
+      - '.github/workflows/android.yml'
+      # Prose changes should not spend build minutes.
+      - '!BLUSHY_MAINAPP/**/*.md'
+  pull_request:
+    paths:
+      - 'BLUSHY_MAINAPP/**'
+      - '.github/workflows/android.yml'
+      - '!BLUSHY_MAINAPP/**/*.md'
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: >-
+          Backend the build talks to. Leave blank to use the app's own release
+          default, which is now this same Render service. Set it only to build
+          against something else -- a branch deploy, or a machine on the LAN.
+        required: false
+        default: 'https://blushy-api.onrender.com'
+
+# A newer push makes an in-flight build irrelevant.
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned to the version the app is developed against, so CI cannot quietly
+  # drift onto a newer Flutter than anyone has run locally.
+  FLUTTER_VERSION: '3.47.1'
+
+jobs:
+  checks:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: BLUSHY_MAINAPP
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # `--fatal-infos` would fail on lints the project has not adopted, so
+      # this holds the line the codebase already keeps: no warnings, no errors.
+      - name: Analyze
+        run: flutter analyze lib/ test/
+
+      - name: Test
+        run: flutter test
+
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: BLUSHY_MAINAPP/backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: BLUSHY_MAINAPP/backend/package-lock.json
+
+      - name: Cache the mongod binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongod-${{ runner.os }}
+
+      # `npm ci` rather than `install`: the lockfile is what Render builds from,
+      # and a run that quietly resolved something else would not be testing it.
+      - name: Install dependencies
+        run: npm ci
+
+      # The suite starts its own in-memory MongoDB, so no service container is
+      # needed and nothing touches the real cluster.
+      - name: Test
+        run: npm test
+
+  apk:
+    name: Build APK
+    # The APK waits on the Flutter checks. Backend failures are worth seeing but
+    # do not stop an Android build, since they cannot affect it.
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: BLUSHY_MAINAPP
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Java 17, matching `sourceCompatibility` and `jvmTarget` in
+      # android/app/build.gradle.kts. A newer JDK builds until Gradle disagrees
+      # with the Kotlin target, and that failure reads as unrelated.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('BLUSHY_MAINAPP/android/**/*.gradle*', 'BLUSHY_MAINAPP/android/**/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Release signing comes from android/key.properties, which is not
+      # committed. Without it the build falls back to the debug key: the APK
+      # installs and runs, and the Play Store will reject it. Add the four
+      # secrets below when a publishable build is needed.
+      #
+      # The gate is on env rather than on the secret directly, because `if`
+      # cannot read the secrets context -- carrying it through env is the way
+      # round that.
+      - name: Write signing config
+        if: env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/release.keystore
+          {
+            echo "storeFile=release.keystore"
+            echo "storePassword=$STORE_PASSWORD"
+            echo "keyPassword=$KEY_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+          } > android/key.properties
+
+      # android/app/build.gradle.kts sets `ndkVersion = flutter.ndkVersion`.
+      # Whether that NDK is on the runner depends on the image, so install it
+      # rather than hoping. The version is read from the Flutter checkout that
+      # `flutter.ndkVersion` itself resolves to, so this cannot ask for a
+      # different one than the build does.
+      - name: Install the NDK the build asks for
+        run: |
+          set -euo pipefail
+          GRADLE_UTILS="$FLUTTER_ROOT/packages/flutter_tools/lib/src/android/gradle_utils.dart"
+          # `|| true` so a failed grep reaches the check below instead of
+          # aborting on `set -e` with nothing explaining why.
+          NDK=$(grep "^const ndkVersion" "$GRADLE_UTILS" | cut -d"'" -f2 || true)
+          if [ -z "$NDK" ]; then
+            echo "Could not read Flutter's ndkVersion; Flutter may have moved it." >&2
+            exit 1
+          fi
+          echo "Flutter's NDK for this version: $NDK"
+          if [ -d "$ANDROID_SDK_ROOT/ndk/$NDK" ]; then
+            echo "Already on the runner."
+          else
+            yes | sdkmanager --licenses > /dev/null 2>&1 || true
+            sdkmanager --install "ndk;$NDK"
+          fi
+
+      - name: Build APK
+        env:
+          # The dispatch input wins; otherwise a repository variable, if one is
+          # set; otherwise nothing, and the app uses its own release default.
+          API_BASE_URL: ${{ github.event.inputs.api_base_url || vars.API_BASE_URL }}
+        run: |
+          if [ -n "$API_BASE_URL" ]; then
+            echo "Building against $API_BASE_URL"
+            flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL"
+          else
+            echo "Building against the app's own release default"
+            flutter build apk --release
+          fi
+
+      - name: Report what was built
+        run: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          ls -lh "$APK"
+          # Says plainly whether this one can be published, rather than leaving
+          # it to be discovered at upload time.
+          if [ -f android/key.properties ]; then
+            echo "Signed with the release key."
+          else
+            echo "::warning::Debug-signed. Installable, but the Play Store will reject it."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blushy-apk-${{ github.sha }}
+          path: BLUSHY_MAINAPP/build/app/outputs/flutter-apk/app-release.apk
+          # Long enough to test a build, short enough not to accumulate.
+          retention-days: 14
+          if-no-files-found: error

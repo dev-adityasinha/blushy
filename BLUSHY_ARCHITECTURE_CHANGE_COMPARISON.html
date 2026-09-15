@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Blushy Architecture Change Comparison</title>
+<style>
+@page { size: A4; margin: 14mm; }
+:root { --ink:#20303b; --muted:#60717b; --rose:#b54f67; --rose-light:#f8e9ed; --green:#27745c; --green-light:#e8f4ee; --line:#d8e0e3; --gold:#8c641e; --gold-light:#fff5dc; }
+* { box-sizing:border-box; }
+body { color:var(--ink); font-family: "Segoe UI", Arial, sans-serif; font-size:10.2pt; line-height:1.42; margin:0; }
+h1 { color:var(--rose); font-size:27pt; line-height:1.08; margin:0 0 7px; }
+h2 { color:var(--rose); font-size:16pt; border-bottom:2px solid var(--rose-light); padding-bottom:4px; margin:22px 0 9px; }
+h3 { font-size:11.5pt; margin:13px 0 4px; }
+p { margin:5px 0 8px; }
+.subtitle { color:var(--muted); font-size:12pt; margin-bottom:18px; }
+.meta { border-left:4px solid var(--rose); background:var(--rose-light); padding:9px 12px; margin:10px 0 15px; }
+.note { border-left:4px solid #c7922e; background:var(--gold-light); padding:8px 11px; margin:9px 0; }
+.good { color:var(--green); font-weight:700; }
+.bad { color:#a33e50; font-weight:700; }
+.small { color:var(--muted); font-size:8.7pt; }
+.cover { min-height:250mm; display:flex; flex-direction:column; justify-content:center; }
+.page-break { page-break-before:always; }
+table { width:100%; border-collapse:collapse; margin:8px 0 13px; page-break-inside:avoid; }
+th { background:#314b57; color:white; text-align:left; font-weight:700; }
+th, td { border:1px solid var(--line); padding:6px 7px; vertical-align:top; }
+td.current { background:#fff7f8; }
+td.after { background:#f3fbf7; }
+td.impact { text-align:center; font-weight:700; color:var(--green); white-space:nowrap; }
+.kpis { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin:10px 0; }
+.kpi { border:1px solid var(--line); padding:10px; text-align:center; }
+.kpi strong { display:block; color:var(--rose); font-size:19pt; }
+ul { margin:4px 0 8px 19px; padding:0; }
+li { margin:2px 0; }
+code { font-family:Consolas, monospace; font-size:8.8pt; background:#f2f5f6; padding:1px 3px; }
+.footer { color:var(--muted); border-top:1px solid var(--line); margin-top:20px; padding-top:6px; font-size:8pt; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <h1>Blushy Architecture<br>Change Comparison</h1>
+  <div class="subtitle">What should change, why it matters, and what improvement to expect</div>
+  <div class="meta"><b>Scope:</b> BLUSHY_MAINAPP Flutter client, Node.js/Express backend, MongoDB, AI integration, WebSockets, uploads, and scheduled jobs.</div>
+  <p><b>Executive answer:</b> The current architecture is a reasonable modular monolith foundation. The recommended changes are worthwhile because they mainly reduce security, privacy, data-consistency, and deployment risks without requiring a full rewrite.</p>
+  <div class="note"><b>How to read the percentages:</b> These are estimated risk reductions or quality improvements based on the identified code patterns. They are not measured benchmark results. Actual performance percentages require load tests and production telemetry.</div>
+  <div class="kpis">
+    <div class="kpi"><strong>70-95%</strong>Security/privacy risk reduction</div>
+    <div class="kpi"><strong>40-75%</strong>Reliability improvement</div>
+    <div class="kpi"><strong>30-60%</strong>Maintainability improvement</div>
+  </div>
+  <p class="small">Prepared: August 2026 | Baseline: current source structure and local configuration</p>
+</section>
+
+<section class="page-break">
+<h2>1. Highest-Value Changes</h2>
+<table>
+<tr><th style="width:20%">Area</th><th style="width:27%">Nothing changed</th><th style="width:31%">After the change</th><th>Estimated improvement</th></tr>
+<tr><td><b>Admin access</b></td><td class="current">A route using optional authentication can accidentally expose private admin data.</td><td class="after">Every admin route requires a valid token and an explicit admin role.</td><td class="impact">90-100% risk reduction</td></tr>
+<tr><td><b>AI credentials</b></td><td class="current">A provider key may be returned to the Flutter client.</td><td class="after">The permanent key stays on the backend; voice uses an ephemeral token or proxy.</td><td class="impact">95-100% risk reduction</td></tr>
+<tr><td><b>Private routes</b></td><td class="current">Some routes depend on controller checks after optional authentication.</td><td class="after">Private routes use mandatory authentication at the route boundary.</td><td class="impact">60-90% missed-check risk reduction</td></tr>
+<tr><td><b>Health-data logs</b></td><td class="current">Full transcription or AI content may appear in logs.</td><td class="after">Logs contain safe metadata only: request ID, operation, status, and duration.</td><td class="impact">70-95% privacy exposure reduction</td></tr>
+<tr><td><b>Production JWT</b></td><td class="current">A known fallback secret can be used if deployment configuration is missing.</td><td class="after">Production startup fails unless a long random secret is configured.</td><td class="impact">90-100% default-secret risk reduction</td></tr>
+<tr><td><b>Upload safety</b></td><td class="current">Some attachments have broad or inconsistent validation.</td><td class="after">Allowed types, file signatures, size limits, quotas, and scanning are enforced.</td><td class="impact">60-85% upload abuse reduction</td></tr>
+</table>
+<p class="small">These changes protect users and the business. They usually have better value than early large-scale performance rewrites.</p>
+
+<h2>2. Data Reliability Changes</h2>
+<table>
+<tr><th>Area</th><th>Nothing changed</th><th>After the change</th><th>Estimated improvement</th></tr>
+<tr><td><b>Database transactions</b></td><td class="current"><code>withTransaction()</code> runs a function but does not create a MongoDB transaction. Multi-document updates can be partial.</td><td class="after">Operations that must succeed together use MongoDB sessions and real transactions.</td><td class="impact">50-90% partial-write risk reduction</td></tr>
+<tr><td><b>Index failures</b></td><td class="current">Index creation errors are logged, but the server continues running.</td><td class="after">Required-index failures stop startup or make readiness unhealthy.</td><td class="impact">30-70% data/query reliability improvement</td></tr>
+<tr><td><b>User collections</b></td><td class="current">Woman/man collections duplicate repository logic and increase selection mistakes.</td><td class="after">A central resolver or unified identity model controls collection selection.</td><td class="impact">30-60% role-query defect reduction</td></tr>
+<tr><td><b>Medical ownership</b></td><td class="current">Every medical read may not be visibly and consistently scoped to the authenticated user.</td><td class="after">Every query includes user ownership and isolation tests prove it.</td><td class="impact">70-95% cross-user exposure risk reduction</td></tr>
+</table>
+</section>
+
+<section class="page-break">
+<h2>3. Runtime and Scaling Changes</h2>
+<table>
+<tr><th>Area</th><th>Nothing changed</th><th>After the change</th><th>Estimated improvement</th></tr>
+<tr><td><b>Token refresh</b></td><td class="current">An expired access token can force an unexpected logout even though refresh support exists on the server.</td><td class="after">A shared client interceptor refreshes once, retries once, and logs out only when refresh fails.</td><td class="impact">30-60% fewer auth interruptions</td></tr>
+<tr><td><b>Shared HTTP client</b></td><td class="current">Services can configure headers, errors, and timeouts differently.</td><td class="after">One authenticated client owns base URL, headers, refresh, timeout, and error mapping.</td><td class="impact">25-50% less integration maintenance</td></tr>
+<tr><td><b>WebSockets</b></td><td class="current">Connections are stored in one Node process. Events can disappear when multiple servers run.</td><td class="after">Redis Pub/Sub or another shared broker distributes events across instances.</td><td class="impact">70-95% multi-instance event reliability</td></tr>
+<tr><td><b>WebSocket auth</b></td><td class="current">JWT is passed in <code>/ws?token=...</code>, which can enter URL logs.</td><td class="after">A short-lived ticket or authenticated upgrade avoids exposing the main JWT in the URL.</td><td class="impact">60-85% credential exposure reduction</td></tr>
+<tr><td><b>Scheduled jobs</b></td><td class="current">Schedulers run inside every web process, so multiple instances can duplicate work.</td><td class="after">Jobs run in a worker or use a distributed lock.</td><td class="impact">70-95% duplicate-job risk reduction</td></tr>
+<tr><td><b>Redis deployment</b></td><td class="current">In-memory behavior differs from multi-instance behavior.</td><td class="after">Production explicitly requires shared Redis for rate limits and events.</td><td class="impact">60-90% distributed-state defects reduction</td></tr>
+</table>
+
+<h2>4. Flutter Maintainability Changes</h2>
+<table>
+<tr><th>Area</th><th>Nothing changed</th><th>After the change</th><th>Estimated improvement</th></tr>
+<tr><td><b>Large screens</b></td><td class="current">Dashboard/onboarding widgets mix UI, API calls, calculations, caching, and state changes.</td><td class="after">Screens render state; view models/controllers orchestrate; repositories handle data.</td><td class="impact">30-60% easier maintenance</td></tr>
+<tr><td><b>Startup routing</b></td><td class="current">Routing can inspect state while local session loading is still in progress.</td><td class="after">An explicit loading state completes before authenticated routing.</td><td class="impact">50-80% startup race reduction</td></tr>
+<tr><td><b>API contract</b></td><td class="current">Both <code>/auth</code> and <code>/api/auth</code> styles exist, and docs can drift.</td><td class="after">One versioned API convention is used by backend, Flutter, tests, and docs.</td><td class="impact">40-70% setup/integration confusion reduction</td></tr>
+</table>
+</section>
+
+<section class="page-break">
+<h2>5. Testing and Delivery Changes</h2>
+<table>
+<tr><th>Area</th><th>Nothing changed</th><th>After the change</th><th>Estimated improvement</th></tr>
+<tr><td><b>Backend test command</b></td><td class="current">No standard <code>npm test</code> command; tests may depend on a live database.</td><td class="after">A repeatable test command uses an isolated test database or temporary MongoDB.</td><td class="impact">50-80% higher test confidence</td></tr>
+<tr><td><b>Authorization tests</b></td><td class="current">Admin, WebSocket, upload, refresh, and privacy boundaries can regress unnoticed.</td><td class="after">Anonymous, non-admin, cross-user, expired-token, and invalid-upload cases are automated.</td><td class="impact">50-90% regression detection improvement</td></tr>
+<tr><td><b>Observability</b></td><td class="current">Sensitive logs and incomplete readiness signals make diagnosis harder.</td><td class="after">Safe structured logs, health/readiness checks, and request IDs show what failed.</td><td class="impact">25-50% faster diagnosis estimate</td></tr>
+</table>
+
+<h2>6. Overall Before and After</h2>
+<table>
+<tr><th>Quality measure</th><th>Nothing changed</th><th>After the recommended work</th><th>Estimated improvement</th></tr>
+<tr><td><b>Security</b></td><td class="current">Good basic middleware, but important boundary inconsistencies remain.</td><td class="after">Sensitive routes, secrets, uploads, WebSockets, and admin access have explicit controls.</td><td class="impact">70-90%</td></tr>
+<tr><td><b>Privacy</b></td><td class="current">Health and AI data require more consistent ownership and logging controls.</td><td class="after">Data access is user-scoped, logs are minimized, and privacy cases are tested.</td><td class="impact">70-95%</td></tr>
+<tr><td><b>Reliability</b></td><td class="current">Partial writes, token expiry, silent index failures, and duplicate jobs are possible.</td><td class="after">Transactions, readiness checks, refresh, and worker coordination cover these cases.</td><td class="impact">40-75%</td></tr>
+<tr><td><b>Scalability</b></td><td class="current">Single-process WebSockets and in-process schedules are suitable mainly for one instance.</td><td class="after">Shared events and separate jobs support multiple backend instances.</td><td class="impact">60-90%</td></tr>
+<tr><td><b>Maintainability</b></td><td class="current">The structure is understandable, but large screens/controllers carry too many responsibilities.</td><td class="after">Responsibilities are smaller, contracts are consistent, and tests protect boundaries.</td><td class="impact">30-60%</td></tr>
+</table>
+
+<h2>7. Recommended Order</h2>
+<ol>
+<li><b>First:</b> secure admin routes, keep AI keys server-side, protect medical ownership, and remove sensitive logs.</li>
+<li><b>Second:</b> enforce authentication, validate production secrets, strengthen uploads, and add authorization tests.</li>
+<li><b>Third:</b> add token refresh, real transactions, reliable index startup, and consistent API paths.</li>
+<li><b>Fourth:</b> add Redis event fan-out, separate scheduled workers, and refactor large Flutter screens.</li>
+</ol>
+<div class="note"><b>Decision:</b> The changes are worth doing. The first group gives the highest value with the least disruption. A full rewrite is not justified by the current findings; targeted improvements preserve the existing Flutter, Express, and MongoDB investment.</div>
+<div class="footer">Blushy architecture comparison | Estimates require validation through security tests, integration tests, and load testing.</div>
+</section>
+</body>
+</html>

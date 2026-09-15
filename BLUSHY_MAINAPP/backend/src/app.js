@@ -1,0 +1,215 @@
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import authRoutes from './routes/authRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import swiggyRoutes from './routes/swiggyRoutes.js';
+import communityRoutes from './routes/communityRoutes.js';
+import partnerRoutes from './routes/partnerRoutes.js';
+import featureRoutes from './routes/featureRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import postRoutes from './routes/postRoutes.js';
+import friendRoutes from './routes/friendRoutes.js';
+import directMessageRoutes from './routes/directMessageRoutes.js';
+import onboardingRoutes from './routes/onboardingRoutes.js';
+import periodRoutes from './routes/periodRoutes.js';
+import checkinRoutes from './routes/checkinRoutes.js';
+import insightRoutes from './routes/insightRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
+import lifeStageRoutes from './routes/lifeStageRoutes.js';
+import homeRoutes from './routes/homeRoutes.js';
+import safetyRoutes from './routes/safetyRoutes.js';
+import contentRoutes from './routes/contentRoutes.js';
+import partnerSafeRoutes from './routes/partnerSafeRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import moderationRoutes from './routes/moderationRoutes.js';
+import timeCapsuleRoutes from './routes/timeCapsuleRoutes.js';
+import bouquetRoutes from './routes/bouquetRoutes.js';
+import recoveryRoutes from './routes/recoveryRoutes.js';
+import pregnancyRoutes from './routes/pregnancyRoutes.js';
+import postpartumRoutes from './routes/postpartumRoutes.js';
+import perimenopauseRoutes from './routes/perimenopauseRoutes.js';
+import menopauseRoutes from './routes/menopauseRoutes.js';
+import { httpErrorHandler } from './middleware/errorHandler.js';
+import { ipRateLimiter } from './middleware/rateLimiters.js';
+import { env } from './utils/env.js';
+
+const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const configuredOrigins = (env.corsOrigin ?? '*')
+  .split(',')
+  .map((value) => value.trim())
+  .filter((value) => value.length > 0);
+
+function isLocalDevOrigin(origin) {
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
+
+function isAllowedOrigin(origin) {
+  if (configuredOrigins.includes('*')) {
+    return true;
+  }
+
+  if (configuredOrigins.includes(origin)) {
+    return true;
+  }
+
+  return isLocalDevOrigin(origin);
+}
+
+if (env.nodeEnv === 'production') {
+  if (!env.corsOrigin || env.corsOrigin === '*') {
+    throw new Error('FATAL SECURITY ERROR: CORS_ORIGIN environment variable must be explicitly defined in production and cannot be wildcard "*".');
+  }
+}
+
+app.set('trust proxy', 1);
+
+app.use(
+  helmet({
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: env.hstsPreloadEnabled,
+    },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'none'"],
+        styleSrc: ["'unsafe-inline'"],
+        scriptSrc: ["'none'"],
+        imgSrc: ["'self'", 'data:'],
+        frameAncestors: ["'none'"],
+      },
+    },
+    frameguard: {
+      action: 'deny',
+    },
+  })
+);
+
+app.use((_req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  next();
+});
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || isAllowedOrigin(origin) || env.nodeEnv !== 'production') {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
+    credentials: true,
+  }),
+);
+app.use(express.json({ limit: '32kb' }));
+
+app.get('/', (_, res) => {
+  res.status(200).json({
+    ok: true,
+    service: 'blushy-auth-backend',
+    message: 'Backend is running. Use /health for status checks.',
+  });
+});
+
+app.get('/health', (_, res) => {
+  res.json({ ok: true, service: 'blushy-auth-backend' });
+});
+
+app.use('/uploads', (req, res, next) => {
+  const ext = path.extname(req.path).toLowerCase();
+  const allowedImageExts = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'];
+  if (req.path !== '/' && ext && !allowedImageExts.includes(ext)) {
+    return res.status(403).json({
+      error: {
+        code: 'FORBIDDEN_FILE_TYPE',
+        message: 'Access denied. Only public image assets are served via this static path.',
+      },
+    });
+  }
+  next();
+});
+
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
+  setHeaders: (res, filePath) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    if (/\.(webm|mp3|wav|m4a|ogg)$/i.test(filePath)) {
+      res.setHeader('Accept-Ranges', 'bytes');
+    }
+  },
+}));
+
+app.use('/auth', ipRateLimiter, authRoutes);
+app.use('/api/auth', ipRateLimiter, authRoutes);
+app.use('/ai', ipRateLimiter, aiRoutes);
+app.use('/api/ai', ipRateLimiter, aiRoutes);
+app.use('/swiggy', ipRateLimiter, swiggyRoutes);
+app.use('/community', ipRateLimiter, communityRoutes);
+app.use('/partner', ipRateLimiter, partnerRoutes);
+app.use('/features', ipRateLimiter, featureRoutes);
+app.use('/admin', ipRateLimiter, adminRoutes);
+app.use('/posts', ipRateLimiter, postRoutes);
+app.use('/api/posts', ipRateLimiter, postRoutes);
+app.use('/friends', ipRateLimiter, friendRoutes);
+app.use('/dms', ipRateLimiter, directMessageRoutes);
+app.use('/onboarding', ipRateLimiter, onboardingRoutes);
+app.use('/api/onboarding', ipRateLimiter, onboardingRoutes);
+app.use('/period', ipRateLimiter, periodRoutes);
+app.use('/api/period', ipRateLimiter, periodRoutes);
+app.use('/api/checkins', ipRateLimiter, checkinRoutes);
+app.use('/checkins', ipRateLimiter, checkinRoutes);
+app.use('/api/insights', ipRateLimiter, insightRoutes);
+app.use('/insights', ipRateLimiter, insightRoutes);
+
+// ---- Spec-aligned v1 surface (Blushy Backend & AI Feature Specification) ----
+// Every route below returns the standard response contract
+// { data, state, lastUpdated, source, version, permissions, errorCode }
+// and requires authentication unless explicitly documented otherwise.
+app.use('/api/v1/events', ipRateLimiter, eventRoutes);
+app.use('/api/v1/life-stage', ipRateLimiter, lifeStageRoutes);
+app.use('/api/v1', ipRateLimiter, homeRoutes);
+app.use('/api/v1/safety', ipRateLimiter, safetyRoutes);
+app.use('/api/v1/content', ipRateLimiter, contentRoutes);
+app.use('/api/v1/partner', ipRateLimiter, partnerSafeRoutes);
+app.use('/api/v1/notifications', ipRateLimiter, notificationRoutes);
+app.use('/api/v1/moderation', ipRateLimiter, moderationRoutes);
+app.use('/api/v1/capsules', ipRateLimiter, timeCapsuleRoutes);
+app.use('/api/v1/bouquets', ipRateLimiter, bouquetRoutes);
+app.use('/api/v1/recovery', ipRateLimiter, recoveryRoutes);
+app.use('/pregnancy', ipRateLimiter, pregnancyRoutes);
+app.use('/api/pregnancy', ipRateLimiter, pregnancyRoutes);
+// Postpartum was written in full -- router, controller, four services -- and
+// then never mounted, so all ten of its routes answered 404 and every call the
+// app made for this stage failed. Mounted on the same two prefixes as
+// pregnancy, which is what ApiPostpartumService requests.
+app.use('/postpartum', ipRateLimiter, postpartumRoutes);
+app.use('/api/postpartum', ipRateLimiter, postpartumRoutes);
+app.use('/perimenopause', ipRateLimiter, perimenopauseRoutes);
+app.use('/api/perimenopause', ipRateLimiter, perimenopauseRoutes);
+app.use('/api/v1/perimenopause', ipRateLimiter, perimenopauseRoutes);
+app.use('/menopause', ipRateLimiter, menopauseRoutes);
+app.use('/api/menopause', ipRateLimiter, menopauseRoutes);
+app.use('/api/v1/menopause', ipRateLimiter, menopauseRoutes);
+
+// Catch-all handler for undefined routes (returns structured JSON instead of default HTML)
+app.use((req, res) => {
+  res.status(404).json({
+    error: {
+      message: `Route ${req.method} ${req.originalUrl} not found.`,
+      statusCode: 404,
+      details: null,
+    },
+  });
+});
+
+app.use(httpErrorHandler);
+
+export default app;

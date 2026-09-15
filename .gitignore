@@ -1,0 +1,39 @@
+*.zip
+node_modules/
+**/node_modules/
+build/
+.dart_tool/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Ready-to-upload copy of the Flutter web output (BLUSHY_MAINAPP/build/web plus
+# a root-level vercel.json). Regenerate it with `flutter build web --release`;
+# it is 82 MB of build artefacts and must never be committed.
+blushy-web-upload/
+
+.vercel
+.env*
+
+# Render CLI binary, fetched from github.com/render-oss/cli releases.
+render.exe
+
+# Built APKs. 372 MB of them at the time of writing, four distinct builds
+# across seven files -- and every one is reproducible from a tagged commit.
+release_apks/
+*.apk
+*.aab
+
+# Uploaded partner-chat audio, community images and post attachments. This is
+# real user content, it does not belong in version control, and on Render it
+# lives on the instance disk and is lost on the next deploy anyway. Configure
+# S3 to keep it (see render.yaml).
+**/backend/uploads/
+
+# Per-user local storage written by BlushyStorage: usr_<userId>_<key>.json.
+# These land in the working directory whenever path_provider cannot resolve a
+# documents directory -- which is every `flutter test` run on desktop -- so
+# they accumulate in the project root. They hold profile, check-in and symptom
+# data keyed by user id, they are caches of what the server already has, and
+# nothing reads them back (suites use test/helpers/isolated_storage.dart).
+usr_*.json

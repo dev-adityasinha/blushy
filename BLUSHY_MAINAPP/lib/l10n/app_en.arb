@@ -1,0 +1,1338 @@
+{
+  "@@locale": "en",
+  "@_NOTE": {
+    "description": "Interface chrome only: navigation, buttons, and the states a screen can be in. Health guidance is deliberately absent -- clinical copy is served from the reviewed content pipeline, which carries a locale and a named reviewer per entry. A mistranslated symptom instruction is a safety problem, not a cosmetic one, so that text is never translated here."
+  },
+  "navHome": "Home",
+  "navCommunity": "Community",
+  "navSia": "Docsy",
+  "navStudio": "M Studio",
+  "navPartner": "Partner",
+  "actionSave": "Save",
+  "actionCancel": "Cancel",
+  "actionClose": "Close",
+  "actionRetry": "Retry",
+  "actionDelete": "Delete",
+  "actionShare": "Share",
+  "actionShared": "Shared",
+  "actionAsk": "Ask",
+  "actionStart": "Start",
+  "actionPause": "Pause",
+  "actionDone": "Done",
+  "actionRefresh": "Refresh",
+  "actionSignOut": "Sign Out",
+  "stateLoading": "Loading…",
+  "stateOfflineWithCache": "Not connected. Showing your last saved view.",
+  "stateOfflineNoCache": "Can't reach the server right now. This will load once the connection is back.",
+  "stateRefreshing": "Refreshing…",
+  "stateNothingYet": "Nothing logged yet.",
+  "stateNotSharedWithYou": "Not shared with you.",
+  "stateCouldNotSave": "Could not save that. Please try again.",
+  "languageSheetTitle": "Docsy speaks",
+  "languageSheetExplainer": "Changes the language Docsy replies in. The rest of the app stays in English for now.",
+  "privacyTitle": "Privacy & Sharing",
+  "privacyWhatYouReceive": "WHAT YOU RECEIVE",
+  "privacyPartnerDecides": "Your partner decides what reaches this device, one category at a time. They can change it whenever they like, and a change takes effect on your very next request.",
+  "privacyOn": "On",
+  "privacyOff": "Off",
+  "privacyAsked": "Asked",
+  "connectFirst": "Connect with your partner first.",
+  "@_PLURALS": {
+    "description": "Counts that appear in the shared surface."
+  },
+  "memoriesCount": "{count, plural, =0{No memories yet} =1{1 memory} other{{count} memories}}",
+  "@memoriesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesLabel": "{count, plural, =1{1 min} other{{count} min}}",
+  "@minutesLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsTitle": "Settings & Privacy Center",
+  "settingsSiaAssistant": "Docsy AI Assistant",
+  "settingsSiaAssistantSub": "Typing suggestions & reflection companion",
+  "settingsMemoryBooks": "Memory Books",
+  "settingsMemoryBooksSub": "Weekly and monthly recap scrapbooks",
+  "settingsContentGarden": "Reflective Content Garden",
+  "settingsContentGardenSub": "Organic garden growth tied to journal diversity",
+  "settingsTimeCapsules": "Memory Time Capsules",
+  "settingsTimeCapsulesSub": "Sealed memories that open on a day you choose",
+  "settingsReducedMotion": "Reduced Motion",
+  "settingsReducedMotionSub": "Pause non-essential animations",
+  "settingsHighContrast": "High Contrast Theme",
+  "settingsHighContrastSub": "Enhance visual contrast for text & borders",
+  "settingsLargeHandles": "Large Handle Controls",
+  "settingsLargeHandlesSub": "Enlarge corner touch handles for easier selection",
+  "settingsDiagnostics": "Platform Diagnostics",
+  "settingsDiagnosticsSub": "Inspect storage, cache, search index, and AI queue health",
+  "siaAsk": "Ask Docsy",
+  "siaThinking": "Typing....",
+  "siaVoiceTranscribed": "Voice transcribed into the text field. Review and tap send.",
+  "siaNoSpeechRecognised": "No speech could be recognised. Please try again.",
+  "siaNoAudioRecorded": "No audio recorded. Please check microphone permissions.",
+  "siaConversationStarters": "CONVERSATION STARTERS",
+  "siaHowFeelingToday": "How are you feeling today?",
+  "siaEnergyLevel": "What is your energy level?",
+  "siaLogSleep": "Log sleep duration",
+  "siaLogPeriodStart": "Log period start date",
+  "siaPeriodRecorded": "Period start date recorded.",
+  "siaLoggedSymptoms": "LOGGED SYMPTOMS & SIGNALS",
+  "siaLogCheckIn": "Log health check-in",
+  "siaDailyReflection": "Daily journal reflection",
+  "siaOpenJournal": "Open journal",
+  "siaWriteBeforeSaving": "Please write your reflection before saving.",
+  "siaEntrySaved": "Your journal entry has been saved.",
+  "siaSaveEntry": "Save entry",
+  "dashHowAreYouToday": "HOW ARE YOU TODAY?",
+  "dashMood": "MOOD",
+  "dashEnergyLevel": "ENERGY LEVEL",
+  "dashFlowLevel": "FLOW LEVEL",
+  "dashNotesReflections": "NOTES & REFLECTIONS",
+  "dashCheckIn": "Check in",
+  "dashSiaInsights": "DOCSY INSIGHTS",
+  "dashHelpful": "Helpful",
+  "dashNotUseful": "Not useful",
+  "dashPatternsTitle": "CYCLE PATTERNS & INSIGHTS",
+  "dashPatternNotDiagnosis": "A pattern in what you logged, not a diagnosis or a cause.",
+  "dashNothingLoggedYet": "Nothing logged yet. What you record will appear here.",
+  "dashNoCommunityPosts": "No community posts in this topic yet.",
+  "dashYourConditions": "YOUR CONDITIONS",
+  "dashNoReviewedArticle": "No reviewed article for this yet.",
+  "dashPrepareSummary": "Prepare a summary",
+  "dashBuildMySummary": "Build my summary",
+  "dashSummaryNotDiagnosis": "A record of what you reported and what the app noticed. Not a diagnosis.",
+  "dashLogWeight": "Log weight",
+  "dashLogPeriod": "Log period",
+  "dashDismiss": "Dismiss",
+  "dashNotNow": "Not now",
+  "journalAutoSaving": "Auto saving…",
+  "journalNewMemory": "New memory",
+  "journalBackToHome": "Back to home",
+  "journalReadingYourEntries": "Looking at what you have written…",
+  "journalNothingToReflect": "Nothing to reflect on yet. Write an entry and Docsy will read it back to you.",
+  "journalNoMemoriesFound": "No memories found yet",
+  "journalNoSearchMatch": "No entries matched that search.",
+  "journalRecordVoiceNote": "Record voice note",
+  "journalDoneRecording": "Done recording",
+  "journalAddTextBox": "Add text box",
+  "journalPaperTheme": "Paper theme",
+  "journalFontStyle": "Font style",
+  "journalApply": "Apply",
+  "journalAiPrivacyControls": "AI & privacy controls",
+  "journalAiPrivacySub": "Choose which AI features run on your journal",
+  "journalTitleGeneration": "Title suggestions",
+  "journalSmartSearch": "Search & collections",
+  "journalSmartSearchSub": "Search your entries by keyword and related words",
+  "journalCloudAi": "Cloud AI",
+  "journalCloudAiSub": "Allow cloud processing for Docsy insights",
+  "journalCloseMemoryBook": "Close memory book",
+  "journalSelectTemplate": "Select journal template",
+  "journalCreateNew": "Create new journal",
+  "partnerNoConnection": "No active partner connection",
+  "partnerSendInviteExplainer": "Send an invitation to your partner using their email address to start sharing updates and insights.",
+  "partnerInvalidEmail": "Please enter a valid email address.",
+  "partnerInviteSent": "Invitation sent.",
+  "partnerInviteLinkTitle": "Shareable invite link",
+  "partnerHaveInviteCode": "I have an invite code",
+  "partnerEnterInviteCode": "Enter an invite code",
+  "partnerNoPendingRequests": "No pending requests",
+  "partnerAccept": "Accept",
+  "partnerDecline": "Decline",
+  "partnerDisconnect": "Disconnect",
+  "partnerNoMessages": "No messages yet",
+  "partnerSayHello": "Say hello to start the conversation.",
+  "partnerSiaDecoding": "Docsy is decoding…",
+  "partnerSuggestedReply": "Suggested reply",
+  "partnerUseReply": "Use reply",
+  "partnerDateIdeas": "Date ideas",
+  "partnerSharedActivities": "SHARED ACTIVITIES",
+  "partnerLettersTitle": "LETTERS",
+  "partnerWriteLetter": "Write letter",
+  "partnerNoLetters": "No letters yet. Write one and it will be kept here for both of you.",
+  "partnerMemoryBook": "MEMORY BOOK",
+  "partnerNoMemories": "Nothing here yet. Finish a shared activity together and it will be kept here.",
+  "partnerSiaAdviceTitle": "DOCSY RELATIONSHIP ADVICE",
+  "partnerSiaAdviceExplainer": "Ask about something that is on your mind. Docsy only sees what your partner has chosen to share.",
+  "partnerTryAgain": "Try again",
+  "homeGreetingMorning": "Good morning, {name}",
+  "@homeGreetingMorning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeGreetingAfternoon": "Good afternoon, {name}",
+  "@homeGreetingAfternoon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeGreetingEvening": "Good evening, {name}",
+  "@homeGreetingEvening": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeGreetingSubtitle": "Whatever today looks like, you don't have to do it alone.",
+  "dashLogFirstCheckIn": "Log your first check-in",
+  "dashAddCondition": "Add a condition",
+  "onbContinue": "Continue",
+  "onbBack": "Back",
+  "onbDontRemember": "I don't remember",
+  "onbLetsGetIntroduced": "Let’s get introduced",
+  "onbCreatingSafeSpace": "Creating your safe space",
+  "onbCuratingContent": "Curating wellness content",
+  "onbCreatingInsights": "Creating your daily insights",
+  "onbPreparingDocsy": "Preparing Docsy",
+  "jrnCancel": "Cancel",
+  "jrnShare": "Share",
+  "jrnDelete": "Delete",
+  "jrnCouldNotTranscribe": "Could not transcribe that recording.",
+  "jrnNothingRecognised": "Nothing was recognised in that recording. You can type it instead.",
+  "jrnCouldNotChangeSharing": "Could not change sharing for that day.",
+  "jrnNoLongerShared": "No longer shared.",
+  "jrnTranscribing": "Transcribing reflection…",
+  "jrnRecordingVoiceNote": "Recording voice note…",
+  "csoSignOut": "Sign out",
+  "csoCancel": "Cancel",
+  "crRecordedAgainstEverythingYou": "Recorded against everything you approve.",
+  "eafWhatSYourEmail": "What's your email?",
+  "eafCreateYourPassword": "Create your password",
+  "eafCheckYourEmail": "Check your email",
+  "eafChangeEmail": "Change email",
+  "eafWelcomeBack": "Welcome back",
+  "eafForgotPassword": "Forgot password?",
+  "eafResetPassword": "Reset Password",
+  "eafChooseANewPassword": "Choose a New Password",
+  "oPrivacyPolicy": "Privacy Policy",
+  "oIAgreeToThe": "I agree to the ",
+  "oTermsOfService": "Terms of Service",
+  "oMedicalDisclaimer": "Medical Disclaimer",
+  "oWhenIsYourBirthday": "When is your birthday?",
+  "oWhereAreYouToday": "Where are you today?",
+  "oWhenDidYourLast": "When did your last period begin?",
+  "oWhatSYourDue": "What's your due date?",
+  "oWhenWasYourBaby": "When was your baby born?",
+  "oYourPreferredName": "Your preferred name",
+  "oWhatWouldYouLike": "What would you like to learn first?",
+  "oWhenDidYourFirst": "When did your first period start?",
+  "oWhatWouldYouLike2": "What would you like help with?",
+  "oHowWouldYouDescribe": "How would you describe your cycle?",
+  "oWhatWouldYouLike3": "What would you like Blushy to help with?",
+  "oAreYouCurrentlyUsing": "Are you currently using hormonal contraception?",
+  "oWhichConditionBestMatches": "Which condition best matches your situation?",
+  "oWhichSymptomsAffectYou": "Which symptoms affect you most?",
+  "oAreYouCurrentlyReceiving": "Are you currently receiving treatment?",
+  "oHowLongHaveYou": "How long have you been trying?",
+  "oHowAreYouTracking": "How are you tracking fertility?",
+  "oAreYouCurrentlyReceiving2": "Are you currently receiving fertility treatment?",
+  "oIsThisYourFirst": "Is this your first pregnancy?",
+  "oWhatSupportWouldYou": "What support would you like?",
+  "oHowAreYouFeeding": "How are you feeding your baby?",
+  "oHowHaveYourPeriods": "How have your periods changed?",
+  "oWhatWouldYouMost": "What would you most like to improve?",
+  "oHowLongHasIt": "How long has it been since your last period?",
+  "oWhichSymptomsAffectYour": "Which symptoms affect your daily life?",
+  "oWhatWouldYouLike4": "What would you like Blushy to focus on?",
+  "poYourPreferredName": "Your preferred name",
+  "sGoToSignIn": "Go to sign in",
+  "sVerifyCode": "Verify Code",
+  "sForgotPassword": "Forgot password?",
+  "sIAgreeToThe": "I agree to the ",
+  "sTermsConditions": "Terms & Conditions",
+  "sTerms": "Terms",
+  "sPrivacyPolicy": "Privacy Policy",
+  "cPeople": "People",
+  "cSearchTitleTextTags": "Search title, text, tags, or username/email...",
+  "cpPublish": "Publish",
+  "cpAnInterestingTitle": "An interesting title...",
+  "cpShareYourThoughtsExperiences": "Share your thoughts, experiences, or questions...",
+  "cpEGLutealMoodswings": "e.g., Luteal, MoodSwings, SleepTips",
+  "pdDeleteComment": "Delete Comment",
+  "pdAreYouSureYou": "Are you sure you want to delete this comment?",
+  "pdCancel": "Cancel",
+  "pdDelete": "Delete",
+  "pdDeletePost": "Delete Post",
+  "pdAreYouSureYou2": "Are you sure you want to delete this post?",
+  "pdComments": "Comments",
+  "upFailedToLoadProfile": "Failed to load profile details.",
+  "upCancel": "Cancel",
+  "upSave": "Save",
+  "hDrDocsy": "Docsy",
+  "hClose": "Close",
+  "dsQuestionsToAsk": "Questions to ask",
+  "umsdDailyUnifiedCheckIn": "Daily Unified Check-in",
+  "umsdCheckInSavedAnd": "Check-in saved and synced to your live MongoDB profile! ✨",
+  "cYourCycleLengthIs": "Your cycle length is varying. Log your symptoms daily so Docsy can adjust predictions.",
+  "cTrackingIsDisabledFocus": "Tracking is disabled. Focus on your daily energy, mood, and sleep.",
+  "cYourRecommendationsAreAdapted": "Your recommendations are adapted to your current life stage.",
+  "paTodaySNextStep": "TODAY\\'S NEXT STEP",
+  "smClearDrDocsyMemory": "Clear Docsy Memory",
+  "scClinicalAlignment": "Clinical Alignment",
+  "scCurrentTrack": "CURRENT TRACK",
+  "scNewTrack": "NEW TRACK",
+  "scKeepCurrentTrack": "Keep Current Track",
+  "scSwitchTrack": "Switch Track",
+  "sqWhatWouldYouLike": "What would you like to learn first?",
+  "sqWhenDidYourFirst": "When did your first period start?",
+  "sqWhatWouldYouLike2": "What would you like support with?",
+  "sqHowWouldYouDescribe": "How would you describe your cycle?",
+  "sqWhenDidYourLast": "When did your last period start?",
+  "sqWhatAreYourPrimary": "What are your primary wellness goals?",
+  "sqAreYouUsingHormonal": "Are you using hormonal contraception?",
+  "sqWhichHormonalConditionS": "Which hormonal condition(s) apply to you?",
+  "sqWhichSymptomsAffectYou": "Which symptoms affect you most?",
+  "sqAreYouCurrentlyReceiving": "Are you currently receiving treatment?",
+  "sqHowLongHaveYou": "How long have you been trying to conceive?",
+  "sqHowAreYouTracking": "How are you tracking fertility?",
+  "sqAreYouUndergoingFertility": "Are you undergoing fertility assistance?",
+  "sqWhatIsYourEstimated": "What is your estimated due date?",
+  "sqIsThisYourFirst": "Is this your first pregnancy?",
+  "sqWhatSupportWouldYou": "What support would you like during pregnancy?",
+  "sqWhenWasYourBaby": "When was your baby born?",
+  "sqHowAreYouFeeding": "How are you feeding your baby?",
+  "sqWhatAreasWouldYou": "What areas would you like help with?",
+  "sqHowHaveYourPeriods": "How have your periods changed?",
+  "sqWhatWouldYouMost": "What would you most like to focus on?",
+  "sqHowLongHasIt": "How long has it been since your last period?",
+  "sqWhichSymptomsAffectYour": "Which symptoms affect your daily life?",
+  "sqWhatAreYourTop": "What are your top health goals?",
+  "sjaRegenerate": "Regenerate",
+  "jcQuickPreviewQuietMorning": "Quick Preview: \"Quiet morning walks and warm tea with friends.\"",
+  "stUndo": "Undo",
+  "stRedo": "Redo",
+  "stBack": "Back",
+  "stCopy": "Copy",
+  "stDelete": "Delete",
+  "ldPrivacyPolicy": "Privacy Policy",
+  "ldTermsConditions": "Terms & Conditions",
+  "ldMedicalDisclaimer": "Medical Disclaimer",
+  "ldTabPrivacy": "Privacy",
+  "ldTabTerms": "Terms",
+  "ldTabDisclaimer": "Disclaimer",
+  "ldPrivacyPolicy2": "📜 Privacy Policy",
+  "ldRightToErasureDelete": "Right to Erasure (Delete Account)",
+  "ldEmail": "Email",
+  "ldWebsite": "Website",
+  "ldTermsAndConditionsTerms": "⚖️ Terms and Conditions (Terms of Service)",
+  "ldUnauthorizedUse": "Unauthorized Use",
+  "msNewTimeCapsule": "New Time Capsule",
+  "msAmIst": "8:00 AM IST",
+  "msSave": "Save",
+  "rspThatIsTheWhole": "That is the whole session. Take a moment before you get up.",
+  "pPreparingHerEmergencySchool": "PREPARING HER EMERGENCY SCHOOL KIT",
+  "pConversationStarters": " CONVERSATION STARTERS",
+  "pParentFrequentQuestions": "PARENT FREQUENT QUESTIONS",
+  "gBouquet": "Bouquet",
+  "gCommunity": "🌸 Ideas",
+  "hBuildABouquet": "Build a Bouquet",
+  "hBuildItInBlack": "Build it in Black & White",
+  "pHereAreGeneralWays": "Here are general ways to support your partner today:",
+  "pGotIt": "Got it",
+  "pTips": "Tips",
+  "pSavePermissions": "Save Permissions",
+  "pReject": "Reject",
+  "pPending": "Pending",
+  "pShareThisInvitation": "Share this invitation",
+  "pConnect": "Connect",
+  "pLiveSynchronized": "Live synchronized",
+  "pCompleteCheckIn": "Complete Check-in",
+  "pDigitalFlowerGift": "Digital Flower Gift",
+  "pAiCommunicationHub": "AI Communication Hub",
+  "pYourPartnerHasChosen": "Your partner has chosen not to share personal insights right now.",
+  "pWhatWouldYouLike": "What would you like help with?",
+  "phHereAreGeneralWays": "Here are general ways to support your partner today:",
+  "phGotIt": "Got it",
+  "phSeeHowICan": "See how I can help",
+  "phAllTodaySActions": "All Today's Actions Completed! 🌸",
+  "phDrDocsy": "Docsy",
+  "phNotSharedWithYou": "Not shared with you",
+  "phConnectionEnded": "Connection ended",
+  "phNothingSharedRightNow": "Nothing shared right now",
+  "plConnectWithPartner": "Connect with Partner",
+  "plPairingWithYourPartner": "Pairing with your partner enables live AI insights, phase tracking, and support advice on the Learn page.",
+  "plSendInvite": "Send Invite",
+  "plLearnDiscover": "Learn & Discover",
+  "plConnectWithYourPartner": "Connect with your partner to unlock personalized Docsy AI insights.",
+  "plUnderstandingEnergyFatigueShifts": "Understanding Energy & Fatigue Shifts",
+  "plMindfulCommunicationPrinciples": "Mindful Communication Principles",
+  "plDailyHydrationMetabolicBalance": "Daily Hydration & Metabolic Balance",
+  "plManagingStressDailyResilience": "Managing Stress & Daily Resilience",
+  "plBuildingHealthySleepArchitecture": "Building Healthy Sleep Architecture",
+  "psAskAboutHerActive": "Ask about her active stage...",
+  "puHowSharingWorks": "How Sharing Works",
+  "puUnderstand": "Understand",
+  "sSavesDirectlyToYour": "Saves directly to your journal and MongoDB",
+  "sLutealRecoveryActionChecklist": "Luteal Recovery Action Checklist",
+  "sMedicalReportPdf": "Medical Report / PDF",
+  "sSleep": "Sleep",
+  "sEnergy": "Energy",
+  "sMood": "Mood",
+  "sWriteYourThoughtsBody": "Write your thoughts, body sensations, or reflections here...",
+  "vnbVoiceReflection": "Voice Reflection",
+  "vnbYourVoiceTranscriptWill": "Your voice transcript will appear here...",
+  "gIdeasSubtitle": "Ready-made bouquets to start from.",
+  "jrnCouldNotAddPhoto": "That photo could not be added. Try another one.",
+  "tourHomeBody": "Your day at a glance: cycle, check-ins and what to expect. Log how you feel here.",
+  "@tourHomeBody": {
+    "description": "First-run product tour."
+  },
+  "tourCommunityBody": "Questions and answers from other people going through the same thing.",
+  "@tourCommunityBody": {
+    "description": "First-run product tour."
+  },
+  "tourSiaBody": "Ask Docsy anything, by typing or by voice. She knows what you have logged.",
+  "@tourSiaBody": {
+    "description": "First-run product tour."
+  },
+  "tourStudioBody": "Your journal, guided recovery sessions and time capsules you write to your future self.",
+  "@tourStudioBody": {
+    "description": "First-run product tour."
+  },
+  "tourPartnerBody": "Invite a partner and choose exactly what they can see. Nothing is shared until you say so.",
+  "@tourPartnerBody": {
+    "description": "First-run product tour."
+  },
+  "tourSkip": "Skip",
+  "@tourSkip": {
+    "description": "First-run product tour."
+  },
+  "tourNext": "Next",
+  "@tourNext": {
+    "description": "First-run product tour."
+  },
+  "tourDone": "Got it",
+  "@tourDone": {
+    "description": "First-run product tour."
+  },
+  "upAnonymousProfile": "This was posted anonymously, so there is no profile to open. Whoever wrote it chose not to be named, and that stays their choice.",
+  "@upAnonymousProfile": {
+    "description": "Shown instead of a profile when a post has no author to show."
+  },
+  "dashFocusTopic": "FOCUS TOPIC",
+  "dashScrollDownContinueLearning": "Scroll down to Continue Learning section",
+  "dashSmallLessonsDesignedStage": "Small lessons designed for your stage.",
+  "dashDailyDiscovery": "DAILY DISCOVERY",
+  "dashSweatGlandsBecomeMore": "Sweat glands become more active during puberty. Drinking plenty of water and washing daily helps keep you fresh, confident, and clean.",
+  "dashRead": "Read",
+  "dashLinkCopiedShareFamily": "Link copied to share with family!",
+  "dashQuestionsGirlsOftenAsk": "Questions Girls Often Ask",
+  "dashGirls": "Girls",
+  "dashGrowingTogether": "Growing Together",
+  "dashSupportiveCommunityPreview": "Supportive Community Preview",
+  "dashHowDoITrack": "How do I track if I haven't got my period yet?",
+  "dashCanFocusLearningDischarge": "You can focus on learning, discharge changes and kits here! Docsy helps guide you.",
+  "dashReadWhatOthersAre": "Read what others are sharing",
+  "dashRealConversationsFromCommunity": "Real conversations from the community, not examples.",
+  "dashRedirectingCommunitySpace": "Redirecting to Community Space...",
+  "dashJoinCommunity": "Join Community",
+  "dashSharedReading": "SHARED READING",
+  "dashShareArticlesAboutGrowing": "Share articles about growing up with your parent safely.",
+  "dashArticleSharedParentAccount": "Article shared with Parent account!",
+  "dashSendParent": "Send to Parent",
+  "dashOpeningSharedLibrary": "Opening Shared Library...",
+  "dashSharedLibrary": "Shared Library",
+  "dashLetSTalkWeekly": "LET'S TALK • WEEKLY PROMPT",
+  "dashFirstPeriodKitChecklist": "FIRST PERIOD KIT CHECKLIST",
+  "dashSharedJourney": "SHARED JOURNEY",
+  "dashDisplayLearningProgressCompleted": "Display learning progress completed together. The child decides what is visible.",
+  "dashLearningCycleCompanion": "Your learning cycle companion.",
+  "dashPastDays": "PAST 30 DAYS",
+  "dashSCompletelyNormalFirst": "It's completely normal for your first few cycles to be irregular. Your body is gently finding its own natural rhythm.",
+  "dashVoiceNote": "Voice Note",
+  "dashMStudio": "M Studio",
+  "dashCommunityDiscussionsStories": "Community Discussions & Stories",
+  "dashQuestionsPeopleAreAsking": "Questions people are asking",
+  "dashOpenCommunityReadReply": "Open the community to read and reply.",
+  "dashTipsPeopleAreSharing": "Tips people are sharing",
+  "dashOpenDiscussions": "Open Discussions",
+  "dashSharedReadingParentResources": "SHARED READING & PARENT RESOURCES",
+  "dashSendCycleArticlesParent": "Send cycle articles to parent or consult conversation guides.",
+  "dashArticleSharedParent": "Article shared with Parent!",
+  "dashShare": "Share",
+  "dashOpeningParentResourceLibrary": "Opening Parent Resource library...",
+  "dashGuides": "Guides",
+  "dashConversationPrompt": "CONVERSATION PROMPT",
+  "dashFirstPeriodKitStatus": "FIRST PERIOD KIT STATUS",
+  "dashDocsySafetyParentNever": " Docsy Safety: Your parent never has access to your private chat logs, notes, or moods.",
+  "dashTodaySLoggedSignals": "TODAY'S LOGGED SIGNALS",
+  "dashLogEditPeriod": "Log / Edit Period",
+  "dashConfirmCorrectPeriodStart": "Confirm or correct your period start and end dates below.",
+  "dashPeriodStartDate": "PERIOD START DATE",
+  "dashPeriodEndDateOptional": "PERIOD END DATE (OPTIONAL)",
+  "dashCancel": "Cancel",
+  "dashSave": "Save",
+  "dashExplainInsight": "Explain Insight",
+  "dashDocsySReflection": "DOCSY'S REFLECTION",
+  "dashHormonalRhythmTracker": "Hormonal Rhythm Tracker",
+  "dashRecentCycleHistory": "RECENT CYCLE HISTORY",
+  "dashNextPeriodMayArrive": "Your next period may arrive within the next few weeks. Because your cycles vary, this is only an estimate.",
+  "dashWeightOptional": "WEIGHT (OPTIONAL)",
+  "dashFromLogs": "FROM YOUR LOGS",
+  "dashBlushyCanPullTogether": "Blushy can pull together what you have logged over a date range you choose. You decide what stays in before you share it.",
+  "dashRecordWhatReportedWhat": "A record of what you reported and what the app noticed. Not a diagnosis.",
+  "dashAiGeneratedTrendsAcross": "AI-generated trends across multiple cycle logs",
+  "dashAskDocsy": "Ask Docsy",
+  "dashWhyMatters": "Why This Matters",
+  "dashPriority": "Priority",
+  "dashReviewedGuidance": "Reviewed guidance",
+  "dashDerived": "Derived",
+  "dashFertilityJourney": "Your Fertility Journey",
+  "dashOvulationLoggedSuccessfully": "Ovulation logged successfully!",
+  "dashLogOvulation": "Log Ovulation",
+  "dashBasalBodyTemperatureBbt": "BASAL BODY TEMPERATURE (BBT)",
+  "dashNotesMStudio": "NOTES & M STUDIO",
+  "dashTtcMStudioEntry": "TTC M Studio Entry",
+  "dashSharedTimelineReminders": "Shared Timeline & Reminders",
+  "dashEncouragingMessage": "Encouraging Message:",
+  "dashPartnerTasksConversationStarters": "PARTNER TASKS & CONVERSATION STARTERS",
+  "dashLearnMore": "Learn More",
+  "dashKickCountDaily": "KICK COUNT (DAILY)",
+  "dashOptionalHealthData": "OPTIONAL HEALTH DATA",
+  "dashLogBloodPressure": "Log Blood Pressure",
+  "dashBloodPressure": "Blood Pressure",
+  "dashLogBloodSugar": "Log Blood Sugar",
+  "dashBloodSugar": "Blood Sugar",
+  "dashPregnancyMStudioEntry": "Pregnancy M Studio Entry",
+  "dashPregnancyPrepLists": "Pregnancy Prep & Lists",
+  "dashSharedPregnancyTimeline": "Shared Pregnancy Timeline",
+  "dashCoordinatedChecklistsTasks": "Coordinated Checklists & Tasks:",
+  "dashPostpartumMStudioEntry": "Postpartum M Studio Entry",
+  "dashMotherBabyCoordinatedTasks": "Mother-Baby Coordinated Tasks",
+  "dashTransitionTrackingHistory": "Transition Tracking & History",
+  "dashViewFullHistory": "View Full History",
+  "dashMStudioReflection": "M Studio Reflection",
+  "dashLongTermWellnessOverview": "Long-Term Wellness Overview",
+  "dashTodaySCheck": "Log Today's Symptoms",
+  "dashViewHealthHistory": "View Health History",
+  "dashBloodPressureOptional": "BLOOD PRESSURE (OPTIONAL)",
+  "dashEmpoweredPostMenopauseWellness": "EMPOWERED POST-MENOPAUSE WELLNESS CARDS",
+  "dashWhyMattersEncouragesSustainable": "Why This Matters: Encourages sustainable heart, joint and bone vitalities.",
+  "dashDailyLifestyleOverview": "Daily Lifestyle Overview",
+  "dashCycleOverview": "CYCLE OVERVIEW",
+  "dashViewWellnessHistory": "View Wellness History",
+  "dashRecordCurrentWeightKg": "Record your current weight in kg to track trends over time.",
+  "dashAiGeneratedHabitInsights": "AI-Generated Habit Insights",
+  "dashWhyMattersSupportsOverall": "Why This Matters: Supports overall physical health and emotional vitality.",
+  "languageChoiceTitle": "Choose your language",
+  "@languageChoiceTitle": {
+    "description": "Heading of the first-run language picker."
+  },
+  "languageChoiceSubtitle": "Blushy and Docsy will speak this language. You can change it any time in Settings.",
+  "@languageChoiceSubtitle": {
+    "description": "Explains that the choice covers both the interface and Docsy."
+  },
+  "languageChoiceContinue": "Continue",
+  "@languageChoiceContinue": {
+    "description": "Confirms the language and leaves the picker."
+  },
+  "dashLogTodayCheckIn": "Log today's check-in",
+  "@dashLogTodayCheckIn": {
+    "description": "Action on an insight that needs more days of data, where the user has already logged at least once."
+  },
+  "lwmcTodayWithDocsy": "TODAY WITH DOCSY",
+  "@lwmcTodayWithDocsy": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcAskDocsy": "Ask Docsy",
+  "@lwmcAskDocsy": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcNoPeriodLoggedYet": "No period logged yet",
+  "@lwmcNoPeriodLoggedYet": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcDocsySSuggestion": "DOCSY\u2019S SUGGESTION",
+  "@lwmcDocsySSuggestion": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcAskDocsy2": "Ask Docsy \u2192",
+  "@lwmcAskDocsy2": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcTry": "Try \u2192",
+  "@lwmcTry": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcViewPlan": "View Plan \u2192",
+  "@lwmcViewPlan": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcRead": "Read \u2192",
+  "@lwmcRead": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcPrepareMyVisitSummary": "Prepare my visit summary",
+  "@lwmcPrepareMyVisitSummary": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcSomethingFeelsDifferent": "Something Feels Different",
+  "@lwmcSomethingFeelsDifferent": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcTellDocsyWhatHappened": "Tell Docsy What Happened",
+  "@lwmcTellDocsyWhatHappened": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcSubmitToDocsy": "Submit to Docsy",
+  "@lwmcSubmitToDocsy": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcClinicalVisitSummary": "Clinical Visit Summary",
+  "@lwmcClinicalVisitSummary": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcClose": "Close",
+  "@lwmcClose": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "lwmcExpandWithDocsy": "Expand with Docsy",
+  "@lwmcExpandWithDocsy": {
+    "description": "Interface chrome on the lwmc dashboard."
+  },
+  "fpnsChange": "Change",
+  "@fpnsChange": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsFirstPeriodKit": "First-Period Kit",
+  "@fpnsFirstPeriodKit": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsSaveDone": "Save & Done",
+  "@fpnsSaveDone": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsLogAPeriodStart": "Log a period start",
+  "@fpnsLogAPeriodStart": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsYourBodyLately": "Your body, lately",
+  "@fpnsYourBodyLately": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsMilestones": "Milestones",
+  "@fpnsMilestones": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsFirstPeriodKit2": "First-period kit",
+  "@fpnsFirstPeriodKit2": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsIfItHappensToday": "If it happens today",
+  "@fpnsIfItHappensToday": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsSeeFull5StepGuide": "See full 5-step guide",
+  "@fpnsSeeFull5StepGuide": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsTalk": "Talk \u2192",
+  "@fpnsTalk": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsShareWithMom": "Share with Mom",
+  "@fpnsShareWithMom": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsNextQuestion": "Next question",
+  "@fpnsNextQuestion": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsKeepExploring": "Keep exploring",
+  "@fpnsKeepExploring": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsUpdatedDaily": "Updated Daily",
+  "@fpnsUpdatedDaily": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpnsReadArticle": "Read article",
+  "@fpnsReadArticle": {
+    "description": "Interface chrome on the fpns dashboard."
+  },
+  "fpsNoPeriodLoggedYet": "No period logged yet",
+  "@fpsNoPeriodLoggedYet": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsInsightsForYourPhase": "Insights for your phase",
+  "@fpsInsightsForYourPhase": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsQuickGuides": "Quick Guides",
+  "@fpsQuickGuides": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsCrampRescue": "Cramp Rescue \u2192",
+  "@fpsCrampRescue": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsSchoolTips": "School Tips",
+  "@fpsSchoolTips": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsMySchoolBagKit": "My School Bag Kit",
+  "@fpsMySchoolBagKit": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsThingsIMNoticingLately": "Things I\u2019m noticing lately",
+  "@fpsThingsIMNoticingLately": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsUnderstandWithDocsy": "Understand with Docsy \u2192",
+  "@fpsUnderstandWithDocsy": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsCrampRescue2": "Cramp Rescue",
+  "@fpsCrampRescue2": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsIFeelBetter": "I feel better",
+  "@fpsIFeelBetter": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "fpsShareWithMom": "Share with Mom \u2192",
+  "@fpsShareWithMom": {
+    "description": "Interface chrome on the fps dashboard."
+  },
+  "hhLogPeriodDate": "Log Period Date",
+  "@hhLogPeriodDate": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhFlowIntensity": "Flow Intensity",
+  "@hhFlowIntensity": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhSavePeriodDate": "Save Period Date",
+  "@hhSavePeriodDate": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhTodayWithDocsy": "TODAY WITH DOCSY",
+  "@hhTodayWithDocsy": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhExploreWithDocsy": "Explore with Docsy",
+  "@hhExploreWithDocsy": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhYourCycle": "YOUR CYCLE",
+  "@hhYourCycle": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhNoPeriodLoggedYet": "No period logged yet",
+  "@hhNoPeriodLoggedYet": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhFlareComfortModeActive": "FLARE COMFORT MODE ACTIVE",
+  "@hhFlareComfortModeActive": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhExitFlareMode": "Exit Flare Mode",
+  "@hhExitFlareMode": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhDailySignals": "DAILY SIGNALS",
+  "@hhDailySignals": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhVoiceNotes": "Voice / Notes",
+  "@hhVoiceNotes": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhAnalyzeWithDocsy": "Analyze with Docsy",
+  "@hhAnalyzeWithDocsy": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhPatternMemoryBuilding": "Pattern Memory Building",
+  "@hhPatternMemoryBuilding": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhAskDocsy": "Ask Docsy",
+  "@hhAskDocsy": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhNoTreatmentsRecordedYet": "No treatments recorded yet",
+  "@hhNoTreatmentsRecordedYet": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhAddTreatmentProtocol": "Add Treatment / Protocol",
+  "@hhAddTreatmentProtocol": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhSaveTreatment": "Save Treatment",
+  "@hhSaveTreatment": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhAskDocsy2": "Ask Docsy \u203a",
+  "@hhAskDocsy2": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhUploadAnotherRecord": "Upload another record",
+  "@hhUploadAnotherRecord": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhSaveRecord": "Save Record",
+  "@hhSaveRecord": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhDoctorVisitBrief": "DOCTOR VISIT BRIEF",
+  "@hhDoctorVisitBrief": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhCreateDoctorSummary": "Create doctor summary",
+  "@hhCreateDoctorSummary": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhClinicalBrief": "Clinical Brief",
+  "@hhClinicalBrief": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhClose": "Close",
+  "@hhClose": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhUpdate": "Update",
+  "@hhUpdate": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhAddTrustedContact": "Add trusted contact",
+  "@hhAddTrustedContact": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhAddSupportContact": "Add Support Contact",
+  "@hhAddSupportContact": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhSaveContact": "Save Contact",
+  "@hhSaveContact": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "hhCheckWithDocsy": "Check with Docsy",
+  "@hhCheckWithDocsy": {
+    "description": "Interface chrome on the hh dashboard."
+  },
+  "menoTodayWithDocsy": "TODAY WITH DOCSY",
+  "@menoTodayWithDocsy": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoAskDocsyToday": "ASK DOCSY TODAY",
+  "@menoAskDocsyToday": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoSaveTodaySLog": "Save Today's Log",
+  "@menoSaveTodaySLog": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoNothingMuchToday": "Nothing much today",
+  "@menoNothingMuchToday": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoWhatSSteady": "WHAT'S STEADY",
+  "@menoWhatSSteady": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoLearnGuidance": "Learn guidance \u2192",
+  "@menoLearnGuidance": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoMyNormal": "MY NORMAL",
+  "@menoMyNormal": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoMyTreatmentJourney": "MY TREATMENT JOURNEY",
+  "@menoMyTreatmentJourney": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoAdd": "Add",
+  "@menoAdd": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoActive": "Active",
+  "@menoActive": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoMyQuestionsInbox": "MY QUESTIONS INBOX",
+  "@menoMyQuestionsInbox": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoSaveQuestion": "Save Question",
+  "@menoSaveQuestion": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoRead30sSummary": "Read 30s summary \u2192",
+  "@menoRead30sSummary": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoSomethingFeelsDifferent": "Something feels different",
+  "@menoSomethingFeelsDifferent": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoPrepareDoctorConsultation": "Prepare Doctor Consultation",
+  "@menoPrepareDoctorConsultation": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoUnderstandNote": "Understand Note",
+  "@menoUnderstandNote": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoConfirmWhatYouLogged": "Confirm What You Logged",
+  "@menoConfirmWhatYouLogged": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoCancel": "Cancel",
+  "@menoCancel": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoConfirmSave": "Confirm & Save",
+  "@menoConfirmSave": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoAskDocsy": "Ask Docsy",
+  "@menoAskDocsy": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoPrepareDoctorSummary": "Prepare Doctor Summary",
+  "@menoPrepareDoctorSummary": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoSaveQuestionForDoctor": "Save question for doctor",
+  "@menoSaveQuestionForDoctor": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoSaveToQuestionsInbox": "Save to Questions Inbox",
+  "@menoSaveToQuestionsInbox": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoAddMedicationOrSupplement": "Add medication or supplement",
+  "@menoAddMedicationOrSupplement": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "menoSaveTreatment": "Save Treatment",
+  "@menoSaveTreatment": {
+    "description": "Interface chrome on the meno dashboard."
+  },
+  "periTodayWithDocsy": "TODAY WITH DOCSY",
+  "@periTodayWithDocsy": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periMidlifeCompanionIntelligence": "Midlife Companion Intelligence",
+  "@periMidlifeCompanionIntelligence": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periMyChangingCycle": "MY CHANGING CYCLE",
+  "@periMyChangingCycle": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periNonPredictiveMidlifeRhythm": "Non-Predictive Midlife Rhythm",
+  "@periNonPredictiveMidlifeRhythm": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periLogPeriod": "Log Period",
+  "@periLogPeriod": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periStatus": "Status",
+  "@periStatus": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periRecentCycleIntervals": "Recent Cycle Intervals",
+  "@periRecentCycleIntervals": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periWhatYouVeBeenNoticing": "WHAT YOU'VE BEEN NOTICING",
+  "@periWhatYouVeBeenNoticing": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periLogCheckIn": "Log Check-In",
+  "@periLogCheckIn": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periWhatChangedConnections": "WHAT CHANGED & CONNECTIONS",
+  "@periWhatChangedConnections": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periWeeklyShift": "Weekly Shift",
+  "@periWeeklyShift": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periDiscoveredConnections": "Discovered Connections",
+  "@periDiscoveredConnections": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periYourCurrentFocus": "YOUR CURRENT FOCUS",
+  "@periYourCurrentFocus": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periAdd": "+ Add",
+  "@periAdd": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periTell": "Tell",
+  "@periTell": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periYour1PageAppointmentBrief": "Your 1-Page Appointment Brief",
+  "@periYour1PageAppointmentBrief": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periViewBrief": "View Brief",
+  "@periViewBrief": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periCopyForDoctor": "Copy for Doctor",
+  "@periCopyForDoctor": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periIntimateSexualHealth": "INTIMATE & SEXUAL HEALTH",
+  "@periIntimateSexualHealth": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periMyStoryTimeline": "MY STORY \u00b7 TIMELINE",
+  "@periMyStoryTimeline": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periKeepExploring": "KEEP EXPLORING",
+  "@periKeepExploring": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periLogPeriodStartDate": "Log Period Start Date",
+  "@periLogPeriodStartDate": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periSaveObservation": "Save Observation",
+  "@periSaveObservation": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periDailyTransitionCheckIn": "Daily Transition Check-In",
+  "@periDailyTransitionCheckIn": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periCompleteCheckIn": "Complete Check-In",
+  "@periCompleteCheckIn": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periAddTreatmentSupport": "Add Treatment / Support",
+  "@periAddTreatmentSupport": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periCancel": "Cancel",
+  "@periCancel": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periSave": "Save",
+  "@periSave": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periClinicianBriefPreview": "Clinician Brief Preview",
+  "@periClinicianBriefPreview": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periClose": "Close",
+  "@periClose": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "periCopy": "Copy",
+  "@periCopy": {
+    "description": "Interface chrome on the peri dashboard."
+  },
+  "ppTodayWithDocsy": "TODAY WITH DOCSY",
+  "@ppTodayWithDocsy": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppYour4thTrimesterCompanion": "Your 4th Trimester Companion",
+  "@ppYour4thTrimesterCompanion": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppSavedSynced": "Saved & Synced",
+  "@ppSavedSynced": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppTalkToDocsy": "Talk to Docsy \u2192",
+  "@ppTalkToDocsy": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppTodayIDPrioritize": "TODAY, I'D PRIORITIZE",
+  "@ppTodayIDPrioritize": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppNoticedShifts": "NOTICED SHIFTS",
+  "@ppNoticedShifts": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppWhatSBeenSteady": "WHAT'S BEEN STEADY",
+  "@ppWhatSBeenSteady": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppObservingInitialBaseline": "Observing Initial Baseline",
+  "@ppObservingInitialBaseline": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppIMDoneForToday": "I'M DONE FOR TODAY",
+  "@ppIMDoneForToday": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppTonightWindDown": "TONIGHT WIND-DOWN",
+  "@ppTonightWindDown": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppActiveNursingStopwatch": "Active Nursing Stopwatch",
+  "@ppActiveNursingStopwatch": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppLoggedWetDiaper": "Logged Wet Diaper \ud83d\udca7",
+  "@ppLoggedWetDiaper": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppLoggedSoiledDiaper": "Logged Soiled Diaper \ud83d\udca9",
+  "@ppLoggedSoiledDiaper": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppDailyRecoveryProgression": "DAILY RECOVERY PROGRESSION",
+  "@ppDailyRecoveryProgression": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppBuildDoctorSummary": "Build Doctor Summary \u2192",
+  "@ppBuildDoctorSummary": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppTimelineGuideline": "TIMELINE GUIDELINE",
+  "@ppTimelineGuideline": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppRecommendation": "RECOMMENDATION",
+  "@ppRecommendation": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppAskDocsyMore": "Ask Docsy More \u2192",
+  "@ppAskDocsyMore": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppClose": "Close",
+  "@ppClose": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppTalkToDocsy2": "Talk to Docsy",
+  "@ppTalkToDocsy2": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppAskForHelp": "Ask for Help",
+  "@ppAskForHelp": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppResumeNormalMode": "Resume Normal Mode",
+  "@ppResumeNormalMode": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppCalibratePostpartumPath": "Calibrate Postpartum Path",
+  "@ppCalibratePostpartumPath": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppBabySBirthDate": "BABY'S BIRTH DATE",
+  "@ppBabySBirthDate": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppDeliveryPath": "DELIVERY PATH",
+  "@ppDeliveryPath": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppVaginalBirth": "Vaginal Birth",
+  "@ppVaginalBirth": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppCSection": "C-Section",
+  "@ppCSection": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppFeedingMethod": "FEEDING METHOD",
+  "@ppFeedingMethod": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppCancel": "Cancel",
+  "@ppCancel": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppSaveCalibrate": "Save & Calibrate",
+  "@ppSaveCalibrate": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppINeedHelpToday": "I Need Help Today",
+  "@ppINeedHelpToday": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppGenerateShare": "Generate & Share",
+  "@ppGenerateShare": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppClinicalSafetyTriage": "Clinical Safety Triage",
+  "@ppClinicalSafetyTriage": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppTalkToDocsyNow": "Talk to Docsy Now",
+  "@ppTalkToDocsyNow": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppWhatHappenedEvent": "WHAT HAPPENED (EVENT)",
+  "@ppWhatHappenedEvent": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppWhatChangedObservedShift": "WHAT CHANGED (OBSERVED SHIFT)",
+  "@ppWhatChangedObservedShift": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppUnderstandWithDocsy": "Understand with Docsy \u2192",
+  "@ppUnderstandWithDocsy": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "ppClinicalSafetyAlert": "CLINICAL SAFETY ALERT",
+  "@ppClinicalSafetyAlert": {
+    "description": "Interface chrome on the pp dashboard."
+  },
+  "pregAddToPregnancyStory": "Add to Pregnancy Story",
+  "@pregAddToPregnancyStory": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregCancel": "Cancel",
+  "@pregCancel": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregSaveMemory": "Save Memory",
+  "@pregSaveMemory": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregTodayWithDocsy": "TODAY WITH DOCSY",
+  "@pregTodayWithDocsy": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregYourBodyToday": "Your Body Today",
+  "@pregYourBodyToday": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregBabyThisWeek": "Baby This Week",
+  "@pregBabyThisWeek": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregOneThingToKnow": "ONE THING TO KNOW",
+  "@pregOneThingToKnow": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregOneThingToDo": "ONE THING TO DO",
+  "@pregOneThingToDo": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregYourGestationalTimeline": "YOUR GESTATIONAL TIMELINE",
+  "@pregYourGestationalTimeline": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregSetupRequired": "Setup Required",
+  "@pregSetupRequired": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregSetEstimatedDueDate": "Set Estimated Due Date",
+  "@pregSetEstimatedDueDate": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregDailyMaternalCheckIn": "DAILY MATERNAL CHECK-IN",
+  "@pregDailyMaternalCheckIn": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregExploreWithDocsy": "Explore with Docsy",
+  "@pregExploreWithDocsy": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregWhatSHappeningThisWeek": "WHAT'S HAPPENING THIS WEEK",
+  "@pregWhatSHappeningThisWeek": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregSetDueDate": "Set Due Date",
+  "@pregSetDueDate": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregYourNextAppointment": "YOUR NEXT APPOINTMENT",
+  "@pregYourNextAppointment": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregBuildDoctorSummary": "Build Doctor Summary",
+  "@pregBuildDoctorSummary": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregAddDoctorQuestion": "Add Doctor Question",
+  "@pregAddDoctorQuestion": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregAdd": "Add",
+  "@pregAdd": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregShareWithPartner": "Share with Partner",
+  "@pregShareWithPartner": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregMyPregnancyStory": "MY PREGNANCY STORY",
+  "@pregMyPregnancyStory": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregAddMoment": "+ Add Moment",
+  "@pregAddMoment": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregNoMomentsRecordedYet": "No Moments Recorded Yet",
+  "@pregNoMomentsRecordedYet": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregAddFirstMoment": "Add First Moment",
+  "@pregAddFirstMoment": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "preg30SecondExplainer": "30-SECOND EXPLAINER",
+  "@preg30SecondExplainer": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "pregAdd2": "+ Add",
+  "@pregAdd2": {
+    "description": "Interface chrome on the preg dashboard."
+  },
+  "ttcTodaySBiomarkerLog": "TODAY'S BIOMARKER LOG",
+  "@ttcTodaySBiomarkerLog": {
+    "description": "Interface chrome on the ttc dashboard."
+  },
+  "ttcNaturalCycleToCycleRhythm": "Natural Cycle-to-Cycle Rhythm",
+  "@ttcNaturalCycleToCycleRhythm": {
+    "description": "Interface chrome on the ttc dashboard."
+  },
+  "ttcHonestSignalCoverage": "Honest Signal Coverage",
+  "@ttcHonestSignalCoverage": {
+    "description": "Interface chrome on the ttc dashboard."
+  },
+  "ttcGenerateClinicalReport": "Generate Clinical Report",
+  "@ttcGenerateClinicalReport": {
+    "description": "Interface chrome on the ttc dashboard."
+  },
+  "ttcLogPeriodDate": "Log Period Date",
+  "@ttcLogPeriodDate": {
+    "description": "Interface chrome on the ttc dashboard."
+  },
+  "ttcPauseFertilityTracking": "Pause Fertility Tracking",
+  "@ttcPauseFertilityTracking": {
+    "description": "Interface chrome on the ttc dashboard."
+  },
+  "ttcPauseFor1Week": "Pause for 1 week",
+  "@ttcPauseFor1Week": {
+    "description": "Interface chrome on the ttc dashboard."
+  },
+  "ttcPauseUntilNextPeriod": "Pause until next period",
+  "@ttcPauseUntilNextPeriod": {
+    "description": "Interface chrome on the ttc dashboard."
+  }
+}
