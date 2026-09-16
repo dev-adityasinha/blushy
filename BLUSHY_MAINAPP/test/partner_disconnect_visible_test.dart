@@ -268,8 +268,11 @@ void main() {
         isTrue,
         reason: 'the screen should have asked for its connections',
       );
+      // In Shared Sanctuary, Disconnect is safely located in the Manage Connection sheet
+      await tester.tap(find.byIcon(Icons.tune_rounded).first);
+      await tester.pumpAndSettle();
       expect(
-        find.text('Disconnect'),
+        find.text('Disconnect Partner'),
         findsWidgets,
         reason: '$role must be able to end the connection from the portal',
       );
@@ -287,7 +290,9 @@ void main() {
     ]);
 
     expect(find.text('Disconnect pending'), findsNothing);
-    expect(find.text('Disconnect'), findsWidgets);
+    await tester.tap(find.byIcon(Icons.tune_rounded).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Disconnect Partner'), findsWidgets);
   });
 
   testWidgets('the partner who was left is not asked to agree to anything',
