@@ -231,14 +231,14 @@ const String scrapbookTemplateName = 'Scrapbook';
 /// outside the journal offers exactly the same list.
 List<String> journalTemplatesForUser(BuildContext context) {
   final state = BlushyOSProvider.of(context);
-  var stage = 'everydayWellness';
+  var stage = 'livingWithMyCycle';
   try {
     if (state.selectedRole == 'partner') {
       stage = 'partner';
     } else {
       final profile = BlushyStorage.read('user_profile.json');
       if (profile['profile'] != null) {
-        stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
+        stage = profile['profile']['lifeStage']?.toString() ?? 'livingWithMyCycle';
       }
     }
   } catch (_) {}
@@ -576,14 +576,14 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   void didChangeDependencies() {
     super.didChangeDependencies();
     final state = BlushyOSProvider.of(context);
-    String stage = 'everydayWellness';
+    String stage = 'livingWithMyCycle';
     try {
       if (state.selectedRole == 'partner') {
         stage = 'partner';
       } else {
         final profile = BlushyStorage.read('user_profile.json');
         if (profile['profile'] != null) {
-          stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
+          stage = profile['profile']['lifeStage']?.toString() ?? 'livingWithMyCycle';
         }
       }
     } catch (_) {}

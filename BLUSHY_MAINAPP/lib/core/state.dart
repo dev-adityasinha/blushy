@@ -1341,11 +1341,13 @@ class BlushyOSState extends ChangeNotifier {
 
   void setActiveLifeStages(Set<String> stages) {
     final currentStages = Set<String>.from(stages);
+    currentStages.remove('everydayWellness');
     if (currentStages.contains('firstPeriodNotStarted')) {
-      currentStages.removeWhere((s) => s != 'firstPeriodNotStarted' && s != 'everydayWellness');
+      currentStages.removeWhere((s) => s != 'firstPeriodNotStarted');
     }
     if (currentStages.isEmpty) {
-      currentStages.add(_personalContext.lifeStage ?? 'firstPeriodNotStarted');
+      final fallback = _personalContext.lifeStage;
+      currentStages.add(fallback != null && fallback != 'everydayWellness' ? fallback : 'livingWithMyCycle');
     }
 
     try {

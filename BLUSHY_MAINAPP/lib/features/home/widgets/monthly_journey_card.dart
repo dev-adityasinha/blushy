@@ -146,37 +146,48 @@ class _ReflectionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(BlushySpace.md),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF0F2),
         borderRadius: BorderRadius.circular(16),
-        border: const Border(
-          left: BorderSide(color: Color(0xFFDD0D22), width: 3.5),
-          top: BorderSide(color: Color(0xFFFFD6DD), width: 1),
-          right: BorderSide(color: Color(0xFFFFD6DD), width: 1),
-          bottom: BorderSide(color: Color(0xFFFFD6DD), width: 1),
-        ),
+        border: Border.all(color: const Color(0xFFFFD6DD), width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            heading.toUpperCase(),
-            style: BlushyType.eyebrow(),
-          ),
-          const SizedBox(height: BlushySpace.xs + 2),
-          Text(
-            '"$text"',
-            style: TextStyle(
-              fontFamily: 'CormorantGaramond',
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              fontStyle: FontStyle.italic,
-              color: BlushyColors.text,
-              height: 1.4,
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 3.5,
+              color: const Color(0xFFDD0D22),
             ),
-          ),
-        ],
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(BlushySpace.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      heading.toUpperCase(),
+                      style: BlushyType.eyebrow(),
+                    ),
+                    const SizedBox(height: BlushySpace.xs + 2),
+                    Text(
+                      '"$text"',
+                      style: TextStyle(
+                        fontFamily: 'CormorantGaramond',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
+                        color: BlushyColors.text,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

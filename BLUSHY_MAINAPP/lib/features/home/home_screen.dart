@@ -5,7 +5,7 @@ import '../../core/state.dart';
 import '../../core/storage.dart';
 import '../../theme/colors.dart';
 import '../../services/api_auth_service.dart';
-import 'presentation/stages/everyday_wellness_dashboard.dart';
+import '../../core/stage_conflict_engine.dart';
 import 'presentation/stages/first_period_not_started_dashboard.dart';
 import 'presentation/stages/first_period_started_dashboard.dart';
 import 'presentation/stages/living_with_my_cycle_dashboard.dart';
@@ -166,15 +166,14 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
     }
 
     if (activeStages != null && activeStages.length > 1) {
-      return EverydayWellnessDashboard(
-        key: ValueKey('stage_${activeStages.join('_')}'),
-        activeStages: activeStages,
-      );
+      final dominant = StageConflictEngine.dominantStage(activeStages);
+      if (dominant != null && dominant.trim().toLowerCase() != normalized) {
+        return _buildStageDashboard(dominant);
+      }
     }
 
-    return EverydayWellnessDashboard(
-      key: ValueKey('stage_$rawStage'),
-      stageKey: rawStage,
+    return const LivingWithMyCycleDashboard(
+      key: ValueKey('stage_livingWithMyCycle_fallback'),
     );
   }
 
@@ -291,8 +290,8 @@ class DeveloperContextSimulator extends StatelessWidget {
                         'val': 'perimenopause',
                       },
                       {
-                        'label': 'Wellness (Default)',
-                        'val': 'everydayWellness',
+                        'label': 'Menopause',
+                        'val': 'menopause',
                       },
                     ].map((item) {
                       return ElevatedButton(

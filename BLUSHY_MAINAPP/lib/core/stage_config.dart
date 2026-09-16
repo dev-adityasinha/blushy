@@ -251,21 +251,7 @@ class StageConfig {
           );
 
       default:
-        return StageConfig(
-          stageKey: 'everydayWellness',
-          displayName: 'Everyday Wellness',
-          primaryColor: const Color(0xFFFF9B9E),
-          siaSuggestions: [
-            'Why am I feeling tired today?',
-            'Should I work out today?',
-            'Healthy habits recommendations',
-          ],
-          communityTags: ['General Health', 'Mental Health', 'Productivity', 'Nutrition', 'Fitness'],
-          journalTemplates: ['Daily Reflection', 'Gratitude', 'Weekly Check-in', 'Dream Journal'],
-          supportFocus: 'Everyday Wellness',
-          partnerSubLabel: 'Everyday Wellness',
-          gardenQuote: '“Tending to your wellness garden together builds daily healthy habits.”',
-          );
+        return StageConfig.forStage('livingWithMyCycle');
     }
   }
 }

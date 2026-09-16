@@ -154,8 +154,7 @@ class StageConflictEngine {
   /// The stages in the order that decides what the home tracks when more
   /// than one is active. Pregnancy outranks everything: nothing about a
   /// cycle applies while it runs. Then the stages with no cycle, then the
-  /// ones that track one, most specific first. Everyday wellness is last:
-  /// it adds to a stage and never replaces one.
+  /// ones that track one, most specific first.
   static const List<String> stagePriority = [
     'pregnancy',
     'postpartum',
@@ -166,7 +165,6 @@ class StageConflictEngine {
     'reproductiveYears',
     'firstPeriodStarted',
     'firstPeriodNotStarted',
-    'everydayWellness',
   ];
 
   /// The stage that decides the home and the symptom groups.
@@ -214,7 +212,7 @@ class StageConflictEngine {
       case 'menopause':
         return 'Menopause';
       default:
-        return 'Everyday Wellness';
+        return 'Living with My Cycle';
     }
   }
 

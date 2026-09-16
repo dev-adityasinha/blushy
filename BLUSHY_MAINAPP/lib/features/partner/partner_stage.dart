@@ -53,8 +53,8 @@ enum PartnerStage {
         PartnerStage.postpartum => 'postpartum',
         PartnerStage.perimenopause => 'perimenopause',
         PartnerStage.menopause => 'menopause',
-        PartnerStage.everydayWellness => 'everydayWellness',
-        PartnerStage.unknown => 'everydayWellness',
+        PartnerStage.everydayWellness => 'livingWithMyCycle',
+        PartnerStage.unknown => 'livingWithMyCycle',
       };
 
   bool get isKnown => this != PartnerStage.unknown;
