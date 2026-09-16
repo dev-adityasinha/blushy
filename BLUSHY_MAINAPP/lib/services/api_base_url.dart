@@ -65,24 +65,18 @@ String _resolve() {
 
 /// The deployed backend, for release builds and the hosted web build.
 ///
-/// Two Render services answer on these paths and both report healthy, which is
-/// how the wrong one stayed here unnoticed: `blushy-api` and `blushy-api-l51h`.
-/// The live one is `blushy-api-l51h` -- it is the service with `REDIS_URL`
-/// configured, and the faster of the two by roughly half a second on /health.
-/// `render.yaml` still declares the name `blushy-api`, so the file is not a
-/// reliable guide to which service is actually serving users.
+/// A Docker web service on Render (`blushy-api-new`), built from
+/// `BLUSHY_MAINAPP/backend/Dockerfile` on the `dev-adityasinha/blushy` repo.
+/// It replaced `blushy-api-l51h`, which lives in a different Render account
+/// and whose CORS allowlist does not include the current web origin -- so a
+/// build left pointing there loads the page and then fails every request.
 ///
-/// Both read the same Atlas cluster, so an account made against one is present
-/// on the other; the cost of pointing at the wrong service is latency and a
-/// backend without Redis, not a missing account.
-///
-/// This replaced api.blushy.life, which answers on the same paths but is a
-/// separate box -- nginx on a VPS rather than Render -- so a release build was
-/// talking to a deployment that nothing in this repository deploys to.
+/// Before that it was api.blushy.life, a VPS nothing in this repository
+/// deploys to.
 ///
 /// Render's free plan stops the instance when it is idle, and the first
 /// request after that pays the cold start: measured at 27s, and the client
 /// timeout has to be able to absorb it. `ApiWarmup.ping()` fires during
 /// startup so that wait is spent behind the splash rather than under the first
 /// card the user looks at.
-const String _liveBaseUrl = 'https://blushy-api-l51h.onrender.com';
+const String _liveBaseUrl = 'https://blushy-api-new.onrender.com';
