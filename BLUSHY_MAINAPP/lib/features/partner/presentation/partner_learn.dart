@@ -10,6 +10,7 @@ import '../../../services/api_contract_client.dart';
 import '../../../models/blushy_models.dart';
 import '../../../shared/api_state_card.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/docsy_avatar.dart';
 import '../partner_display_name.dart';
 
 class PartnerLearnScreen extends StatefulWidget {
@@ -492,10 +493,10 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome, color: BlushyColors.success, size: 18),
+              const DocsyIcon(color: BlushyColors.success, size: 18),
               const SizedBox(width: 8),
               Text(
-                "✨ DOCSY AI PARTNER INSIGHTS",
+                "DOCSY AI PARTNER INSIGHTS",
                 style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.success, letterSpacing: 1.1),
               ),
             ],

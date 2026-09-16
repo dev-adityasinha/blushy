@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../partner/presentation/partner_sia.dart';
 import '../../../theme/colors.dart';
 import '../../../shared/header.dart';
+import '../../../shared/docsy_avatar.dart';
 import '../../../core/theme.dart' hide BlushyColors;
 import '../../partner/presentation/partner_home.dart';
 import '../../partner/presentation/partner_community.dart';
@@ -114,8 +115,8 @@ class _PartnerShellState extends State<PartnerShell>
               label: _labels[1],
             ),
             BottomNavigationBarItem(
-              icon: const Icon(Icons.auto_awesome_outlined),
-              activeIcon: const Icon(Icons.auto_awesome_rounded),
+              icon: const DocsyIcon(size: 22, color: BlushyColors.secondaryText),
+              activeIcon: const DocsyIcon(size: 22, color: BlushyColors.primary),
               label: _labels[2],
             ),
             BottomNavigationBarItem(

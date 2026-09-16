@@ -24,6 +24,7 @@ import 'partner_privacy_screen.dart';
 import '../../../l10n/app_localizations.dart';
 import '../partner_display_name.dart';
 import '../../../shared/docsy_wordmark.dart';
+import '../../../shared/docsy_avatar.dart';
 
 class PartnerHomeScreen extends StatefulWidget {
   const PartnerHomeScreen({super.key});
@@ -1275,7 +1276,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
           text: AppLocalizations.of(context).phDrDocsy,
           style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
         ),
-        icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
+        icon: const DocsyIcon(color: Colors.white, size: 18),
       ),
     );
   }

@@ -29,6 +29,7 @@ import 'pending_invite_code.dart';
 import 'private_space.dart';
 import 'presentation/private_space_sheet.dart';
 import 'presentation/shared_sanctuary_sections.dart';
+import '../../shared/docsy_avatar.dart';
 import 'package:intl/intl.dart';
 
 
@@ -2622,7 +2623,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         if (res.containsKey('error')) {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(res['error'] as String)),
+                              SnackBar(
+                                content: Text(res['error'] as String),
+                                backgroundColor: BlushyColors.primary,
+                              ),
                             );
                           }
                         } else {
@@ -2630,15 +2634,31 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           await _fetchPartnerData();
                           setModalState(() {});
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Partner invitation sent successfully! 💌')),
+                            final messenger = ScaffoldMessenger.of(context);
+                            final inviteUrl = res['inviteUrl'] as String?;
+                            if (inviteUrl != null && inviteUrl.isNotEmpty) {
+                              await Clipboard.setData(ClipboardData(text: inviteUrl));
+                            }
+                            final msg = res['message']?.toString() ?? 'Partner invitation sent successfully! 💌';
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(inviteUrl != null ? '$msg (Invite link copied!)' : msg),
+                                backgroundColor: BlushyColors.success,
+                                duration: const Duration(seconds: 4),
+                              ),
                             );
+                            if (mounted && inviteUrl != null && inviteUrl.isNotEmpty) {
+                              _showInviteLinkSheet(inviteUrl, res['inviteCode']?.toString());
+                            }
                           }
                         }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to send invitation: $e')),
+                            SnackBar(
+                              content: Text('Failed to send invitation: $e'),
+                              backgroundColor: BlushyColors.primary,
+                            ),
                           );
                         }
                       } finally {
@@ -3004,9 +3024,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 12,
+                      DocsyIcon(
+                        size: 13,
                         color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
                       ),
                       const SizedBox(width: 4),
@@ -3172,7 +3191,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome_rounded, color: BlushyColors.warning, size: 14),
+              const DocsyIcon(color: BlushyColors.warning, size: 14),
               const SizedBox(width: 8),
               Text(
                 msg['title'] ?? '',
@@ -3379,19 +3398,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                 decoration: isMe
-                    ? BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [BlushyColors.primary, BlushyColors.primary],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: const BorderRadius.only(
+                    ? const BoxDecoration(
+                        color: BlushyColors.primary,
+                        borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(18),
                           topRight: Radius.circular(4),
                           bottomLeft: Radius.circular(18),
                           bottomRight: Radius.circular(18),
                         ),
-
                       )
                     : BoxDecoration(
                         color: BlushyColors.surface,
@@ -3483,10 +3497,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                               style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w600, color: BlushyColors.primary),
                             ),
                           ] else ...[
-                            const Icon(Icons.auto_awesome_rounded, size: 12, color: BlushyColors.primary),
+                            const DocsyIcon(size: 13, color: BlushyColors.primary),
                             const SizedBox(width: 4),
                             Text(
-                              "✨ Decode with Docsy",
+                              "Decode with Docsy",
                               style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary),
                             ),
                           ],
@@ -3511,7 +3525,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.auto_awesome_rounded, color: BlushyColors.primary, size: 14),
+                          const DocsyIcon(color: BlushyColors.primary, size: 14),
                           const SizedBox(width: 6),
                           Text(
                             "Docsy Decoded Meaning",
@@ -3645,12 +3659,17 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              _buildOverlayActionItem('Rewrite Kindly', Icons.auto_awesome_rounded, () {
-                setState(() {
-                  _chatMessages[_selectedMessageIndexForActions]['text'] = "“I value our walks. Let's connect tonight.”";
-                  _selectedMessageIndexForActions = -1;
-                });
-              }),
+              _buildOverlayActionItem(
+                'Rewrite Kindly',
+                null,
+                () {
+                  setState(() {
+                    _chatMessages[_selectedMessageIndexForActions]['text'] = "“I value our walks. Let's connect tonight.”";
+                    _selectedMessageIndexForActions = -1;
+                  });
+                },
+                leadingWidget: const DocsyIcon(color: BlushyColors.primary, size: 18),
+              ),
               _buildOverlayActionItem('Save to Memory Book', Icons.bookmark_outline_rounded, () {
                 setState(() {
                   _selectedMessageIndexForActions = -1;
@@ -3671,9 +3690,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     );
   }
 
-  Widget _buildOverlayActionItem(String label, IconData icon, VoidCallback onTap) {
+  Widget _buildOverlayActionItem(String label, IconData? icon, VoidCallback onTap, {Widget? leadingWidget}) {
     return ListTile(
-      leading: Icon(icon, color: BlushyColors.primary, size: 18),
+      leading: leadingWidget ?? Icon(icon, color: BlushyColors.primary, size: 18),
       title: Text(label, style: GoogleFonts.manrope(height: 1.5, fontSize: 12)),
       onTap: onTap,
     );

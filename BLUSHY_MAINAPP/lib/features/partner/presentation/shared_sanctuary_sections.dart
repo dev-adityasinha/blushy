@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../services/api_partner_service.dart';
+import '../../../shared/docsy_avatar.dart';
 
 // ============================================================================
 // STAGE 1 DESIGN SYSTEM TOKENS (Shared Sanctuary)
@@ -245,12 +246,10 @@ class SharedSanctuaryHeader extends StatelessWidget {
                       height: 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFF72585), Color(0xFFFF4A00)],
-                        ),
+                        color: kMagenta,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFF72585).withValues(alpha: 0.3),
+                            color: kMagenta.withValues(alpha: 0.3),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
@@ -276,12 +275,10 @@ class SharedSanctuaryHeader extends StatelessWidget {
                       height: 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF2563EB), Color(0xFF7209B7)],
-                        ),
+                        color: kCobalt,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                            color: kCobalt.withValues(alpha: 0.3),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
@@ -422,11 +419,7 @@ class TodayTogetherSignalRail extends StatelessWidget {
                         height: 50,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [spec.colour, spec.colour.withValues(alpha: 0.78)],
-                          ),
+                          color: spec.colour,
                           boxShadow: [
                             BoxShadow(
                               color: spec.colour.withValues(alpha: 0.35),
@@ -533,42 +526,36 @@ class RightNowCard extends StatelessWidget {
     final (
       Color accentColor,
       Color accentTint,
-      Color gradientEnd,
       IconData heroIcon,
       IconData badgeIcon,
     ) = switch (type) {
       RightNowEventType.message => (
           kCobalt,
           kCobaltTint,
-          const Color(0xFF4F46E5),
           Icons.chat_bubble_rounded,
           Icons.sms_rounded,
         ),
       RightNowEventType.bloom => (
           kSanctuaryCrimson,
           kCrimsonTint,
-          const Color(0xFFFF5252),
           Icons.local_florist_rounded,
           Icons.favorite_rounded,
         ),
       RightNowEventType.letter => (
           kCoral,
           kCoralTint,
-          const Color(0xFFF72585),
           Icons.mark_email_unread_rounded,
           Icons.mail_lock_rounded,
         ),
       RightNowEventType.memory => (
           kMagenta,
           kMagentaTint,
-          const Color(0xFFFF4A00),
           Icons.auto_stories_rounded,
-          Icons.auto_awesome_rounded,
+          Icons.bookmark_rounded,
         ),
       RightNowEventType.lowData => (
           kTeal,
           kTealTint,
-          const Color(0xFF0EA5E9),
           Icons.favorite_border_rounded,
           Icons.sync_rounded,
         ),
@@ -629,11 +616,7 @@ class RightNowCard extends StatelessWidget {
                   height: 56,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [accentColor, gradientEnd],
-                    ),
+                    color: accentColor,
                     boxShadow: [
                       BoxShadow(
                         color: accentColor.withValues(alpha: 0.35),
@@ -798,11 +781,7 @@ class RightNowCard extends StatelessWidget {
                 height: 58,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [accentColor, gradientEnd],
-                  ),
+                  color: accentColor,
                   boxShadow: [
                     BoxShadow(
                       color: accentColor.withValues(alpha: 0.35),
@@ -928,7 +907,6 @@ class MakeALittleMomentRail extends StatelessWidget {
         label: 'Send a Bloom',
         sublabel: 'Virtual petals',
         icon: Icons.local_florist_rounded,
-        gradient: const [Color(0xFFDD0D22), Color(0xFFFF4A00)],
         tint: kCrimsonTint,
         accent: kSanctuaryCrimson,
         onTap: onSendBloom,
@@ -937,7 +915,6 @@ class MakeALittleMomentRail extends StatelessWidget {
         label: 'Write a Letter',
         sublabel: 'Time capsule',
         icon: Icons.mark_email_unread_rounded,
-        gradient: const [Color(0xFFF72585), Color(0xFF7209B7)],
         tint: kMagentaTint,
         accent: kMagenta,
         onTap: onWriteLetter,
@@ -946,7 +923,6 @@ class MakeALittleMomentRail extends StatelessWidget {
         label: 'Leave a Note',
         sublabel: 'Private chat',
         icon: Icons.chat_bubble_rounded,
-        gradient: const [Color(0xFF2563EB), Color(0xFF0EA5E9)],
         tint: kCobaltTint,
         accent: kCobalt,
         onTap: onLeaveMessage,
@@ -954,8 +930,7 @@ class MakeALittleMomentRail extends StatelessWidget {
       (
         label: 'Plan Together',
         sublabel: 'Couple quest',
-        icon: Icons.auto_awesome_rounded,
-        gradient: const [Color(0xFFD97706), Color(0xFFF59E0B)],
+        icon: Icons.event_note_rounded,
         tint: kAmberTint,
         accent: kAmber,
         onTap: onPlanSomething,
@@ -1025,11 +1000,7 @@ class MakeALittleMomentRail extends StatelessWidget {
                         height: 48,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: a.gradient,
-                          ),
+                          color: a.accent,
                           boxShadow: [
                             BoxShadow(
                               color: a.accent.withValues(alpha: 0.35),
@@ -1180,14 +1151,10 @@ class YourStoryCard extends StatelessWidget {
                           height: 54,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(18),
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [Color(0xFFF72585), Color(0xFF8B5CF6)],
-                            ),
+                            color: kMagenta,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFF72585).withValues(alpha: 0.35),
+                                color: kMagenta.withValues(alpha: 0.35),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -1280,9 +1247,14 @@ class YourStoryCard extends StatelessWidget {
                           height: 52,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFF72585), Color(0xFFFF4A00)],
-                            ),
+                            color: kMagenta,
+                            boxShadow: [
+                              BoxShadow(
+                                color: kMagenta.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
                           child: const Center(
                             child: Icon(Icons.collections_bookmark_rounded, size: 26, color: Colors.white),
@@ -1425,14 +1397,10 @@ class LittleThingsCards extends StatelessWidget {
                         height: 48,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFFFF4A00), Color(0xFFF72585)],
-                          ),
+                          color: kCoral,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF4A00).withValues(alpha: 0.35),
+                              color: kCoral.withValues(alpha: 0.35),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -1497,14 +1465,10 @@ class LittleThingsCards extends StatelessWidget {
                         height: 48,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF0D9488), Color(0xFF10B981)],
-                          ),
+                          color: kTeal,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF0D9488).withValues(alpha: 0.35),
+                              color: kTeal.withValues(alpha: 0.35),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -1652,14 +1616,10 @@ class DoSomethingTogetherCard extends StatelessWidget {
                     height: 52,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
-                      ),
+                      color: kAmber,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFD97706).withValues(alpha: 0.35),
+                          color: kAmber.withValues(alpha: 0.35),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
@@ -1788,8 +1748,8 @@ class ALittleHelpCard extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.auto_awesome_rounded, size: 11, color: kPurple),
-                  const SizedBox(width: 3),
+                  const DocsyIcon(size: 13, color: kPurple),
+                  const SizedBox(width: 4),
                   Text(
                     'AI GUIDE',
                     style: GoogleFonts.manrope(
@@ -1841,21 +1801,20 @@ class ALittleHelpCard extends StatelessWidget {
                     height: 52,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF7209B7), Color(0xFF2563EB)],
-                      ),
+                      color: kPurple,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF7209B7).withValues(alpha: 0.35),
+                          color: kPurple.withValues(alpha: 0.35),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
                       ],
                     ),
                     child: const Center(
-                      child: Icon(Icons.auto_awesome_rounded, size: 26, color: Colors.white),
+                      child: DocsyAvatar(
+                        size: 30,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -2006,28 +1965,24 @@ class UnpairedAspirationalExperience extends StatelessWidget {
     final previews = [
       (
         icon: Icons.local_florist_rounded,
-        gradient: const [Color(0xFF0D9488), Color(0xFF10B981)],
         accent: kTeal,
         title: 'Blooms & Postcards',
         desc: 'Send digital flower blooms and sweet postcards throughout the day.',
       ),
       (
         icon: Icons.mark_email_unread_rounded,
-        gradient: const [Color(0xFFF72585), Color(0xFF7209B7)],
         accent: kMagenta,
         title: 'Time Capsule Letters',
         desc: 'Leave sealed letters for anniversaries, milestones, and quiet days.',
       ),
       (
         icon: Icons.auto_stories_rounded,
-        gradient: const [Color(0xFF2563EB), Color(0xFF0EA5E9)],
         accent: kCobalt,
         title: 'Living Memory Book',
         desc: 'A living scrapbook of memories and challenges you experience together.',
       ),
       (
         icon: Icons.shield_outlined,
-        gradient: const [Color(0xFF7209B7), Color(0xFFDD0D22)],
         accent: kPurple,
         title: 'Consent-First Sharing',
         desc: 'You have complete control over what is shared and can take private space anytime.',
@@ -2071,11 +2026,7 @@ class UnpairedAspirationalExperience extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: p.gradient,
-                    ),
+                    color: p.accent,
                     boxShadow: [
                       BoxShadow(
                         color: p.accent.withValues(alpha: 0.3),
@@ -2117,6 +2068,30 @@ class UnpairedAspirationalExperience extends StatelessWidget {
             ),
           );
         }),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: onInvite,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kSanctuaryCrimson,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shadowColor: kSanctuaryCrimson.withValues(alpha: 0.4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            ),
+            icon: const Icon(Icons.favorite_rounded, size: 20, color: Colors.white),
+            label: Text(
+              'Invite Your Partner',
+              style: GoogleFonts.manrope(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
