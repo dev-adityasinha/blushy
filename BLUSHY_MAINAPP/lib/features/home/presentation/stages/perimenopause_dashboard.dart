@@ -350,6 +350,12 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           children: [
+            // The greeting leads the page in every other stage. It used to
+            // arrive through `sectionOrder`, which is rendered after the
+            // notice and the logging row, so this stage greeted her below a
+            // symptom sheet. Rendered here and skipped in the loop below.
+            _buildEditorialGreeting(userName),
+            const SizedBox(height: 20),
             // No server data, so every section below is the stage's general
             // content rather than anything derived from her entries.
             StageStateNotice(
@@ -366,10 +372,12 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard> {
             const SizedBox(height: 20),
             const LogSymptomsSection(stageKey: 'perimenopause'),
             const SizedBox(height: 20),
-            for (final section in sectionOrder) ...[
-              _buildSectionByName(section, userName),
-              const SizedBox(height: 20),
-            ],
+            for (final section in sectionOrder)
+              // Already rendered at the top, wherever the server placed it.
+              if (section != 'editorial_greeting') ...[
+                _buildSectionByName(section, userName),
+                const SizedBox(height: 20),
+              ],
             const SizedBox(height: 40),
           ],
         ),

@@ -21,6 +21,7 @@ import { createHttpError } from '../utils/httpError.js';
 import { normalizeRole as normalizeRoleValue } from '../utils/role.js';
 import { buildPartnerCareSuggestions, buildCycleInfo } from '../services/partnerSuggestionService.js';
 import { partnerRepository } from '../repositories/partnerRepository.js';
+import * as partnerSafeService from '../services/partnerSafeService.js';
 import { normalizePermissions, hasGrant } from '../domain/partnerPermissions.js';
 import { getPeriodEntries } from '../repositories/periodRepository.js';
 import { db } from '../utils/db.js';
@@ -1040,6 +1041,26 @@ export async function getRelationshipAdvice(req, res, next) {
       }
     }
 
+    // What she has logged lately, behind her own switches. The context above
+    // carries mood, sleep and cycle but never symptoms, so the one thing a
+    // partner most often asks about -- "she said she has a headache again, is
+    // that the cycle?" -- was the one thing Docsy could not see.
+    //
+    // Read through getPartnerSafeContext rather than queried here: that is
+    // where the `log.symptoms` grant is applied and where the visible-symptom
+    // allowlist lives, so this cannot widen what he is shown elsewhere.
+    let sharedSymptoms = [];
+    if (aiAllowed) {
+      try {
+        const safe = await partnerSafeService.getPartnerSafeContext(connectionId, viewerUserId);
+        const entries = safe?.data?.symptoms;
+        if (Array.isArray(entries)) sharedSymptoms = entries;
+      } catch (error) {
+        // Advice without her symptoms is still worth giving.
+        console.error('[relationship-ai] symptom context unavailable:', error.message);
+      }
+    }
+
     const contextLines = [];
     if (context?.latestMood) {
       contextLines.push(`Their most recent logged mood: ${context.latestMood.mood ?? context.latestMood}.`);
@@ -1049,6 +1070,21 @@ export async function getRelationshipAdvice(req, res, next) {
     }
     if (context?.cyclePhase) {
       contextLines.push(`They are currently in the ${context.cyclePhase} phase (day ${context.cycleDay ?? '?'}).`);
+    }
+    if (sharedSymptoms.length > 0) {
+      const listed = sharedSymptoms
+        .map((entry) => {
+          const name = typeof entry === 'string' ? entry : entry?.symptom;
+          if (!name) return null;
+          const when = typeof entry === 'object' && entry?.loggedAt
+            ? new Date(entry.loggedAt).toISOString().slice(0, 10)
+            : null;
+          return when ? `${name} (${when})` : String(name);
+        })
+        .filter(Boolean);
+      if (listed.length > 0) {
+        contextLines.push(`Symptoms they have logged in the last week: ${listed.join(', ')}.`);
+      }
     }
 
     const systemPrompt = [

@@ -899,16 +899,6 @@ class _FirstPeriodNotStartedDashboardState extends State<FirstPeriodNotStartedDa
               letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Whatever today looks like, you don\'t have to do it alone.',
-            style: GoogleFonts.manrope(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF7A6B72),
-              height: 1.45,
-            ),
-          ),
         ],
       ),
     );

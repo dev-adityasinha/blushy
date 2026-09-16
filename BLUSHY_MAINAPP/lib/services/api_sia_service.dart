@@ -249,7 +249,13 @@ class ApiSiaService {
   }
 
   /// Fetches saved Docsy conversation history: `GET /ai/history`
-  Future<List<Map<String, String>>> getChatHistory() async {
+  ///
+  /// Returns null when the request failed, and an empty list only when the
+  /// server genuinely has nothing. The two used to be the same answer, so an
+  /// expired session or a cold start -- Render's free instance takes up to
+  /// ~27s to wake -- read as "this conversation is new", and the screen
+  /// greeted her as if nothing had ever been said.
+  Future<List<Map<String, String>>?> getChatHistory() async {
     try {
       final response = await _dio.get(
         '/ai/history',
@@ -315,7 +321,7 @@ class ApiSiaService {
       return [];
     } catch (e) {
       debugPrint('BlushySia: Error fetching chat history: $e');
-      return [];
+      return null;
     }
   }
 

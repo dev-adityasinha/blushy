@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/state.dart';
 import '../../../core/storage.dart';
 import '../../../models/blushy_models.dart';
 import '../../../services/api_blushy_service.dart';
@@ -406,6 +407,17 @@ class LogSymptomsSectionState extends State<LogSymptomsSection> {
 
     checkin['date'] = DateTime.now().toIso8601String();
     BlushyStorage.write('daily_checkin.json', checkin);
+
+    // App state, not only storage. `BlushyOSState.wellbeingState` is what
+    // Docsy is handed as `context['symptoms']`, and this sheet never touched
+    // it -- so whatever she logged here was invisible to the one screen that
+    // exists to talk about it. Everything she picked goes in, not just the
+    // 'symptom' group: a mood or a pain level is as much a logged signal as
+    // a headache.
+    final logged = <String>[
+      for (final labels in byMetric.values) ...labels,
+    ]..removeWhere((label) => label.trim().isEmpty);
+    BlushyOSProvider.of(context).updateWellbeing(symptoms: logged);
 
     // The rows read the in-memory field before storage (`_livingPain ??
     // savedPain`), and the inline check-in sets both. This path set only

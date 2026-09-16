@@ -81,16 +81,18 @@ class GreetingHero extends StatelessWidget {
                 height: 1.15,
               ),
             ),
-          const SizedBox(height: BlushySpace.xs + 2),
-          Text(
-            subtitle ?? "Whatever today looks like, you don't have to do it alone.",
-            style: GoogleFonts.manrope(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF7A6B72),
-              height: 1.45,
+          if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+            const SizedBox(height: BlushySpace.xs + 2),
+            Text(
+              subtitle!,
+              style: GoogleFonts.manrope(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF7A6B72),
+                height: 1.45,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

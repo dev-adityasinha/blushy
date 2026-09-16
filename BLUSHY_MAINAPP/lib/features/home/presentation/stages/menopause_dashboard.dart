@@ -209,16 +209,6 @@ class _MenopauseDashboardState extends State<MenopauseDashboard> {
               ],
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Understanding your body. Protecting your health. Living fully.',
-            style: GoogleFonts.manrope(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF7A6B72),
-              height: 1.45,
-            ),
-          ),
         ],
       ),
     );
@@ -2111,6 +2101,13 @@ class _MenopauseDashboardState extends State<MenopauseDashboard> {
     };
 
     final contentList = <Widget>[];
+    // The greeting is the first thing on the page in every other stage, and it
+    // has to be here too. It used to come from `sectionOrder`, which is added
+    // after the notice and the logging row -- so this stage greeted her a
+    // third of the way down, under a symptom sheet. Rendered explicitly here
+    // and skipped in the loop below.
+    contentList.add(_buildEditorialGreeting(userName));
+    contentList.add(const SizedBox(height: 24));
     // Nothing came back from the server, so every section below is falling back
     // to the stage's general content. Saying so is the difference between "we
     // have nothing for you yet" and "here is your brief" (spec §4, §31).
@@ -2132,6 +2129,8 @@ class _MenopauseDashboardState extends State<MenopauseDashboard> {
     contentList.add(const LogSymptomsSection(stageKey: 'menopause'));
     contentList.add(const SizedBox(height: 24));
     for (final secKey in sectionOrder) {
+      // Already rendered at the top, wherever the server placed it.
+      if (secKey == 'editorial_greeting') continue;
       if (moduleMap.containsKey(secKey)) {
         final w = moduleMap[secKey]!;
         if (w is! SizedBox || w.child != null) {

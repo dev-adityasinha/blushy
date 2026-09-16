@@ -263,18 +263,22 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
   }
 
   Future<void> _loadChatHistory() async {
+    // Null means the request failed; an empty list means the server really
+    // has nothing. Only the second is a new conversation.
     final history = await _siaService.getChatHistory();
     if (!mounted) return;
 
+    final restored = history ?? _cachedConversation();
+
     setState(() {
-      if (history.isNotEmpty) {
+      if (restored.isNotEmpty) {
         // Anything said on this screen while the history was loading stays
         // on top of it, in the order it happened.
         final local = List<Map<String, String>>.from(_messages);
         _messages
           ..clear()
-          ..addAll(history)
-          ..addAll(local.where((m) => !history.contains(m)));
+          ..addAll(restored)
+          ..addAll(local.where((m) => !_sameMessage(restored, m)));
         return;
       }
       // Nothing to come back to, so she opens rather than waiting to be spoken
@@ -288,6 +292,65 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         });
       }
     });
+
+    if (history != null) _cacheConversation();
+  }
+
+  /// Two maps with the same contents are not `==` in Dart, so the old
+  /// `history.contains(m)` never matched and every restored message was
+  /// appended a second time.
+  bool _sameMessage(List<Map<String, String>> list, Map<String, String> m) {
+    return list.any((h) =>
+        h['sender'] == m['sender'] && h['text'] == m['text'] && h['at'] == m['at']);
+  }
+
+  /// The conversation as it was last seen, for when the server cannot be
+  /// reached. Written after every turn; read only as a fallback, so a
+  /// successful fetch always wins.
+  List<Map<String, String>> _cachedConversation() {
+    try {
+      final raw = BlushyStorage.read('recent_sia_chats.json')['messages'];
+      if (raw is! List) return const [];
+      return raw
+          .whereType<Map>()
+          .map((m) => m.map((k, v) => MapEntry(k.toString(), v.toString())))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  void _cacheConversation() {
+    try {
+      BlushyStorage.write('recent_sia_chats.json', {
+        'messages': _messages,
+        'lastUpdated': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
+  }
+
+  /// Everything she picked on today's symptom sheet, as plain labels.
+  ///
+  /// Read from `daily_checkin.json`, which is what the sheet writes. The
+  /// numeric rows -- weight, temperature -- are left out: they are readings
+  /// rather than signals, and they are already in the context by name.
+  List<String> _loggedToday() {
+    try {
+      final checkin = BlushyStorage.read('daily_checkin.json');
+      final labels = <String>[];
+      for (final entry in checkin.entries) {
+        if (entry.key == 'date' || entry.key == 'feeling') continue;
+        final value = entry.value;
+        if (value is String && value.trim().isNotEmpty) {
+          labels.add(value.trim());
+        } else if (value is List) {
+          labels.addAll(value.map((v) => v.toString().trim()).where((v) => v.isNotEmpty));
+        }
+      }
+      return labels;
+    } catch (_) {
+      return const [];
+    }
   }
 
   /// The first thing Docsy says, matched to the time of day.
@@ -451,7 +514,12 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
       'lastPeriodStart': state.personalContext.lastPeriodStart?.toIso8601String(),
       'energy': state.wellbeingState.energy,
       'mood': state.wellbeingState.mood,
-      'symptoms': state.wellbeingState.symptoms,
+      // Today's sheet first, app state second. State is hydrated from the
+      // server at startup, so on its own it lags anything logged since -- and
+      // the question she asks Docsy is usually about what she just logged.
+      'symptoms': _loggedToday().isNotEmpty
+          ? _loggedToday()
+          : state.wellbeingState.symptoms,
       'userGoals': state.personalContext.userGoals.toList(),
       'goals': state.personalContext.userGoals.toList(),
       'medicalConditions': state.personalContext.medicalConditions.toList(),
@@ -475,12 +543,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         userEntry['isPdf'] = currentAttachment.isPdf.toString();
       }
       _messages.add(userEntry);
-      try {
-        BlushyStorage.write('recent_sia_chats.json', {
-          'messages': _messages,
-          'lastUpdated': DateTime.now().toIso8601String(),
-        });
-      } catch (_) {}
+      _cacheConversation();
       _chatController.clear();
       _attachedFile = null;
       _isThinking = true;
@@ -607,6 +670,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         }
         _messages.add(siaEntry);
       });
+      _cacheConversation();
       SiaDashboardService().notifyChatUpdated();
     } catch (e) {
       if (!mounted) return;
