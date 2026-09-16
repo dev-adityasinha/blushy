@@ -214,9 +214,17 @@ class _SignupScreenState extends State<SignupScreen> {
           // to connect", which sent people to check a server that was fine.
           // The cause is named instead.
           final raw = e.toString().replaceFirst(RegExp(r'^Exception: '), '');
+          debugPrint('[google-signin] $raw');
           final cleaned = ApiAuthService.cleanErrorMessage(e);
-          _errorMessage = _googleFailureMessage(raw) ??
-              (cleaned.startsWith('Unable to connect')
+          final friendly = _googleFailureMessage(raw);
+          // The plain-words version is what she should read, but the code
+          // underneath is the only thing that says which Google client is
+          // misconfigured -- and it never left the device, so diagnosing it
+          // meant reading server logs that have nothing in them, because a
+          // refusal here never reaches the server at all.
+          _errorMessage = friendly != null
+              ? '$friendly\n\n${_googleErrorCode(raw) ?? raw}'
+              : (cleaned.startsWith('Unable to connect')
                   ? 'Google sign-in failed: $raw'
                   : cleaned);
         });
@@ -226,6 +234,15 @@ class _SignupScreenState extends State<SignupScreen> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  /// The bare Google/Play-services code out of a thrown error, for the line
+  /// shown under the explanation. Null when there is no recognisable code, in
+  /// which case the raw text is shown instead.
+  static String? _googleErrorCode(String raw) {
+    final match = RegExp(r'(ApiException:\s*\d+|DEVELOPER_ERROR|NETWORK_ERROR|SIGN_IN_REQUIRED|[a-z_]*popup[a-z_]*|idpiframe_initialization_failed)')
+        .firstMatch(raw);
+    return match?.group(0);
   }
 
   /// Plain words for the Play-services codes that come back as bare numbers.
