@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'sia_conversation.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -326,19 +327,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
     final missing = merged.where((m) => !_sameMessage(server, m)).toList();
     if (missing.isEmpty) return;
 
-    final exchanges = <Map<String, String>>[];
-    for (var i = 0; i < missing.length; i++) {
-      final m = missing[i];
-      if (m['sender'] != 'user') continue;
-      final next = i + 1 < missing.length ? missing[i + 1] : null;
-      final reply = (next != null && next['sender'] == 'sia') ? next['text'] ?? '' : '';
-      exchanges.add({
-        'userMessage': m['text'] ?? '',
-        'assistantMessage': reply,
-        'at': m['at'] ?? '',
-      });
-      if (reply.isNotEmpty) i++;
-    }
+    final exchanges = SiaConversation.toExchanges(missing);
     if (exchanges.isEmpty) return;
 
     final imported = await _siaService.importChatHistory(exchanges);
@@ -350,54 +339,16 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
   ///
   /// A clear wipes the cache as well as the server copy, so nothing here can
   /// resurrect a conversation that was deliberately deleted.
+  // Conversation merge/dedupe/timestamp logic lives in SiaConversation, where
+  // it is unit-tested. These thin wrappers keep the call sites unchanged.
   List<Map<String, String>> _mergeConversations({
     required List<Map<String, String>> server,
     required List<Map<String, String>> cached,
-  }) {
-    if (cached.isEmpty) return server;
+  }) =>
+      SiaConversation.merge(server: server, cached: cached);
 
-    final merged = List<Map<String, String>>.from(server);
-    for (final m in cached) {
-      if (!_sameMessage(merged, m)) merged.add(m);
-    }
-
-    // By timestamp, so a recovered day lands among the server's rather than
-    // after them. Anything undated keeps its position relative to the rest.
-    merged.sort((a, b) {
-      final at = DateTime.tryParse(a['at'] ?? '');
-      final bt = DateTime.tryParse(b['at'] ?? '');
-      if (at == null || bt == null) return 0;
-      return at.compareTo(bt);
-    });
-    return merged;
-  }
-
-  /// Two maps with the same contents are not `==` in Dart, so the old
-  /// `history.contains(m)` never matched and every restored message was
-  /// appended a second time.
-  bool _sameMessage(List<Map<String, String>> list, Map<String, String> m) {
-    return list.any((h) =>
-        h['sender'] == m['sender'] &&
-        h['text'] == m['text'] &&
-        _closeEnough(h['at'], m['at']));
-  }
-
-  /// Whether two stamps describe the same moment, allowing for the fact that
-  /// they were taken by different clocks.
-  ///
-  /// The server stamps a row when it saves; the cache stamps a message when
-  /// the screen adds it, a round trip earlier. Comparing them exactly meant a
-  /// message that had just come back from the server still looked device-only
-  /// -- so it was uploaded again, and the same exchange was stored twice.
-  static bool _closeEnough(String? a, String? b) {
-    if (a == b) return true;
-    final at = DateTime.tryParse(a ?? '');
-    final bt = DateTime.tryParse(b ?? '');
-    // One of them undated: the sender and the text already matched, and there
-    // is nothing further to tell them apart.
-    if (at == null || bt == null) return true;
-    return at.toUtc().difference(bt.toUtc()).abs() < const Duration(minutes: 10);
-  }
+  bool _sameMessage(List<Map<String, String>> list, Map<String, String> m) =>
+      SiaConversation.sameMessage(list, m);
 
   /// The conversation as it was last seen, for when the server cannot be
   /// reached. Written after every turn; read only as a fallback, so a
@@ -431,18 +382,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
   /// rather than signals, and they are already in the context by name.
   List<String> _loggedToday() {
     try {
-      final checkin = BlushyStorage.read('daily_checkin.json');
-      final labels = <String>[];
-      for (final entry in checkin.entries) {
-        if (entry.key == 'date' || entry.key == 'feeling') continue;
-        final value = entry.value;
-        if (value is String && value.trim().isNotEmpty) {
-          labels.add(value.trim());
-        } else if (value is List) {
-          labels.addAll(value.map((v) => v.toString().trim()).where((v) => v.isNotEmpty));
-        }
-      }
-      return labels;
+      return SiaConversation.loggedLabels(BlushyStorage.read('daily_checkin.json'));
     } catch (_) {
       return const [];
     }

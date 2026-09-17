@@ -22,9 +22,13 @@ void main() {
   String read(String p) => File(p).readAsStringSync();
 
   late final String screen;
+  // Timestamp comparison moved into the tested domain object; the screen keeps
+  // only the UTC stamping.
+  late final String conversation;
 
   setUpAll(() {
     screen = read('lib/features/sia/sia_screen.dart');
+    conversation = read('lib/features/sia/sia_conversation.dart');
   });
 
   test('timestamps leave the device in UTC', () {
@@ -35,18 +39,18 @@ void main() {
   });
 
   test('two clocks are allowed to disagree slightly', () {
-    expect(screen, contains('_closeEnough(h[' "'at'" '], m[' "'at'" '])'));
+    expect(conversation, contains('closeEnough(h[' "'at'" '], m[' "'at'" '])'));
 
-    final start = screen.indexOf('static bool _closeEnough(');
+    final start = conversation.indexOf('static bool closeEnough(');
     expect(start, greaterThan(-1));
-    final body = screen.substring(start, start + 700);
+    final body = conversation.substring(start, start + 700);
     expect(body, contains('Duration(minutes: 10)'));
     expect(body, contains('.toUtc()'), reason: 'compare instants, not wall clocks');
   });
 
   test('an undated message still matches on sender and text', () {
-    final start = screen.indexOf('static bool _closeEnough(');
-    final body = screen.substring(start, start + 700);
+    final start = conversation.indexOf('static bool closeEnough(');
+    final body = conversation.substring(start, start + 700);
     expect(body, contains('if (at == null || bt == null) return true;'));
   });
 

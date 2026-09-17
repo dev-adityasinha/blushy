@@ -20,10 +20,14 @@ void main() {
 
   late final String screen;
   late final String service;
+  // The merge/dedupe/pairing logic now lives in a testable domain object; the
+  // screen keeps only the wiring that calls into it.
+  late final String conversation;
 
   setUpAll(() {
     screen = read('lib/features/sia/sia_screen.dart');
     service = read('lib/services/api_sia_service.dart');
+    conversation = read('lib/features/sia/sia_conversation.dart');
   });
 
   test('the device copy is merged, not just used as a fallback', () {
@@ -38,11 +42,20 @@ void main() {
     expect(branch, contains('_mergeConversations(server: history, cached: cached)'));
   });
 
-  test('a merged conversation is ordered by time, not by source', () {
+  test('the screen merges through the domain object', () {
+    // The wiring stays on the screen; the logic it delegates to is asserted
+    // below against sia_conversation.dart.
     final start = screen.indexOf('List<Map<String, String>> _mergeConversations(');
     expect(start, greaterThan(-1));
+    final body = screen.substring(start, start + 400);
+    expect(body, contains('SiaConversation.merge(server: server, cached: cached)'));
+  });
 
-    final body = screen.substring(start, start + 1200);
+  test('a merged conversation is ordered by time, not by source', () {
+    final start = conversation.indexOf('static List<Map<String, String>> merge(');
+    expect(start, greaterThan(-1));
+
+    final body = conversation.substring(start, start + 1200);
     expect(body, contains('merged.sort('));
     expect(body, contains("DateTime.tryParse(a['at'] ?? '')"),
         reason: 'a recovered day has to land among the server rows');
@@ -51,9 +64,9 @@ void main() {
   test('duplicates are matched on content, not identity', () {
     // Two maps with equal contents are never `==` in Dart, so an identity
     // check would append the whole cache on top of the server copy.
-    final start = screen.indexOf('List<Map<String, String>> _mergeConversations(');
-    final body = screen.substring(start, start + 1200);
-    expect(body, contains('_sameMessage(merged, m)'));
+    final start = conversation.indexOf('static List<Map<String, String>> merge(');
+    final body = conversation.substring(start, start + 1200);
+    expect(body, contains('sameMessage(merged, m)'));
   });
 
   test('clearing history wipes the device copy too', () {
@@ -76,10 +89,19 @@ void main() {
     final start = screen.indexOf('Future<void> _uploadDeviceOnlyHistory(');
     expect(start, greaterThan(-1));
     final body = screen.substring(start, start + 1600);
-    // The cache is a flat message list; the server stores exchanges.
-    expect(body, contains("m['sender'] != 'user'"));
-    expect(body, contains("next['sender'] == 'sia'"));
-    expect(body, contains("'assistantMessage': reply"));
+    // The screen delegates the flat-list-to-exchanges shaping to the domain
+    // object, then sends the result.
+    expect(body, contains('SiaConversation.toExchanges(missing)'));
+
+    // The cache is a flat message list; the server stores exchanges. That
+    // pairing lives in SiaConversation.toExchanges now.
+    final ex = conversation.indexOf('static List<Map<String, String>> toExchanges(');
+    expect(ex, greaterThan(-1));
+    final exBody = conversation.substring(
+        ex, (ex + 1600).clamp(0, conversation.length));
+    expect(exBody, contains("m['sender'] != 'user'"));
+    expect(exBody, contains("next['sender'] == 'sia'"));
+    expect(exBody, contains("'assistantMessage': reply"));
   });
 
   test('the upload stops once the server has them', () {
