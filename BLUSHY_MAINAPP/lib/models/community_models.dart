@@ -205,6 +205,22 @@ class CommunityComment {
     this.isClinicallyReviewed = false,
 });
 
+  CommunityComment copyWith({List<CommunityComment>? replies}) => CommunityComment(
+        commentId: commentId,
+        postId: postId,
+        parentId: parentId,
+        authorId: authorId,
+        authorName: authorName,
+        text: text,
+        score: score,
+        userVote: userVote,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        replies: replies ?? this.replies,
+        moderationNotice: moderationNotice,
+        isClinicallyReviewed: isClinicallyReviewed,
+      );
+
   factory CommunityComment.fromJson(Map<String, dynamic> json) {
     return CommunityComment(
       commentId: json['commentId'] ?? '',

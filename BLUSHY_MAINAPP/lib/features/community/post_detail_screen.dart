@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../shared/blushy_surface.dart';
 import '../../theme/scale.dart';
 import 'post_card_parts.dart';
+import 'community_comments.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final CommunityPost post;
@@ -107,11 +108,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
       if (newComment != null) {
         _commentController.clear();
+        // The server handed back the real comment, so drop it straight into
+        // the tree instead of re-reading the whole thread: it appears at once,
+        // with no loading flash and no throwaway vote to refresh the post.
         setState(() {
+          _comments = CommunityComments.insert(_comments, newComment);
           _replyTarget = null;
         });
         _focusNode.unfocus();
-        _loadPostDetails(); // Reload comment tree
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
