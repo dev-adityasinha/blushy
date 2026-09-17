@@ -7,7 +7,7 @@ import '../../../../theme/colors.dart';
 import '../../../../core/storage.dart';
 import '../../../../core/state.dart';
 import '../../../../services/api_period_service.dart';
-import '../../../../services/api_sia_service.dart';
+import '../../view_models/first_period_not_started_view_model.dart';
 import '../../../../services/sia_dashboard_service.dart';
 import '../../home_screen.dart';
 import '../../services/home_event_bus.dart';
@@ -35,6 +35,10 @@ class FirstPeriodNotStartedDashboard extends StatefulWidget {
 }
 
 class _FirstPeriodNotStartedDashboardState extends State<FirstPeriodNotStartedDashboard> {
+
+  /// This screen is the View; the insight read lives in the tested
+  /// FirstPeriodNotStartedViewModel and is mirrored back by _onInsightChanged.
+  final FirstPeriodNotStartedViewModel _vm = FirstPeriodNotStartedViewModel();
 
   /// How the last insight load went. This stage has no cycle to report on, so
   /// the only thing worth saying is whether today's note actually came from
@@ -292,6 +296,7 @@ class _FirstPeriodNotStartedDashboardState extends State<FirstPeriodNotStartedDa
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onInsightChanged);
     _loadSavedStage1Data();
     _fetchDynamicAiInsights();
   }
@@ -311,34 +316,23 @@ class _FirstPeriodNotStartedDashboardState extends State<FirstPeriodNotStartedDa
 
   @override
   void dispose() {
+    _vm.removeListener(_onInsightChanged);
+    _vm.dispose();
     _internalScrollController.dispose();
     super.dispose();
   }
 
-  // Fetch real-time AI insights from backend service
-  Future<void> _fetchDynamicAiInsights() async {
-    if (!mounted) return;
-    setState(() => _isLoadingAiInsights = true);
+  /// Delegated to the view model; _onInsightChanged mirrors the result.
+  Future<void> _fetchDynamicAiInsights() => _vm.load();
 
-    try {
-      final result = await ApiSiaService().getHealthInsightsResult();
-      if (mounted) _insightState = result.state;
-      final insights = result.data ?? const <String, dynamic>{};
-      if (mounted && insights.isNotEmpty) {
-        final thought = insights['thought'] ?? insights['summary'] ?? insights['insight'] ?? insights['headline'];
-        if (thought is String && thought.trim().isNotEmpty) {
-          setState(() {
-            _dynamicSiaThought = thought;
-          });
-        }
-      }
-    } catch (_) {
-      // Graceful fallback to the daily seeded thought, but record that the
-      // note on screen is not from her own data.
-      if (mounted) _insightState = ApiState.offline;
-    } finally {
-      if (mounted) setState(() => _isLoadingAiInsights = false);
-    }
+  /// The View reacting to its ViewModel.
+  void _onInsightChanged() {
+    if (!mounted) return;
+    setState(() {
+      _insightState = _vm.insightState;
+      _isLoadingAiInsights = _vm.isLoading;
+      _dynamicSiaThought = _vm.siaThought ?? _dynamicSiaThought;
+    });
   }
 
   // Helper to open real Docsy AI companion
