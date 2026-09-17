@@ -8,7 +8,7 @@ import '../../core/theme.dart' hide BlushyColors;
 import '../../core/storage.dart';
 import '../journal/journal_screen.dart';
 import '../journal/notes/notes_journal_screen.dart';
-import '../journal/repository/journal_repository.dart';
+import 'view_models/m_studio_view_model.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/journal_storage.dart';
@@ -117,32 +117,28 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
   List<Map<String, dynamic>> _capsules = [];
   bool _capsulesLoading = false;
 
+  /// This screen is the View; the three reads live in the tested
+  /// MStudioViewModel and are mirrored back by _onStudioChanged.
+  final MStudioViewModel _vm = MStudioViewModel();
+
   /// Guided sessions from the server. Empty until a reviewer approves them.
   List<Map<String, dynamic>> _sessions = [];
   bool _sessionsLoading = false;
 
-  Future<void> _loadRecoverySessions() async {
-    if (mounted) setState(() => _sessionsLoading = true);
+  /// Delegated to the view model; _onStudioChanged mirrors the result.
+  Future<void> _loadRecoverySessions() => _vm.loadSessions();
 
-    final result = await RecoveryApi.sessions();
+  Future<void> _loadCapsules() => _vm.loadCapsules();
+
+  /// The View reacting to its ViewModel.
+  void _onStudioChanged() {
     if (!mounted) return;
-
     setState(() {
-      _sessionsLoading = false;
-      _sessions = result.data ?? const [];
-    });
-  }
-
-  Future<void> _loadCapsules() async {
-    if (mounted) setState(() => _capsulesLoading = true);
-
-    final result = await CapsulesApi.list();
-    if (!mounted) return;
-
-    setState(() {
-      _capsulesLoading = false;
-      // No seeded placeholders. An empty list is what a new account has.
-      _capsules = result.data ?? const [];
+      _sessions = _vm.sessions;
+      _sessionsLoading = _vm.sessionsLoading;
+      _capsules = _vm.capsules;
+      _capsulesLoading = _vm.capsulesLoading;
+      _latestEntry = _vm.latestEntry;
     });
   }
 
@@ -199,29 +195,21 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onStudioChanged);
     _loadCapsules();
     _loadRecoverySessions();
     _loadLatestEntry();
   }
 
-  /// The most recent thing written, for the studio's own recent list.
-  ///
-  /// Read from the journal's own store rather than invented: an account that
-  /// has written nothing shows nothing, which is the honest empty state.
-  Future<void> _loadLatestEntry() async {
-    final entries =
-        await JournalRepository().getAllEntries(AuthStorage.getUserId() ?? 'anon');
-    if (!mounted) return;
-
-    final sorted = entries.toList()
-      ..sort((a, b) => (b.dateTime ?? b.date).compareTo(a.dateTime ?? a.date));
-    setState(() => _latestEntry = sorted.isEmpty ? null : sorted.first);
-  }
+  /// Delegated to the view model; _onStudioChanged mirrors the result.
+  Future<void> _loadLatestEntry() => _vm.loadLatestEntry();
 
   LocalJournalEntry? _latestEntry;
 
   @override
   void dispose() {
+    _vm.removeListener(_onStudioChanged);
+    _vm.dispose();
     _editorController.dispose();
     super.dispose();
   }
