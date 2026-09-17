@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:blushy_life_app/services/api_contract_client.dart';
 import 'package:blushy_life_app/services/api_perimenopause_service.dart';
 import 'package:blushy_life_app/features/home/view_models/perimenopause_view_model.dart';
@@ -86,5 +87,54 @@ void main() {
     )..addListener(() => n++);
     await vm.load();
     expect(n, greaterThan(0));
+  });
+
+  group('cache-first', () {
+    PerimenopauseOverviewData _ovData(String focus, List<int> hist) =>
+        PerimenopauseOverviewData.fromJson({
+          'profile': {'currentFocus': focus},
+          'cycleHistory': hist,
+        });
+
+    test('shows the cached overview at once, then the server replaces it', () async {
+      final cached = _ovData('temperature', [30, 40]);
+      final server = _ovData('sleep', [28]);
+      final gate = Completer<ApiResult<PerimenopauseOverviewData>>();
+
+      final vm = PerimenopauseViewModel(
+        readCachedOverview: () => cached,
+        readCachedBrief: () => null,
+        fetchOverview: () => gate.future,
+        fetchBrief: () async => _br(ApiState.ready),
+      );
+      final done = vm.load();
+
+      // Synchronous cache emission, before the network resolves.
+      expect(vm.overviewState, ApiState.stale);
+      expect(vm.isLoading, isFalse, reason: 'a returning user is not held on a spinner');
+      expect(vm.activeFocus, 'temperature');
+      expect(vm.cycleHistory, [30, 40]);
+
+      gate.complete(_ov(ApiState.ready, d: server));
+      await done;
+      expect(vm.overviewState, ApiState.ready);
+      expect(vm.activeFocus, 'sleep');
+      expect(vm.cycleHistory, [28]);
+    });
+
+    test('with no cache it still shows the spinner until the server answers', () async {
+      final gate = Completer<ApiResult<PerimenopauseOverviewData>>();
+      final vm = PerimenopauseViewModel(
+        readCachedOverview: () => null,
+        readCachedBrief: () => null,
+        fetchOverview: () => gate.future,
+        fetchBrief: () async => _br(ApiState.ready),
+      );
+      final done = vm.load();
+      expect(vm.isLoading, isTrue);
+      gate.complete(_ov(ApiState.ready, d: _ovData('sleep', const [])));
+      await done;
+      expect(vm.isLoading, isFalse);
+    });
   });
 }
