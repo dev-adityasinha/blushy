@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/state.dart';
 import '../../../../services/api_contract_client.dart';
+import '../../view_models/postpartum_view_model.dart';
 import '../../../../services/api_postpartum_service.dart';
 import '../../../sia/open_docsy.dart';
 import '../doctor_summary_screen.dart';
@@ -51,6 +52,10 @@ class _PostpartumDashboardState extends State<PostpartumDashboard> {
   bool _isLoading = true;
   bool _isLowEnergyMode = false;
 
+  /// This screen is the View; the data load lives in the tested
+  /// PostpartumViewModel and is mirrored back by _onDataChanged.
+  final PostpartumViewModel _vm = PostpartumViewModel();
+
   // ─── Interactive Check-In State (Maternal-First) ───────────────────
   String? _physicalComfort;
   String? _mood;
@@ -80,34 +85,36 @@ class _PostpartumDashboardState extends State<PostpartumDashboard> {
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onDataChanged);
     _loadPostpartumData();
   }
 
   @override
   void dispose() {
     _nursingTimer?.cancel();
+    _vm.removeListener(_onDataChanged);
+    _vm.dispose();
     _internalScrollController.dispose();
     _docsyInputController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadPostpartumData() async {
-    final overviewRes = await ApiPostpartumService.getOverview();
-    final briefRes = await ApiPostpartumService.getTodayBrief();
+  Future<void> _loadPostpartumData() => _vm.load();
 
+  /// The View reacting to its ViewModel: mirror the loaded data and seed the
+  /// check-in form from today's entry.
+  void _onDataChanged() {
     if (!mounted) return;
-    final overview = overviewRes.data;
-    final brief = briefRes.data;
     setState(() {
-      _overview = overview;
-      _todayBrief = brief;
-      _overviewState = overviewRes.state;
-      _isLowEnergyMode = overview?.isLowEnergyMode ?? false;
-      _isLoading = false;
+      _overview = _vm.overview;
+      _todayBrief = _vm.todayBrief;
+      _overviewState = _vm.overviewState;
+      _isLowEnergyMode = _vm.isLowEnergyMode;
+      _isLoading = _vm.isLoading;
 
       // Seed current checkin values if present
-      if (overview?.todayCheckin != null) {
-        final chk = overview!.todayCheckin!;
+      final chk = _vm.todayCheckin;
+      if (chk != null) {
         _physicalComfort = chk['physicalComfort']?.toString();
         _mood = chk['mood']?.toString();
         _todayFeels = chk['todayFeels']?.toString();
@@ -851,14 +858,10 @@ class _PostpartumDashboardState extends State<PostpartumDashboard> {
       'sleepHours': _sleepHours.toInt(),
     });
 
-    final briefRes = await ApiPostpartumService.getTodayBrief();
-    final overviewRes = await ApiPostpartumService.getOverview();
-
+    // Refresh through the view model; _onDataChanged mirrors the new data.
+    await _vm.load();
     if (!mounted) return;
     setState(() {
-      _todayBrief = briefRes.data;
-      _overview = overviewRes.data;
-      _overviewState = overviewRes.state;
       _isSavingCheckin = false;
       _checkinSaved = true;
     });

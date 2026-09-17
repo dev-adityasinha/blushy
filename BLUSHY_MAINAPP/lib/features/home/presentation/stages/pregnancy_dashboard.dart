@@ -7,6 +7,7 @@ import '../../../../core/state.dart';
 import '../../../../core/storage.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../services/api_pregnancy_service.dart';
+import '../../view_models/pregnancy_view_model.dart';
 import '../doctor_summary_screen.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
@@ -57,6 +58,10 @@ class _PregnancyDashboardState extends State<PregnancyDashboard> {
   List<Map<String, dynamic>> _memories = [];
   List<Map<String, dynamic>> _questions = [];
 
+  /// This screen is the View; the data load lives in the tested
+  /// PregnancyViewModel and is mirrored back by _onDataChanged.
+  final PregnancyViewModel _vm = PregnancyViewModel();
+
   // ─── Interactive Dashboard Controls ────────────────────────────────
   String? _selectedMode;
   String _maternalViewTab = 'body'; // 'body' (Maternal-First) vs 'baby'
@@ -73,12 +78,15 @@ class _PregnancyDashboardState extends State<PregnancyDashboard> {
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onDataChanged);
     _rehydrateLocalState();
     _loadAllPregnancyData();
   }
 
   @override
   void dispose() {
+    _vm.removeListener(_onDataChanged);
+    _vm.dispose();
     _docsyInputController.dispose();
     _internalScrollController.dispose();
     super.dispose();
@@ -151,56 +159,30 @@ class _PregnancyDashboardState extends State<PregnancyDashboard> {
   }
 
   Future<void> _loadAllPregnancyData() async {
-    // `get`, not `BlushyOSProvider.of`.
-    //
-    // initState calls this, and everything before the first await runs inside
-    // it -- so `.of(context)` registered an inherited dependency before
-    // initState had completed, which Flutter asserts against. The screen threw
-    // on every build. Only the due date is read here and it does not need to be
-    // reactive, so a non-registering lookup is enough.
+    // `get`, not `BlushyOSProvider.of`: initState calls this and everything
+    // before the first await runs inside it, so a registering lookup would
+    // assert. Only the due date is read and it need not be reactive.
     final pc = context
         .getInheritedWidgetOfExactType<BlushyOSProvider>()
         ?.notifier
         ?.personalContext;
     final dueDateStr = pc?.dueDate?.toIso8601String().sliceSafe(0, 10);
+    await _vm.load(dueDate: dueDateStr, mode: _selectedMode);
+  }
 
-    // Parallel fetch
-    final overviewFuture = ApiPregnancyService.getOverview(dueDate: dueDateStr);
-    final briefFuture = ApiPregnancyService.getTodayBrief(dueDate: dueDateStr, mode: _selectedMode);
-    final baselineFuture = ApiPregnancyService.getBaseline();
-    final memoriesFuture = ApiPregnancyService.getMemories();
-    final questionsFuture = ApiPregnancyService.getQuestions();
-
-    final results = await Future.wait([
-      overviewFuture,
-      briefFuture,
-      baselineFuture,
-      memoriesFuture,
-      questionsFuture,
-    ]);
-
+  /// The View reacting to its ViewModel. Memories and questions are only
+  /// overwritten when the server returned some, so a local rehydration is kept.
+  void _onDataChanged() {
     if (!mounted) return;
-
-    // try/finally so the loading flag always clears. Without it, one failed
-    // cast or a throwing future would leave the dashboard on its spinner for
-    // ever, which is a worse failure than the missing loading state this
-    // replaces.
-    try {
-      final ovRes = results[0] as ApiResult<PregnancyOverviewData>;
-      final brRes = results[1] as ApiResult<PregnancyTodayBriefData>;
-      final baseRes = results[2] as ApiResult<Map<String, dynamic>>;
-      final memRes = results[3] as ApiResult<List<Map<String, dynamic>>>;
-      final qRes = results[4] as ApiResult<List<Map<String, dynamic>>>;
-
-      _overviewState = ovRes.state;
-      if (ovRes.data != null) _overview = ovRes.data;
-      if (brRes.data != null) _todayBrief = brRes.data;
-      if (baseRes.data != null) _baselineData = baseRes.data;
-      if (memRes.data != null) _memories = memRes.data!;
-      if (qRes.data != null) _questions = qRes.data!;
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    setState(() {
+      _overviewState = _vm.overviewState;
+      if (_vm.overview != null) _overview = _vm.overview;
+      if (_vm.todayBrief != null) _todayBrief = _vm.todayBrief;
+      if (_vm.baselineData != null) _baselineData = _vm.baselineData;
+      if (_vm.memories != null) _memories = _vm.memories!;
+      if (_vm.questions != null) _questions = _vm.questions!;
+      _isLoading = _vm.isLoading;
+    });
   }
 
   Future<void> _submitDailyCheckIn() async {
@@ -221,14 +203,11 @@ class _PregnancyDashboardState extends State<PregnancyDashboard> {
 
     final messenger = ScaffoldMessenger.of(context);
     await ApiPregnancyService.submitCheckIn(payload);
-    
-    // Refresh baseline
-    final baseRes = await ApiPregnancyService.getBaseline();
+
+    // Refresh baseline through the view model; _onDataChanged mirrors it.
+    await _vm.refreshBaseline();
     if (!mounted) return;
-    setState(() {
-      _hasLoggedToday = true;
-      if (baseRes.data != null) _baselineData = baseRes.data;
-    });
+    setState(() => _hasLoggedToday = true);
 
     messenger.showSnackBar(
       SnackBar(
