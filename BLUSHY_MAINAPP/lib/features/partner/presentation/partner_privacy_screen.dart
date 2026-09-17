@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../models/blushy_models.dart';
 import '../../../services/api_blushy_service.dart';
-import '../../../services/api_contract_client.dart';
 import '../../../theme/colors.dart';
+import '../view_models/partner_privacy_view_model.dart';
 
 /// What this partner currently receives, and what they do not.
 ///
@@ -27,10 +27,14 @@ class PartnerPrivacyScreen extends StatefulWidget {
 }
 
 class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
+  /// This screen is the View; the branching load lives in the tested
+  /// PartnerPrivacyViewModel and is mirrored back by _onDataChanged.
+  late final PartnerPrivacyViewModel _vm =
+      PartnerPrivacyViewModel(connectionId: widget.connectionId);
+
   bool _loading = true;
   String? _error;
   List<PartnerPermission> _matrix = const [];
-  Set<String> _allowedGrants = const {};
 
   /// Permission keys with a request already waiting, and the ones being sent.
   /// Asking twice would only queue the same thing again for the other person.
@@ -40,75 +44,33 @@ class _PartnerPrivacyScreenState extends State<PartnerPrivacyScreen> {
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onDataChanged);
     _load();
   }
 
-  Future<void> _load() async {
+  @override
+  void dispose() {
+    _vm.removeListener(_onDataChanged);
+    _vm.dispose();
+    super.dispose();
+  }
+
+  /// Delegated to the view model; _onDataChanged mirrors the result.
+  Future<void> _load() => _vm.load();
+
+  /// The View reacting to its ViewModel.
+  void _onDataChanged() {
+    if (!mounted) return;
     setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    final matrixResult = await PartnerApi.permissionMatrix();
-    if (!mounted) return;
-
-    if (matrixResult.data == null) {
-      setState(() {
-        _loading = false;
-        _error = matrixResult.errorMessage ?? 'Could not load the sharing categories.';
-      });
-      return;
-    }
-
-    final connectionId = widget.connectionId;
-    if (connectionId == null || connectionId.isEmpty) {
-      setState(() {
-        _matrix = matrixResult.data!;
-        _allowedGrants = const {};
-        _loading = false;
-      });
-      return;
-    }
-
-    // The grants come back in the response envelope rather than the body: the
-    // context itself is the filtered data, and `permissions` says why.
-    final contextResult = await PartnerApi.context(connectionId);
-    if (!mounted) return;
-
-    final granted = <String>{};
-    final permissions = contextResult.permissions;
-    if (permissions != null && permissions['allowedGrants'] is List) {
-      for (final grant in permissions['allowedGrants'] as List) {
-        granted.add(grant.toString());
-      }
-    }
-
-    final requests = await PartnerApi.permissionRequests(connectionId, states: 'pending');
-    if (!mounted) return;
-
-    setState(() {
-      _matrix = matrixResult.data!;
-      _allowedGrants = granted;
-      _pendingRequests = {
-        for (final request in requests.data ?? const <Map<String, dynamic>>[])
-          request['permissionKey']?.toString() ?? '',
-      }..removeWhere((key) => key.isEmpty);
-      _loading = false;
-      if (contextResult.state == ApiState.offline || contextResult.state == ApiState.error) {
-        _error = 'Showing categories only. Could not reach the server for what is currently shared.';
-      }
+      _loading = _vm.loading;
+      _error = _vm.error;
+      _matrix = _vm.matrix;
+      _pendingRequests = _vm.pendingRequests;
     });
   }
 
   /// A category counts as shared when the partner holds any of its grants.
-  ///
-  /// The grants come from the matrix endpoint rather than a table kept here.
-  /// A local copy drifts silently: when a category's grants change server-side,
-  /// it would simply start reporting itself as not shared.
-  bool _isShared(PartnerPermission permission) {
-    if (permission.grants.isEmpty) return permission.enabled;
-    return permission.grants.any(_allowedGrants.contains);
-  }
+  bool _isShared(PartnerPermission permission) => _vm.isShared(permission);
 
   @override
   Widget build(BuildContext context) {
