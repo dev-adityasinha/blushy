@@ -41,6 +41,7 @@ import '../../../../shared/api_state_card.dart';
 import '../doctor_summary_screen.dart';
 import '../../../../models/blushy_models.dart';
 import 'everyday_cycle_card.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../../sia/sia_screen.dart';
 import '../../../sia/open_docsy.dart';
 import '../../home_screen.dart';
@@ -89,7 +90,7 @@ class EverydayWellnessDashboard extends StatefulWidget {
 }
 
 class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver, LiveRefresh {
 
   // State variables for Restored Stage 1, 2 & 3
   final Map<String, bool> _stage1PeriodKitItems = {
@@ -1912,7 +1913,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
     // Today's check-in selections, so they follow the account across devices.
     _loadTodayCheckins();
     SiaDashboardService().refreshNotifier.addListener(_onSiaRefresh);
+    startLiveRefresh();
   }
+
+  /// Live-refresh entry point (poll / app-resume): re-read the home data
+  /// quietly, so what she logged elsewhere appears without a restart. Kept to
+  /// the reads that stay silent -- timeline is left out because re-running it
+  /// would reset its "load more" pagination.
+  @override
+  Future<void> refreshNow() => Future.wait([
+        _loadCycleFromServer(),
+        _loadTodayCheckins(),
+        _loadPatterns(),
+        _loadCarePlan(),
+        _loadConditions(),
+        _loadReflection(),
+      ]);
 
   void _onSiaRefresh() {
     if (mounted) {
@@ -2325,6 +2341,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
 
   @override
   void dispose() {
+    stopLiveRefresh();
     SiaDashboardService().refreshNotifier.removeListener(_onSiaRefresh);
     _animController.dispose();
     super.dispose();
