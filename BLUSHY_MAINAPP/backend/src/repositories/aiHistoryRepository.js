@@ -30,6 +30,8 @@ function mapRow(row) {
     // Carried so the app can show which exchanges have been shared with a
     // partner. Without it the share control resets on every launch.
     sharedWithPartner: row.shared_with_partner === true,
+    // True when the model never answered this turn.
+    unanswered: row.unanswered === true || (!assistantMsg && !!userMsg),
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
   };
 }
@@ -49,7 +51,12 @@ async function appendConversation({ userKey, role, userMessage, assistantMessage
     user_id: userId,
     role: normalizeStoredRole(role),
     user_message: userMessage,
-    assistant_message: assistantMessage,
+    assistant_message: assistantMessage || null,
+    // A turn the model never answered. Stored rather than dropped: what she
+    // asked is hers, and losing it means the conversation has a hole in it
+    // where a provider outage was. The app renders these as her message alone
+    // with a quiet note, so the gap is visible instead of silent.
+    unanswered: !assistantMessage,
     model,
     created_at: new Date(),
   };

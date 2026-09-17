@@ -278,6 +278,11 @@ class ApiSiaService {
               // exchange -- and so no way to offer sharing at all.
               final conversationId = item['id']?.toString() ?? '';
               final shared = item['sharedWithPartner'] == true ? '1' : '0';
+              // A turn the model never answered. Her message is stored on its
+              // own so a provider outage costs the reply rather than the whole
+              // exchange; the screen marks it rather than leaving a gap that
+              // looks like nothing was ever said.
+              final unanswered = item['unanswered'] == true ? '1' : '0';
 
               // The server stamps every exchange; this was dropped here, so
               // the screen had no idea when anything was said.
@@ -292,6 +297,7 @@ class ApiSiaService {
                   'conversationId': conversationId,
                   'shared': shared,
                   'at': at,
+                  'unanswered': unanswered,
                 });
               }
               if (assistantMsg != null && assistantMsg.trim().isNotEmpty) {

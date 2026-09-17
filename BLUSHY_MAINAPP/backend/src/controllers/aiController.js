@@ -746,7 +746,16 @@ export async function createChatReply(req, res, next) {
       } catch (_) {}
     }
 
-    const result = assistantReply ?? await aiChatService.createReply({
+    // Her question is recorded even when the model does not answer.
+    //
+    // The append below runs only once a reply exists, so a provider failure
+    // used to discard the whole turn -- 65 chats reached the provider between
+    // 28 July and 16 September and not one of them left a trace, which is
+    // what "the history is not coming" turned out to mean. Stored here, the
+    // conversation keeps its shape and the gap is visible.
+    let result;
+    try {
+      result = assistantReply ?? await aiChatService.createReply({
       messages,
       role: safeRole,
       user: req.user,
@@ -760,8 +769,25 @@ export async function createChatReply(req, res, next) {
         journalSummary,
         dailyLogSummary,
         isVoiceCall: Boolean(req.body?.isVoiceCall),
-      },
-    });
+        },
+      });
+    } catch (error) {
+      if (userMessage.length > 0) {
+        try {
+          await aiHistoryRepository.appendConversation({
+            userKey,
+            role: safeRole,
+            userMessage,
+            assistantMessage: null,
+            model: 'unanswered',
+          });
+        } catch (writeError) {
+          // Saving the question must not replace the error she needs to see.
+          console.error('[chat] could not record the unanswered turn:', writeError.message);
+        }
+      }
+      throw error;
+    }
 
     // Second line of defence: nothing generated may stand in front of a live
     // escalation, even if the pre-generation branch was bypassed.

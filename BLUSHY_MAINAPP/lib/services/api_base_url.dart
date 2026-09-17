@@ -67,9 +67,22 @@ String _resolve() {
 ///
 /// A Docker web service on Render (`blushy-api-new`), built from
 /// `BLUSHY_MAINAPP/backend/Dockerfile` on the `dev-adityasinha/blushy` repo.
-/// It replaced `blushy-api-l51h`, which lives in a different Render account
-/// and whose CORS allowlist does not include the current web origin -- so a
-/// build left pointing there loads the page and then fails every request.
+/// It replaced `blushy-api-l51h`, which lived in a different Render account
+/// and was suspended on 2026-09-17 -- it now answers 503. Both pointed at the
+/// same Atlas cluster, so while both ran, whichever one a client reached held
+/// the scheduler lease and wrote the data.
+///
+/// CORS_ORIGIN on this service is the hosted web origin
+/// (`https://blushy-web-upload-eight.vercel.app`), verified by preflight:
+/// the service returns that origin and refuses others. `isAllowedOrigin` in
+/// backend/src/app.js always permits localhost, so local dev needs no entry.
+/// A web build shipped against a host whose CORS_ORIGIN omits its own origin
+/// loads the page and then fails every request, which in the browser looks
+/// like an app that simply does nothing -- so check the preflight before
+/// deploying web against a new backend.
+///
+/// Android is unaffected either way: native HTTP is not subject to CORS, and
+/// `app.js` admits a request with no Origin header at all.
 ///
 /// Before that it was api.blushy.life, a VPS nothing in this repository
 /// deploys to.

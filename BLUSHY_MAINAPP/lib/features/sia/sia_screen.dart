@@ -1127,8 +1127,39 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         }
       }
       widgets.add(_buildMessageBubble(msg));
+      // Her message is saved even when the model never answered it, so the
+      // conversation keeps its shape through a provider outage. Saying so is
+      // the difference between a visible gap and one that reads as though
+      // nothing was ever sent.
+      if (msg['unanswered'] == '1') {
+        widgets.add(_buildUnansweredNote());
+      }
     }
     return widgets;
+  }
+
+  /// Marks a turn Docsy never answered.
+  Widget _buildUnansweredNote() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 2, bottom: 10),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off_rounded,
+              size: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.8)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              "Docsy didn't answer this one.",
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                height: 1.4,
+                color: BlushyColors.secondaryText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   static const List<String> _monthNames = [
