@@ -4,6 +4,7 @@ import '../../../models/blushy_models.dart';
 import '../../../services/api_blushy_service.dart';
 import '../../../services/api_contract_client.dart';
 import '../../../shared/api_state_card.dart';
+import '../view_models/partner_sharing_view_model.dart';
 
 /// Partner Mode sharing controls (spec section 10 "Partner Permissions").
 ///
@@ -26,6 +27,11 @@ class PartnerSharingScreen extends StatefulWidget {
 }
 
 class _PartnerSharingScreenState extends State<PartnerSharingScreen> {
+  /// This screen is the View; the two reads live in the tested
+  /// PartnerSharingViewModel and are mirrored back by _onDataChanged.
+  late final PartnerSharingViewModel _vm =
+      PartnerSharingViewModel(connectionId: widget.connectionId);
+
   ApiResult<PartnerSharingState> _result = const ApiResult.loading();
 
   /// Keys currently mid-flight, so a toggle can show progress and cannot be
@@ -35,21 +41,30 @@ class _PartnerSharingScreenState extends State<PartnerSharingScreen> {
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onDataChanged);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _vm.removeListener(_onDataChanged);
+    _vm.dispose();
+    super.dispose();
   }
 
   /// Requests the partner has made and is waiting on.
   List<Map<String, dynamic>> _pendingRequests = const [];
   final Set<String> _answering = <String>{};
 
-  Future<void> _load() async {
-    setState(() => _result = const ApiResult.loading());
-    final result = await PartnerApi.sharingState(widget.connectionId);
-    final requests = await PartnerApi.permissionRequests(widget.connectionId, states: 'pending');
+  /// Delegated to the view model; _onDataChanged mirrors the result.
+  Future<void> _load() => _vm.load();
+
+  /// The View reacting to its ViewModel.
+  void _onDataChanged() {
     if (!mounted) return;
     setState(() {
-      _result = result;
-      _pendingRequests = requests.data ?? const [];
+      _result = _vm.result;
+      _pendingRequests = _vm.pendingRequests;
     });
   }
 
