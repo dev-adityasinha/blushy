@@ -15,11 +15,17 @@ class PostpartumViewModel extends BlushyViewModel {
   PostpartumViewModel({
     Future<ApiResult<PostpartumOverviewData>> Function()? fetchOverview,
     Future<ApiResult<PostpartumTodayBriefData>> Function()? fetchBrief,
+    PostpartumOverviewData? Function()? readCachedOverview,
+    PostpartumTodayBriefData? Function()? readCachedBrief,
   })  : _fetchOverview = fetchOverview ?? ApiPostpartumService.getOverview,
-        _fetchBrief = fetchBrief ?? ApiPostpartumService.getTodayBrief;
+        _fetchBrief = fetchBrief ?? ApiPostpartumService.getTodayBrief,
+        _readCachedOverview = readCachedOverview ?? ApiPostpartumService.cachedOverview,
+        _readCachedBrief = readCachedBrief ?? ApiPostpartumService.cachedBrief;
 
   final Future<ApiResult<PostpartumOverviewData>> Function() _fetchOverview;
   final Future<ApiResult<PostpartumTodayBriefData>> Function() _fetchBrief;
+  final PostpartumOverviewData? Function() _readCachedOverview;
+  final PostpartumTodayBriefData? Function() _readCachedBrief;
 
   ApiState overviewState = ApiState.loading;
   PostpartumOverviewData? overview;
@@ -32,6 +38,21 @@ class PostpartumViewModel extends BlushyViewModel {
   Map<String, dynamic>? get todayCheckin => overview?.todayCheckin;
 
   Future<void> load() async {
+    // Cache-first: show the last known overview/brief at once (labelled stale),
+    // so a returning user is not held on a spinner while the network answers.
+    // First load only, and only as a head start -- the fetch below replaces it.
+    if (overview == null) {
+      final cachedOverview = _readCachedOverview();
+      final cachedBrief = _readCachedBrief();
+      if (cachedOverview != null) {
+        overview = cachedOverview;
+        todayBrief = cachedBrief;
+        overviewState = ApiState.stale;
+        isLoading = false;
+        safeNotify();
+      }
+    }
+
     final overviewRes = await _fetchOverview();
     final briefRes = await _fetchBrief();
     overview = overviewRes.data;
