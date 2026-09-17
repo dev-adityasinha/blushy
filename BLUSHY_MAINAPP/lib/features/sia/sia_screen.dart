@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'sia_conversation.dart';
+import '../../shared/live_refresh.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -45,7 +46,8 @@ class BlushySiaScreen extends StatefulWidget {
   State<BlushySiaScreen> createState() => _BlushySiaScreenState();
 }
 
-class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderStateMixin {
+class _BlushySiaScreenState extends State<BlushySiaScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver, LiveRefresh {
   final List<Map<String, String>> _messages = [];
 
   /// Exchanges whose share state is currently being written.
@@ -261,7 +263,15 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
       if (!mounted || widget.initialQuestion == null) return;
       _sendUserMessage(widget.initialQuestion!);
     });
+    startLiveRefresh();
   }
+
+  /// Live-refresh entry point (poll / app-resume / pull-to-refresh): re-read
+  /// history quietly. The merge dedupes, and _followLatest only scrolls when
+  /// the message count actually changes, so a no-op poll does not disturb the
+  /// chat.
+  @override
+  Future<void> refreshNow() => _loadChatHistory();
 
   Future<void> _loadChatHistory() async {
     // Null means the request failed; an empty list means the server really
@@ -408,6 +418,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
 
   @override
   void dispose() {
+    stopLiveRefresh();
     _chatController.dispose();
     _chatScroll.dispose();
     _waveController.dispose();
