@@ -42,4 +42,32 @@ class PartnerSharingViewModel extends BlushyViewModel {
     pendingRequests = requests.data ?? const [];
     safeNotify();
   }
+
+  /// Flips one permission at once, without re-reading the whole page.
+  ///
+  /// The switch moves the instant it is tapped: the loaded state is patched in
+  /// place (the ready result is kept, so the list never collapses to a
+  /// spinner) and the caller sends the change to the server. Returns the state
+  /// as it was, so [revertToggle] can put it back if the server refuses. A
+  /// call with no loaded data yet is a no-op that still returns the current
+  /// result.
+  ApiResult<PartnerSharingState> applyOptimisticToggle(String key, bool value) {
+    final previous = result;
+    final data = result.data;
+    if (data != null) {
+      result = ApiResult<PartnerSharingState>(
+        state: result.state,
+        data: data.withPermission(key, value),
+      );
+      safeNotify();
+    }
+    return previous;
+  }
+
+  /// Restores the result captured before an optimistic toggle, for when the
+  /// server refuses the change.
+  void revertToggle(ApiResult<PartnerSharingState> previous) {
+    result = previous;
+    safeNotify();
+  }
 }

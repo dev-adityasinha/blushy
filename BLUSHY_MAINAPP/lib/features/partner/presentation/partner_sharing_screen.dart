@@ -109,6 +109,11 @@ class _PartnerSharingScreenState extends State<PartnerSharingScreen> {
 
     setState(() => _saving.add(permission.key));
 
+    // Move the switch at once and remember the state to restore if the server
+    // refuses. The list is patched in place -- no re-read, so the page no
+    // longer collapses to a spinner and repaints on every toggle.
+    final previous = _vm.applyOptimisticToggle(permission.key, value);
+
     final response = await PartnerApi.updatePermissions(
       widget.connectionId,
       {permission.key: value},
@@ -117,10 +122,8 @@ class _PartnerSharingScreenState extends State<PartnerSharingScreen> {
     if (!mounted) return;
 
     if (response.isReady) {
-      // Re-read rather than patching locally, so what is displayed is always
-      // what the server will actually enforce.
-      await _load();
-      if (!mounted) return;
+      // The server accepted exactly the change we showed, so the optimistic
+      // value stands; nothing to re-read.
       setState(() => _saving.remove(permission.key));
       _showMessage(
         value
@@ -130,6 +133,8 @@ class _PartnerSharingScreenState extends State<PartnerSharingScreen> {
       return;
     }
 
+    // Refused: put the switch back where it was.
+    _vm.revertToggle(previous);
     setState(() => _saving.remove(permission.key));
     _showMessage(
       response.errorCode == 'FORBIDDEN'
