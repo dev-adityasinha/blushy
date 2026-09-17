@@ -1,13 +1,19 @@
 import { Router } from 'express';
+import { requireAuth } from '../middleware/requireAuth.js';
 import { MenopauseService } from '../services/menopauseService.js';
 
 const router = Router();
 
+// Identity comes only from the verified token. The previous version trusted
+// req.headers['x-user-id'] and fell back to a shared 'default_user', so any
+// caller could read or write another user's data -- or everyone's at once --
+// by setting a header or sending none. requireAuth on every route below now
+// guarantees req.user.userId is present and authenticated.
 function resolveUserId(req) {
-  return req.user?.id || req.user?.userId || req.headers['x-user-id'] || 'default_user';
+  return req.user.userId;
 }
 
-router.get('/overview', async (req, res) => {
+router.get('/overview', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const profile = req.user || {};
@@ -18,7 +24,7 @@ router.get('/overview', async (req, res) => {
   }
 });
 
-router.get('/today-brief', async (req, res) => {
+router.get('/today-brief', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const profile = req.user || {};
@@ -29,7 +35,7 @@ router.get('/today-brief', async (req, res) => {
   }
 });
 
-router.post('/checkin', async (req, res) => {
+router.post('/checkin', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const record = MenopauseService.recordCheckin(userId, req.body);
@@ -39,7 +45,7 @@ router.post('/checkin', async (req, res) => {
   }
 });
 
-router.post('/check-in', async (req, res) => {
+router.post('/check-in', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const record = MenopauseService.recordCheckin(userId, req.body);
@@ -49,7 +55,7 @@ router.post('/check-in', async (req, res) => {
   }
 });
 
-router.post('/life-mode', async (req, res) => {
+router.post('/life-mode', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const mode = MenopauseService.setLifeMode(userId, req.body.lifeMode || req.body.mode);
@@ -59,7 +65,7 @@ router.post('/life-mode', async (req, res) => {
   }
 });
 
-router.post('/private-mode', async (req, res) => {
+router.post('/private-mode', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const privateMode = MenopauseService.setPrivateMode(userId, req.body.enabled);
@@ -69,7 +75,7 @@ router.post('/private-mode', async (req, res) => {
   }
 });
 
-router.post('/is-this-normal', async (req, res) => {
+router.post('/is-this-normal', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const query = req.body.query || req.body.question || req.body.symptomText || req.body.text || '';
@@ -80,7 +86,7 @@ router.post('/is-this-normal', async (req, res) => {
   }
 });
 
-router.post('/parse-note', async (req, res) => {
+router.post('/parse-note', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const noteText = req.body.note || req.body.text || req.body.noteText || req.body.rawText || '';
@@ -91,7 +97,7 @@ router.post('/parse-note', async (req, res) => {
   }
 });
 
-router.get('/questions', (req, res) => {
+router.get('/questions', requireAuth, (req, res) => {
   try {
     const userId = resolveUserId(req);
     const questions = MenopauseService.getQuestions(userId);
@@ -101,7 +107,7 @@ router.get('/questions', (req, res) => {
   }
 });
 
-router.post('/questions', (req, res) => {
+router.post('/questions', requireAuth, (req, res) => {
   try {
     const userId = resolveUserId(req);
     const q = MenopauseService.addQuestion(userId, req.body);
@@ -111,7 +117,7 @@ router.post('/questions', (req, res) => {
   }
 });
 
-router.delete('/questions/:id', (req, res) => {
+router.delete('/questions/:id', requireAuth, (req, res) => {
   try {
     const userId = resolveUserId(req);
     MenopauseService.deleteQuestion(userId, req.params.id);
@@ -121,7 +127,7 @@ router.delete('/questions/:id', (req, res) => {
   }
 });
 
-router.get('/treatments', (req, res) => {
+router.get('/treatments', requireAuth, (req, res) => {
   try {
     const userId = resolveUserId(req);
     const treatments = MenopauseService.getTreatments(userId);
@@ -131,7 +137,7 @@ router.get('/treatments', (req, res) => {
   }
 });
 
-router.post('/treatment', (req, res) => {
+router.post('/treatment', requireAuth, (req, res) => {
   try {
     const userId = resolveUserId(req);
     const t = MenopauseService.addTreatment(userId, req.body);
@@ -141,7 +147,7 @@ router.post('/treatment', (req, res) => {
   }
 });
 
-router.delete('/treatment/:id', (req, res) => {
+router.delete('/treatment/:id', requireAuth, (req, res) => {
   try {
     const userId = resolveUserId(req);
     MenopauseService.removeTreatment(userId, req.params.id);
@@ -151,7 +157,7 @@ router.delete('/treatment/:id', (req, res) => {
   }
 });
 
-router.get('/clinician-brief', (req, res) => {
+router.get('/clinician-brief', requireAuth, (req, res) => {
   try {
     const userId = resolveUserId(req);
     const profile = req.user || {};
@@ -162,7 +168,7 @@ router.get('/clinician-brief', (req, res) => {
   }
 });
 
-router.get('/why-am-i-seeing-this/:moduleKey', (req, res) => {
+router.get('/why-am-i-seeing-this/:moduleKey', requireAuth, (req, res) => {
   try {
     const userId = resolveUserId(req);
     const info = MenopauseService.getWhyAmISeeingThis(userId, req.params.moduleKey);

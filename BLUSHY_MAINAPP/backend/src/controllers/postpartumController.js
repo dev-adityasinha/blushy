@@ -8,7 +8,7 @@ import { PostpartumSafetyService } from '../services/postpartumSafetyService.js'
 
 export async function getPostpartumOverview(req, res, next) {
   try {
-    const userId = req.user?.id || 'default_user';
+    const userId = req.user.userId;
     const overview = PostpartumService.getOverview(userId);
     return res.json({ ok: true, data: overview });
   } catch (err) {
@@ -18,7 +18,7 @@ export async function getPostpartumOverview(req, res, next) {
 
 export async function getPostpartumTodayBrief(req, res, next) {
   try {
-    const userId = req.user?.id || 'default_user';
+    const userId = req.user.userId;
     const brief = await PostpartumService.getTodayBrief(userId);
     return res.json({ ok: true, data: brief });
   } catch (err) {
@@ -28,7 +28,7 @@ export async function getPostpartumTodayBrief(req, res, next) {
 
 export async function calibratePostpartum(req, res, next) {
   try {
-    const userId = req.user?.id || 'default_user';
+    const userId = req.user.userId;
     const { deliveryDate, deliveryType, feedingMethod, lowEnergyMode } = req.body || {};
     const updated = PostpartumService.updateCalibration(userId, {
       deliveryDate,
@@ -44,7 +44,7 @@ export async function calibratePostpartum(req, res, next) {
 
 export async function recordPostpartumCheckin(req, res, next) {
   try {
-    const userId = req.user?.id || 'default_user';
+    const userId = req.user.userId;
     const result = PostpartumService.recordCheckin(userId, req.body || {});
     return res.json({ ok: true, data: result });
   } catch (err) {
@@ -54,7 +54,7 @@ export async function recordPostpartumCheckin(req, res, next) {
 
 export async function recordBabyEvent(req, res, next) {
   try {
-    const userId = req.user?.id || 'default_user';
+    const userId = req.user.userId;
     const event = PostpartumService.recordBabyEvent(userId, req.body || {});
     return res.json({ ok: true, data: event });
   } catch (err) {
@@ -64,7 +64,7 @@ export async function recordBabyEvent(req, res, next) {
 
 export async function getBabyEvents(req, res, next) {
   try {
-    const userId = req.user?.id || 'default_user';
+    const userId = req.user.userId;
     const date = req.query.date;
     const events = PostpartumService.getBabyEvents(userId, date);
     return res.json({ ok: true, data: events });
