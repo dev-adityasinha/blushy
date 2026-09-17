@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import '../services/auth_storage.dart';
+import '../services/user_state_store.dart';
 import '../services/api_auth_service.dart';
 import '../services/partner_websocket_service.dart';
 import '../services/sia_dashboard_service.dart';
@@ -1087,6 +1088,13 @@ class BlushyOSState extends ChangeNotifier {
 
 
   void setAuthenticated(bool value, {bool? onboardingCompleted}) {
+    // Signing in is the first moment her documents can be fetched: the pull in
+    // `main()` runs before there is a session, so on a fresh install it finds
+    // nothing. Without this a new device would show empty screens until the
+    // next launch.
+    if (value && !_isAuthenticated) {
+      UserStateStore.hydrate().catchError((Object _) => false);
+    }
     _isAuthenticated = value;
     if (onboardingCompleted != null) {
       _onboardingCompleted = onboardingCompleted;

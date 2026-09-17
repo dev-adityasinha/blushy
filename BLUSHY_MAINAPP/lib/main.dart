@@ -20,6 +20,7 @@ import 'services/auth_storage.dart';
 import 'dart:async';
 
 import 'services/api_warmup.dart';
+import 'services/user_state_store.dart';
 import 'services/daily_rollover.dart';
 import 'shared/language_gate.dart';
 import 'shared/splash_gate.dart';
@@ -47,6 +48,12 @@ Future<void> main() async {
   // Wakes the API while the first screen builds, so a cold start is not paid
   // for under a card the user is waiting on.
   ApiWarmup.ping();
+  // Her screen documents -- the period kit, treatments, reflections and the
+  // rest -- live on the account now. Pulled in before the first screen reads
+  // its mirror, so a second device shows what she actually has rather than
+  // what this installation happens to remember. No session yet means no
+  // fetch; the mirror is left alone and the screens carry on.
+  unawaited(UserStateStore.hydrate());
   runApp(const BlushyApp());
 }
 

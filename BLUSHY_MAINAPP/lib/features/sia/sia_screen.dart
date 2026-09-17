@@ -296,7 +296,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         _messages.add({
           'sender': 'sia',
           'text': _openingLine(),
-          'at': DateTime.now().toIso8601String(),
+          'at': DateTime.now().toUtc().toIso8601String(),
         });
       }
     });
@@ -377,7 +377,26 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
   /// appended a second time.
   bool _sameMessage(List<Map<String, String>> list, Map<String, String> m) {
     return list.any((h) =>
-        h['sender'] == m['sender'] && h['text'] == m['text'] && h['at'] == m['at']);
+        h['sender'] == m['sender'] &&
+        h['text'] == m['text'] &&
+        _closeEnough(h['at'], m['at']));
+  }
+
+  /// Whether two stamps describe the same moment, allowing for the fact that
+  /// they were taken by different clocks.
+  ///
+  /// The server stamps a row when it saves; the cache stamps a message when
+  /// the screen adds it, a round trip earlier. Comparing them exactly meant a
+  /// message that had just come back from the server still looked device-only
+  /// -- so it was uploaded again, and the same exchange was stored twice.
+  static bool _closeEnough(String? a, String? b) {
+    if (a == b) return true;
+    final at = DateTime.tryParse(a ?? '');
+    final bt = DateTime.tryParse(b ?? '');
+    // One of them undated: the sender and the text already matched, and there
+    // is nothing further to tell them apart.
+    if (at == null || bt == null) return true;
+    return at.toUtc().difference(bt.toUtc()).abs() < const Duration(minutes: 10);
   }
 
   /// The conversation as it was last seen, for when the server cannot be
@@ -400,7 +419,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
     try {
       BlushyStorage.write('recent_sia_chats.json', {
         'messages': _messages,
-        'lastUpdated': DateTime.now().toIso8601String(),
+        'lastUpdated': DateTime.now().toUtc().toIso8601String(),
       });
     } catch (_) {}
   }
@@ -611,7 +630,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
       final userEntry = <String, String>{
         'sender': 'user',
         'text': promptText,
-        'at': DateTime.now().toIso8601String(),
+        'at': DateTime.now().toUtc().toIso8601String(),
       };
       if (currentAttachment != null) {
         userEntry['fileName'] = currentAttachment.name;
@@ -739,7 +758,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         final siaEntry = <String, String>{
           'sender': 'sia',
           'text': chatResult.message,
-          'at': DateTime.now().toIso8601String(),
+          'at': DateTime.now().toUtc().toIso8601String(),
         };
         if (currentAttachment != null) {
           siaEntry['analyzedFile'] = currentAttachment.name;
@@ -757,7 +776,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         _messages.add({
           'sender': 'sia',
           'text': "I'm having a little trouble connecting right now, but I'm still here with you.",
-          'at': DateTime.now().toIso8601String(),
+          'at': DateTime.now().toUtc().toIso8601String(),
         });
       });
     }

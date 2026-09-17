@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../core/storage.dart';
 import 'api_contract_client.dart';
+import 'user_state_store.dart';
 
 class PregnancyOverviewData {
   final bool isDueDateConfigured;
@@ -188,7 +189,7 @@ class ApiPregnancyService {
   static Future<ApiResult<Map<String, dynamic>>> submitCheckIn(Map<String, dynamic> checkin) async {
     // Also backup to BlushyStorage
     try {
-      BlushyStorage.write('pregnancy_last_checkin.json', checkin);
+      UserStateStore.write('pregnancy_last_checkin', checkin);
     } catch (_) {}
 
     return ApiContractClient.post(

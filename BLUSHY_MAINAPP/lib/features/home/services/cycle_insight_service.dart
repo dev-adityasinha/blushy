@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../core/storage.dart';
 import '../models.dart';
+import '../../../services/user_state_store.dart';
 
 class CycleInsightService {
   /// Dynamically computes personalized [CycleInsight] items from:
@@ -13,7 +14,7 @@ class CycleInsightService {
     // --- A. RECENT CONVERSATIONS & JOURNAL REFLECTIONS ANALYSIS ---
     try {
       final chatData = BlushyStorage.read('recent_sia_chats.json');
-      final journalData = BlushyStorage.read('mstudio_reflections.json');
+      final journalData = UserStateStore.read('mstudio_reflections');
 
       final List<String> conversationSnippets = [];
 

@@ -18,6 +18,7 @@ import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../widgets/log_symptoms_section.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/user_state_store.dart';
 
 class FirstPeriodNotStartedDashboard extends StatefulWidget {
   final bool isNested;
@@ -297,7 +298,7 @@ class _FirstPeriodNotStartedDashboardState extends State<FirstPeriodNotStartedDa
 
   void _loadSavedStage1Data() {
     try {
-      final savedKit = BlushyStorage.read('stage1_period_kit.json');
+      final savedKit = UserStateStore.read('stage1_period_kit');
       if (savedKit is Map) {
         for (final entry in savedKit.entries) {
           if (_stage1PeriodKitItems.containsKey(entry.key.toString())) {
@@ -668,7 +669,7 @@ class _FirstPeriodNotStartedDashboardState extends State<FirstPeriodNotStartedDa
                                 setModalState(() {
                                   _stage1PeriodKitItems[entry.key] = val ?? false;
                                 });
-                                BlushyStorage.write('stage1_period_kit.json', _stage1PeriodKitItems);
+                                UserStateStore.write('stage1_period_kit', _stage1PeriodKitItems);
                                 setState(() {});
                               },
                             ),

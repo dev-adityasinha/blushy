@@ -55,6 +55,7 @@ import '../../widgets/auto_carousel_cards.dart';
 import '../../../../theme/scale.dart';
 import '../../home_section_order.dart';
 import '../../../../shared/user_display_name.dart';
+import '../../../../services/user_state_store.dart';
 
 String _getTimeBasedGreetingPrefix() {
   final istNow = DateTime.now().toUtc().add(
@@ -2128,7 +2129,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
         _ttcLoggedIntercourse = checkinData['ttc_intercourse'] == true || checkinData['ttc_intercourse'] == 'true';
       }
 
-      final savedPartnerTasks = BlushyStorage.read('ttc_partner_tasks.json');
+      final savedPartnerTasks = UserStateStore.read('ttc_partner_tasks');
       if (savedPartnerTasks is Map && savedPartnerTasks['tasks'] is List) {
         final list = savedPartnerTasks['tasks'] as List;
         for (int i = 0; i < _ttcPartnerTaskList.length && i < list.length; i++) {
@@ -13663,7 +13664,7 @@ Widget _buildStage2LetsTalkSection() {
                     setState(() {
                       task['completed'] = !isDone;
                     });
-                    BlushyStorage.write('ttc_partner_tasks.json', {'tasks': _ttcPartnerTaskList});
+                    UserStateStore.write('ttc_partner_tasks', {'tasks': _ttcPartnerTaskList});
                     ApiAuthService().saveOnboardingAnswers({
                       'ttc_partner_tasks': _ttcPartnerTaskList,
                     }).catchError((_) => <String, dynamic>{});

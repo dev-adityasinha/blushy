@@ -124,7 +124,13 @@ async function importConversations({ userKey, exchanges }) {
     // A row with neither half says nothing and cannot be shown.
     if (!userMessage && !assistantMessage) continue;
 
-    const at = entry?.at ? new Date(entry.at) : null;
+    // A bare ISO string carries no offset, and `new Date` then reads it as
+    // this process's local time -- which on a server in UTC put an IST client's
+    // rows 5.5 hours in the future and threw the day grouping out. Anything
+    // without a zone is taken as UTC, which is what the client now sends.
+    const raw = typeof entry?.at === 'string' ? entry.at.trim() : '';
+    const zoned = raw && !/(Z|[+-]\d{2}:?\d{2})$/i.test(raw) ? `${raw}Z` : raw;
+    const at = zoned ? new Date(zoned) : null;
     const createdAt = at && !Number.isNaN(at.getTime()) ? at : new Date();
 
     const id = createHash('sha256')

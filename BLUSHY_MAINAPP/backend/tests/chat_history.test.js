@@ -155,3 +155,26 @@ test('the import is bounded and scoped to the caller', async () => {
   assert.equal((otherHist.body.history ?? []).length, 0,
     'an import must never land in another account');
 });
+
+test('a zoneless timestamp is read as UTC, not server-local', async () => {
+  const woman = await createTestUser({ role: 'woman' });
+  await api('POST', '/ai/history/import', {
+    token: woman.token,
+    body: {
+      exchanges: [
+        // What a client sends without an offset. Read as local time it would
+        // land hours away and group under the wrong day.
+        { userMessage: 'zoneless', assistantMessage: 'ok', at: '2026-09-17T06:25:41.123' },
+        { userMessage: 'zoned', assistantMessage: 'ok', at: '2026-09-17T06:25:41.123Z' },
+        { userMessage: 'offset', assistantMessage: 'ok', at: '2026-09-17T11:55:41.123+05:30' },
+      ],
+    },
+  });
+
+  const hist = await api('GET', '/ai/history', { token: woman.token });
+  const byQ = Object.fromEntries((hist.body.history ?? []).map((r) => [r.userMessage, r.createdAt]));
+  console.log('   zoneless:', byQ.zoneless, '| zoned:', byQ.zoned, '| offset:', byQ.offset);
+
+  assert.equal(byQ.zoneless, byQ.zoned, 'a zoneless stamp must mean the same instant as a Z one');
+  assert.equal(byQ.offset, byQ.zoned, 'an offset stamp must resolve to the same instant');
+});

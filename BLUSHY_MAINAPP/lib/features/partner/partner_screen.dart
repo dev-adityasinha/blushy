@@ -28,6 +28,7 @@ import 'partner_display_name.dart';
 import 'pending_invite_code.dart';
 import 'private_space.dart';
 import 'presentation/private_space_sheet.dart';
+import '../../services/user_state_store.dart';
 
 
 class BlushyPartnerScreen extends StatefulWidget {
@@ -4596,7 +4597,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   List<Map<String, dynamic>> _getLettersList() {
     final List<Map<String, dynamic>> list = [];
     try {
-      final saved = BlushyStorage.read('partner_letters');
+      final saved = UserStateStore.read('partner_letters');
       if (saved['letters'] is List) {
         final rawList = saved['letters'] as List;
         list.addAll(rawList.map((e) => Map<String, dynamic>.from(e as Map)));
@@ -4807,7 +4808,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         final currentLetters = _getLettersList();
                         currentLetters.insert(0, letterData);
                         try {
-                          BlushyStorage.write('partner_letters', {'letters': currentLetters});
+                          UserStateStore.write('partner_letters', {'letters': currentLetters});
                         } catch (_) {}
 
                         // 2. Transmit through partner live chat

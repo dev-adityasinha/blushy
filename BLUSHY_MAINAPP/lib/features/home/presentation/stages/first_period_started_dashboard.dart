@@ -23,6 +23,7 @@ import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../widgets/log_symptoms_section.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/user_state_store.dart';
 
 class FirstPeriodStartedDashboard extends StatefulWidget {
   final bool isNested;
@@ -393,7 +394,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   void _loadSavedStage2Data() {
     try {
       // 1. School bag kit
-      final savedBag = BlushyStorage.read('stage2_school_bag.json');
+      final savedBag = UserStateStore.read('stage2_school_bag');
       if (savedBag is Map) {
         for (final entry in savedBag.entries) {
           if (_schoolBagItems.containsKey(entry.key.toString())) {
@@ -403,7 +404,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
       }
 
       // 2. Body changes journal
-      final savedChanges = BlushyStorage.read('stage2_body_changes.json');
+      final savedChanges = UserStateStore.read('stage2_body_changes');
       if (savedChanges is Map && savedChanges['selected'] is List) {
         _selectedBodyChanges.clear();
         _selectedBodyChanges.addAll((savedChanges['selected'] as List).map((e) => e.toString()));
@@ -1606,7 +1607,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                     onChanged: (val) {
                       if (val != null) {
                         setState(() => _schoolBagItems[entry.key] = val);
-                        BlushyStorage.write('stage2_school_bag.json', _schoolBagItems);
+                        UserStateStore.write('stage2_school_bag', _schoolBagItems);
                       }
                     },
                   );
@@ -1689,7 +1690,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                           _selectedBodyChanges.remove(item);
                         }
                       });
-                      BlushyStorage.write('stage2_body_changes.json', {'selected': _selectedBodyChanges.toList()});
+                      UserStateStore.write('stage2_body_changes', {'selected': _selectedBodyChanges.toList()});
                     },
                   );
                 }).toList(),

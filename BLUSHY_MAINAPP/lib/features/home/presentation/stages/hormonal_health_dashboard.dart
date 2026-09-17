@@ -21,6 +21,7 @@ import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../widgets/log_symptoms_section.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/user_state_store.dart';
 
 /// ════════════════════════════════════════════════════════════════════════════
 /// STAGE 4: UNDERSTANDING MY BODY — HEALTH INTELLIGENCE & PATTERN SYNTHESIS
@@ -137,25 +138,25 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard> {
         }
       }
 
-      final savedSignals = BlushyStorage.read('stage4_logged_signals.json');
+      final savedSignals = UserStateStore.read('stage4_logged_signals');
       if (savedSignals is Map && savedSignals['signals'] is List) {
         _selectedSignals.clear();
         _selectedSignals.addAll((savedSignals['signals'] as List).map((e) => e.toString()));
       }
 
-      final savedTreatments = BlushyStorage.read('stage4_treatments.json');
+      final savedTreatments = UserStateStore.read('stage4_treatments');
       if (savedTreatments is Map && savedTreatments['items'] is List && (savedTreatments['items'] as List).isNotEmpty) {
         _treatments.clear();
         _treatments.addAll((savedTreatments['items'] as List).map((e) => Map<String, dynamic>.from(e as Map)));
       }
 
-      final savedRecords = BlushyStorage.read('stage4_health_records.json');
+      final savedRecords = UserStateStore.read('stage4_health_records');
       if (savedRecords is Map && savedRecords['items'] is List && (savedRecords['items'] as List).isNotEmpty) {
         _healthRecords.clear();
         _healthRecords.addAll((savedRecords['items'] as List).map((e) => Map<String, dynamic>.from(e as Map)));
       }
 
-      final savedCircle = BlushyStorage.read('stage4_support_circle.json');
+      final savedCircle = UserStateStore.read('stage4_support_circle');
       if (savedCircle is Map && savedCircle['items'] is List && (savedCircle['items'] as List).isNotEmpty) {
         _supportCircle.clear();
         _supportCircle.addAll((savedCircle['items'] as List).map((e) => Map<String, dynamic>.from(e as Map)));
@@ -165,19 +166,19 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard> {
 
   void _saveTreatmentsToStorage() {
     try {
-      BlushyStorage.write('stage4_treatments.json', {'items': _treatments});
+      UserStateStore.write('stage4_treatments', {'items': _treatments});
     } catch (_) {}
   }
 
   void _saveHealthRecordsToStorage() {
     try {
-      BlushyStorage.write('stage4_health_records.json', {'items': _healthRecords});
+      UserStateStore.write('stage4_health_records', {'items': _healthRecords});
     } catch (_) {}
   }
 
   void _saveSupportCircleToStorage() {
     try {
-      BlushyStorage.write('stage4_support_circle.json', {'items': _supportCircle});
+      UserStateStore.write('stage4_support_circle', {'items': _supportCircle});
     } catch (_) {}
   }
 
@@ -191,7 +192,7 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard> {
     });
 
     try {
-      BlushyStorage.write('stage4_logged_signals.json', {
+      UserStateStore.write('stage4_logged_signals', {
         'signals': _selectedSignals.toList(),
         'updatedAt': DateTime.now().toIso8601String(),
       });

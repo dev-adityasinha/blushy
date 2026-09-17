@@ -13,6 +13,7 @@ import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/user_state_store.dart';
 
 class PregnancyDashboard extends StatefulWidget {
   final bool isNested;
@@ -124,7 +125,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard> {
   void _rehydrateLocalState() {
     try {
       final todayStr = DateTime.now().toIso8601String().sliceSafe(0, 10);
-      final savedCheckin = BlushyStorage.read('pregnancy_last_checkin.json');
+      final savedCheckin = UserStateStore.read('pregnancy_last_checkin');
       if (savedCheckin.isNotEmpty && savedCheckin['date'] == todayStr) {
         _hasLoggedToday = true;
         if (savedCheckin['nausea'] != null) _nauseaScore = (savedCheckin['nausea'] as num).toInt();
@@ -215,7 +216,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard> {
 
     // Optimistic local update
     try {
-      BlushyStorage.write('pregnancy_last_checkin.json', payload);
+      UserStateStore.write('pregnancy_last_checkin', payload);
     } catch (_) {}
 
     final messenger = ScaffoldMessenger.of(context);

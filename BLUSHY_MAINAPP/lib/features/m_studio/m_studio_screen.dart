@@ -18,6 +18,7 @@ import '../partner/digibouquet/screens/home_screen.dart' show HomeScreen;
 import '../partner/digibouquet/models/auth_models.dart';
 import '../../services/auth_storage.dart';
 import 'package:provider/provider.dart';
+import '../../services/user_state_store.dart';
 
 
 class BlushyMStudioScreen extends StatefulWidget {
@@ -1224,7 +1225,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
               final text = _editorController.text.trim();
               if (text.isNotEmpty) {
                 try {
-                  BlushyStorage.write('mstudio_reflections.json', {
+                  UserStateStore.write('mstudio_reflections', {
                     'text': text,
                     'template': _activeJournalTemplate,
                     'timestamp': DateTime.now().toIso8601String(),

@@ -19,6 +19,7 @@ import 'stage_shared_components.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/user_state_store.dart';
 
 /// ════════════════════════════════════════════════════════════════════════════
 /// STAGE 3: LIVING WITH MY CYCLE — THE HUMAN-FIRST AI INTELLIGENCE LAYER
@@ -116,14 +117,14 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   void _loadStage3Data() {
     try {
       // 1. Noticings
-      final savedNoticings = BlushyStorage.read('stage3_noticings.json');
+      final savedNoticings = UserStateStore.read('stage3_noticings');
       if (savedNoticings is Map && savedNoticings['selected'] is List) {
         _selectedNoticings.clear();
         _selectedNoticings.addAll((savedNoticings['selected'] as List).map((e) => e.toString()));
       }
 
       // 2. Life Mode
-      final savedMode = BlushyStorage.read('stage3_life_mode.json');
+      final savedMode = UserStateStore.read('stage3_life_mode');
       if (savedMode is Map && savedMode['mode'] != null) {
         _activeLifeMode = savedMode['mode'].toString();
       }
@@ -276,7 +277,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
       }
     });
     try {
-      BlushyStorage.write('stage3_noticings.json', {
+      UserStateStore.write('stage3_noticings', {
         'date': DateTime.now().toIso8601String().split('T').first,
         'selected': _selectedNoticings.toList(),
       });
@@ -1557,7 +1558,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                       _activeLifeMode = isSelected ? null : id;
                     });
                     try {
-                      BlushyStorage.write('stage3_life_mode.json', {'mode': _activeLifeMode});
+                      UserStateStore.write('stage3_life_mode', {'mode': _activeLifeMode});
                     } catch (_) {}
                   },
                   borderRadius: BorderRadius.circular(18),
