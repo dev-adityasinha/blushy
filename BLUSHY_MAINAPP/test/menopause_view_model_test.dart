@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:blushy_life_app/services/api_menopause_service.dart';
 import 'package:blushy_life_app/services/api_contract_client.dart';
 import 'package:blushy_life_app/features/home/view_models/menopause_view_model.dart';
@@ -48,9 +50,50 @@ void main() {
 
   test('notifies its listeners so the View can rebuild', () async {
     var n = 0;
-    final vm = MenopauseViewModel(fetchOverview: () async => _ov(ApiState.ready))
-      ..addListener(() => n++);
+    final vm = MenopauseViewModel(
+      fetchOverview: () async => _ov(ApiState.ready),
+      readCache: () => null,
+    )..addListener(() => n++);
     await vm.load();
     expect(n, greaterThan(0));
+  });
+
+  group('cache-first', () {
+    test('shows the cached overview at once, then the server replaces it', () async {
+      final cached = MenopauseOverviewData.fromJson({'lifeMode': 'gentle'});
+      final server = MenopauseOverviewData.fromJson({'lifeMode': 'normal', 'privateMode': true});
+      final gate = Completer<ApiResult<MenopauseOverviewData>>();
+
+      final vm = MenopauseViewModel(
+        readCache: () => cached,
+        fetchOverview: () => gate.future,
+      );
+      final done = vm.load();
+
+      // Synchronous cache emission, before the network resolves.
+      expect(vm.overview?.lifeMode, 'gentle');
+      expect(vm.overviewState, ApiState.stale, reason: 'cache is shown as stale, not fresh');
+      expect(vm.isLoading, isFalse, reason: 'no spinner for a returning user');
+
+      gate.complete(_ov(ApiState.ready, d: server));
+      await done;
+      expect(vm.overview?.lifeMode, 'normal');
+      expect(vm.overviewState, ApiState.ready);
+      expect(vm.privateMode, isTrue);
+    });
+
+    test('with no cache it stays loading until the server answers', () async {
+      final gate = Completer<ApiResult<MenopauseOverviewData>>();
+      final vm = MenopauseViewModel(
+        readCache: () => null,
+        fetchOverview: () => gate.future,
+      );
+      final done = vm.load();
+      expect(vm.isLoading, isTrue);
+      expect(vm.overview, isNull);
+      gate.complete(_ov(ApiState.ready, d: MenopauseOverviewData.fromJson({})));
+      await done;
+      expect(vm.isLoading, isFalse);
+    });
   });
 }

@@ -857,6 +857,18 @@ class MenopauseWhyAmISeeingThis {
 class ApiMenopauseService {
   static const String _overviewKey = 'menopause_overview_cache.json';
 
+  /// The last overview written to this device, read without any network, so a
+  /// returning user can be shown her data at once while the fresh copy loads.
+  /// Parsed by the same `fromJson` the fetch uses; a missing or unreadable
+  /// cache is simply null.
+  static MenopauseOverviewData? cachedOverview() {
+    try {
+      final cached = BlushyStorage.read(_overviewKey);
+      if (cached.isNotEmpty) return MenopauseOverviewData.fromJson(cached);
+    } catch (_) {}
+    return null;
+  }
+
   /// The menopause overview, with the server's own state preserved.
   ///
   /// This used to collapse every outcome into a nullable and, when it had

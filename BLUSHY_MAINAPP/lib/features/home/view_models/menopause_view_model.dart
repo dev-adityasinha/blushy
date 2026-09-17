@@ -14,9 +14,12 @@ import '../../../services/api_contract_client.dart';
 class MenopauseViewModel extends BlushyViewModel {
   MenopauseViewModel({
     Future<ApiResult<MenopauseOverviewData>> Function()? fetchOverview,
-  }) : _fetchOverview = fetchOverview ?? ApiMenopauseService.getOverview;
+    MenopauseOverviewData? Function()? readCache,
+  })  : _fetchOverview = fetchOverview ?? ApiMenopauseService.getOverview,
+        _readCache = readCache ?? ApiMenopauseService.cachedOverview;
 
   final Future<ApiResult<MenopauseOverviewData>> Function() _fetchOverview;
+  final MenopauseOverviewData? Function() _readCache;
 
   ApiState overviewState = ApiState.loading;
   MenopauseOverviewData? overview;
@@ -28,6 +31,22 @@ class MenopauseViewModel extends BlushyViewModel {
   bool privateMode = false;
 
   Future<void> load() async {
+    // Cache-first: show the last known overview at once (labelled stale, not
+    // passed off as fresh), so a returning user does not watch a spinner while
+    // the network answers. Only on a first load, and only as a head start --
+    // the fetch below always replaces it.
+    if (overview == null) {
+      final cached = _readCache();
+      if (cached != null) {
+        overview = cached;
+        activeLifeMode = cached.lifeMode;
+        privateMode = cached.privateMode;
+        overviewState = ApiState.stale;
+        isLoading = false;
+        safeNotify();
+      }
+    }
+
     final res = await _fetchOverview();
     final data = res.data;
     overview = data;
