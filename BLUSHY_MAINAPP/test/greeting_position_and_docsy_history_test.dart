@@ -120,7 +120,11 @@ void main() {
     });
 
     test('the screen falls back to the last conversation it saw', () {
-      expect(screen, contains('final restored = history ?? _cachedConversation();'));
+      // The fallback became a merge: the device copy is used when the fetch
+      // fails, and folded in alongside the server's rows when it succeeds.
+      expect(screen, contains('final cached = _cachedConversation();'));
+      expect(screen, contains('final restored = history == null'));
+      expect(screen, contains('? cached'));
       expect(screen, contains('List<Map<String, String>> _cachedConversation()'));
       expect(screen, contains("BlushyStorage.read('recent_sia_chats.json')"),
           reason: 'the cache was written and never read back');

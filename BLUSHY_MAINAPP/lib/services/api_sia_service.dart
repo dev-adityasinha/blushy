@@ -5,6 +5,7 @@ import '../models/blushy_models.dart';
 import 'api_base_url.dart';
 import 'api_contract_client.dart';
 import 'language_preference.dart';
+import '../core/storage.dart';
 import 'auth_storage.dart';
 import 'log_redaction.dart';
 
@@ -332,14 +333,32 @@ class ApiSiaService {
   }
 
   /// Clears saved Docsy chat history: `DELETE /ai/history`
+  ///
+  /// The device's own copy goes with it. The chat screen merges that copy
+  /// with what the server returns, so a clear that left it behind would put
+  /// the whole conversation back on the next launch.
   Future<bool> clearChatHistory() async {
     try {
       await _dio.delete('/ai/history', options: _authOptions());
+      _forgetCachedConversation();
       return true;
     } catch (e) {
       debugPrint('BlushySia: Error clearing history: $e');
+      // Cleared locally even when the request failed: she asked for it gone,
+      // and leaving it visible while the server forgets it is the worse of
+      // the two mismatches.
+      _forgetCachedConversation();
       return false;
     }
+  }
+
+  void _forgetCachedConversation() {
+    try {
+      BlushyStorage.write('recent_sia_chats.json', {
+        'messages': <Map<String, String>>[],
+        'lastUpdated': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
   }
 
   /// Fetches AI health insights: `GET /ai/health-insights`

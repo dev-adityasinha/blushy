@@ -268,7 +268,15 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
     final history = await _siaService.getChatHistory();
     if (!mounted) return;
 
-    final restored = history ?? _cachedConversation();
+    // The server is authoritative for what it has, but it is not the only
+    // record. Exchanges from before saving worked exist only on this device,
+    // and dropping them would mean a conversation that visibly starts in the
+    // middle. The two are merged instead: every server row, plus anything
+    // cached here the server has never seen, in the order it was said.
+    final cached = _cachedConversation();
+    final restored = history == null
+        ? cached
+        : _mergeConversations(server: history, cached: cached);
 
     setState(() {
       if (restored.isNotEmpty) {
@@ -293,7 +301,35 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
       }
     });
 
+    // Cache the union, so a day recovered from the device survives the next
+    // launch even if it never reaches the server.
     if (history != null) _cacheConversation();
+  }
+
+  /// Server rows plus anything only this device remembers, oldest first.
+  ///
+  /// A clear wipes the cache as well as the server copy, so nothing here can
+  /// resurrect a conversation that was deliberately deleted.
+  List<Map<String, String>> _mergeConversations({
+    required List<Map<String, String>> server,
+    required List<Map<String, String>> cached,
+  }) {
+    if (cached.isEmpty) return server;
+
+    final merged = List<Map<String, String>>.from(server);
+    for (final m in cached) {
+      if (!_sameMessage(merged, m)) merged.add(m);
+    }
+
+    // By timestamp, so a recovered day lands among the server's rather than
+    // after them. Anything undated keeps its position relative to the rest.
+    merged.sort((a, b) {
+      final at = DateTime.tryParse(a['at'] ?? '');
+      final bt = DateTime.tryParse(b['at'] ?? '');
+      if (at == null || bt == null) return 0;
+      return at.compareTo(bt);
+    });
+    return merged;
   }
 
   /// Two maps with the same contents are not `==` in Dart, so the old
