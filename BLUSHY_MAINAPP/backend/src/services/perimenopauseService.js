@@ -13,76 +13,74 @@ import {
   CONTEXTUAL_ARTICLES,
 } from './perimenopauseData.js';
 import { todayIso } from '../utils/appCalendar.js';
+import { makeUserDocStore } from '../repositories/stageStateRepository.js';
 
-// In-memory data store with disk persistence support
-const store = {
-  profiles: new Map(), // userId -> { onsetDuration, primaryConcerns, focus, lifeMode, isCalibrated }
-  checkins: new Map(), // userId -> [checkins...]
-  cycleHistory: new Map(), // userId -> [cycleIntervals...]
-  treatments: new Map(), // userId -> [treatments...]
-  questions: new Map(), // userId -> [questions...]
-  notes: new Map(), // userId -> [naturalNotes...]
-};
+// One document per user in Mongo, replacing the process-level Maps that were
+// lost on restart and never shared across instances.
+const store = makeUserDocStore('perimenopause_state', {
+  profile: () => ({
+    onsetDuration: 'a_few_months',
+    primaryConcerns: ['My periods', 'My sleep', 'My temperature'],
+    focus: 'sleep',
+    lifeMode: 'normal',
+    isCalibrated: true,
+  }),
+  checkins: () => [],
+  cycleHistory: () => [],
+  treatments: () => [],
+  questions: () => [],
+  notes: () => [],
+});
 
 export class PerimenopauseService {
   /**
    * Retrieves or initializes the user's Perimenopause profile.
    */
-  static getProfile(userId = 'default_user') {
-    if (!store.profiles.has(userId)) {
-      store.profiles.set(userId, {
-        onsetDuration: 'a_few_months',
-        primaryConcerns: ['My periods', 'My sleep', 'My temperature'],
-        focus: 'sleep',
-        lifeMode: 'normal',
-        isCalibrated: true,
-      });
-    }
-    return store.profiles.get(userId);
+  static async getProfile(userId) {
+    const state = await store.load(userId);
+    return state.profile;
   }
 
   /**
    * Initial "Tell Blushy Once" calibration.
    */
-  static calibrate(userId = 'default_user', { onsetDuration, primaryConcerns = [], focus = 'sleep' }) {
-    const profile = this.getProfile(userId);
+  static async calibrate(userId, { onsetDuration, primaryConcerns = [], focus = 'sleep' }) {
+    const state = await store.load(userId);
+    const profile = state.profile;
     if (onsetDuration !== undefined) profile.onsetDuration = onsetDuration;
     if (Array.isArray(primaryConcerns) && primaryConcerns.length > 0) profile.primaryConcerns = primaryConcerns;
     if (focus !== undefined) profile.focus = focus;
     profile.isCalibrated = true;
-    store.profiles.set(userId, profile);
+    await store.save(userId, state);
     return profile;
   }
 
   /**
    * Updates the user's active focus area.
    */
-  static setFocus(userId = 'default_user', focus) {
-    const profile = this.getProfile(userId);
-    profile.focus = focus;
-    store.profiles.set(userId, profile);
-    return profile;
+  static async setFocus(userId, focus) {
+    const state = await store.load(userId);
+    state.profile.focus = focus;
+    await store.save(userId, state);
+    return state.profile;
   }
 
   /**
    * Updates the active life mode.
    */
-  static setLifeMode(userId = 'default_user', lifeMode) {
-    const profile = this.getProfile(userId);
-    profile.lifeMode = lifeMode;
-    store.profiles.set(userId, profile);
-    return profile;
+  static async setLifeMode(userId, lifeMode) {
+    const state = await store.load(userId);
+    state.profile.lifeMode = lifeMode;
+    await store.save(userId, state);
+    return state.profile;
   }
 
   /**
    * Logs a daily maternal check-in with severity + impact + context.
    */
-  static recordCheckin(userId = 'default_user', data = {}) {
-    if (!store.checkins.has(userId)) {
-      store.checkins.set(userId, []);
-    }
-
-    const checkins = store.checkins.get(userId);
+  static async recordCheckin(userId, data = {}) {
+    const state = await store.load(userId);
+    const checkins = state.checkins;
     const date = todayIso();
 
     const record = {
@@ -109,29 +107,28 @@ export class PerimenopauseService {
       checkins.unshift(record);
     }
 
-    store.checkins.set(userId, checkins);
+    await store.save(userId, state);
     return record;
   }
 
   /**
    * Retrieves cycle history intervals.
    */
-  static getCycleHistory(userId = 'default_user') {
-    if (!store.cycleHistory.has(userId)) {
-      store.cycleHistory.set(userId, []);
-    }
-    return store.cycleHistory.get(userId);
+  static async getCycleHistory(userId) {
+    const state = await store.load(userId);
+    return state.cycleHistory;
   }
 
   /**
    * Logs a new period interval.
    */
-  static recordPeriodCycle(userId = 'default_user', lengthDays = 28) {
-    const history = this.getCycleHistory(userId);
+  static async recordPeriodCycle(userId, lengthDays = 28) {
+    const state = await store.load(userId);
+    const history = state.cycleHistory;
     if (typeof lengthDays === 'number' && lengthDays > 0) {
       history.push(lengthDays);
       if (history.length > 8) history.shift();
-      store.cycleHistory.set(userId, history);
+      await store.save(userId, state);
     }
     return history;
   }
@@ -139,11 +136,9 @@ export class PerimenopauseService {
   /**
    * Adds or updates a treatment regimen.
    */
-  static saveTreatment(userId = 'default_user', treatmentData = {}) {
-    if (!store.treatments.has(userId)) {
-      store.treatments.set(userId, []);
-    }
-    const treatments = store.treatments.get(userId);
+  static async saveTreatment(userId, treatmentData = {}) {
+    const state = await store.load(userId);
+    const treatments = state.treatments;
     const item = {
       id: treatmentData.id || `trt_${Date.now()}`,
       name: treatmentData.name || 'Treatment',
@@ -160,53 +155,52 @@ export class PerimenopauseService {
     } else {
       treatments.push(item);
     }
-    store.treatments.set(userId, treatments);
+    await store.save(userId, state);
     return item;
   }
 
   /**
    * Adds a question to the clinician appointment notebook.
    */
-  static addQuestion(userId = 'default_user', questionText = '') {
-    if (!store.questions.has(userId)) {
-      store.questions.set(userId, [
+  static async addQuestion(userId, questionText = '') {
+    const state = await store.load(userId);
+    if (state.questions.length === 0) {
+      state.questions = [
         { id: 'q_init_1', text: 'Should we check my iron levels given recent heavy periods?', dateAdded: todayIso() },
         { id: 'q_init_2', text: 'Are my waking night sweats a reason to consider local or transdermal HRT?', dateAdded: todayIso() },
-      ]);
+      ];
     }
-    const questions = store.questions.get(userId);
     const newQ = { id: `q_${Date.now()}`, text: questionText.trim(), dateAdded: todayIso() };
-    questions.push(newQ);
-    store.questions.set(userId, questions);
+    state.questions.push(newQ);
+    await store.save(userId, state);
     return newQ;
   }
 
   /**
    * Deletes a question from the appointment notebook.
    */
-  static deleteQuestion(userId = 'default_user', questionId) {
-    if (!store.questions.has(userId)) return false;
-    const questions = store.questions.get(userId);
-    const filtered = questions.filter((q) => q.id !== questionId);
-    store.questions.set(userId, filtered);
-    return true;
+  static async deleteQuestion(userId, questionId) {
+    const state = await store.load(userId);
+    const before = state.questions.length;
+    state.questions = state.questions.filter((q) => q.id !== questionId);
+    await store.save(userId, state);
+    return state.questions.length !== before;
   }
 
   /**
    * Parses natural text/voice notes and saves to timeline.
    */
-  static async parseNaturalNote(userId = 'default_user', text = '') {
+  static async parseNaturalNote(userId, text = '') {
     const result = await DocsyPerimenopauseService.parseNaturalNote(text);
     if (result.success) {
-      if (!store.notes.has(userId)) {
-        store.notes.set(userId, []);
-      }
-      store.notes.get(userId).unshift({
+      const state = await store.load(userId);
+      state.notes.unshift({
         id: `note_${Date.now()}`,
         date: todayIso(),
         text,
         extracted: result.extracted,
       });
+      await store.save(userId, state);
     }
     return result;
   }
@@ -214,11 +208,13 @@ export class PerimenopauseService {
   /**
    * Generates the comprehensive Overview payload for the frontend dashboard.
    */
-  static async getOverview(userId = 'default_user') {
-    const profile = this.getProfile(userId);
-    const checkins = store.checkins.get(userId) || [];
-    const cycleHistory = this.getCycleHistory(userId);
-    const treatments = store.treatments.get(userId) || [
+  static async getOverview(userId) {
+    const state = await store.load(userId);
+    const profile = state.profile;
+    const checkins = state.checkins;
+    const cycleHistory = state.cycleHistory;
+    // An empty store still shows seeded examples, exactly as the Map version did.
+    const treatments = state.treatments.length ? state.treatments : [
       {
         id: 'trt_default',
         name: 'Evening Magnesium & Cooling Routine',
@@ -229,7 +225,7 @@ export class PerimenopauseService {
         notes: 'Discussed with clinician last check-up',
       },
     ];
-    const questions = store.questions.get(userId) || [
+    const questions = state.questions.length ? state.questions : [
       { id: 'q_1', text: 'Are my night sweats an indication to discuss transdermal estrogen?', dateAdded: 'Recent' },
       { id: 'q_2', text: 'Should we test my ferritin / iron levels after wider cycle spacing?', dateAdded: 'Recent' },
     ];
@@ -285,9 +281,10 @@ export class PerimenopauseService {
   /**
    * Generates the dynamic AI daily brief.
    */
-  static async getTodayBrief(userId = 'default_user') {
-    const profile = this.getProfile(userId);
-    const checkins = store.checkins.get(userId) || [];
+  static async getTodayBrief(userId) {
+    const state = await store.load(userId);
+    const profile = state.profile;
+    const checkins = state.checkins;
     const confidence = PerimenopauseStateService.buildConfidenceBreakdown({ recentCheckins: checkins, focus: profile.focus });
     const deltas = PerimenopauseStateService.computeDeltas(checkins);
     const connections = PerimenopauseStateService.detectConnections(checkins);
@@ -307,12 +304,13 @@ export class PerimenopauseService {
   /**
    * Generates a 1-page Clinician Brief for doctor appointments.
    */
-  static getClinicianBrief(userId = 'default_user') {
-    const profile = this.getProfile(userId);
-    const checkins = store.checkins.get(userId) || [];
-    const cycleHistory = this.getCycleHistory(userId);
-    const treatments = store.treatments.get(userId) || [];
-    const questions = store.questions.get(userId) || [];
+  static async getClinicianBrief(userId) {
+    const state = await store.load(userId);
+    const profile = state.profile;
+    const checkins = state.checkins;
+    const cycleHistory = state.cycleHistory;
+    const treatments = state.treatments;
+    const questions = state.questions;
 
     const flashCount = checkins.slice(0, 14).filter((c) => c.temperatureFlashes && c.temperatureFlashes !== 'none').length;
     const poorSleepCount = checkins.slice(0, 14).filter((c) => c.sleepQuality === 'fragmented' || c.sleepQuality === 'woke_sweating').length;

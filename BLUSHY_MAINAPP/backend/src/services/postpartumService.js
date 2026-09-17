@@ -15,53 +15,52 @@ import {
   RECOVERY_MILESTONES,
 } from './postpartumData.js';
 import { todayIso } from '../utils/appCalendar.js';
+import { makeUserDocStore } from '../repositories/stageStateRepository.js';
 
-// In-memory data store with disk persistence support
-const store = {
-  profiles: new Map(), // userId -> { deliveryDate, deliveryType, feedingMethod, lowEnergyMode }
-  checkins: new Map(), // userId -> [checkins...]
-  babyEvents: new Map(), // userId -> [events...]
-  supportCircle: new Map(), // userId -> [contacts...]
-  appointmentNotes: new Map(), // userId -> { before: [], after: [] }
-};
+// One document per user in Mongo, replacing the process-level Maps that were
+// lost on restart and never shared across instances.
+const store = makeUserDocStore('postpartum_state', {
+  profile: () => ({
+    deliveryDate: null,
+    deliveryType: 'vaginal',   // 'vaginal' | 'cesarean'
+    feedingMethod: 'breastfeeding', // 'breastfeeding' | 'pumping' | 'formula' | 'combination'
+    lowEnergyMode: false,
+  }),
+  checkins: () => [],
+  babyEvents: () => [],
+  supportCircle: () => [],
+  appointmentNotes: () => ({ before: [], after: [] }),
+});
 
 export class PostpartumService {
   /**
    * Retrieves or initializes the user's postpartum configuration.
    */
-  static getProfile(userId = 'default_user') {
-    if (!store.profiles.has(userId)) {
-      store.profiles.set(userId, {
-        deliveryDate: null,
-        deliveryType: 'vaginal', // 'vaginal' | 'cesarean'
-        feedingMethod: 'breastfeeding', // 'breastfeeding' | 'pumping' | 'formula' | 'combination'
-        lowEnergyMode: false,
-      });
-    }
-    return store.profiles.get(userId);
+  static async getProfile(userId) {
+    const state = await store.load(userId);
+    return state.profile;
   }
 
   /**
    * Calibrates postpartum delivery details.
    */
-  static updateCalibration(userId = 'default_user', { deliveryDate, deliveryType, feedingMethod, lowEnergyMode }) {
-    const profile = this.getProfile(userId);
+  static async updateCalibration(userId, { deliveryDate, deliveryType, feedingMethod, lowEnergyMode }) {
+    const state = await store.load(userId);
+    const profile = state.profile;
     if (deliveryDate !== undefined) profile.deliveryDate = deliveryDate;
     if (deliveryType !== undefined) profile.deliveryType = deliveryType;
     if (feedingMethod !== undefined) profile.feedingMethod = feedingMethod;
     if (lowEnergyMode !== undefined) profile.lowEnergyMode = Boolean(lowEnergyMode);
-    store.profiles.set(userId, profile);
+    await store.save(userId, state);
     return profile;
   }
 
   /**
    * Logs a daily maternal check-in.
    */
-  static recordCheckin(userId = 'default_user', data = {}) {
-    if (!store.checkins.has(userId)) {
-      store.checkins.set(userId, []);
-    }
-    const list = store.checkins.get(userId);
+  static async recordCheckin(userId, data = {}) {
+    const state = await store.load(userId);
+    const list = state.checkins;
     const date = data.date || todayIso();
 
     // Check for safety signals
@@ -104,17 +103,16 @@ export class PostpartumService {
       list.unshift(entry);
     }
 
+    await store.save(userId, state);
     return { checkin: entry, safetyStatus };
   }
 
   /**
    * Logs a baby event (feed, diaper, sleep, breast comfort).
    */
-  static recordBabyEvent(userId = 'default_user', event = {}) {
-    if (!store.babyEvents.has(userId)) {
-      store.babyEvents.set(userId, []);
-    }
-    const list = store.babyEvents.get(userId);
+  static async recordBabyEvent(userId, event = {}) {
+    const state = await store.load(userId);
+    const list = state.babyEvents;
     const entry = {
       id: `bev_${Date.now()}`,
       type: event.type || 'feed', // 'feed' | 'diaper' | 'sleep' | 'breast_comfort'
@@ -123,21 +121,23 @@ export class PostpartumService {
       details: event.details || {},
     };
     list.unshift(entry);
+    await store.save(userId, state);
     return entry;
   }
 
-  static getBabyEvents(userId = 'default_user', date = todayIso()) {
-    const list = store.babyEvents.get(userId) || [];
-    return list.filter((e) => e.date === date);
+  static async getBabyEvents(userId, date = todayIso()) {
+    const state = await store.load(userId);
+    return state.babyEvents.filter((e) => e.date === date);
   }
 
   /**
    * Generates the comprehensive Postpartum Command Center Overview.
    */
-  static getOverview(userId = 'default_user') {
-    const profile = this.getProfile(userId);
+  static async getOverview(userId) {
+    const state = await store.load(userId);
+    const profile = state.profile;
     const timing = PostpartumStateService.calculateTiming(profile.deliveryDate);
-    const checkins = store.checkins.get(userId) || [];
+    const checkins = state.checkins;
     const today = todayIso();
     const todayCheckin = checkins.find((c) => c.date === today) || null;
     const yesterdayCheckin = checkins.find((c) => c.date !== today) || null;
@@ -156,7 +156,7 @@ export class PostpartumService {
       recentCheckins: checkins,
     });
 
-    const todayEvents = this.getBabyEvents(userId, today);
+    const todayEvents = state.babyEvents.filter((e) => e.date === today);
     const safetyStatus = todayCheckin?.safetyStatus || { severity: 'low', shouldInterrupt: false, flags: [] };
 
     return {
@@ -180,10 +180,11 @@ export class PostpartumService {
   /**
    * Generates the dynamic Today with Docsy briefing.
    */
-  static async getTodayBrief(userId = 'default_user') {
-    const profile = this.getProfile(userId);
+  static async getTodayBrief(userId) {
+    const state = await store.load(userId);
+    const profile = state.profile;
     const timing = PostpartumStateService.calculateTiming(profile.deliveryDate);
-    const checkins = store.checkins.get(userId) || [];
+    const checkins = state.checkins;
     const today = todayIso();
     const todayCheckin = checkins.find((c) => c.date === today) || null;
     const yesterdayCheckin = checkins.find((c) => c.date !== today) || null;

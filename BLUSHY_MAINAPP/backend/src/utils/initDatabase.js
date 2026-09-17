@@ -50,6 +50,8 @@ export async function initDatabase() {
     }
 
     await db.collection('user_state').createIndex({ user_id: 1, key: 1 }, { unique: true });
+    await db.collection('postpartum_state').createIndex({ user_id: 1 }, { unique: true });
+    await db.collection('perimenopause_state').createIndex({ user_id: 1 }, { unique: true });
     await db.collection('identities').createIndex({ phone_hash: 1 }, { unique: true });
     await db.collection('auth_email_verifications').createIndex({ email_hash: 1 }, { unique: true });
     await db.collection('email_verifications').createIndex({ created_at: 1 }, { expireAfterSeconds: 1800 });

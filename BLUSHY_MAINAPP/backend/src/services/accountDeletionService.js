@@ -84,6 +84,8 @@ const OWNED_COLLECTIONS = [
   ['partner_permission_audit', ['actor_user_id', 'subject_user_id']],
   ['partner_permission_requests', ['requester_user_id', 'owner_user_id']],
   ['user_state', ['user_id']],
+  ['postpartum_state', ['user_id']],
+  ['perimenopause_state', ['user_id']],
   ['shared_gardens', ['user_id']],
   ['friendships', ['user_id_1', 'user_id_2']],
   ['direct_messages', ['sender_id', 'recipient_id']],

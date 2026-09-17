@@ -9,7 +9,7 @@ import { PostpartumSafetyService } from '../services/postpartumSafetyService.js'
 export async function getPostpartumOverview(req, res, next) {
   try {
     const userId = req.user.userId;
-    const overview = PostpartumService.getOverview(userId);
+    const overview = await PostpartumService.getOverview(userId);
     return res.json({ ok: true, data: overview });
   } catch (err) {
     return next(err);
@@ -30,7 +30,7 @@ export async function calibratePostpartum(req, res, next) {
   try {
     const userId = req.user.userId;
     const { deliveryDate, deliveryType, feedingMethod, lowEnergyMode } = req.body || {};
-    const updated = PostpartumService.updateCalibration(userId, {
+    const updated = await PostpartumService.updateCalibration(userId, {
       deliveryDate,
       deliveryType,
       feedingMethod,
@@ -45,7 +45,7 @@ export async function calibratePostpartum(req, res, next) {
 export async function recordPostpartumCheckin(req, res, next) {
   try {
     const userId = req.user.userId;
-    const result = PostpartumService.recordCheckin(userId, req.body || {});
+    const result = await PostpartumService.recordCheckin(userId, req.body || {});
     return res.json({ ok: true, data: result });
   } catch (err) {
     return next(err);
@@ -55,7 +55,7 @@ export async function recordPostpartumCheckin(req, res, next) {
 export async function recordBabyEvent(req, res, next) {
   try {
     const userId = req.user.userId;
-    const event = PostpartumService.recordBabyEvent(userId, req.body || {});
+    const event = await PostpartumService.recordBabyEvent(userId, req.body || {});
     return res.json({ ok: true, data: event });
   } catch (err) {
     return next(err);
@@ -66,7 +66,7 @@ export async function getBabyEvents(req, res, next) {
   try {
     const userId = req.user.userId;
     const date = req.query.date;
-    const events = PostpartumService.getBabyEvents(userId, date);
+    const events = await PostpartumService.getBabyEvents(userId, date);
     return res.json({ ok: true, data: events });
   } catch (err) {
     return next(err);
