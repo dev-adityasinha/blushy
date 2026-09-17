@@ -74,4 +74,18 @@ void main() {
     await vm.loadLatestEntry();
     expect(n, greaterThanOrEqualTo(3));
   });
+
+  test('a silent refresh does not raise the section loading flags', () async {
+    final vm = MStudioViewModel(
+      fetchSessions: () async => _r(ApiState.ready, d: [{'sessionId': 's1'}]),
+      fetchCapsules: () async => _r(ApiState.ready, d: [{'capsuleId': 'c1'}]),
+      fetchEntries: () async => const [],
+    );
+    final flags = <bool>[];
+    vm.addListener(() => flags.add(vm.sessionsLoading || vm.capsulesLoading));
+    await vm.refreshAll();
+    expect(vm.sessions, hasLength(1));
+    expect(vm.capsules, hasLength(1));
+    expect(flags.any((f) => f), isFalse, reason: 'no skeleton flash on a background refresh');
+  });
 }

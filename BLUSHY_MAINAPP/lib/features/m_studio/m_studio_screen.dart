@@ -9,6 +9,7 @@ import '../../core/storage.dart';
 import '../journal/journal_screen.dart';
 import '../journal/notes/notes_journal_screen.dart';
 import 'view_models/m_studio_view_model.dart';
+import '../../shared/live_refresh.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/journal_storage.dart';
@@ -28,7 +29,8 @@ class BlushyMStudioScreen extends StatefulWidget {
   State<BlushyMStudioScreen> createState() => _BlushyMStudioScreenState();
 }
 
-class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerProviderStateMixin {
+class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver, LiveRefresh {
   // Tab index names
   ///
   /// M Studio used to be three horizontal tabs with everything else buried in
@@ -199,7 +201,11 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
     _loadCapsules();
     _loadRecoverySessions();
     _loadLatestEntry();
+    startLiveRefresh();
   }
+
+  @override
+  Future<void> refreshNow() => _vm.refreshAll();
 
   /// Delegated to the view model; _onStudioChanged mirrors the result.
   Future<void> _loadLatestEntry() => _vm.loadLatestEntry();
@@ -208,6 +214,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
 
   @override
   void dispose() {
+    stopLiveRefresh();
     _vm.removeListener(_onStudioChanged);
     _vm.dispose();
     _editorController.dispose();

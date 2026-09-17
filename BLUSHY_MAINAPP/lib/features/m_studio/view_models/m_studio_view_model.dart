@@ -40,24 +40,37 @@ class MStudioViewModel extends BlushyViewModel {
 
   LocalJournalEntry? latestEntry;
 
-  Future<void> loadSessions() async {
-    sessionsLoading = true;
-    safeNotify();
+  /// [silent] skips the section loading flag so a background refresh does not
+  /// flash the skeleton over a list that is already there.
+  Future<void> loadSessions({bool silent = false}) async {
+    if (!silent) {
+      sessionsLoading = true;
+      safeNotify();
+    }
     final result = await _fetchSessions();
     sessionsLoading = false;
     sessions = result.data ?? const [];
     safeNotify();
   }
 
-  Future<void> loadCapsules() async {
-    capsulesLoading = true;
-    safeNotify();
+  Future<void> loadCapsules({bool silent = false}) async {
+    if (!silent) {
+      capsulesLoading = true;
+      safeNotify();
+    }
     final result = await _fetchCapsules();
     capsulesLoading = false;
     // No seeded placeholders. An empty list is what a new account has.
     capsules = result.data ?? const [];
     safeNotify();
   }
+
+  /// Refresh every M Studio read quietly, for the live-refresh triggers.
+  Future<void> refreshAll() => Future.wait([
+        loadSessions(silent: true),
+        loadCapsules(silent: true),
+        loadLatestEntry(),
+      ]);
 
   /// The most recent thing written, for the studio's own recent list.
   ///
