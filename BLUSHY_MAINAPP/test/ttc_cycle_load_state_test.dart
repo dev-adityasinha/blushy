@@ -26,22 +26,20 @@ void main() {
         .readAsStringSync();
   });
 
-  test('it asks for the result, not just the data', () {
-    expect(ttc, contains('getPredictionsResult()'));
-    expect(
-      ttc.contains('ApiPeriodService().getPredictions().then'),
-      isFalse,
-      reason: 'the data-only call cannot report why it came back empty',
-    );
+  test('the cycle read is delegated to the view model', () {
+    // The fetch/error/day logic moved out of the widget into CycleViewModel,
+    // which is unit-tested in cycle_view_model_test.dart. The dashboard is now
+    // its View: it holds the view model and mirrors its result.
+    expect(ttc, contains('CycleViewModel _cycleVM'));
+    expect(ttc, contains('_cycleVM.load()'));
+    expect(ttc.contains('getPredictionsResult()'), isFalse,
+        reason: 'the data fetch belongs to the view model now, not the widget');
   });
 
-  test('a dropped request is recorded, not swallowed', () {
+  test('a dropped request is still recorded, not swallowed', () {
+    // The result is mirrored into _cycleState from the view model on change.
     expect(ttc, contains('ApiState _cycleState'));
-    expect(ttc, contains('_cycleState = result.state'));
-    expect(ttc, contains('_cycleState = ApiState.offline'));
-
-    // The bare catch is what made a failure indistinguishable from an empty
-    // account.
+    expect(ttc, contains('_cycleState = _cycleVM.state'));
     expect(ttc.contains('.catchError((_) {});'), isFalse);
   });
 
@@ -63,14 +61,19 @@ void main() {
     expect(card, greaterThan(notice));
   });
 
-  test('all three cycle dashboards now load the same way', () {
+  test('every cycle dashboard reports load state, one way or another', () {
+    // TTC reports it through the view model; the others still hold the inline
+    // getPredictionsResult call (they convert next). Either way, none of them
+    // may go back to the state-blind getPredictions().
     for (final path in [
       'lib/features/home/presentation/stages/trying_to_conceive_dashboard.dart',
       'lib/features/home/presentation/stages/first_period_started_dashboard.dart',
       'lib/features/home/presentation/stages/hormonal_health_dashboard.dart',
     ]) {
       final source = File(path).readAsStringSync();
-      expect(source, contains('getPredictionsResult()'), reason: path);
+      final reportsState = source.contains('getPredictionsResult()') ||
+          source.contains('CycleViewModel');
+      expect(reportsState, isTrue, reason: path);
       expect(source, contains('_cycleState'), reason: path);
     }
   });
