@@ -55,4 +55,34 @@ void main() {
     expect(tree.first.replies, isEmpty, reason: 'insert must rebuild, not mutate');
     expect(tree, hasLength(1));
   });
+
+  group('replace (optimistic vote)', () {
+    test('replaces a top-level comment, keeping its children', () {
+      final tree = [
+        _c('a', replies: [_c('a1', parentId: 'a')]),
+        _c('b'),
+      ];
+      final updated = _c('a').copyWith(score: 9, userVote: 1);
+      final out = CommunityComments.replace(tree, 'a', updated);
+      final a = out.firstWhere((c) => c.commentId == 'a');
+      expect(a.score, 9);
+      expect(a.userVote, 1);
+      expect(a.replies.map((c) => c.commentId).toList(), ['a1'],
+          reason: 'the server reply has no children; the existing ones are kept');
+    });
+
+    test('replaces a nested comment', () {
+      final tree = [
+        _c('a', replies: [_c('a1', parentId: 'a')]),
+      ];
+      final out = CommunityComments.replace(tree, 'a1', _c('a1', parentId: 'a').copyWith(score: 3));
+      expect(out.first.replies.first.score, 3);
+    });
+
+    test('an unknown id leaves the tree unchanged', () {
+      final tree = [_c('a')];
+      final out = CommunityComments.replace(tree, 'ghost', _c('ghost'));
+      expect(out.map((c) => c.commentId).toList(), ['a']);
+    });
+  });
 }

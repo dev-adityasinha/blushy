@@ -27,6 +27,27 @@ class CommunityComments {
     return placed ? nested : [...tree, comment];
   }
 
+  /// Returns a new tree with the comment matching [replacement]'s id swapped
+  /// for it, anywhere in the tree, carrying the existing children across.
+  /// Used for optimistic vote updates -- the server's reply has no nested
+  /// replies, so the caller keeps the ones already on screen. An id not found
+  /// leaves the tree unchanged.
+  static List<CommunityComment> replace(
+    List<CommunityComment> tree,
+    String commentId,
+    CommunityComment replacement,
+  ) {
+    return [
+      for (final c in tree)
+        if (c.commentId == commentId)
+          replacement.copyWith(replies: c.replies)
+        else if (c.replies.isNotEmpty)
+          c.copyWith(replies: replace(c.replies, commentId, replacement))
+        else
+          c,
+    ];
+  }
+
   static (List<CommunityComment>, bool) _insertUnder(
     List<CommunityComment> tree,
     String parentId,

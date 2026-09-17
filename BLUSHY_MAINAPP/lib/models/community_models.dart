@@ -205,15 +205,20 @@ class CommunityComment {
     this.isClinicallyReviewed = false,
 });
 
-  CommunityComment copyWith({List<CommunityComment>? replies}) => CommunityComment(
+  CommunityComment copyWith({
+    List<CommunityComment>? replies,
+    int? score,
+    int? userVote,
+  }) =>
+      CommunityComment(
         commentId: commentId,
         postId: postId,
         parentId: parentId,
         authorId: authorId,
         authorName: authorName,
         text: text,
-        score: score,
-        userVote: userVote,
+        score: score ?? this.score,
+        userVote: userVote ?? this.userVote,
         createdAt: createdAt,
         updatedAt: updatedAt,
         replies: replies ?? this.replies,
