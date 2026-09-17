@@ -412,7 +412,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
 
       // 3. Today's flow log
       final todayStr = DateTime.now().toIso8601String().split('T').first;
-      final savedFlow = BlushyStorage.read('stage2_flow_$todayStr.json');
+      final savedFlow = UserStateStore.read('stage2_flow_$todayStr');
       if (savedFlow is Map && savedFlow['flow'] is String) {
         _loggedFlow = savedFlow['flow'];
       }
@@ -1193,7 +1193,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                         _loggedFlow = f['intensity']!;
                       });
                       final todayStr = DateTime.now().toIso8601String().split('T').first;
-                      BlushyStorage.write('stage2_flow_$todayStr.json', {
+                      UserStateStore.write('stage2_flow_$todayStr', {
                         'flow': _loggedFlow,
                         'cramp': _selectedCramp,
                       });
@@ -1293,7 +1293,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                       if (sel) {
                         setState(() => _selectedCramp = c);
                         final todayStr = DateTime.now().toIso8601String().split('T').first;
-                        BlushyStorage.write('stage2_flow_$todayStr.json', {
+                        UserStateStore.write('stage2_flow_$todayStr', {
                           'flow': _loggedFlow,
                           'cramp': _selectedCramp,
                         });

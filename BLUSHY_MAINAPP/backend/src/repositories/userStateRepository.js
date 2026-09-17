@@ -16,8 +16,14 @@ import { db } from '../utils/db.js';
  */
 const COLLECTION = 'user_state';
 
-/** Keys are namespaced by screen, so they cannot collide by accident. */
-const KEY_PATTERN = /^[a-z0-9_]{1,64}$/;
+/**
+ * Keys are namespaced by screen, so they cannot collide by accident.
+ *
+ * Hyphens are allowed because some documents are per-day and carry the date:
+ * `stage2_flow_2026-09-17`. Still no slashes or dots, so a key can never be
+ * read as a path.
+ */
+const KEY_PATTERN = /^[a-z0-9_-]{1,64}$/;
 
 export function isValidKey(key) {
   return typeof key === 'string' && KEY_PATTERN.test(key);

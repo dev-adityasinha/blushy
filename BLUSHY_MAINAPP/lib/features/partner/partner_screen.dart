@@ -202,7 +202,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   void _loadMessageDecoderState() {
     try {
-      final saved = BlushyStorage.read('partner_decoder_enabled');
+      final saved = UserStateStore.read('partner_decoder_enabled');
       if (saved['enabled'] is bool) {
         setState(() {
           _isMessageDecoderActive = saved['enabled'] as bool;
@@ -216,7 +216,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       _isMessageDecoderActive = !_isMessageDecoderActive;
     });
     try {
-      BlushyStorage.write('partner_decoder_enabled', {
+      UserStateStore.write('partner_decoder_enabled', {
         'enabled': _isMessageDecoderActive,
       });
     } catch (_) {}

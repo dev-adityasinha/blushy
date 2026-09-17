@@ -392,6 +392,34 @@ class BlushyOSState extends ChangeNotifier {
   void setArgumentModeActive(bool val) {
     _argumentModeActive = val;
     _saveState();
+    _savePreferencesToAccount();
+    notifyListeners();
+  }
+
+  /// The two settings in `blushy_prefs` that exist nowhere but this device.
+  ///
+  /// The rest of that file mirrors state the server already holds -- the
+  /// profile through `saveOnboardingAnswers`, wellbeing through the daily
+  /// mood -- so it stays as the bootstrap cache it is: without it a cold
+  /// start renders blank until the API answers. These two had no server copy
+  /// at all, so they were lost on reinstall and did not follow her to the web.
+  void _savePreferencesToAccount() {
+    UserStateStore.write('app_preferences', {
+      'argumentModeActive': _argumentModeActive,
+      if (_customAiBriefing != null) 'customAiBriefing': _customAiBriefing,
+    });
+  }
+
+  /// Applies the account's copy over the device's, once it arrives.
+  void applyAccountPreferences() {
+    final saved = UserStateStore.read('app_preferences');
+    if (saved.isEmpty) return;
+    if (saved['argumentModeActive'] is bool) {
+      _argumentModeActive = saved['argumentModeActive'] as bool;
+    }
+    if (saved['customAiBriefing'] is String) {
+      _customAiBriefing = saved['customAiBriefing'] as String;
+    }
     notifyListeners();
   }
 
@@ -1093,7 +1121,12 @@ class BlushyOSState extends ChangeNotifier {
     // nothing. Without this a new device would show empty screens until the
     // next launch.
     if (value && !_isAuthenticated) {
-      UserStateStore.hydrate().catchError((Object _) => false);
+      UserStateStore.hydrate().then((ok) {
+        if (ok) applyAccountPreferences();
+      }).catchError((Object _) {
+        // Offline or refused: the bootstrap cache already has her last known
+        // settings, so there is nothing to put right here.
+      });
     }
     _isAuthenticated = value;
     if (onboardingCompleted != null) {
@@ -1612,6 +1645,7 @@ class BlushyOSState extends ChangeNotifier {
   void updateDynamicAiBriefing(String briefing) {
     _customAiBriefing = briefing;
     _saveState();
+    _savePreferencesToAccount();
     notifyListeners();
   }
 

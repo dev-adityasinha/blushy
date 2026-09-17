@@ -9,7 +9,6 @@ import '../partner_stage.dart';
 import 'private_space_partner_state.dart';
 import 'cycle_harmony_card.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/storage.dart';
 import '../../../core/state.dart';
 import '../../../theme/colors.dart';
 import '../../../services/auth_storage.dart';
@@ -24,6 +23,7 @@ import 'partner_privacy_screen.dart';
 import '../../../l10n/app_localizations.dart';
 import '../partner_display_name.dart';
 import '../../../shared/docsy_wordmark.dart';
+import '../../../services/user_state_store.dart';
 
 class PartnerHomeScreen extends StatefulWidget {
   const PartnerHomeScreen({super.key});
@@ -136,7 +136,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
 
   void _loadLocalCompletedActions() {
     try {
-      final saved = BlushyStorage.read('partner_completed_actions_${_getTodayDateKey()}');
+      final saved = UserStateStore.read('partner_completed_actions_${_getTodayDateKey()}');
       if (saved['completed'] is List) {
         setState(() {
           _completedActionIds = Set<String>.from((saved['completed'] as List).map((e) => e.toString()));
@@ -156,7 +156,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
     });
 
     try {
-      BlushyStorage.write('partner_completed_actions_${_getTodayDateKey()}', {
+      UserStateStore.write('partner_completed_actions_${_getTodayDateKey()}', {
         'completed': _completedActionIds.toList(),
       });
     } catch (_) {}
@@ -174,7 +174,7 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
             setState(() {
               _completedActionIds = Set<String>.from(updated);
             });
-            BlushyStorage.write('partner_completed_actions_${_getTodayDateKey()}', {
+            UserStateStore.write('partner_completed_actions_${_getTodayDateKey()}', {
               'completed': _completedActionIds.toList(),
             });
           }
@@ -204,8 +204,16 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
             _activeConnection = active;
             _sharedData = shared;
             if (shared['completedActionIds'] is List) {
-              final backendIds = List<String>.from(shared['completedActionIds'].map((e) => e.toString()));
-              _completedActionIds.addAll(backendIds);
+              // Replaced, not merged. `addAll` could only ever add, so an
+              // action he un-ticked on another device stayed ticked here.
+              // The server owns the day; this is its view of it.
+              _completedActionIds = Set<String>.from(
+                (shared['completedActionIds'] as List).map((e) => e.toString()),
+              );
+              UserStateStore.write(
+                'partner_completed_actions_${_getTodayDateKey()}',
+                {'completed': _completedActionIds.toList()},
+              );
             }
             _isLoading = false;
           });
