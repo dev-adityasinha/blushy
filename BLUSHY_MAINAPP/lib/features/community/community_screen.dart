@@ -17,6 +17,7 @@ import '../../services/html_audio_helper.dart';
 import '../../services/api_sia_service.dart';
 import 'moderation_widgets.dart';
 import 'community_vote.dart';
+import '../../shared/live_refresh.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Whether a post matches what was typed in the search box.
@@ -53,7 +54,8 @@ class BlushyCommunityScreen extends StatefulWidget {
   State<BlushyCommunityScreen> createState() => _BlushyCommunityScreenState();
 }
 
-class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with TickerProviderStateMixin {
+class _BlushyCommunityScreenState extends State<BlushyCommunityScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver, LiveRefresh {
   final _redditService = RedditCommunityService();
   final ApiSiaService _siaService = ApiSiaService();
   final TextEditingController _searchController = TextEditingController();
@@ -159,6 +161,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
 
   @override
   void dispose() {
+    stopLiveRefresh();
     _searchDebounce?.cancel();
     _createLabelTimer?.cancel();
     _searchController.dispose();
@@ -205,12 +208,23 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
   void initState() {
     super.initState();
     _fetchCommunityFeed();
+    startLiveRefresh();
   }
 
-  Future<void> _fetchCommunityFeed() async {
-    setState(() {
-      _isLoadingFeed = true;
-    });
+  /// The live-refresh poll / app-resume / pull-to-refresh entry point: fetch
+  /// the feed without flashing the skeleton.
+  @override
+  Future<void> refreshNow() => _fetchCommunityFeed(silent: true);
+
+  Future<void> _fetchCommunityFeed({bool silent = false}) async {
+    // A background refresh (the live-refresh poll, or app resume) must not
+    // flash the skeleton over a feed that is already there. Only a first load
+    // or a filter change shows the loading state.
+    if (!silent) {
+      setState(() {
+        _isLoadingFeed = true;
+      });
+    }
     final type = BlushyCommunityScreen.feedTypeFor(_activeTab);
     // The term goes to the server so the whole feed is searched, not just the
     // page already loaded. The local filter below still runs, which keeps
@@ -322,7 +336,7 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _fetchCommunityFeed,
+          onRefresh: refreshQuietly,
           color: BlushyColors.primary,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),

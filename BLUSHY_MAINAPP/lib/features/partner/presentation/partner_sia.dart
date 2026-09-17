@@ -5,7 +5,7 @@ import '../../../services/api_partner_service.dart';
 import '../../../l10n/app_localizations.dart';
 import '../partner_stage.dart';
 import 'partner_stage_today.dart';
-import 'live_refresh.dart';
+import '../../../shared/live_refresh.dart';
 
 class PartnerSiaScreen extends StatefulWidget {
   final String? initialPrompt;

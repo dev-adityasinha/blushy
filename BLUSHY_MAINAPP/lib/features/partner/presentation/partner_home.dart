@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'partner_home_sections.dart';
-import 'live_refresh.dart';
+import '../../../shared/live_refresh.dart';
 import '../../../services/partner_websocket_service.dart';
 import 'partner_stage_today.dart';
 import '../partner_stage.dart';
