@@ -11,6 +11,7 @@ import '../../../sia/open_docsy.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
 import '../../view_models/cycle_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_sia_service.dart';
 import '../../home_screen.dart';
 import '../../widgets/cycle_tracker_image.dart';
@@ -44,7 +45,8 @@ class LivingWithMyCycleDashboard extends StatefulWidget {
   State<LivingWithMyCycleDashboard> createState() => _LivingWithMyCycleDashboardState();
 }
 
-class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard> {
+class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final ScrollController _internalScrollController = ScrollController();
   ScrollController get _effectiveScrollController =>
@@ -100,6 +102,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     _loadStage3Data();
     _loadPeriodData();
     _fetchDynamicAiInsights();
+    startLiveRefresh();
 
     _periodEventSub = HomeEventBus().onEvent.listen((event) {
       if (event is PeriodLoggedEvent && mounted) {
@@ -116,7 +119,11 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   }
 
   @override
+  Future<void> refreshNow() => _cycleVM.load();
+
+  @override
   void dispose() {
+    stopLiveRefresh();
     _periodEventSub?.cancel();
     _cycleVM.removeListener(_onCycleChanged);
     _cycleVM.dispose();

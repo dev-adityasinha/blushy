@@ -6,6 +6,7 @@ import '../../../../core/storage.dart';
 import '../../../../services/api_auth_service.dart';
 import '../../../../services/api_period_service.dart';
 import '../../view_models/cycle_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../services/api_checkin_service.dart';
@@ -30,7 +31,8 @@ class TryingToConceiveDashboard extends StatefulWidget {
   State<TryingToConceiveDashboard> createState() => _TryingToConceiveDashboardState();
 }
 
-class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard> {
+class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
   // ─── Design Tokens (STAGE1_DESIGN_RULES.md) ─────────────────────────
   static const Color surfaceCanvas = Color(0xFFFAF7F2);
   static const Color cardBg = Colors.white;
@@ -99,7 +101,11 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard> {
     _cycleVM.addListener(_onCycleChanged);
     _rehydrateTtcState();
     _fetchDynamicAiInsights();
+    startLiveRefresh();
   }
+
+  @override
+  Future<void> refreshNow() => _cycleVM.load();
 
   /// The View reacting to its ViewModel: mirror the resolved cycle read into
   /// the local fields the rest of the screen already uses.
@@ -119,6 +125,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard> {
 
   @override
   void dispose() {
+    stopLiveRefresh();
     _cycleVM.removeListener(_onCycleChanged);
     _cycleVM.dispose();
     _internalScrollController.dispose();

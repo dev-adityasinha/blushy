@@ -11,6 +11,7 @@ import '../../../sia/open_docsy.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
 import '../../view_models/cycle_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_sia_service.dart';
 import '../../../../services/api_checkin_service.dart';
 import '../../home_screen.dart';
@@ -50,7 +51,8 @@ class HormonalHealthDashboard extends StatefulWidget {
   State<HormonalHealthDashboard> createState() => _HormonalHealthDashboardState();
 }
 
-class _HormonalHealthDashboardState extends State<HormonalHealthDashboard> {
+class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
 
   /// How the last cycle-data load went, so a failed request is not drawn as an
   /// account with nothing in it.
@@ -115,6 +117,7 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard> {
     _loadStage4Data();
     _loadPeriodData();
     _fetchDynamicAiInsights();
+    startLiveRefresh();
 
     _periodEventSub = HomeEventBus().onEvent.listen((event) {
       if (event is PeriodLoggedEvent && mounted) {
@@ -130,7 +133,11 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard> {
   }
 
   @override
+  Future<void> refreshNow() => _cycleVM.load();
+
+  @override
   void dispose() {
+    stopLiveRefresh();
     _periodEventSub?.cancel();
     _cycleVM.removeListener(_onCycleChanged);
     _cycleVM.dispose();
