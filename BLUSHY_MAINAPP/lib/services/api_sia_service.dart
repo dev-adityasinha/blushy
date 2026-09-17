@@ -332,6 +332,32 @@ class ApiSiaService {
     }
   }
 
+  /// Hands the server exchanges only this device holds: `POST /ai/history/import`
+  ///
+  /// History that lives in one installation is not history: it is invisible
+  /// on the web, and a reinstall takes it. Sending it up once makes the
+  /// account own it. The server derives each row's id from the instant and
+  /// the question, so re-sending costs a round trip rather than duplicates.
+  ///
+  /// Returns how many rows were new, or null if the request failed -- the
+  /// caller keeps its local copy either way.
+  Future<int?> importChatHistory(List<Map<String, String>> exchanges) async {
+    if (exchanges.isEmpty) return 0;
+    try {
+      final response = await _dio.post(
+        '/ai/history/import',
+        data: {'exchanges': exchanges},
+        options: _authOptions(),
+      );
+      final data = response.data;
+      if (data is Map && data['imported'] is int) return data['imported'] as int;
+      return 0;
+    } catch (e) {
+      debugPrint('BlushySia: Error importing chat history: $e');
+      return null;
+    }
+  }
+
   /// Clears saved Docsy chat history: `DELETE /ai/history`
   ///
   /// The device's own copy goes with it. The chat screen merges that copy

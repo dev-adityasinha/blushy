@@ -67,6 +67,54 @@ void main() {
     expect(service, contains("BlushyStorage.write('recent_sia_chats.json'"));
   });
 
+  test('device-only days are handed up to the server', () {
+    // Otherwise they stay this installation's: invisible on the web, and gone
+    // with a reinstall.
+    expect(screen, contains('_uploadDeviceOnlyHistory('));
+    expect(service, contains("'/ai/history/import'"));
+
+    final start = screen.indexOf('Future<void> _uploadDeviceOnlyHistory(');
+    expect(start, greaterThan(-1));
+    final body = screen.substring(start, start + 1600);
+    // The cache is a flat message list; the server stores exchanges.
+    expect(body, contains("m['sender'] != 'user'"));
+    expect(body, contains("next['sender'] == 'sia'"));
+    expect(body, contains("'assistantMessage': reply"));
+  });
+
+  test('the upload stops once the server has them', () {
+    // It sends only what the server did not return, so the next fetch
+    // includes them and the difference is empty.
+    final start = screen.indexOf('Future<void> _uploadDeviceOnlyHistory(');
+    final body = screen.substring(start, start + 600);
+    expect(body, contains('!_sameMessage(server, m)'));
+    expect(body, contains('if (missing.isEmpty) return;'));
+  });
+
+  test('the endpoint is bounded and writes only under the caller', () {
+    final controller = read('backend/src/controllers/aiController.js');
+    final start = controller.indexOf('export async function importChatHistory');
+    expect(start, greaterThan(-1));
+
+    final body = controller.substring(start, start + 1800);
+    expect(body, contains('raw.length > 300'), reason: 'an unbounded import');
+    expect(body, contains('MAX_CHARS'));
+    expect(body, contains('getUserKey(req, role)'),
+        reason: 'the body must not be able to name another account');
+  });
+
+  test('re-sending the same conversation cannot duplicate it', () {
+    final repo = read('backend/src/repositories/aiHistoryRepository.js');
+    final start = repo.indexOf('async function importConversations(');
+    expect(start, greaterThan(-1));
+
+    final body = repo.substring(start, start + 2600);
+    expect(body, contains('createHash('), reason: 'the id must be derived, not random');
+    expect(body, contains('upsert: true'));
+    expect(body, contains(r'$setOnInsert'),
+        reason: 'a re-import must not overwrite what is already there');
+  });
+
   test('the server still returns every day it holds', () {
     final repo = read('backend/src/repositories/aiHistoryRepository.js');
     final start = repo.indexOf('async function listHistory');

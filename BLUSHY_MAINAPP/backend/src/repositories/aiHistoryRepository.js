@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { db } from '../utils/db.js';
 import { normalizeRole as normalizeRoleValue } from '../utils/role.js';
@@ -87,6 +87,76 @@ async function appendConversation({ userKey, role, userMessage, assistantMessage
   });
 
   return mapRow(doc);
+}
+
+/**
+ * Takes exchanges the device holds and the server does not.
+ *
+ * History used to live only where it was written. A turn saved on a phone was
+ * invisible on the web and gone with a reinstall, and the turns lost while a
+ * failed reply discarded the whole exchange existed nowhere else at all. This
+ * is how a client hands those up so the account owns them rather than one
+ * installation.
+ *
+ * Idempotent by construction: the `id` is derived from the user, the instant
+ * and the question, so re-sending the same conversation upserts onto the same
+ * rows instead of stacking copies. That matters because the obvious client
+ * behaviour -- send what the server did not return, on every launch -- would
+ * otherwise duplicate the lot each time.
+ */
+async function importConversations({ userKey, exchanges }) {
+  if (!userKey || !userKey.startsWith('user:')) {
+    throw new Error('Authenticated user key required to import conversation.');
+  }
+  if (!Array.isArray(exchanges) || exchanges.length === 0) {
+    return { imported: 0 };
+  }
+
+  const userId = userKey.replace('user:', '');
+  const collName = await getColl(userId, 'ai_chat_history');
+
+  const operations = [];
+  for (const entry of exchanges) {
+    const userMessage = typeof entry?.userMessage === 'string' ? entry.userMessage.trim() : '';
+    const assistantMessage = typeof entry?.assistantMessage === 'string'
+      ? entry.assistantMessage.trim()
+      : '';
+    // A row with neither half says nothing and cannot be shown.
+    if (!userMessage && !assistantMessage) continue;
+
+    const at = entry?.at ? new Date(entry.at) : null;
+    const createdAt = at && !Number.isNaN(at.getTime()) ? at : new Date();
+
+    const id = createHash('sha256')
+      .update(`${userId}|${createdAt.toISOString()}|${userMessage}`)
+      .digest('hex')
+      .slice(0, 32);
+
+    operations.push({
+      updateOne: {
+        filter: { id },
+        update: {
+          $setOnInsert: {
+            id,
+            user_key: `user:${userId}`,
+            user_id: userId,
+            role: normalizeStoredRole(entry?.role),
+            user_message: userMessage || null,
+            assistant_message: assistantMessage || null,
+            unanswered: !assistantMessage,
+            model: 'imported',
+            created_at: createdAt,
+          },
+        },
+        upsert: true,
+      },
+    });
+  }
+
+  if (operations.length === 0) return { imported: 0 };
+
+  const result = await db.collection(collName).bulkWrite(operations, { ordered: false });
+  return { imported: result.upsertedCount ?? 0, received: operations.length };
 }
 
 async function listHistory(userKey) {
@@ -186,6 +256,7 @@ export const aiHistoryRepository = {
   setConversationShared,
   listSharedConversations,
   appendConversation,
+  importConversations,
   listHistory,
   clearHistory,
   listUserKeysWithHistory,

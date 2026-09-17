@@ -92,3 +92,66 @@ test('the error still reaches her -- saving the question does not swallow it', a
   });
   assert.ok(chat.status >= 400, 'a failed chat must not report success');
 });
+
+test('a client can hand up exchanges the server never had', async () => {
+  const woman = await createTestUser({ role: 'woman' });
+
+  const res = await api('POST', '/ai/history/import', {
+    token: woman.token,
+    body: {
+      exchanges: [
+        { userMessage: 'Day one question', assistantMessage: 'Day one answer', at: '2026-09-15T10:00:00.000Z' },
+        { userMessage: 'Day two question', assistantMessage: '', at: '2026-09-16T10:00:00.000Z' },
+      ],
+    },
+  });
+  console.log('   import:', res.status, JSON.stringify(res.body));
+
+  const hist = await api('GET', '/ai/history', { token: woman.token });
+  const rows = hist.body.history ?? [];
+  console.log('   history rows:', rows.length);
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.imported, 2);
+  assert.equal(rows.length, 2, 'both days should come back');
+  assert.equal(rows[0].userMessage, 'Day one question', 'oldest first');
+  assert.equal(rows[1].unanswered, true, 'the unanswered day keeps its flag');
+});
+
+test('re-importing the same conversation does not duplicate it', async () => {
+  const woman = await createTestUser({ role: 'woman' });
+  const body = {
+    exchanges: [
+      { userMessage: 'Same question', assistantMessage: 'Same answer', at: '2026-09-15T10:00:00.000Z' },
+    ],
+  };
+
+  const first = await api('POST', '/ai/history/import', { token: woman.token, body });
+  const second = await api('POST', '/ai/history/import', { token: woman.token, body });
+  const hist = await api('GET', '/ai/history', { token: woman.token });
+  console.log('   imported first:', first.body.imported, '| second:', second.body.imported,
+    '| rows:', (hist.body.history ?? []).length);
+
+  assert.equal(first.body.imported, 1);
+  assert.equal(second.body.imported, 0, 'the second import wrote nothing');
+  assert.equal((hist.body.history ?? []).length, 1);
+});
+
+test('the import is bounded and scoped to the caller', async () => {
+  const woman = await createTestUser({ role: 'woman' });
+  const other = await createTestUser({ role: 'woman' });
+
+  const tooMany = await api('POST', '/ai/history/import', {
+    token: woman.token,
+    body: { exchanges: Array.from({ length: 301 }, () => ({ userMessage: 'x', assistantMessage: 'y' })) },
+  });
+  assert.equal(tooMany.status, 400, 'an unbounded import must be refused');
+
+  await api('POST', '/ai/history/import', {
+    token: woman.token,
+    body: { exchanges: [{ userMessage: 'mine', assistantMessage: 'hers', at: '2026-09-15T10:00:00.000Z' }] },
+  });
+  const otherHist = await api('GET', '/ai/history', { token: other.token });
+  assert.equal((otherHist.body.history ?? []).length, 0,
+    'an import must never land in another account');
+});

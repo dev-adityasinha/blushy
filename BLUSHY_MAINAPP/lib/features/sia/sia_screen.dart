@@ -303,7 +303,47 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
 
     // Cache the union, so a day recovered from the device survives the next
     // launch even if it never reaches the server.
-    if (history != null) _cacheConversation();
+    if (history != null) {
+      _cacheConversation();
+      // Then hand those days up, so they stop being this phone's alone: the
+      // web sees them, and a reinstall no longer takes them. Once the server
+      // has them the next fetch returns them, nothing is device-only, and
+      // this stops firing on its own.
+      unawaited(_uploadDeviceOnlyHistory(server: history, merged: restored));
+    }
+  }
+
+  /// Sends the server the exchanges only this device had.
+  ///
+  /// The cache is a flat list of messages; the server stores exchanges. A
+  /// user message pairs with the Docsy reply that follows it, and a question
+  /// that was never answered goes up on its own -- which is exactly the shape
+  /// of the turns lost while a failed reply discarded the whole exchange.
+  Future<void> _uploadDeviceOnlyHistory({
+    required List<Map<String, String>> server,
+    required List<Map<String, String>> merged,
+  }) async {
+    final missing = merged.where((m) => !_sameMessage(server, m)).toList();
+    if (missing.isEmpty) return;
+
+    final exchanges = <Map<String, String>>[];
+    for (var i = 0; i < missing.length; i++) {
+      final m = missing[i];
+      if (m['sender'] != 'user') continue;
+      final next = i + 1 < missing.length ? missing[i + 1] : null;
+      final reply = (next != null && next['sender'] == 'sia') ? next['text'] ?? '' : '';
+      exchanges.add({
+        'userMessage': m['text'] ?? '',
+        'assistantMessage': reply,
+        'at': m['at'] ?? '',
+      });
+      if (reply.isNotEmpty) i++;
+    }
+    if (exchanges.isEmpty) return;
+
+    final imported = await _siaService.importChatHistory(exchanges);
+    debugPrint('BlushySia: uploaded ${exchanges.length} device-only exchange(s), '
+        'server took ${imported ?? 'none (failed)'}');
   }
 
   /// Server rows plus anything only this device remembers, oldest first.
