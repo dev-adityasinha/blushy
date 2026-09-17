@@ -16,6 +16,7 @@ import 'user_profile_sheet.dart';
 import '../../services/html_audio_helper.dart';
 import '../../services/api_sia_service.dart';
 import 'moderation_widgets.dart';
+import 'community_vote.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Whether a post matches what was typed in the search box.
@@ -245,18 +246,13 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
   /// Showing it immediately is also just correct: this is her own tap, and she
   /// should not wait on a round trip to see it.
   Future<void> _votePost(CommunityPost post, int voteVal) async {
-    final targetVote = post.userVote == voteVal ? 0 : voteVal;
+    // The optimistic math lives in CommunityVote, where it is unit-tested.
+    final targetVote = CommunityVote.targetVote(post.userVote, voteVal);
 
     final idx = _allPosts.indexWhere((p) => p.postId == post.postId);
     if (idx == -1) return;
 
-    final before = _allPosts[idx];
-    // The score is a net total, so switching a downvote to an upvote moves it
-    // by two, not one.
-    final predicted = before.withVote(
-      userVote: targetVote,
-      score: before.score - before.userVote + targetVote,
-    );
+    final predicted = CommunityVote.predict(_allPosts[idx], targetVote);
 
     setState(() {
       _allPosts[idx] = predicted;
@@ -269,10 +265,8 @@ class _BlushyCommunityScreenState extends State<BlushyCommunityScreen> with Tick
     setState(() {
       final at = _allPosts.indexWhere((p) => p.postId == post.postId);
       if (at == -1) return;
-      // The server's number wins when it answers. When it does not, the
-      // prediction stands: the vote was almost certainly recorded, and
-      // reverting a tap she just made would be the more confusing of the two.
-      if (updated != null) _allPosts[at] = updated;
+      _allPosts[at] =
+          CommunityVote.reconcile(predicted: predicted, serverResponse: updated);
       _filterPosts();
     });
   }
