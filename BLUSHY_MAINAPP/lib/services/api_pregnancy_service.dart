@@ -159,6 +159,29 @@ class SymptomTriageResult {
 class ApiPregnancyService {
   const ApiPregnancyService._();
 
+  static const String _overviewKey = 'pregnancy_overview_cache.json';
+  static const String _briefKey = 'pregnancy_brief_cache.json';
+
+  /// The last overview/brief written to this device, read without any network,
+  /// so a returning user sees her data at once while the fresh copy loads.
+  /// Reuses the same `fromJson` the fetch uses; a missing or unreadable cache
+  /// is simply null.
+  static PregnancyOverviewData? cachedOverview() {
+    try {
+      final cached = BlushyStorage.read(_overviewKey);
+      if (cached.isNotEmpty) return PregnancyOverviewData.fromJson(cached);
+    } catch (_) {}
+    return null;
+  }
+
+  static PregnancyTodayBriefData? cachedBrief() {
+    try {
+      final cached = BlushyStorage.read(_briefKey);
+      if (cached.isNotEmpty) return PregnancyTodayBriefData.fromJson(cached);
+    } catch (_) {}
+    return null;
+  }
+
   static Future<ApiResult<PregnancyOverviewData>> getOverview({String? dueDate}) async {
     final query = <String, String>{};
     if (dueDate != null && dueDate.isNotEmpty) {
@@ -167,7 +190,15 @@ class ApiPregnancyService {
     return ApiContractClient.get(
       '/pregnancy/overview',
       query: query,
-      parse: (data) => PregnancyOverviewData.fromJson(Map<String, dynamic>.from(data as Map)),
+      // Cache the raw server shape (what fromJson reads) so it round-trips
+      // with no second serializer -- the model has nested types without toJson.
+      parse: (data) {
+        final map = Map<String, dynamic>.from(data as Map);
+        try {
+          BlushyStorage.write(_overviewKey, map);
+        } catch (_) {}
+        return PregnancyOverviewData.fromJson(map);
+      },
     );
   }
 
@@ -182,7 +213,13 @@ class ApiPregnancyService {
     return ApiContractClient.get(
       '/pregnancy/today-brief',
       query: query,
-      parse: (data) => PregnancyTodayBriefData.fromJson(Map<String, dynamic>.from(data as Map)),
+      parse: (data) {
+        final map = Map<String, dynamic>.from(data as Map);
+        try {
+          BlushyStorage.write(_briefKey, map);
+        } catch (_) {}
+        return PregnancyTodayBriefData.fromJson(map);
+      },
     );
   }
 

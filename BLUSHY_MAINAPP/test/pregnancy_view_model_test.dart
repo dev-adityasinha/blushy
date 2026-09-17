@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:blushy_life_app/services/api_contract_client.dart';
 import 'package:blushy_life_app/services/api_pregnancy_service.dart';
 import 'package:blushy_life_app/features/home/view_models/pregnancy_view_model.dart';
@@ -68,5 +69,33 @@ void main() {
     await vm.refreshBaseline();
     expect(vm.baselineData?['week'], 20);
     expect(n, greaterThan(0));
+  });
+
+  test('cache-first: shows the cached overview at once, then the server replaces it', () async {
+    final cached = PregnancyOverviewData.fromJson({'week': 18});
+    final server = PregnancyOverviewData.fromJson({'week': 22});
+    final gate = Completer<ApiResult<PregnancyOverviewData>>();
+
+    final vm = PregnancyViewModel(
+      readCachedOverview: () => cached,
+      readCachedBrief: () => null,
+      fetchOverview: ({String? dueDate}) => gate.future,
+      fetchBrief: ({String? dueDate, String? mode}) async =>
+          ApiResult<PregnancyTodayBriefData>(state: ApiState.ready),
+      fetchBaseline: () async => ApiResult<Map<String, dynamic>>(state: ApiState.ready),
+      fetchMemories: () async => ApiResult<List<Map<String, dynamic>>>(state: ApiState.ready),
+      fetchQuestions: () async => ApiResult<List<Map<String, dynamic>>>(state: ApiState.ready),
+    );
+    final done = vm.load();
+
+    // Synchronous cache emission, before the network resolves.
+    expect(vm.overview, same(cached));
+    expect(vm.overviewState, ApiState.stale);
+    expect(vm.isLoading, isFalse);
+
+    gate.complete(ApiResult<PregnancyOverviewData>(state: ApiState.ready, data: server));
+    await done;
+    expect(vm.overview, same(server));
+    expect(vm.overviewState, ApiState.ready);
   });
 }

@@ -19,11 +19,18 @@ class PregnancyViewModel extends BlushyViewModel {
     Future<ApiResult<Map<String, dynamic>>> Function()? fetchBaseline,
     Future<ApiResult<List<Map<String, dynamic>>>> Function()? fetchMemories,
     Future<ApiResult<List<Map<String, dynamic>>>> Function()? fetchQuestions,
+    PregnancyOverviewData? Function()? readCachedOverview,
+    PregnancyTodayBriefData? Function()? readCachedBrief,
   })  : _fetchOverview = fetchOverview ?? ApiPregnancyService.getOverview,
         _fetchBrief = fetchBrief ?? ApiPregnancyService.getTodayBrief,
         _fetchBaseline = fetchBaseline ?? ApiPregnancyService.getBaseline,
         _fetchMemories = fetchMemories ?? ApiPregnancyService.getMemories,
-        _fetchQuestions = fetchQuestions ?? ApiPregnancyService.getQuestions;
+        _fetchQuestions = fetchQuestions ?? ApiPregnancyService.getQuestions,
+        _readCachedOverview = readCachedOverview ?? ApiPregnancyService.cachedOverview,
+        _readCachedBrief = readCachedBrief ?? ApiPregnancyService.cachedBrief;
+
+  final PregnancyOverviewData? Function() _readCachedOverview;
+  final PregnancyTodayBriefData? Function() _readCachedBrief;
 
   final Future<ApiResult<PregnancyOverviewData>> Function({String? dueDate}) _fetchOverview;
   final Future<ApiResult<PregnancyTodayBriefData>> Function({String? dueDate, String? mode}) _fetchBrief;
@@ -40,6 +47,20 @@ class PregnancyViewModel extends BlushyViewModel {
   bool isLoading = true;
 
   Future<void> load({String? dueDate, String? mode}) async {
+    // Cache-first: show the last known overview/brief at once (labelled stale),
+    // so a returning user is not held on a spinner while the network answers.
+    // First load only, and only a head start -- the fetch below replaces it.
+    if (overview == null) {
+      final cached = _readCachedOverview();
+      if (cached != null) {
+        overview = cached;
+        todayBrief = _readCachedBrief() ?? todayBrief;
+        overviewState = ApiState.stale;
+        isLoading = false;
+        safeNotify();
+      }
+    }
+
     final results = await Future.wait([
       _fetchOverview(dueDate: dueDate),
       _fetchBrief(dueDate: dueDate, mode: mode),
