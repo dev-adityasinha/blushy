@@ -8,6 +8,7 @@ import '../../../../core/storage.dart';
 import '../../../../services/api_period_service.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../services/api_perimenopause_service.dart';
+import '../../view_models/perimenopause_view_model.dart';
 import '../../widgets/blushy_period_tracker_card.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
@@ -66,6 +67,10 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard> {
   static const Color brandCrimsonTint = Color(0xFFFFECEB);
 
   // ─── Real Dynamic State ─────────────────────────────────────────────
+  /// This screen is the View; the two server reads live in the tested
+  /// PerimenopauseViewModel and are mirrored back by _onDataChanged.
+  final PerimenopauseViewModel _vm = PerimenopauseViewModel();
+
   PerimenopauseOverviewData? _overview;
   /// The server's own verdict on the last load (spec §4, §31).
   ApiState _overviewState = ApiState.loading;
@@ -96,15 +101,32 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard> {
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onDataChanged);
     _rehydratePeriodState();
     _loadAllData();
   }
 
   @override
   void dispose() {
+    _vm.removeListener(_onDataChanged);
+    _vm.dispose();
     _quickAskController.dispose();
     _internalScrollController.dispose();
     super.dispose();
+  }
+
+  /// The View reacting to its ViewModel: mirror the loaded data back into the
+  /// fields the build methods already read.
+  void _onDataChanged() {
+    if (!mounted) return;
+    setState(() {
+      _overviewState = _vm.overviewState;
+      _overview = _vm.overview;
+      _todayBrief = _vm.todayBrief;
+      _activeFocus = _vm.activeFocus;
+      _cycleHistory = _vm.cycleHistory;
+      _isLoading = _vm.isLoading;
+    });
   }
 
   Future<void> _rehydratePeriodState() async {
@@ -169,40 +191,8 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard> {
     } catch (_) {}
   }
 
-  Future<void> _loadAllData({bool silent = false}) async {
-    if (!silent && mounted) {
-      setState(() => _isLoading = true);
-    }
-    try {
-      final overviewFuture = ApiPerimenopauseService.getOverview();
-      final briefFuture = ApiPerimenopauseService.getTodayBrief();
-
-      final results = await Future.wait([overviewFuture, briefFuture]);
-      final overviewRes = results[0] as ApiResult<PerimenopauseOverviewData>;
-      final briefRes = results[1] as ApiResult<PerimenopauseTodayBriefData>;
-      final overviewData = overviewRes.data;
-      final briefData = briefRes.data;
-
-      if (mounted) {
-        setState(() {
-          _overviewState = overviewRes.state;
-          if (overviewData != null) {
-            _overview = overviewData;
-            _activeFocus = overviewData.profile['currentFocus']?.toString() ?? 'sleep';
-            if (overviewData.cycleHistory.isNotEmpty) {
-              _cycleHistory = overviewData.cycleHistory;
-            }
-          }
-          if (briefData != null) {
-            _todayBrief = briefData;
-          }
-          _isLoading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  /// Delegated to the view model; _onDataChanged mirrors the result.
+  Future<void> _loadAllData({bool silent = false}) => _vm.load(silent: silent);
 
   Future<void> _changeFocus(String focus) async {
     setState(() => _activeFocus = focus);
