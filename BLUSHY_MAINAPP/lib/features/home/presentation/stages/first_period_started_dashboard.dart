@@ -10,6 +10,7 @@ import '../../../../core/state.dart';
 import '../../../../core/storage.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
+import '../../view_models/cycle_view_model.dart';
 import '../../../../services/api_sia_service.dart';
 import '../../services/home_event_bus.dart';
 import '../../../sia/open_docsy.dart';
@@ -44,6 +45,12 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   /// How the last cycle-data load went, so a failed request is not drawn as an
   /// account with nothing in it.
   ApiState _cycleState = ApiState.loading;
+
+  /// This screen is the View; the cycle read lives in the tested
+  /// CycleViewModel and is mirrored back by _onCycleChanged.
+  final CycleViewModel _cycleVM =
+      CycleViewModel(defaultCycleLength: 28, defaultCycleDay: 1);
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final ScrollController _internalScrollController = ScrollController();
   ScrollController get _effectiveScrollController => widget.scrollController ?? _internalScrollController;
@@ -268,6 +275,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   @override
   void initState() {
     super.initState();
+    _cycleVM.addListener(_onCycleChanged);
     _loadSavedStage2Data();
     _loadPeriodData();
     _fetchDynamicAiInsights();
@@ -288,46 +296,22 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
     });
   }
 
-  void _loadPeriodData() async {
-    try {
-      DateTime? start;
-      final profile = BlushyStorage.read('user_profile.json');
-      if (profile is Map) {
-        final lastPeriodStr = profile['lastPeriodStartDate'] ?? profile['profile']?['lastPeriodStartDate'];
-        if (lastPeriodStr != null) {
-          start = DateTime.tryParse(lastPeriodStr.toString());
-        }
-      }
-      final savedPeriod = BlushyStorage.read('last_period_entry.json');
-      if (savedPeriod is Map && savedPeriod['periodStartDate'] != null) {
-        start = DateTime.tryParse(savedPeriod['periodStartDate'].toString()) ?? start;
-      }
+  void _loadPeriodData() {
+    // Delegated to the view model; _onCycleChanged mirrors the result.
+    _cycleVM.load();
+  }
 
-      try {
-        final result = await ApiPeriodService().getPredictionsResult();
-        _cycleState = result.state;
-        final prediction = result.data;
-        if (prediction != null && prediction.hasData && prediction.lastPeriodStartDate != null) {
-          final pStart = DateTime.tryParse(prediction.lastPeriodStartDate!);
-          if (pStart != null) start = pStart;
-          if (prediction.cycleLengthDays > 0) _cycleLength = prediction.cycleLengthDays;
-          if (prediction.periodLengthDays > 0) _periodLength = prediction.periodLengthDays;
-        }
-      } catch (_) {
-        _cycleState = ApiState.offline;
-      }
-
-      if (start != null) {
-        _lastPeriodStartDate = start;
-        _hasLoggedPeriod = true;
-        final diff = DateTime.now().difference(start).inDays;
-        _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
-      } else {
-        _hasLoggedPeriod = false;
-        _currentCycleDay = 1;
-      }
-      if (mounted) setState(() {});
-    } catch (_) {}
+  /// The View reacting to its ViewModel.
+  void _onCycleChanged() {
+    if (!mounted) return;
+    setState(() {
+      _cycleState = _cycleVM.state;
+      _hasLoggedPeriod = _cycleVM.hasLoggedPeriod;
+      _lastPeriodStartDate = _cycleVM.lastPeriodStart;
+      _cycleLength = _cycleVM.cycleLength;
+      _periodLength = _cycleVM.periodLength;
+      _currentCycleDay = _cycleVM.currentCycleDay;
+    });
   }
 
   void _openLogPeriodDialog(BuildContext context) async {
@@ -425,6 +409,8 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   @override
   void dispose() {
     _periodEventSub?.cancel();
+    _cycleVM.removeListener(_onCycleChanged);
+    _cycleVM.dispose();
     _internalScrollController.dispose();
     super.dispose();
   }

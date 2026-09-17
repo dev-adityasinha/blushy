@@ -10,6 +10,7 @@ import '../../services/home_event_bus.dart';
 import '../../../sia/open_docsy.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
+import '../../view_models/cycle_view_model.dart';
 import '../../../../services/api_sia_service.dart';
 import '../../home_screen.dart';
 import '../../widgets/cycle_tracker_image.dart';
@@ -60,6 +61,12 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   // sleeping backend is tens of seconds of simulated cycle data (spec §4:
   // never show simulated cycle days to a user with no period data).
   bool _hasLoggedPeriod = false;
+
+  /// This screen is the View; the cycle read lives in the tested
+  /// CycleViewModel and is mirrored back by _onCycleChanged.
+  final CycleViewModel _cycleVM =
+      CycleViewModel(defaultCycleLength: 28, defaultCycleDay: 14);
+
   StreamSubscription? _periodEventSub;
 
   // Real-time AI Companion (Docsy) State
@@ -89,6 +96,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   @override
   void initState() {
     super.initState();
+    _cycleVM.addListener(_onCycleChanged);
     _loadStage3Data();
     _loadPeriodData();
     _fetchDynamicAiInsights();
@@ -110,6 +118,8 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   @override
   void dispose() {
     _periodEventSub?.cancel();
+    _cycleVM.removeListener(_onCycleChanged);
+    _cycleVM.dispose();
     _internalScrollController.dispose();
     super.dispose();
   }
@@ -131,42 +141,21 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     } catch (_) {}
   }
 
-  void _loadPeriodData() async {
-    try {
-      DateTime? start;
-      final profile = BlushyStorage.read('user_profile.json');
-      if (profile is Map) {
-        final lastPeriodStr = profile['lastPeriodStartDate'] ?? profile['last_period_date'] ?? profile['profile']?['lastPeriodStartDate'];
-        if (lastPeriodStr != null) {
-          start = DateTime.tryParse(lastPeriodStr.toString());
-        }
-      }
-      final savedPeriod = BlushyStorage.read('last_period_entry.json');
-      if (savedPeriod is Map && savedPeriod['periodStartDate'] != null) {
-        start = DateTime.tryParse(savedPeriod['periodStartDate'].toString()) ?? start;
-      }
+  void _loadPeriodData() {
+    // Delegated to the view model; _onCycleChanged mirrors the result.
+    _cycleVM.load();
+  }
 
-      try {
-        final prediction = await ApiPeriodService().getPredictions();
-        if (prediction != null && prediction.hasData && prediction.lastPeriodStartDate != null) {
-          final pStart = DateTime.tryParse(prediction.lastPeriodStartDate!);
-          if (pStart != null) start = pStart;
-          if (prediction.cycleLengthDays > 0) _cycleLength = prediction.cycleLengthDays;
-          if (prediction.periodLengthDays > 0) _periodLength = prediction.periodLengthDays;
-        }
-      } catch (_) {}
-
-      if (start != null) {
-        _lastPeriodStartDate = start;
-        _hasLoggedPeriod = true;
-        final diff = DateTime.now().difference(start).inDays;
-        _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
-      } else {
-        _hasLoggedPeriod = false;
-        _currentCycleDay = 14;
-      }
-      if (mounted) setState(() {});
-    } catch (_) {}
+  /// The View reacting to its ViewModel.
+  void _onCycleChanged() {
+    if (!mounted) return;
+    setState(() {
+      _hasLoggedPeriod = _cycleVM.hasLoggedPeriod;
+      _lastPeriodStartDate = _cycleVM.lastPeriodStart;
+      _cycleLength = _cycleVM.cycleLength;
+      _periodLength = _cycleVM.periodLength;
+      _currentCycleDay = _cycleVM.currentCycleDay;
+    });
   }
 
   Future<void> _fetchDynamicAiInsights() async {

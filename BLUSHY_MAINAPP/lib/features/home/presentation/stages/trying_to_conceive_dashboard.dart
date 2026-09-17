@@ -70,7 +70,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard> {
   /// The cycle-loading concern now lives in a tested view model; this widget is
   /// its View. The fields above are kept as local mirrors so the rest of the
   /// screen reads unchanged, and are refreshed from the view model on change.
-  final CycleViewModel _cycleVM = CycleViewModel();
+  final CycleViewModel _cycleVM = CycleViewModel(defaultCycleLength: 29, defaultCycleDay: 14);
 
   // ─── Real-Time Dynamic AI & Docsy State ─────────────────────────────
   bool _isLoadingAi = false;

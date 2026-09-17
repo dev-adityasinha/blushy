@@ -19,8 +19,20 @@ class CycleViewModel extends BlushyViewModel {
   /// The fetch is injected as a function so the view model can be unit-tested
   /// without the real service (a singleton with no test seam). Defaults to the
   /// live call.
-  CycleViewModel({Future<ApiResult<PeriodPrediction>> Function()? fetchPredictions})
-      : _fetch = fetchPredictions ?? (() => ApiPeriodService().getPredictionsResult());
+  ///
+  /// Each cycle dashboard shipped its own defaults (28 or 29 or 32 days; a
+  /// not-logged ring day of 1 or 14), so they are constructor parameters here
+  /// rather than baked in -- a screen keeps its exact numbers.
+  CycleViewModel({
+    Future<ApiResult<PeriodPrediction>> Function()? fetchPredictions,
+    int defaultCycleLength = 28,
+    int defaultPeriodLength = 5,
+    int defaultCycleDay = 14,
+  }) : _fetch = fetchPredictions ?? (() => ApiPeriodService().getPredictionsResult()) {
+    cycleLength = defaultCycleLength;
+    periodLength = defaultPeriodLength;
+    currentCycleDay = defaultCycleDay;
+  }
 
   final Future<ApiResult<PeriodPrediction>> Function() _fetch;
 
@@ -29,7 +41,7 @@ class CycleViewModel extends BlushyViewModel {
 
   bool hasLoggedPeriod = false;
   DateTime? lastPeriodStart;
-  int cycleLength = 29;
+  int cycleLength = 28;
   int periodLength = 5;
   int currentCycleDay = 14;
 
@@ -71,18 +83,25 @@ class CycleViewModel extends BlushyViewModel {
   }
 
   void _applyLocalCache() {
+    DateTime? start;
+    try {
+      final profile = BlushyStorage.read('user_profile.json');
+      final fromProfile = profile['lastPeriodStartDate'] ??
+          profile['last_period_date'] ??
+          (profile['profile'] is Map ? profile['profile']['lastPeriodStartDate'] : null);
+      if (fromProfile != null) start = DateTime.tryParse(fromProfile.toString());
+    } catch (_) {}
     try {
       final saved = BlushyStorage.read('last_period_entry.json');
       final raw = saved['periodStartDate'];
-      if (raw != null) {
-        final parsed = DateTime.tryParse(raw.toString());
-        if (parsed != null) {
-          lastPeriodStart = parsed;
-          hasLoggedPeriod = true;
-          currentCycleDay = _dayFrom(parsed);
-        }
-      }
+      if (raw != null) start = DateTime.tryParse(raw.toString()) ?? start;
     } catch (_) {}
+
+    if (start != null) {
+      lastPeriodStart = start;
+      hasLoggedPeriod = true;
+      currentCycleDay = _dayFrom(start);
+    }
   }
 
   int _dayFrom(DateTime start) {
