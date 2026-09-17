@@ -7,6 +7,7 @@ import '../../../../core/state.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../services/api_menopause_service.dart';
 import '../../view_models/menopause_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
@@ -44,7 +45,8 @@ class MenopauseDashboard extends StatefulWidget {
   State<MenopauseDashboard> createState() => _MenopauseDashboardState();
 }
 
-class _MenopauseDashboardState extends State<MenopauseDashboard> {
+class _MenopauseDashboardState extends State<MenopauseDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
   // ─── Design Tokens (STAGE1_DESIGN_RULES.md) ─────────────────────────
   static const Color surfaceCanvas = Color(0xFFFAF7F2);
   static const Color cardBg = Colors.white;
@@ -99,10 +101,15 @@ class _MenopauseDashboardState extends State<MenopauseDashboard> {
     super.initState();
     _vm.addListener(_onDataChanged);
     _loadOverview();
+    startLiveRefresh();
   }
 
   @override
+  Future<void> refreshNow() => _loadOverview();
+
+  @override
   void dispose() {
+    stopLiveRefresh();
     _vm.removeListener(_onDataChanged);
     _vm.dispose();
     _internalScrollController.dispose();

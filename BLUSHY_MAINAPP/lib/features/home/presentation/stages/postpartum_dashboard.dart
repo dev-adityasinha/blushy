@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/state.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../view_models/postpartum_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_postpartum_service.dart';
 import '../../../sia/open_docsy.dart';
 import '../doctor_summary_screen.dart';
@@ -30,7 +31,8 @@ class PostpartumDashboard extends StatefulWidget {
   State<PostpartumDashboard> createState() => _PostpartumDashboardState();
 }
 
-class _PostpartumDashboardState extends State<PostpartumDashboard> {
+class _PostpartumDashboardState extends State<PostpartumDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
   // ─── Design Tokens (STAGE1_DESIGN_RULES.md) ─────────────────────────
   static const Color cardBg = Colors.white;
   static const Color cardBorderColor = Color(0xFFEFE8E0);
@@ -87,10 +89,15 @@ class _PostpartumDashboardState extends State<PostpartumDashboard> {
     super.initState();
     _vm.addListener(_onDataChanged);
     _loadPostpartumData();
+    startLiveRefresh();
   }
 
   @override
+  Future<void> refreshNow() => _loadPostpartumData();
+
+  @override
   void dispose() {
+    stopLiveRefresh();
     _nursingTimer?.cancel();
     _vm.removeListener(_onDataChanged);
     _vm.dispose();

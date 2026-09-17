@@ -9,6 +9,7 @@ import '../../../../services/api_period_service.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../services/api_perimenopause_service.dart';
 import '../../view_models/perimenopause_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../widgets/blushy_period_tracker_card.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
@@ -40,7 +41,8 @@ class PerimenopauseDashboard extends StatefulWidget {
   State<PerimenopauseDashboard> createState() => _PerimenopauseDashboardState();
 }
 
-class _PerimenopauseDashboardState extends State<PerimenopauseDashboard> {
+class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
   // ─── Design Tokens (STAGE1_DESIGN_RULES.md) ─────────────────────────
   static const Color surfaceCanvas = Color(0xFFFAF7F2);
   static const Color cardBg = Colors.white;
@@ -104,10 +106,15 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard> {
     _vm.addListener(_onDataChanged);
     _rehydratePeriodState();
     _loadAllData();
+    startLiveRefresh();
   }
 
   @override
+  Future<void> refreshNow() => _loadAllData(silent: true);
+
+  @override
   void dispose() {
+    stopLiveRefresh();
     _vm.removeListener(_onDataChanged);
     _vm.dispose();
     _quickAskController.dispose();

@@ -8,6 +8,7 @@ import '../../../../core/storage.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../services/api_pregnancy_service.dart';
 import '../../view_models/pregnancy_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import '../doctor_summary_screen.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
@@ -30,7 +31,8 @@ class PregnancyDashboard extends StatefulWidget {
   State<PregnancyDashboard> createState() => _PregnancyDashboardState();
 }
 
-class _PregnancyDashboardState extends State<PregnancyDashboard> {
+class _PregnancyDashboardState extends State<PregnancyDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
   // ─── Design Tokens (STAGE1_DESIGN_RULES.md) ─────────────────────────
   static const Color cardBg = Colors.white;
   static const Color cardBorderColor = Color(0xFFEFE8E0);
@@ -81,10 +83,15 @@ class _PregnancyDashboardState extends State<PregnancyDashboard> {
     _vm.addListener(_onDataChanged);
     _rehydrateLocalState();
     _loadAllPregnancyData();
+    startLiveRefresh();
   }
 
   @override
+  Future<void> refreshNow() => _loadAllPregnancyData();
+
+  @override
   void dispose() {
+    stopLiveRefresh();
     _vm.removeListener(_onDataChanged);
     _vm.dispose();
     _docsyInputController.dispose();
