@@ -14,19 +14,19 @@ import {
   generateHelpSOS,
   evaluateSafetyTriage,
 } from '../controllers/postpartumController.js';
-import { optionalAuth } from '../middleware/optionalAuth.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 
 const router = Router();
 
-router.get('/', optionalAuth, getPostpartumOverview);
-router.get('/overview', optionalAuth, getPostpartumOverview);
-router.get('/today-brief', optionalAuth, getPostpartumTodayBrief);
-router.post('/calibrate', optionalAuth, calibratePostpartum);
-router.post('/check-in', optionalAuth, recordPostpartumCheckin);
-router.post('/checkin', optionalAuth, recordPostpartumCheckin);
-router.post('/baby-event', optionalAuth, recordBabyEvent);
-router.get('/baby-events', optionalAuth, getBabyEvents);
-router.post('/sos', optionalAuth, generateHelpSOS);
-router.post('/safety-triage', optionalAuth, evaluateSafetyTriage);
+router.get('/', requireAuth, getPostpartumOverview);
+router.get('/overview', requireAuth, getPostpartumOverview);
+router.get('/today-brief', requireAuth, getPostpartumTodayBrief);
+router.post('/calibrate', requireAuth, calibratePostpartum);
+router.post('/check-in', requireAuth, recordPostpartumCheckin);
+router.post('/checkin', requireAuth, recordPostpartumCheckin);
+router.post('/baby-event', requireAuth, recordBabyEvent);
+router.get('/baby-events', requireAuth, getBabyEvents);
+router.post('/sos', requireAuth, generateHelpSOS);
+router.post('/safety-triage', requireAuth, evaluateSafetyTriage);
 
 export default router;

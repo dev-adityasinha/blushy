@@ -746,7 +746,16 @@ export async function createChatReply(req, res, next) {
       } catch (_) {}
     }
 
-    const result = assistantReply ?? await aiChatService.createReply({
+    // Her question is recorded even when the model does not answer.
+    //
+    // The append below runs only once a reply exists, so a provider failure
+    // used to discard the whole turn -- 65 chats reached the provider between
+    // 28 July and 16 September and not one of them left a trace, which is
+    // what "the history is not coming" turned out to mean. Stored here, the
+    // conversation keeps its shape and the gap is visible.
+    let result;
+    try {
+      result = assistantReply ?? await aiChatService.createReply({
       messages,
       role: safeRole,
       user: req.user,
@@ -760,8 +769,25 @@ export async function createChatReply(req, res, next) {
         journalSummary,
         dailyLogSummary,
         isVoiceCall: Boolean(req.body?.isVoiceCall),
-      },
-    });
+        },
+      });
+    } catch (error) {
+      if (userMessage.length > 0) {
+        try {
+          await aiHistoryRepository.appendConversation({
+            userKey,
+            role: safeRole,
+            userMessage,
+            assistantMessage: null,
+            model: 'unanswered',
+          });
+        } catch (writeError) {
+          // Saving the question must not replace the error she needs to see.
+          console.error('[chat] could not record the unanswered turn:', writeError.message);
+        }
+      }
+      throw error;
+    }
 
     // Second line of defence: nothing generated may stand in front of a live
     // escalation, even if the pre-generation branch was bypassed.
@@ -1231,6 +1257,50 @@ export async function getHealthInsights(req, res, next) {
       suggestions: aiDaily.suggestions || healthAnalysis.suggestions || [],
       source: aiDaily.source || 'ai_grok',
       generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Accepts exchanges a client holds that the server does not.
+ *
+ * The bounds are the point. This is the one route where the client decides
+ * what goes into her history, so it takes at most one conversation's worth,
+ * refuses anything longer than a real message, and writes only under her own
+ * user key -- the body cannot name someone else. `importConversations` is
+ * idempotent, so a client that re-sends on every launch costs a round trip
+ * rather than a duplicated history.
+ */
+export async function importChatHistory(req, res, next) {
+  try {
+    const role = normalizeRoleValue(req.body?.role, 'woman');
+    const userKey = getUserKey(req, role);
+
+    const raw = req.body?.exchanges;
+    if (!Array.isArray(raw)) {
+      throw createHttpError(400, 'exchanges must be an array.');
+    }
+    // Retention is 300 per user; accepting more would only be discarded.
+    if (raw.length > 300) {
+      throw createHttpError(400, 'Too many exchanges in one import (maximum 300).');
+    }
+
+    const MAX_CHARS = 4000;
+    const exchanges = raw.slice(0, 300).map((entry) => ({
+      userMessage: typeof entry?.userMessage === 'string'
+        ? entry.userMessage.slice(0, MAX_CHARS) : '',
+      assistantMessage: typeof entry?.assistantMessage === 'string'
+        ? entry.assistantMessage.slice(0, MAX_CHARS) : '',
+      at: entry?.at ?? null,
+      role,
+    }));
+
+    const result = await aiHistoryRepository.importConversations({ userKey, exchanges });
+    res.status(200).json({
+      imported: result.imported ?? 0,
+      received: result.received ?? exchanges.length,
     });
   } catch (error) {
     next(error);

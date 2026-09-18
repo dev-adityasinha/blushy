@@ -6,6 +6,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/state.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../services/api_menopause_service.dart';
+import '../../view_models/menopause_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
@@ -43,7 +45,8 @@ class MenopauseDashboard extends StatefulWidget {
   State<MenopauseDashboard> createState() => _MenopauseDashboardState();
 }
 
-class _MenopauseDashboardState extends State<MenopauseDashboard> {
+class _MenopauseDashboardState extends State<MenopauseDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
   // ─── Design Tokens (STAGE1_DESIGN_RULES.md) ─────────────────────────
   static const Color surfaceCanvas = Color(0xFFFAF7F2);
   static const Color cardBg = Colors.white;
@@ -69,6 +72,10 @@ class _MenopauseDashboardState extends State<MenopauseDashboard> {
   static const Color electricCoralTint = Color(0xFFFFEBE0);
 
   // ─── State ─────────────────────────────────────────────────────────
+  /// This screen is the View; the server read lives in the tested
+  /// MenopauseViewModel and is mirrored back by _onDataChanged.
+  final MenopauseViewModel _vm = MenopauseViewModel();
+
   MenopauseOverviewData? _overview;
   /// The server's own verdict on the last load, so a failure, an offline
   /// device and an empty account are no longer indistinguishable.
@@ -92,27 +99,35 @@ class _MenopauseDashboardState extends State<MenopauseDashboard> {
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onDataChanged);
     _loadOverview();
+    startLiveRefresh();
   }
 
   @override
+  Future<void> refreshNow() => _loadOverview();
+
+  @override
   void dispose() {
+    stopLiveRefresh();
+    _vm.removeListener(_onDataChanged);
+    _vm.dispose();
     _internalScrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadOverview() async {
-    final res = await ApiMenopauseService.getOverview();
+  /// Delegated to the view model; _onDataChanged mirrors the result.
+  Future<void> _loadOverview() => _vm.load();
+
+  /// The View reacting to its ViewModel.
+  void _onDataChanged() {
     if (!mounted) return;
-    final data = res.data;
     setState(() {
-      _overview = data;
-      _overviewState = res.state;
-      if (data != null) {
-        _activeLifeMode = data.lifeMode;
-        _privateMode = data.privateMode;
-      }
-      _loading = false;
+      _overview = _vm.overview;
+      _overviewState = _vm.overviewState;
+      _activeLifeMode = _vm.activeLifeMode;
+      _privateMode = _vm.privateMode;
+      _loading = _vm.isLoading;
     });
   }
 

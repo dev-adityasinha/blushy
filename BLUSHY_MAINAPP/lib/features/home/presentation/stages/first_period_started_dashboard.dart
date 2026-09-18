@@ -10,6 +10,8 @@ import '../../../../core/state.dart';
 import '../../../../core/storage.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
+import '../../view_models/cycle_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_sia_service.dart';
 import '../../services/home_event_bus.dart';
 import '../../../sia/open_docsy.dart';
@@ -23,6 +25,7 @@ import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../widgets/log_symptoms_section.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/user_state_store.dart';
 
 class FirstPeriodStartedDashboard extends StatefulWidget {
   final bool isNested;
@@ -38,11 +41,18 @@ class FirstPeriodStartedDashboard extends StatefulWidget {
   State<FirstPeriodStartedDashboard> createState() => _FirstPeriodStartedDashboardState();
 }
 
-class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboard> {
+class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
 
   /// How the last cycle-data load went, so a failed request is not drawn as an
   /// account with nothing in it.
   ApiState _cycleState = ApiState.loading;
+
+  /// This screen is the View; the cycle read lives in the tested
+  /// CycleViewModel and is mirrored back by _onCycleChanged.
+  final CycleViewModel _cycleVM =
+      CycleViewModel(defaultCycleLength: 28, defaultCycleDay: 1);
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final ScrollController _internalScrollController = ScrollController();
   ScrollController get _effectiveScrollController => widget.scrollController ?? _internalScrollController;
@@ -267,9 +277,11 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   @override
   void initState() {
     super.initState();
+    _cycleVM.addListener(_onCycleChanged);
     _loadSavedStage2Data();
     _loadPeriodData();
     _fetchDynamicAiInsights();
+    startLiveRefresh();
 
     _periodEventSub = HomeEventBus().onEvent.listen((event) {
       if (event is PeriodLoggedEvent && mounted) {
@@ -287,46 +299,22 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
     });
   }
 
-  void _loadPeriodData() async {
-    try {
-      DateTime? start;
-      final profile = BlushyStorage.read('user_profile.json');
-      if (profile is Map) {
-        final lastPeriodStr = profile['lastPeriodStartDate'] ?? profile['profile']?['lastPeriodStartDate'];
-        if (lastPeriodStr != null) {
-          start = DateTime.tryParse(lastPeriodStr.toString());
-        }
-      }
-      final savedPeriod = BlushyStorage.read('last_period_entry.json');
-      if (savedPeriod is Map && savedPeriod['periodStartDate'] != null) {
-        start = DateTime.tryParse(savedPeriod['periodStartDate'].toString()) ?? start;
-      }
+  void _loadPeriodData() {
+    // Delegated to the view model; _onCycleChanged mirrors the result.
+    _cycleVM.load();
+  }
 
-      try {
-        final result = await ApiPeriodService().getPredictionsResult();
-        _cycleState = result.state;
-        final prediction = result.data;
-        if (prediction != null && prediction.hasData && prediction.lastPeriodStartDate != null) {
-          final pStart = DateTime.tryParse(prediction.lastPeriodStartDate!);
-          if (pStart != null) start = pStart;
-          if (prediction.cycleLengthDays > 0) _cycleLength = prediction.cycleLengthDays;
-          if (prediction.periodLengthDays > 0) _periodLength = prediction.periodLengthDays;
-        }
-      } catch (_) {
-        _cycleState = ApiState.offline;
-      }
-
-      if (start != null) {
-        _lastPeriodStartDate = start;
-        _hasLoggedPeriod = true;
-        final diff = DateTime.now().difference(start).inDays;
-        _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
-      } else {
-        _hasLoggedPeriod = false;
-        _currentCycleDay = 1;
-      }
-      if (mounted) setState(() {});
-    } catch (_) {}
+  /// The View reacting to its ViewModel.
+  void _onCycleChanged() {
+    if (!mounted) return;
+    setState(() {
+      _cycleState = _cycleVM.state;
+      _hasLoggedPeriod = _cycleVM.hasLoggedPeriod;
+      _lastPeriodStartDate = _cycleVM.lastPeriodStart;
+      _cycleLength = _cycleVM.cycleLength;
+      _periodLength = _cycleVM.periodLength;
+      _currentCycleDay = _cycleVM.currentCycleDay;
+    });
   }
 
   void _openLogPeriodDialog(BuildContext context) async {
@@ -393,7 +381,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   void _loadSavedStage2Data() {
     try {
       // 1. School bag kit
-      final savedBag = BlushyStorage.read('stage2_school_bag.json');
+      final savedBag = UserStateStore.read('stage2_school_bag');
       if (savedBag is Map) {
         for (final entry in savedBag.entries) {
           if (_schoolBagItems.containsKey(entry.key.toString())) {
@@ -403,7 +391,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
       }
 
       // 2. Body changes journal
-      final savedChanges = BlushyStorage.read('stage2_body_changes.json');
+      final savedChanges = UserStateStore.read('stage2_body_changes');
       if (savedChanges is Map && savedChanges['selected'] is List) {
         _selectedBodyChanges.clear();
         _selectedBodyChanges.addAll((savedChanges['selected'] as List).map((e) => e.toString()));
@@ -411,7 +399,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
 
       // 3. Today's flow log
       final todayStr = DateTime.now().toIso8601String().split('T').first;
-      final savedFlow = BlushyStorage.read('stage2_flow_$todayStr.json');
+      final savedFlow = UserStateStore.read('stage2_flow_$todayStr');
       if (savedFlow is Map && savedFlow['flow'] is String) {
         _loggedFlow = savedFlow['flow'];
       }
@@ -422,8 +410,14 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   }
 
   @override
+  Future<void> refreshNow() => _cycleVM.load();
+
+  @override
   void dispose() {
+    stopLiveRefresh();
     _periodEventSub?.cancel();
+    _cycleVM.removeListener(_onCycleChanged);
+    _cycleVM.dispose();
     _internalScrollController.dispose();
     super.dispose();
   }
@@ -1192,7 +1186,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                         _loggedFlow = f['intensity']!;
                       });
                       final todayStr = DateTime.now().toIso8601String().split('T').first;
-                      BlushyStorage.write('stage2_flow_$todayStr.json', {
+                      UserStateStore.write('stage2_flow_$todayStr', {
                         'flow': _loggedFlow,
                         'cramp': _selectedCramp,
                       });
@@ -1292,7 +1286,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                       if (sel) {
                         setState(() => _selectedCramp = c);
                         final todayStr = DateTime.now().toIso8601String().split('T').first;
-                        BlushyStorage.write('stage2_flow_$todayStr.json', {
+                        UserStateStore.write('stage2_flow_$todayStr', {
                           'flow': _loggedFlow,
                           'cramp': _selectedCramp,
                         });
@@ -1606,7 +1600,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                     onChanged: (val) {
                       if (val != null) {
                         setState(() => _schoolBagItems[entry.key] = val);
-                        BlushyStorage.write('stage2_school_bag.json', _schoolBagItems);
+                        UserStateStore.write('stage2_school_bag', _schoolBagItems);
                       }
                     },
                   );
@@ -1689,7 +1683,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                           _selectedBodyChanges.remove(item);
                         }
                       });
-                      BlushyStorage.write('stage2_body_changes.json', {'selected': _selectedBodyChanges.toList()});
+                      UserStateStore.write('stage2_body_changes', {'selected': _selectedBodyChanges.toList()});
                     },
                   );
                 }).toList(),

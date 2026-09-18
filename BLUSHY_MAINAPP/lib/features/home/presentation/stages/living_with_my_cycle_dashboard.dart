@@ -10,6 +10,8 @@ import '../../services/home_event_bus.dart';
 import '../../../sia/open_docsy.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
+import '../../view_models/cycle_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_sia_service.dart';
 import '../../home_screen.dart';
 import '../../widgets/cycle_tracker_image.dart';
@@ -19,6 +21,7 @@ import 'stage_shared_components.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/user_state_store.dart';
 
 /// ════════════════════════════════════════════════════════════════════════════
 /// STAGE 3: LIVING WITH MY CYCLE — THE HUMAN-FIRST AI INTELLIGENCE LAYER
@@ -42,7 +45,8 @@ class LivingWithMyCycleDashboard extends StatefulWidget {
   State<LivingWithMyCycleDashboard> createState() => _LivingWithMyCycleDashboardState();
 }
 
-class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard> {
+class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final ScrollController _internalScrollController = ScrollController();
   ScrollController get _effectiveScrollController =>
@@ -59,6 +63,12 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   // sleeping backend is tens of seconds of simulated cycle data (spec §4:
   // never show simulated cycle days to a user with no period data).
   bool _hasLoggedPeriod = false;
+
+  /// This screen is the View; the cycle read lives in the tested
+  /// CycleViewModel and is mirrored back by _onCycleChanged.
+  final CycleViewModel _cycleVM =
+      CycleViewModel(defaultCycleLength: 28, defaultCycleDay: 14);
+
   StreamSubscription? _periodEventSub;
 
   // Real-time AI Companion (Docsy) State
@@ -88,9 +98,11 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   @override
   void initState() {
     super.initState();
+    _cycleVM.addListener(_onCycleChanged);
     _loadStage3Data();
     _loadPeriodData();
     _fetchDynamicAiInsights();
+    startLiveRefresh();
 
     _periodEventSub = HomeEventBus().onEvent.listen((event) {
       if (event is PeriodLoggedEvent && mounted) {
@@ -107,8 +119,14 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   }
 
   @override
+  Future<void> refreshNow() => _cycleVM.load();
+
+  @override
   void dispose() {
+    stopLiveRefresh();
     _periodEventSub?.cancel();
+    _cycleVM.removeListener(_onCycleChanged);
+    _cycleVM.dispose();
     _internalScrollController.dispose();
     super.dispose();
   }
@@ -116,56 +134,35 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   void _loadStage3Data() {
     try {
       // 1. Noticings
-      final savedNoticings = BlushyStorage.read('stage3_noticings.json');
+      final savedNoticings = UserStateStore.read('stage3_noticings');
       if (savedNoticings is Map && savedNoticings['selected'] is List) {
         _selectedNoticings.clear();
         _selectedNoticings.addAll((savedNoticings['selected'] as List).map((e) => e.toString()));
       }
 
       // 2. Life Mode
-      final savedMode = BlushyStorage.read('stage3_life_mode.json');
+      final savedMode = UserStateStore.read('stage3_life_mode');
       if (savedMode is Map && savedMode['mode'] != null) {
         _activeLifeMode = savedMode['mode'].toString();
       }
     } catch (_) {}
   }
 
-  void _loadPeriodData() async {
-    try {
-      DateTime? start;
-      final profile = BlushyStorage.read('user_profile.json');
-      if (profile is Map) {
-        final lastPeriodStr = profile['lastPeriodStartDate'] ?? profile['last_period_date'] ?? profile['profile']?['lastPeriodStartDate'];
-        if (lastPeriodStr != null) {
-          start = DateTime.tryParse(lastPeriodStr.toString());
-        }
-      }
-      final savedPeriod = BlushyStorage.read('last_period_entry.json');
-      if (savedPeriod is Map && savedPeriod['periodStartDate'] != null) {
-        start = DateTime.tryParse(savedPeriod['periodStartDate'].toString()) ?? start;
-      }
+  void _loadPeriodData() {
+    // Delegated to the view model; _onCycleChanged mirrors the result.
+    _cycleVM.load();
+  }
 
-      try {
-        final prediction = await ApiPeriodService().getPredictions();
-        if (prediction != null && prediction.hasData && prediction.lastPeriodStartDate != null) {
-          final pStart = DateTime.tryParse(prediction.lastPeriodStartDate!);
-          if (pStart != null) start = pStart;
-          if (prediction.cycleLengthDays > 0) _cycleLength = prediction.cycleLengthDays;
-          if (prediction.periodLengthDays > 0) _periodLength = prediction.periodLengthDays;
-        }
-      } catch (_) {}
-
-      if (start != null) {
-        _lastPeriodStartDate = start;
-        _hasLoggedPeriod = true;
-        final diff = DateTime.now().difference(start).inDays;
-        _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
-      } else {
-        _hasLoggedPeriod = false;
-        _currentCycleDay = 14;
-      }
-      if (mounted) setState(() {});
-    } catch (_) {}
+  /// The View reacting to its ViewModel.
+  void _onCycleChanged() {
+    if (!mounted) return;
+    setState(() {
+      _hasLoggedPeriod = _cycleVM.hasLoggedPeriod;
+      _lastPeriodStartDate = _cycleVM.lastPeriodStart;
+      _cycleLength = _cycleVM.cycleLength;
+      _periodLength = _cycleVM.periodLength;
+      _currentCycleDay = _cycleVM.currentCycleDay;
+    });
   }
 
   Future<void> _fetchDynamicAiInsights() async {
@@ -276,7 +273,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
       }
     });
     try {
-      BlushyStorage.write('stage3_noticings.json', {
+      UserStateStore.write('stage3_noticings', {
         'date': DateTime.now().toIso8601String().split('T').first,
         'selected': _selectedNoticings.toList(),
       });
@@ -1557,7 +1554,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                       _activeLifeMode = isSelected ? null : id;
                     });
                     try {
-                      BlushyStorage.write('stage3_life_mode.json', {'mode': _activeLifeMode});
+                      UserStateStore.write('stage3_life_mode', {'mode': _activeLifeMode});
                     } catch (_) {}
                   },
                   borderRadius: BorderRadius.circular(18),

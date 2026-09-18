@@ -829,6 +829,15 @@ class PartnerPermission {
         alwaysOn: json['alwaysOn'] == true,
         grants: (json['grants'] as List?)?.map((g) => g.toString()).toList() ?? const [],
       );
+
+  PartnerPermission copyWith({bool? enabled}) => PartnerPermission(
+        key: key,
+        label: label,
+        example: example,
+        enabled: enabled ?? this.enabled,
+        alwaysOn: alwaysOn,
+        grants: grants,
+      );
 }
 
 @immutable
@@ -848,6 +857,19 @@ class PartnerSharingState {
   /// What is currently shared, so the woman can always see it
   /// (spec section 10).
   List<PartnerPermission> get enabled => permissions.where((p) => p.enabled).toList();
+
+  /// A copy with one permission's `enabled` flipped, for optimistic UI: the
+  /// switch can move at once and this is what it moves to, with the untouched
+  /// permissions carried over unchanged. An unknown key returns an identical
+  /// state.
+  PartnerSharingState withPermission(String key, bool enabled) => PartnerSharingState(
+        connectionId: connectionId,
+        connectionState: connectionState,
+        permissions: [
+          for (final p in permissions)
+            p.key == key ? p.copyWith(enabled: enabled) : p,
+        ],
+      );
 
   factory PartnerSharingState.fromJson(dynamic raw) {
     final json = ApiParse.map(raw);

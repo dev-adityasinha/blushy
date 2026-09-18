@@ -3,11 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/state.dart';
 import '../../../core/theme.dart' hide BlushyColors;
 import '../../../theme/colors.dart';
-import '../../../services/auth_storage.dart';
-import '../../../services/api_partner_service.dart';
 import '../../../services/api_blushy_service.dart';
 import '../../../models/blushy_models.dart';
 import 'partner_privacy_screen.dart';
+import '../view_models/partner_profile_view_model.dart';
 import '../../../shared/confirm_sign_out.dart';
 import '../partner_display_name.dart';
 
@@ -19,7 +18,9 @@ class PartnerProfileScreen extends StatefulWidget {
 }
 
 class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
-  final ApiPartnerService _partnerService = ApiPartnerService();
+  /// This screen is the View; the profile load lives in the tested
+  /// PartnerProfileViewModel and is mirrored back by _onDataChanged.
+  final PartnerProfileViewModel _vm = PartnerProfileViewModel();
   final TextEditingController _nameController = TextEditingController();
   bool _isLoading = true;
   Map<String, dynamic>? _activeConnection;
@@ -49,44 +50,30 @@ class _PartnerProfileScreenState extends State<PartnerProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onDataChanged);
     _loadProfileData();
   }
 
-  Future<void> _loadProfileData() async {
-    try {
-      final session = AuthStorage.getSession();
-      _userEmail = session['email']?.toString() ?? 'partner@blushy.life';
-      _userName = _userEmail.contains('@') ? _userEmail.split('@').first : 'Partner';
-      _nameController.text = _userName;
+  /// Delegated to the view model; _onDataChanged mirrors the result.
+  Future<void> _loadProfileData() => _vm.load();
 
-      final prefsResult = await NotificationsApi.preferences();
-      if (prefsResult.data != null) {
-        _notificationPrefs = prefsResult.data;
-      }
-
-      final connections = await _partnerService.getConnections();
-      final active = connections.firstWhere(
-        (c) => c['status'] == 'active',
-        orElse: () => <String, dynamic>{},
-      );
-
-      if (mounted) {
-        setState(() {
-          _activeConnection = active.isNotEmpty ? active : null;
-          _isLoading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+  /// The View reacting to its ViewModel.
+  void _onDataChanged() {
+    if (!mounted) return;
+    setState(() {
+      _userEmail = _vm.userEmail;
+      _userName = _vm.userName;
+      _nameController.text = _vm.userName;
+      _notificationPrefs = _vm.notificationPrefs;
+      _activeConnection = _vm.activeConnection;
+      _isLoading = _vm.isLoading;
+    });
   }
 
   @override
   void dispose() {
+    _vm.removeListener(_onDataChanged);
+    _vm.dispose();
     _nameController.dispose();
     super.dispose();
   }

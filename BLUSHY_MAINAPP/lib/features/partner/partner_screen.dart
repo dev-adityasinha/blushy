@@ -25,12 +25,14 @@ import 'date_idea.dart';
 import '../../services/api_blushy_service.dart';
 import 'presentation/partner_privacy_screen.dart';
 import 'partner_display_name.dart';
+import 'partner_chat.dart';
 import 'pending_invite_code.dart';
 import 'private_space.dart';
 import 'presentation/private_space_sheet.dart';
 import 'presentation/shared_sanctuary_sections.dart';
 import '../../shared/docsy_avatar.dart';
 import 'package:intl/intl.dart';
+import '../../services/user_state_store.dart';
 
 
 class BlushyPartnerScreen extends StatefulWidget {
@@ -201,7 +203,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   void _loadMessageDecoderState() {
     try {
-      final saved = BlushyStorage.read('partner_decoder_enabled');
+      final saved = UserStateStore.read('partner_decoder_enabled');
       if (saved['enabled'] is bool) {
         setState(() {
           _isMessageDecoderActive = saved['enabled'] as bool;
@@ -215,7 +217,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       _isMessageDecoderActive = !_isMessageDecoderActive;
     });
     try {
-      BlushyStorage.write('partner_decoder_enabled', {
+      UserStateStore.write('partner_decoder_enabled', {
         'enabled': _isMessageDecoderActive,
       });
     } catch (_) {}
@@ -555,37 +557,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       final connId = activeConn['connectionId'].toString();
       final apiMsgs = await _partnerService.getMessages(connId);
       if (apiMsgs.isNotEmpty && mounted) {
-        final currentUserId = AuthStorage.getUserId();
-        final mapped = apiMsgs.map((m) {
-          final senderId = m['senderUserId'] ?? m['sender_user_id'];
-          final isMe = (currentUserId != null && currentUserId.isNotEmpty && senderId == currentUserId);
-          return {
-            'messageId': m['messageId'] ?? m['message_id'],
-            'senderUserId': senderId,
-            'senderRole': m['sender_role'] ?? m['senderRole'],
-            'sender': isMe ? 'You' : (m['sender']?['displayName'] ?? m['sender']?['display_name'] ?? 'Partner'),
-            'text': m['message'] ?? m['text'] ?? '',
-            'isAudio': m['audioUrl'] != null || m['audio_url'] != null,
-            'audioUrl': m['audioUrl'] ?? m['audio_url'],
-            'duration': m['audioDuration'] != null ? '${m['audioDuration']}s' : null,
-            'createdAt': m['createdAt'] ?? m['created_at'],
-            'isCard': false,
-            'isMe': isMe,
-          };
-        }).toList();
+        // Mapping (mixed camel/snake fields) and the diff live in PartnerChat,
+        // where they are unit-tested.
+        final mapped = PartnerChat.mapMessages(apiMsgs, AuthStorage.getUserId());
 
-        bool hasDifferences = mapped.length != _chatMessages.length;
-        if (!hasDifferences) {
-          for (int i = 0; i < mapped.length; i++) {
-            if (mapped[i]['text'] != _chatMessages[i]['text'] ||
-                mapped[i]['isMe'] != _chatMessages[i]['isMe']) {
-              hasDifferences = true;
-              break;
-            }
-          }
-        }
-
-        if (hasDifferences) {
+        if (PartnerChat.messagesDiffer(mapped, _chatMessages)) {
           setState(() {
             _chatMessages.clear();
             _chatMessages.addAll(mapped);
@@ -4157,7 +4133,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   List<Map<String, dynamic>> _getLettersList() {
     final List<Map<String, dynamic>> list = [];
     try {
-      final saved = BlushyStorage.read('partner_letters');
+      final saved = UserStateStore.read('partner_letters');
       if (saved['letters'] is List) {
         final rawList = saved['letters'] as List;
         list.addAll(rawList.map((e) => Map<String, dynamic>.from(e as Map)));
@@ -4368,7 +4344,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         final currentLetters = _getLettersList();
                         currentLetters.insert(0, letterData);
                         try {
-                          BlushyStorage.write('partner_letters', {'letters': currentLetters});
+                          UserStateStore.write('partner_letters', {'letters': currentLetters});
                         } catch (_) {}
 
                         // 2. Transmit through partner live chat

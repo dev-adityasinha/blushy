@@ -5,6 +5,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/storage.dart';
 import '../../../../services/api_auth_service.dart';
 import '../../../../services/api_period_service.dart';
+import '../../view_models/cycle_view_model.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../services/api_checkin_service.dart';
@@ -29,7 +31,8 @@ class TryingToConceiveDashboard extends StatefulWidget {
   State<TryingToConceiveDashboard> createState() => _TryingToConceiveDashboardState();
 }
 
-class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard> {
+class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
+    with WidgetsBindingObserver, LiveRefresh {
   // ─── Design Tokens (STAGE1_DESIGN_RULES.md) ─────────────────────────
   static const Color surfaceCanvas = Color(0xFFFAF7F2);
   static const Color cardBg = Colors.white;
@@ -66,6 +69,11 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard> {
   /// not. The other cycle dashboards have tracked this all along.
   ApiState _cycleState = ApiState.loading;
 
+  /// The cycle-loading concern now lives in a tested view model; this widget is
+  /// its View. The fields above are kept as local mirrors so the rest of the
+  /// screen reads unchanged, and are refreshed from the view model on change.
+  final CycleViewModel _cycleVM = CycleViewModel(defaultCycleLength: 29, defaultCycleDay: 14);
+
   // ─── Real-Time Dynamic AI & Docsy State ─────────────────────────────
   bool _isLoadingAi = false;
   String _dynamicDocsyThought =
@@ -90,12 +98,36 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard> {
   @override
   void initState() {
     super.initState();
+    _cycleVM.addListener(_onCycleChanged);
     _rehydrateTtcState();
     _fetchDynamicAiInsights();
+    startLiveRefresh();
+  }
+
+  @override
+  Future<void> refreshNow() => _cycleVM.load();
+
+  /// The View reacting to its ViewModel: mirror the resolved cycle read into
+  /// the local fields the rest of the screen already uses.
+  void _onCycleChanged() {
+    if (!mounted) return;
+    setState(() {
+      _cycleState = _cycleVM.state;
+      if (_cycleVM.hasLoggedPeriod) {
+        _hasLoggedPeriod = true;
+        _lastPeriodStartDate = _cycleVM.lastPeriodStart;
+        _cycleLength = _cycleVM.cycleLength;
+        _periodLength = _cycleVM.periodLength;
+        _currentCycleDay = _cycleVM.currentCycleDay;
+      }
+    });
   }
 
   @override
   void dispose() {
+    stopLiveRefresh();
+    _cycleVM.removeListener(_onCycleChanged);
+    _cycleVM.dispose();
     _internalScrollController.dispose();
     super.dispose();
   }
@@ -142,30 +174,10 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard> {
         }
       }
 
-      ApiPeriodService().getPredictionsResult().then((result) {
-        if (!mounted) return;
-        final prediction = result.data;
-        setState(() {
-          _cycleState = result.state;
-          if (prediction != null && prediction.hasData) {
-            if (prediction.cycleLengthDays > 0) _cycleLength = prediction.cycleLengthDays;
-            if (prediction.periodLengthDays > 0) _periodLength = prediction.periodLengthDays;
-            if (prediction.lastPeriodStartDate != null) {
-              final parsed = DateTime.tryParse(prediction.lastPeriodStartDate!);
-              if (parsed != null) {
-                _lastPeriodStartDate = parsed;
-                _hasLoggedPeriod = true;
-                final diff = DateTime.now().difference(parsed).inDays;
-                _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
-              }
-            }
-          }
-        });
-      }).catchError((_) {
-        if (!mounted) return;
-        // A dropped request is not an account with no cycle.
-        setState(() => _cycleState = ApiState.offline);
-      });
+      // The cycle read is the view model's job now; _onCycleChanged mirrors
+      // its result back. All the fetch/error/day logic that used to sit here
+      // lives in CycleViewModel, where it is unit-tested.
+      _cycleVM.load();
     } catch (_) {}
   }
 

@@ -256,6 +256,26 @@ class ApiPostpartumService {
   static const String _overviewKey = 'postpartum_overview_cache.json';
   static const String _briefKey = 'postpartum_brief_cache.json';
 
+  /// The last overview/brief written to this device, read without any network,
+  /// so a returning user sees her data at once while the fresh copy loads.
+  /// Parsed by the same `fromJson` the fetch uses; a missing or unreadable
+  /// cache is simply null.
+  static PostpartumOverviewData? cachedOverview() {
+    try {
+      final cached = BlushyStorage.read(_overviewKey);
+      if (cached.isNotEmpty) return PostpartumOverviewData.fromJson(cached);
+    } catch (_) {}
+    return null;
+  }
+
+  static PostpartumTodayBriefData? cachedBrief() {
+    try {
+      final cached = BlushyStorage.read(_briefKey);
+      if (cached.isNotEmpty) return PostpartumTodayBriefData.fromJson(cached);
+    } catch (_) {}
+    return null;
+  }
+
   /// Fetches complete Postpartum Command Center overview.
   /// Preserves the server's state instead of collapsing it to a nullable, so
   /// the caller can distinguish fresh data, a cached copy shown after a failure

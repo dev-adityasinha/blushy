@@ -1,13 +1,19 @@
 import { Router } from 'express';
+import { requireAuth } from '../middleware/requireAuth.js';
 import { PerimenopauseService } from '../services/perimenopauseService.js';
 
 const router = Router();
 
+// Identity comes only from the verified token. The previous version trusted
+// req.headers['x-user-id'] and fell back to a shared 'default_user', so any
+// caller could read or write another user's data -- or everyone's at once --
+// by setting a header or sending none. requireAuth on every route below now
+// guarantees req.user.userId is present and authenticated.
 function resolveUserId(req) {
-  return req.user?.id || req.user?.userId || req.headers['x-user-id'] || 'default_user';
+  return req.user.userId;
 }
 
-router.get('/overview', async (req, res) => {
+router.get('/overview', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const data = await PerimenopauseService.getOverview(userId);
@@ -17,7 +23,7 @@ router.get('/overview', async (req, res) => {
   }
 });
 
-router.get('/today-brief', async (req, res) => {
+router.get('/today-brief', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const data = await PerimenopauseService.getTodayBrief(userId);
@@ -27,87 +33,87 @@ router.get('/today-brief', async (req, res) => {
   }
 });
 
-router.post('/checkin', async (req, res) => {
+router.post('/checkin', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
-    const record = PerimenopauseService.recordCheckin(userId, req.body);
+    const record = await PerimenopauseService.recordCheckin(userId, req.body);
     res.json({ success: true, data: record });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error recording checkin' });
   }
 });
 
-router.post('/check-in', async (req, res) => {
+router.post('/check-in', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
-    const record = PerimenopauseService.recordCheckin(userId, req.body);
+    const record = await PerimenopauseService.recordCheckin(userId, req.body);
     res.json({ success: true, data: record });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error recording checkin' });
   }
 });
 
-router.post('/calibrate', async (req, res) => {
+router.post('/calibrate', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
-    const profile = PerimenopauseService.calibrate(userId, req.body);
+    const profile = await PerimenopauseService.calibrate(userId, req.body);
     res.json({ success: true, data: profile });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error calibrating perimenopause' });
   }
 });
 
-router.post('/focus', async (req, res) => {
+router.post('/focus', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
-    const profile = PerimenopauseService.setFocus(userId, req.body.focus);
+    const profile = await PerimenopauseService.setFocus(userId, req.body.focus);
     res.json({ success: true, data: profile });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error setting focus' });
   }
 });
 
-router.post('/life-mode', async (req, res) => {
+router.post('/life-mode', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
-    const profile = PerimenopauseService.setLifeMode(userId, req.body.lifeMode);
+    const profile = await PerimenopauseService.setLifeMode(userId, req.body.lifeMode);
     res.json({ success: true, data: profile });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error setting life mode' });
   }
 });
 
-router.post('/treatment', async (req, res) => {
+router.post('/treatment', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
-    const treatment = PerimenopauseService.saveTreatment(userId, req.body);
+    const treatment = await PerimenopauseService.saveTreatment(userId, req.body);
     res.json({ success: true, data: treatment });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error saving treatment' });
   }
 });
 
-router.post('/questions', async (req, res) => {
+router.post('/questions', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
-    const q = PerimenopauseService.addQuestion(userId, req.body.text || req.body.question);
+    const q = await PerimenopauseService.addQuestion(userId, req.body.text || req.body.question);
     res.json({ success: true, data: q });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error adding question' });
   }
 });
 
-router.delete('/questions/:id', async (req, res) => {
+router.delete('/questions/:id', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
-    const ok = PerimenopauseService.deleteQuestion(userId, req.params.id);
+    const ok = await PerimenopauseService.deleteQuestion(userId, req.params.id);
     res.json({ success: ok });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error deleting question' });
   }
 });
 
-router.post('/parse-note', async (req, res) => {
+router.post('/parse-note', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const result = await PerimenopauseService.parseNaturalNote(userId, req.body.text || '');
@@ -117,21 +123,21 @@ router.post('/parse-note', async (req, res) => {
   }
 });
 
-router.get('/clinician-brief', async (req, res) => {
+router.get('/clinician-brief', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
-    const brief = PerimenopauseService.getClinicianBrief(userId);
+    const brief = await PerimenopauseService.getClinicianBrief(userId);
     res.json({ success: true, data: brief });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error generating clinician brief' });
   }
 });
 
-router.post('/cycle-interval', async (req, res) => {
+router.post('/cycle-interval', requireAuth, async (req, res) => {
   try {
     const userId = resolveUserId(req);
     const days = parseInt(req.body.days, 10) || 28;
-    const history = PerimenopauseService.recordPeriodCycle(userId, days);
+    const history = await PerimenopauseService.recordPeriodCycle(userId, days);
     res.json({ success: true, data: history });
   } catch (err) {
     res.status(500).json({ success: false, message: err?.message || 'Error recording cycle interval' });

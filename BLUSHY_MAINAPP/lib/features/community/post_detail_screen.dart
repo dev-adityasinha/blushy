@@ -11,6 +11,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../shared/blushy_surface.dart';
 import '../../theme/scale.dart';
 import 'post_card_parts.dart';
+import 'community_comments.dart';
+import 'community_vote.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final CommunityPost post;
@@ -107,11 +109,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
       if (newComment != null) {
         _commentController.clear();
+        // The server handed back the real comment, so drop it straight into
+        // the tree instead of re-reading the whole thread: it appears at once,
+        // with no loading flash and no throwaway vote to refresh the post.
         setState(() {
+          _comments = CommunityComments.insert(_comments, newComment);
           _replyTarget = null;
         });
         _focusNode.unfocus();
-        _loadPostDetails(); // Reload comment tree
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -135,10 +140,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Future<void> _voteComment(CommunityComment comment, int voteVal) async {
-    final targetVote = comment.userVote == voteVal ? 0 : voteVal;
+    // Same as the post vote and the feed: move the count now, reconcile when
+    // the server answers, and let the prediction stand if it does not -- no
+    // full-thread reload and no flicker.
+    final targetVote = CommunityVote.targetVote(comment.userVote, voteVal);
+    final predicted = comment.copyWith(
+      userVote: targetVote,
+      // A net score, so flipping a downvote to an upvote moves it by two.
+      score: comment.score - comment.userVote + targetVote,
+    );
+    setState(() {
+      _comments = CommunityComments.replace(_comments, comment.commentId, predicted);
+    });
+
     final updated = await _redditService.voteComment(comment.commentId, targetVote);
+    if (!mounted) return;
     if (updated != null) {
-      _loadPostDetails(); // Simple reload to refresh tree values
+      // The server's numbers win; its reply carries no nested replies, so
+      // replace keeps the ones on screen.
+      setState(() {
+        _comments = CommunityComments.replace(_comments, comment.commentId, updated);
+      });
     }
   }
 

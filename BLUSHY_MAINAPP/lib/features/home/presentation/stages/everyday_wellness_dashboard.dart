@@ -40,6 +40,8 @@ import '../../../../services/offline_event_queue.dart';
 import '../../../../shared/api_state_card.dart';
 import '../doctor_summary_screen.dart';
 import '../../../../models/blushy_models.dart';
+import 'everyday_cycle_card.dart';
+import '../../../../shared/live_refresh.dart';
 import '../../../sia/sia_screen.dart';
 import '../../../sia/open_docsy.dart';
 import '../../home_screen.dart';
@@ -55,6 +57,7 @@ import '../../widgets/auto_carousel_cards.dart';
 import '../../../../theme/scale.dart';
 import '../../home_section_order.dart';
 import '../../../../shared/user_display_name.dart';
+import '../../../../services/user_state_store.dart';
 
 String _getTimeBasedGreetingPrefix() {
   final istNow = DateTime.now().toUtc().add(
@@ -87,7 +90,7 @@ class EverydayWellnessDashboard extends StatefulWidget {
 }
 
 class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver, LiveRefresh {
 
   // State variables for Restored Stage 1, 2 & 3
   final Map<String, bool> _stage1PeriodKitItems = {
@@ -1760,148 +1763,15 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
   /// The `state` key is new: cards that want to distinguish loading from empty
   /// from "not enough data yet" can read it, and the ones that only read
   /// `isLogged` behave exactly as before.
-  Map<String, dynamic> _getDynamicCycleDates([PersonalContext? pc]) {
-    Map<String, dynamic> unavailable(
-      String state,
-      String dayText,
-      String subtitle,
-    ) => {
-      'state': state,
-      'isLogged': false,
-      'cycleDay': null,
-      'cycleDayText': dayText,
-      'subtitle': subtitle,
-      'ovulationText': 'Not available',
-      'fertileWindow': 'Not available',
-      'expectedPeriod': 'Not available',
-      'recTestDay': 'Not available',
-      'phaseName': 'Not Logged',
-    };
-
-    final cycle = _cycleResult.data ?? _lastKnownCycle;
-
-    // Branches that do not use cycle language at all (menopause, pregnancy).
-    if (cycle != null && !cycle.cycleTrackingAvailable) {
-      return unavailable(
-        'restricted',
-        'Cycle tracking paused',
-        cycle.restrictedMessage ??
-            'Your current stage does not use cycle tracking.',
+  /// Delegated to EverydayCycleCard, where the state machine is unit-tested.
+  /// [pc] is unused (the card is derived from the cycle read), kept only so the
+  /// existing call sites do not change.
+  Map<String, dynamic> _getDynamicCycleDates([PersonalContext? pc]) =>
+      EverydayCycleCard.resolve(
+        cycleResult: _cycleResult,
+        lastKnown: _lastKnownCycle,
+        formatDayMonth: _formatDayMonth,
       );
-    }
-
-    switch (_cycleResult.state) {
-      case ApiState.loading:
-        // A refresh must not blank a card that already has an answer.
-        //
-        // `_lastKnownCycle` is kept for exactly this, and the line above hands
-        // it over when the request has no data yet -- but this returned before
-        // reaching it. So every reload rendered "Cycle Day: Not Logged" for as
-        // long as the request took and then flipped back to the real day. On a
-        // cold backend that is seconds of the app saying nothing was logged
-        // while the period sat in the database the whole time.
-        if (cycle == null) {
-          return unavailable('loading', 'Loading…', 'Fetching your cycle.');
-        }
-        break;
-
-      case ApiState.empty:
-        // No period data at all. Never show a simulated cycle day here.
-        return unavailable(
-          'empty',
-          'Not Logged',
-          'No period logged yet. Tap to set your last period start date.',
-        );
-
-      case ApiState.offline:
-      case ApiState.error:
-        if (cycle == null) {
-          return unavailable(
-            _cycleResult.state == ApiState.offline ? 'offline' : 'error',
-            'Cycle Day unavailable',
-            _cycleResult.state == ApiState.offline
-                ? 'You are offline. Your cycle will refresh when you reconnect.'
-                : 'Could not load your cycle. Pull to refresh.',
-          );
-        }
-        break;
-
-      default:
-        break;
-    }
-
-    if (cycle == null || cycle.currentCycleDay == null) {
-      return unavailable(
-        'empty',
-        'Not Logged',
-        'No period logged yet. Tap to set your last period start date.',
-      );
-    }
-
-    final int cycleDay = cycle.currentCycleDay!;
-    final bool predictionsAvailable = cycle.hasPrediction;
-
-    // Predictions are withheld until there is enough history to give them
-    // honestly; the card shows the reason instead of a fabricated date.
-    const notEnough = 'Not enough data yet';
-
-    final bool hasOvulation = cycle.estimatedOvulationDate != null;
-    final String ovulationText = hasOvulation
-        ? _formatDayMonth(cycle.estimatedOvulationDate)
-        : notEnough;
-    final String expectedPeriod = predictionsAvailable
-        ? _formatDayMonth(cycle.nextPeriodStartDate)
-        : notEnough;
-    final String fertileWindow =
-        (cycle.fertileWindowStart != null && cycle.fertileWindowEnd != null)
-        ? '${_formatDayMonth(cycle.fertileWindowStart)} - ${_formatDayMonth(cycle.fertileWindowEnd)}'
-        : notEnough;
-
-    final nextPeriod = cycle.nextPeriodStartDate == null
-        ? null
-        : DateTime.tryParse(cycle.nextPeriodStartDate!);
-    final String recTestDay = nextPeriod == null
-        ? notEnough
-        : _formatDayMonth(
-            nextPeriod.add(const Duration(days: 3)).toIso8601String(),
-          );
-
-    // A late period is surfaced as late, not folded into a new cycle.
-    final String subtitle;
-    if (cycle.isOverdue) {
-      subtitle =
-          cycle.lateNotice ??
-          'Your period is ${cycle.daysOverdue ?? 0} day(s) later than your logged pattern suggests.';
-    } else if (hasOvulation) {
-      subtitle = 'Expected Ovulation: $ovulationText';
-    } else {
-      subtitle =
-          cycle.sufficiencyMessage ??
-          'Keep logging to build your cycle picture.';
-    }
-
-    return {
-      'state': _cycleResult.state == ApiState.insufficientData
-          ? 'insufficient_data'
-          : 'ready',
-      'isLogged': true,
-      'cycleDay': cycleDay,
-      'cycleDayText': cycle.isOverdue
-          ? 'Day $cycleDay · ${cycle.daysOverdue ?? 0} days late'
-          : 'Cycle Day $cycleDay',
-      'subtitle': subtitle,
-      'ovulationText': ovulationText,
-      'fertileWindow': fertileWindow,
-      'expectedPeriod': expectedPeriod,
-      'recTestDay': recTestDay,
-      'phaseName': cycle.phase ?? 'Not Logged',
-      // Provenance, so the card can show which calculation produced the number.
-      'calculationVersion': cycle.calculationVersion,
-      'confidenceLevel': cycle.confidenceLevel,
-      'isOverdue': cycle.isOverdue,
-      'disclaimer': cycle.disclaimer,
-    };
-  }
 
   List<String> _extractStrings(dynamic val) {
     if (val == null) return [];
@@ -2043,7 +1913,22 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
     // Today's check-in selections, so they follow the account across devices.
     _loadTodayCheckins();
     SiaDashboardService().refreshNotifier.addListener(_onSiaRefresh);
+    startLiveRefresh();
   }
+
+  /// Live-refresh entry point (poll / app-resume): re-read the home data
+  /// quietly, so what she logged elsewhere appears without a restart. Kept to
+  /// the reads that stay silent -- timeline is left out because re-running it
+  /// would reset its "load more" pagination.
+  @override
+  Future<void> refreshNow() => Future.wait([
+        _loadCycleFromServer(),
+        _loadTodayCheckins(),
+        _loadPatterns(),
+        _loadCarePlan(),
+        _loadConditions(),
+        _loadReflection(),
+      ]);
 
   void _onSiaRefresh() {
     if (mounted) {
@@ -2128,7 +2013,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
         _ttcLoggedIntercourse = checkinData['ttc_intercourse'] == true || checkinData['ttc_intercourse'] == 'true';
       }
 
-      final savedPartnerTasks = BlushyStorage.read('ttc_partner_tasks.json');
+      final savedPartnerTasks = UserStateStore.read('ttc_partner_tasks');
       if (savedPartnerTasks is Map && savedPartnerTasks['tasks'] is List) {
         final list = savedPartnerTasks['tasks'] as List;
         for (int i = 0; i < _ttcPartnerTaskList.length && i < list.length; i++) {
@@ -2456,6 +2341,7 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
 
   @override
   void dispose() {
+    stopLiveRefresh();
     SiaDashboardService().refreshNotifier.removeListener(_onSiaRefresh);
     _animController.dispose();
     super.dispose();
@@ -13663,7 +13549,7 @@ Widget _buildStage2LetsTalkSection() {
                     setState(() {
                       task['completed'] = !isDone;
                     });
-                    BlushyStorage.write('ttc_partner_tasks.json', {'tasks': _ttcPartnerTaskList});
+                    UserStateStore.write('ttc_partner_tasks', {'tasks': _ttcPartnerTaskList});
                     ApiAuthService().saveOnboardingAnswers({
                       'ttc_partner_tasks': _ttcPartnerTaskList,
                     }).catchError((_) => <String, dynamic>{});

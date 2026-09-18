@@ -7,6 +7,7 @@ import {
   getRelationshipAdvice,
   extractAndStoreProfileMemory,
   getChatHistory,
+  importChatHistory,
   getOnboardingAuditTrail,
   getPartnerSuggestions,
   getMedicalReports,
@@ -30,6 +31,7 @@ router.post('/transcribe', requireAuth, uploadPartnerAttachment, transcribeAudio
 router.post('/checkin-followups', requireAuth, getCheckinFollowUps);
 router.get('/medical-reports', requireAuth, getMedicalReports);
 router.get('/history', requireAuth, getChatHistory);
+router.post('/history/import', requireAuth, importChatHistory);
 router.get('/daily-summaries', requireAuth, getMyDailySummaries);
 router.post('/daily-summaries/generate', requireAuth, generateMyDailySummary);
 router.delete('/history', requireAuth, clearChatHistory);

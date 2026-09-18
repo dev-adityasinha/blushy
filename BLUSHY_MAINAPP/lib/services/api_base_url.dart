@@ -65,24 +65,31 @@ String _resolve() {
 
 /// The deployed backend, for release builds and the hosted web build.
 ///
-/// Two Render services answer on these paths and both report healthy, which is
-/// how the wrong one stayed here unnoticed: `blushy-api` and `blushy-api-l51h`.
-/// The live one is `blushy-api-l51h` -- it is the service with `REDIS_URL`
-/// configured, and the faster of the two by roughly half a second on /health.
-/// `render.yaml` still declares the name `blushy-api`, so the file is not a
-/// reliable guide to which service is actually serving users.
+/// A Docker web service on Render (`blushy-api-new`), built from
+/// `BLUSHY_MAINAPP/backend/Dockerfile` on the `dev-adityasinha/blushy` repo.
+/// It replaced `blushy-api-l51h`, which lived in a different Render account
+/// and was suspended on 2026-09-17 -- it now answers 503. Both pointed at the
+/// same Atlas cluster, so while both ran, whichever one a client reached held
+/// the scheduler lease and wrote the data.
 ///
-/// Both read the same Atlas cluster, so an account made against one is present
-/// on the other; the cost of pointing at the wrong service is latency and a
-/// backend without Redis, not a missing account.
+/// CORS_ORIGIN on this service is the hosted web origin
+/// (`https://blushy-web-upload-eight.vercel.app`), verified by preflight:
+/// the service returns that origin and refuses others. `isAllowedOrigin` in
+/// backend/src/app.js always permits localhost, so local dev needs no entry.
+/// A web build shipped against a host whose CORS_ORIGIN omits its own origin
+/// loads the page and then fails every request, which in the browser looks
+/// like an app that simply does nothing -- so check the preflight before
+/// deploying web against a new backend.
 ///
-/// This replaced api.blushy.life, which answers on the same paths but is a
-/// separate box -- nginx on a VPS rather than Render -- so a release build was
-/// talking to a deployment that nothing in this repository deploys to.
+/// Android is unaffected either way: native HTTP is not subject to CORS, and
+/// `app.js` admits a request with no Origin header at all.
+///
+/// Before that it was api.blushy.life, a VPS nothing in this repository
+/// deploys to.
 ///
 /// Render's free plan stops the instance when it is idle, and the first
 /// request after that pays the cold start: measured at 27s, and the client
 /// timeout has to be able to absorb it. `ApiWarmup.ping()` fires during
 /// startup so that wait is spent behind the splash rather than under the first
 /// card the user looks at.
-const String _liveBaseUrl = 'https://blushy-api-l51h.onrender.com';
+const String _liveBaseUrl = 'https://blushy-api-new.onrender.com';

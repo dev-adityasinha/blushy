@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { db } from '../utils/db.js';
 import { normalizeRole as normalizeRoleValue } from '../utils/role.js';
@@ -30,6 +30,8 @@ function mapRow(row) {
     // Carried so the app can show which exchanges have been shared with a
     // partner. Without it the share control resets on every launch.
     sharedWithPartner: row.shared_with_partner === true,
+    // True when the model never answered this turn.
+    unanswered: row.unanswered === true || (!assistantMsg && !!userMsg),
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
   };
 }
@@ -49,7 +51,12 @@ async function appendConversation({ userKey, role, userMessage, assistantMessage
     user_id: userId,
     role: normalizeStoredRole(role),
     user_message: userMessage,
-    assistant_message: assistantMessage,
+    assistant_message: assistantMessage || null,
+    // A turn the model never answered. Stored rather than dropped: what she
+    // asked is hers, and losing it means the conversation has a hole in it
+    // where a provider outage was. The app renders these as her message alone
+    // with a quiet note, so the gap is visible instead of silent.
+    unanswered: !assistantMessage,
     model,
     created_at: new Date(),
   };
@@ -80,6 +87,82 @@ async function appendConversation({ userKey, role, userMessage, assistantMessage
   });
 
   return mapRow(doc);
+}
+
+/**
+ * Takes exchanges the device holds and the server does not.
+ *
+ * History used to live only where it was written. A turn saved on a phone was
+ * invisible on the web and gone with a reinstall, and the turns lost while a
+ * failed reply discarded the whole exchange existed nowhere else at all. This
+ * is how a client hands those up so the account owns them rather than one
+ * installation.
+ *
+ * Idempotent by construction: the `id` is derived from the user, the instant
+ * and the question, so re-sending the same conversation upserts onto the same
+ * rows instead of stacking copies. That matters because the obvious client
+ * behaviour -- send what the server did not return, on every launch -- would
+ * otherwise duplicate the lot each time.
+ */
+async function importConversations({ userKey, exchanges }) {
+  if (!userKey || !userKey.startsWith('user:')) {
+    throw new Error('Authenticated user key required to import conversation.');
+  }
+  if (!Array.isArray(exchanges) || exchanges.length === 0) {
+    return { imported: 0 };
+  }
+
+  const userId = userKey.replace('user:', '');
+  const collName = await getColl(userId, 'ai_chat_history');
+
+  const operations = [];
+  for (const entry of exchanges) {
+    const userMessage = typeof entry?.userMessage === 'string' ? entry.userMessage.trim() : '';
+    const assistantMessage = typeof entry?.assistantMessage === 'string'
+      ? entry.assistantMessage.trim()
+      : '';
+    // A row with neither half says nothing and cannot be shown.
+    if (!userMessage && !assistantMessage) continue;
+
+    // A bare ISO string carries no offset, and `new Date` then reads it as
+    // this process's local time -- which on a server in UTC put an IST client's
+    // rows 5.5 hours in the future and threw the day grouping out. Anything
+    // without a zone is taken as UTC, which is what the client now sends.
+    const raw = typeof entry?.at === 'string' ? entry.at.trim() : '';
+    const zoned = raw && !/(Z|[+-]\d{2}:?\d{2})$/i.test(raw) ? `${raw}Z` : raw;
+    const at = zoned ? new Date(zoned) : null;
+    const createdAt = at && !Number.isNaN(at.getTime()) ? at : new Date();
+
+    const id = createHash('sha256')
+      .update(`${userId}|${createdAt.toISOString()}|${userMessage}`)
+      .digest('hex')
+      .slice(0, 32);
+
+    operations.push({
+      updateOne: {
+        filter: { id },
+        update: {
+          $setOnInsert: {
+            id,
+            user_key: `user:${userId}`,
+            user_id: userId,
+            role: normalizeStoredRole(entry?.role),
+            user_message: userMessage || null,
+            assistant_message: assistantMessage || null,
+            unanswered: !assistantMessage,
+            model: 'imported',
+            created_at: createdAt,
+          },
+        },
+        upsert: true,
+      },
+    });
+  }
+
+  if (operations.length === 0) return { imported: 0 };
+
+  const result = await db.collection(collName).bulkWrite(operations, { ordered: false });
+  return { imported: result.upsertedCount ?? 0, received: operations.length };
 }
 
 async function listHistory(userKey) {
@@ -179,6 +262,7 @@ export const aiHistoryRepository = {
   setConversationShared,
   listSharedConversations,
   appendConversation,
+  importConversations,
   listHistory,
   clearHistory,
   listUserKeysWithHistory,

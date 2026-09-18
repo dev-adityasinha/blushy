@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'sia_conversation.dart';
+import '../../shared/live_refresh.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -44,7 +46,8 @@ class BlushySiaScreen extends StatefulWidget {
   State<BlushySiaScreen> createState() => _BlushySiaScreenState();
 }
 
-class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderStateMixin {
+class _BlushySiaScreenState extends State<BlushySiaScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver, LiveRefresh {
   final List<Map<String, String>> _messages = [];
 
   /// Exchanges whose share state is currently being written.
@@ -260,7 +263,15 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
       if (!mounted || widget.initialQuestion == null) return;
       _sendUserMessage(widget.initialQuestion!);
     });
+    startLiveRefresh();
   }
+
+  /// Live-refresh entry point (poll / app-resume / pull-to-refresh): re-read
+  /// history quietly. The merge dedupes, and _followLatest only scrolls when
+  /// the message count actually changes, so a no-op poll does not disturb the
+  /// chat.
+  @override
+  Future<void> refreshNow() => _loadChatHistory();
 
   Future<void> _loadChatHistory() async {
     // Null means the request failed; an empty list means the server really
@@ -268,7 +279,15 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
     final history = await _siaService.getChatHistory();
     if (!mounted) return;
 
-    final restored = history ?? _cachedConversation();
+    // The server is authoritative for what it has, but it is not the only
+    // record. Exchanges from before saving worked exist only on this device,
+    // and dropping them would mean a conversation that visibly starts in the
+    // middle. The two are merged instead: every server row, plus anything
+    // cached here the server has never seen, in the order it was said.
+    final cached = _cachedConversation();
+    final restored = history == null
+        ? cached
+        : _mergeConversations(server: history, cached: cached);
 
     setState(() {
       if (restored.isNotEmpty) {
@@ -288,21 +307,58 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         _messages.add({
           'sender': 'sia',
           'text': _openingLine(),
-          'at': DateTime.now().toIso8601String(),
+          'at': DateTime.now().toUtc().toIso8601String(),
         });
       }
     });
 
-    if (history != null) _cacheConversation();
+    // Cache the union, so a day recovered from the device survives the next
+    // launch even if it never reaches the server.
+    if (history != null) {
+      _cacheConversation();
+      // Then hand those days up, so they stop being this phone's alone: the
+      // web sees them, and a reinstall no longer takes them. Once the server
+      // has them the next fetch returns them, nothing is device-only, and
+      // this stops firing on its own.
+      unawaited(_uploadDeviceOnlyHistory(server: history, merged: restored));
+    }
   }
 
-  /// Two maps with the same contents are not `==` in Dart, so the old
-  /// `history.contains(m)` never matched and every restored message was
-  /// appended a second time.
-  bool _sameMessage(List<Map<String, String>> list, Map<String, String> m) {
-    return list.any((h) =>
-        h['sender'] == m['sender'] && h['text'] == m['text'] && h['at'] == m['at']);
+  /// Sends the server the exchanges only this device had.
+  ///
+  /// The cache is a flat list of messages; the server stores exchanges. A
+  /// user message pairs with the Docsy reply that follows it, and a question
+  /// that was never answered goes up on its own -- which is exactly the shape
+  /// of the turns lost while a failed reply discarded the whole exchange.
+  Future<void> _uploadDeviceOnlyHistory({
+    required List<Map<String, String>> server,
+    required List<Map<String, String>> merged,
+  }) async {
+    final missing = merged.where((m) => !_sameMessage(server, m)).toList();
+    if (missing.isEmpty) return;
+
+    final exchanges = SiaConversation.toExchanges(missing);
+    if (exchanges.isEmpty) return;
+
+    final imported = await _siaService.importChatHistory(exchanges);
+    debugPrint('BlushySia: uploaded ${exchanges.length} device-only exchange(s), '
+        'server took ${imported ?? 'none (failed)'}');
   }
+
+  /// Server rows plus anything only this device remembers, oldest first.
+  ///
+  /// A clear wipes the cache as well as the server copy, so nothing here can
+  /// resurrect a conversation that was deliberately deleted.
+  // Conversation merge/dedupe/timestamp logic lives in SiaConversation, where
+  // it is unit-tested. These thin wrappers keep the call sites unchanged.
+  List<Map<String, String>> _mergeConversations({
+    required List<Map<String, String>> server,
+    required List<Map<String, String>> cached,
+  }) =>
+      SiaConversation.merge(server: server, cached: cached);
+
+  bool _sameMessage(List<Map<String, String>> list, Map<String, String> m) =>
+      SiaConversation.sameMessage(list, m);
 
   /// The conversation as it was last seen, for when the server cannot be
   /// reached. Written after every turn; read only as a fallback, so a
@@ -324,7 +380,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
     try {
       BlushyStorage.write('recent_sia_chats.json', {
         'messages': _messages,
-        'lastUpdated': DateTime.now().toIso8601String(),
+        'lastUpdated': DateTime.now().toUtc().toIso8601String(),
       });
     } catch (_) {}
   }
@@ -336,18 +392,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
   /// rather than signals, and they are already in the context by name.
   List<String> _loggedToday() {
     try {
-      final checkin = BlushyStorage.read('daily_checkin.json');
-      final labels = <String>[];
-      for (final entry in checkin.entries) {
-        if (entry.key == 'date' || entry.key == 'feeling') continue;
-        final value = entry.value;
-        if (value is String && value.trim().isNotEmpty) {
-          labels.add(value.trim());
-        } else if (value is List) {
-          labels.addAll(value.map((v) => v.toString().trim()).where((v) => v.isNotEmpty));
-        }
-      }
-      return labels;
+      return SiaConversation.loggedLabels(BlushyStorage.read('daily_checkin.json'));
     } catch (_) {
       return const [];
     }
@@ -373,6 +418,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
 
   @override
   void dispose() {
+    stopLiveRefresh();
     _chatController.dispose();
     _chatScroll.dispose();
     _waveController.dispose();
@@ -535,7 +581,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
       final userEntry = <String, String>{
         'sender': 'user',
         'text': promptText,
-        'at': DateTime.now().toIso8601String(),
+        'at': DateTime.now().toUtc().toIso8601String(),
       };
       if (currentAttachment != null) {
         userEntry['fileName'] = currentAttachment.name;
@@ -663,7 +709,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         final siaEntry = <String, String>{
           'sender': 'sia',
           'text': chatResult.message,
-          'at': DateTime.now().toIso8601String(),
+          'at': DateTime.now().toUtc().toIso8601String(),
         };
         if (currentAttachment != null) {
           siaEntry['analyzedFile'] = currentAttachment.name;
@@ -681,7 +727,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         _messages.add({
           'sender': 'sia',
           'text': "I'm having a little trouble connecting right now, but I'm still here with you.",
-          'at': DateTime.now().toIso8601String(),
+          'at': DateTime.now().toUtc().toIso8601String(),
         });
       });
     }
@@ -1127,8 +1173,39 @@ class _BlushySiaScreenState extends State<BlushySiaScreen> with TickerProviderSt
         }
       }
       widgets.add(_buildMessageBubble(msg));
+      // Her message is saved even when the model never answered it, so the
+      // conversation keeps its shape through a provider outage. Saying so is
+      // the difference between a visible gap and one that reads as though
+      // nothing was ever sent.
+      if (msg['unanswered'] == '1') {
+        widgets.add(_buildUnansweredNote());
+      }
     }
     return widgets;
+  }
+
+  /// Marks a turn Docsy never answered.
+  Widget _buildUnansweredNote() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 2, bottom: 10),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off_rounded,
+              size: 13, color: BlushyColors.secondaryText.withValues(alpha: 0.8)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              "Docsy didn't answer this one.",
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                height: 1.4,
+                color: BlushyColors.secondaryText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   static const List<String> _monthNames = [

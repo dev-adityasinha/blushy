@@ -8,7 +8,8 @@ import '../../core/theme.dart' hide BlushyColors;
 import '../../core/storage.dart';
 import '../journal/journal_screen.dart';
 import '../journal/notes/notes_journal_screen.dart';
-import '../journal/repository/journal_repository.dart';
+import 'view_models/m_studio_view_model.dart';
+import '../../shared/live_refresh.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/journal_storage.dart';
@@ -18,6 +19,7 @@ import '../partner/digibouquet/screens/home_screen.dart' show HomeScreen;
 import '../partner/digibouquet/models/auth_models.dart';
 import '../../services/auth_storage.dart';
 import 'package:provider/provider.dart';
+import '../../services/user_state_store.dart';
 
 
 class BlushyMStudioScreen extends StatefulWidget {
@@ -27,7 +29,8 @@ class BlushyMStudioScreen extends StatefulWidget {
   State<BlushyMStudioScreen> createState() => _BlushyMStudioScreenState();
 }
 
-class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerProviderStateMixin {
+class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver, LiveRefresh {
   // Tab index names
   ///
   /// M Studio used to be three horizontal tabs with everything else buried in
@@ -116,32 +119,28 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
   List<Map<String, dynamic>> _capsules = [];
   bool _capsulesLoading = false;
 
+  /// This screen is the View; the three reads live in the tested
+  /// MStudioViewModel and are mirrored back by _onStudioChanged.
+  final MStudioViewModel _vm = MStudioViewModel();
+
   /// Guided sessions from the server. Empty until a reviewer approves them.
   List<Map<String, dynamic>> _sessions = [];
   bool _sessionsLoading = false;
 
-  Future<void> _loadRecoverySessions() async {
-    if (mounted) setState(() => _sessionsLoading = true);
+  /// Delegated to the view model; _onStudioChanged mirrors the result.
+  Future<void> _loadRecoverySessions() => _vm.loadSessions();
 
-    final result = await RecoveryApi.sessions();
+  Future<void> _loadCapsules() => _vm.loadCapsules();
+
+  /// The View reacting to its ViewModel.
+  void _onStudioChanged() {
     if (!mounted) return;
-
     setState(() {
-      _sessionsLoading = false;
-      _sessions = result.data ?? const [];
-    });
-  }
-
-  Future<void> _loadCapsules() async {
-    if (mounted) setState(() => _capsulesLoading = true);
-
-    final result = await CapsulesApi.list();
-    if (!mounted) return;
-
-    setState(() {
-      _capsulesLoading = false;
-      // No seeded placeholders. An empty list is what a new account has.
-      _capsules = result.data ?? const [];
+      _sessions = _vm.sessions;
+      _sessionsLoading = _vm.sessionsLoading;
+      _capsules = _vm.capsules;
+      _capsulesLoading = _vm.capsulesLoading;
+      _latestEntry = _vm.latestEntry;
     });
   }
 
@@ -198,29 +197,26 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
   @override
   void initState() {
     super.initState();
+    _vm.addListener(_onStudioChanged);
     _loadCapsules();
     _loadRecoverySessions();
     _loadLatestEntry();
+    startLiveRefresh();
   }
 
-  /// The most recent thing written, for the studio's own recent list.
-  ///
-  /// Read from the journal's own store rather than invented: an account that
-  /// has written nothing shows nothing, which is the honest empty state.
-  Future<void> _loadLatestEntry() async {
-    final entries =
-        await JournalRepository().getAllEntries(AuthStorage.getUserId() ?? 'anon');
-    if (!mounted) return;
+  @override
+  Future<void> refreshNow() => _vm.refreshAll();
 
-    final sorted = entries.toList()
-      ..sort((a, b) => (b.dateTime ?? b.date).compareTo(a.dateTime ?? a.date));
-    setState(() => _latestEntry = sorted.isEmpty ? null : sorted.first);
-  }
+  /// Delegated to the view model; _onStudioChanged mirrors the result.
+  Future<void> _loadLatestEntry() => _vm.loadLatestEntry();
 
   LocalJournalEntry? _latestEntry;
 
   @override
   void dispose() {
+    stopLiveRefresh();
+    _vm.removeListener(_onStudioChanged);
+    _vm.dispose();
     _editorController.dispose();
     super.dispose();
   }
@@ -1224,7 +1220,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen> with TickerPr
               final text = _editorController.text.trim();
               if (text.isNotEmpty) {
                 try {
-                  BlushyStorage.write('mstudio_reflections.json', {
+                  UserStateStore.write('mstudio_reflections', {
                     'text': text,
                     'template': _activeJournalTemplate,
                     'timestamp': DateTime.now().toIso8601String(),

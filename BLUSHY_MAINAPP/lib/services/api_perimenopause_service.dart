@@ -328,10 +328,38 @@ class ApiPerimenopauseService {
   /// Preserves the server's state instead of collapsing it to a nullable, so
   /// the caller can distinguish fresh data, a cached copy shown after a failure
   /// (stale), genuinely no data, and an error or offline request.
+  /// The last overview written to this device, read without any network, so a
+  /// returning user sees her data at once while the fresh copy loads. Reuses
+  /// the same `fromJson` the fetch uses; a missing or unreadable cache is null.
+  static PerimenopauseOverviewData? cachedOverview() {
+    try {
+      final cached = BlushyStorage.read(_overviewKey);
+      if (cached.isNotEmpty) return PerimenopauseOverviewData.fromJson(cached);
+    } catch (_) {}
+    return null;
+  }
+
+  static PerimenopauseTodayBriefData? cachedBrief() {
+    try {
+      final cached = BlushyStorage.read(_briefKey);
+      if (cached.isNotEmpty) return PerimenopauseTodayBriefData.fromJson(cached);
+    } catch (_) {}
+    return null;
+  }
+
   static Future<ApiResult<PerimenopauseOverviewData>> getOverview() async {
     final res = await ApiContractClient.get<PerimenopauseOverviewData>(
       '/perimenopause/overview',
-      parse: (data) => PerimenopauseOverviewData.fromJson(Map<String, dynamic>.from(data as Map)),
+      // Cache the raw server shape (what fromJson reads) so it round-trips
+      // exactly -- the model has nested types without toJson, and a second
+      // serializer over one shape is how a cache silently drifts.
+      parse: (data) {
+        final map = Map<String, dynamic>.from(data as Map);
+        try {
+          BlushyStorage.write(_overviewKey, map);
+        } catch (_) {}
+        return PerimenopauseOverviewData.fromJson(map);
+      },
     );
 
     if (res.data != null) {
@@ -360,7 +388,13 @@ class ApiPerimenopauseService {
   static Future<ApiResult<PerimenopauseTodayBriefData>> getTodayBrief() async {
     final res = await ApiContractClient.get<PerimenopauseTodayBriefData>(
       '/perimenopause/today-brief',
-      parse: (data) => PerimenopauseTodayBriefData.fromJson(Map<String, dynamic>.from(data as Map)),
+      parse: (data) {
+        final map = Map<String, dynamic>.from(data as Map);
+        try {
+          BlushyStorage.write(_briefKey, map);
+        } catch (_) {}
+        return PerimenopauseTodayBriefData.fromJson(map);
+      },
     );
 
     if (res.data != null) {

@@ -80,7 +80,15 @@ async function verifyToken(token) {
   } else {
     // If it's a raw Access Token (fallback for web client environments):
     try {
-      const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+      // A timeout, because there was none. When this call did not come back
+      // the request hung: neither the success path nor the catch below ran,
+      // so nothing was logged and the phone simply waited. An auth attempt
+      // that fails in eight seconds and says why is worth more than one that
+      // might eventually succeed.
+      const response = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?access_token=${token}`,
+        { signal: AbortSignal.timeout(8000) },
+      );
       if (!response.ok) {
         throw new Error(`Tokeninfo API returned HTTP status ${response.status}`);
       }
@@ -108,8 +116,11 @@ async function verifyToken(token) {
       // The app falls back to the access token when Google hands it no ID
       // token, which is itself a symptom worth seeing: it means the server
       // client id did not take effect on the device.
-      logger.warn(`googleLogin: access-token fallback rejected (${e.message})`);
-      throw createHttpError(401, `Invalid Google Token: ${e.message}`);
+      const reason = e?.name === 'TimeoutError' || e?.name === 'AbortError'
+        ? 'Google tokeninfo did not respond within 8s'
+        : e.message;
+      logger.warn(`googleLogin: access-token fallback rejected (${reason})`);
+      throw createHttpError(401, `Invalid Google Token: ${reason}`);
     }
   }
 }

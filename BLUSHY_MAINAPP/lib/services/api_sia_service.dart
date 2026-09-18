@@ -5,6 +5,7 @@ import '../models/blushy_models.dart';
 import 'api_base_url.dart';
 import 'api_contract_client.dart';
 import 'language_preference.dart';
+import '../core/storage.dart';
 import 'auth_storage.dart';
 import 'log_redaction.dart';
 
@@ -278,6 +279,11 @@ class ApiSiaService {
               // exchange -- and so no way to offer sharing at all.
               final conversationId = item['id']?.toString() ?? '';
               final shared = item['sharedWithPartner'] == true ? '1' : '0';
+              // A turn the model never answered. Her message is stored on its
+              // own so a provider outage costs the reply rather than the whole
+              // exchange; the screen marks it rather than leaving a gap that
+              // looks like nothing was ever said.
+              final unanswered = item['unanswered'] == true ? '1' : '0';
 
               // The server stamps every exchange; this was dropped here, so
               // the screen had no idea when anything was said.
@@ -292,6 +298,7 @@ class ApiSiaService {
                   'conversationId': conversationId,
                   'shared': shared,
                   'at': at,
+                  'unanswered': unanswered,
                 });
               }
               if (assistantMsg != null && assistantMsg.trim().isNotEmpty) {
@@ -325,15 +332,59 @@ class ApiSiaService {
     }
   }
 
+  /// Hands the server exchanges only this device holds: `POST /ai/history/import`
+  ///
+  /// History that lives in one installation is not history: it is invisible
+  /// on the web, and a reinstall takes it. Sending it up once makes the
+  /// account own it. The server derives each row's id from the instant and
+  /// the question, so re-sending costs a round trip rather than duplicates.
+  ///
+  /// Returns how many rows were new, or null if the request failed -- the
+  /// caller keeps its local copy either way.
+  Future<int?> importChatHistory(List<Map<String, String>> exchanges) async {
+    if (exchanges.isEmpty) return 0;
+    try {
+      final response = await _dio.post(
+        '/ai/history/import',
+        data: {'exchanges': exchanges},
+        options: _authOptions(),
+      );
+      final data = response.data;
+      if (data is Map && data['imported'] is int) return data['imported'] as int;
+      return 0;
+    } catch (e) {
+      debugPrint('BlushySia: Error importing chat history: $e');
+      return null;
+    }
+  }
+
   /// Clears saved Docsy chat history: `DELETE /ai/history`
+  ///
+  /// The device's own copy goes with it. The chat screen merges that copy
+  /// with what the server returns, so a clear that left it behind would put
+  /// the whole conversation back on the next launch.
   Future<bool> clearChatHistory() async {
     try {
       await _dio.delete('/ai/history', options: _authOptions());
+      _forgetCachedConversation();
       return true;
     } catch (e) {
       debugPrint('BlushySia: Error clearing history: $e');
+      // Cleared locally even when the request failed: she asked for it gone,
+      // and leaving it visible while the server forgets it is the worse of
+      // the two mismatches.
+      _forgetCachedConversation();
       return false;
     }
+  }
+
+  void _forgetCachedConversation() {
+    try {
+      BlushyStorage.write('recent_sia_chats.json', {
+        'messages': <Map<String, String>>[],
+        'lastUpdated': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
   }
 
   /// Fetches AI health insights: `GET /ai/health-insights`
