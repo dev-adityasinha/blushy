@@ -1127,3 +1127,364 @@ Widget _buildGameTab(String label, int index, int selectedIndex, VoidCallback on
     ),
   );
 }
+
+// ============================================================================
+// 05. A WARM GESTURE SHEET (TACTILE MICRO-AFFECTION)
+// ============================================================================
+
+void showWarmGestureSheet(
+  BuildContext context, {
+  required String partnerName,
+  required Function(String message) onSendGesture,
+}) {
+  final gestures = [
+    (
+      title: 'Hot Coffee & Cozy Hug ☕',
+      subtitle: 'Sending a warm cup of coffee and a tight embrace.',
+      message: 'Sending you a warm cup of coffee & cozy hug ☕❤️',
+      icon: Icons.coffee_rounded,
+      tint: kTealTint,
+      accent: kTeal,
+    ),
+    (
+      title: 'Big Tight Embrace 🫂',
+      subtitle: 'Wrapping you in the biggest, warmest hug today.',
+      message: 'Wrapping you in the biggest warm embrace today 🫂✨',
+      icon: Icons.favorite_rounded,
+      tint: kMagentaTint,
+      accent: kMagenta,
+    ),
+    (
+      title: 'Sweet Forehead Kiss 💋',
+      subtitle: 'A gentle forehead kiss to brighten your day.',
+      message: 'A gentle forehead kiss to brighten your day 💋🌸',
+      icon: Icons.face_rounded,
+      tint: kCoralTint,
+      accent: kCoral,
+    ),
+    (
+      title: 'Sweet Treat Delivery 🍫',
+      subtitle: 'Virtual sweet chocolates and all my affection.',
+      message: 'Sending sweet treats and all my love to you 🍫🥰',
+      icon: Icons.cookie_rounded,
+      tint: kAmberTint,
+      accent: kAmber,
+    ),
+    (
+      title: 'Gentle Pause & Breathe 🌿',
+      subtitle: 'Take a deep breath, you are doing incredible.',
+      message: 'Take a deep breath, my love. You are doing amazing 🌿🕊️',
+      icon: Icons.spa_rounded,
+      tint: kCobaltTint,
+      accent: kCobalt,
+    ),
+  ];
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      decoration: const BoxDecoration(
+        color: kSanctuaryCanvas,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: kSanctuaryBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'SWEET SURPRISE',
+              style: GoogleFonts.manrope(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+                color: kSanctuaryCrimson,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Send a Warm Gesture to $partnerName',
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: kSanctuaryCharcoal,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tap any gesture below to send it instantly into your shared chat.',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: kSanctuaryMuted,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...gestures.map((g) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      onSendGesture(g.message);
+                    },
+                    borderRadius: BorderRadius.circular(18),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: kSanctuaryBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: g.tint,
+                            ),
+                            child: Icon(g.icon, size: 22, color: g.accent),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  g.title,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: kSanctuaryCharcoal,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  g.subtitle,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: kSanctuaryMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: g.accent),
+                        ],
+                      ),
+                    ),
+                  ),
+                )),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+// ============================================================================
+// 06. VIBE PULSE SHEET (HEARTBEAT & ENERGY SHARING)
+// ============================================================================
+
+void showVibePulseSheet(
+  BuildContext context, {
+  required String partnerName,
+  required Function(String message) onSendVibe,
+}) {
+  final vibes = [
+    (
+      title: 'Thinking of You ✨',
+      subtitle: 'Daydreaming and smiling thinking about you.',
+      message: 'Thinking of you right now and smiling ✨❤️',
+      icon: Icons.auto_awesome_rounded,
+      tint: kCobaltTint,
+      accent: kCobalt,
+    ),
+    (
+      title: 'Missing Your Voice 🥺',
+      subtitle: 'Missing you extra and wishing you were right here.',
+      message: 'Missing you a little extra today 🥺❤️',
+      icon: Icons.favorite_border_rounded,
+      tint: kMagentaTint,
+      accent: kMagenta,
+    ),
+    (
+      title: 'Craving Cuddles 🧸',
+      subtitle: 'Officially on cuddle standby right now.',
+      message: 'Officially craving cuddles with you 🧸❤️',
+      icon: Icons.pets_rounded,
+      tint: kAmberTint,
+      accent: kAmber,
+    ),
+    (
+      title: 'So Proud of You 🌟',
+      subtitle: 'A gentle reminder that you are a total rockstar.',
+      message: 'Just wanted to say: I am so incredibly proud of you 🌟💖',
+      icon: Icons.star_rounded,
+      tint: kAmberTint,
+      accent: kAmber,
+    ),
+    (
+      title: 'Recharge Needed 🔋',
+      subtitle: 'Low battery today, need some sweet partner warmth.',
+      message: 'Low battery today, need your sweet positive warmth 🔋🥺',
+      icon: Icons.battery_charging_full_rounded,
+      tint: kTealTint,
+      accent: kTeal,
+    ),
+  ];
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      decoration: const BoxDecoration(
+        color: kSanctuaryCanvas,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: kSanctuaryBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'HEARTBEAT & ENERGY',
+              style: GoogleFonts.manrope(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+                color: kSanctuaryCrimson,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Share Your Vibe with $partnerName',
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: kSanctuaryCharcoal,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Send your real energy state to $partnerName with one gentle tap.',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: kSanctuaryMuted,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...vibes.map((v) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      onSendVibe(v.message);
+                    },
+                    borderRadius: BorderRadius.circular(18),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: kSanctuaryBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: v.tint,
+                            ),
+                            child: Icon(v.icon, size: 22, color: v.accent),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  v.title,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: kSanctuaryCharcoal,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  v.subtitle,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: kSanctuaryMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: v.accent),
+                        ],
+                      ),
+                    ),
+                  ),
+                )),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+

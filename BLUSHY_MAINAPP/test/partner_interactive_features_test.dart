@@ -177,4 +177,130 @@ void main() {
 
     expect(sentGame, contains('COUPLE GAME'));
   });
+
+  testWidgets('MakeALittleMomentRail only renders tactile micro-surprises and no duplicate games or planner', (tester) async {
+    bool bloomTapped = false;
+    bool letterTapped = false;
+    bool gestureTapped = false;
+    bool whisperTapped = false;
+    bool vibeTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 1200,
+            child: MakeALittleMomentRail(
+              onSendBloom: () => bloomTapped = true,
+              onWriteLetter: () => letterTapped = true,
+              onSendWarmGesture: () => gestureTapped = true,
+              onVoiceWhisper: () => whisperTapped = true,
+              onShareVibe: () => vibeTapped = true,
+              bloomsCount: 3,
+              lettersCount: 1,
+              sealedLettersCount: 2,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Micro-surprises MUST exist
+    expect(find.text('MAKE A LITTLE MOMENT'), findsOneWidget);
+    expect(find.text('SHARED SURPRISES'), findsOneWidget);
+    expect(find.text('Send a Bloom'), findsOneWidget);
+    expect(find.text('Write a Letter'), findsOneWidget);
+    expect(find.text('A Warm Gesture'), findsOneWidget);
+    expect(find.text('Voice Whisper'), findsOneWidget);
+    expect(find.text('Vibe Pulse'), findsOneWidget);
+
+    // Repetitive cards from "Play & Plan Together" MUST NOT exist here!
+    expect(find.text('Couple Games'), findsNothing);
+    expect(find.text('Date Planner'), findsNothing);
+    expect(find.text('Doodle Canvas'), findsNothing);
+
+    await tester.tap(find.text('Send a Bloom'));
+    expect(bloomTapped, isTrue);
+
+    await tester.tap(find.text('Write a Letter'));
+    expect(letterTapped, isTrue);
+
+    await tester.tap(find.text('A Warm Gesture'));
+    expect(gestureTapped, isTrue);
+
+    await tester.tap(find.text('Voice Whisper'));
+    expect(whisperTapped, isTrue);
+
+    await tester.tap(find.text('Vibe Pulse'));
+    expect(vibeTapped, isTrue);
+  });
+
+  testWidgets('showWarmGestureSheet allows sending a warm hug or coffee to chat', (tester) async {
+    String? sentGesture;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showWarmGestureSheet(
+                context,
+                partnerName: 'Mithila',
+                onSendGesture: (msg) => sentGesture = msg,
+              ),
+              child: const Text('Send Gesture'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Send Gesture'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SWEET SURPRISE'), findsOneWidget);
+    expect(find.text('Send a Warm Gesture to Mithila'), findsOneWidget);
+    expect(find.text('Hot Coffee & Cozy Hug ☕'), findsOneWidget);
+    expect(find.text('Big Tight Embrace 🫂'), findsOneWidget);
+
+    await tester.tap(find.text('Hot Coffee & Cozy Hug ☕'));
+    await tester.pumpAndSettle();
+
+    expect(sentGesture, contains('warm cup of coffee & cozy hug'));
+  });
+
+  testWidgets('showVibePulseSheet allows sending heartbeat/energy vibe to chat', (tester) async {
+    String? sentVibe;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showVibePulseSheet(
+                context,
+                partnerName: 'Mithila',
+                onSendVibe: (msg) => sentVibe = msg,
+              ),
+              child: const Text('Share Vibe'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Share Vibe'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('HEARTBEAT & ENERGY'), findsOneWidget);
+    expect(find.text('Share Your Vibe with Mithila'), findsOneWidget);
+    expect(find.text('Thinking of You ✨'), findsOneWidget);
+    expect(find.text('Craving Cuddles 🧸'), findsOneWidget);
+
+    await tester.tap(find.text('Thinking of You ✨'));
+    await tester.pumpAndSettle();
+
+    expect(sentVibe, contains('Thinking of you right now'));
+  });
 }
+

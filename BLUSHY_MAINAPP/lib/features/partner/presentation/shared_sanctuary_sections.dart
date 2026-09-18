@@ -1122,11 +1122,10 @@ class MakeALittleMomentRail extends StatelessWidget {
     super.key,
     required this.onSendBloom,
     required this.onWriteLetter,
+    this.onSendWarmGesture,
+    this.onVoiceWhisper,
+    this.onShareVibe,
     this.onLeaveMessage,
-    required this.onPlanSomething,
-    this.onDatePlanner,
-    this.onSharedCanvas,
-    this.onCoupleGames,
     this.bloomsCount = 0,
     this.lettersCount = 0,
     this.sealedLettersCount = 0,
@@ -1134,11 +1133,10 @@ class MakeALittleMomentRail extends StatelessWidget {
 
   final VoidCallback onSendBloom;
   final VoidCallback onWriteLetter;
+  final VoidCallback? onSendWarmGesture;
+  final VoidCallback? onVoiceWhisper;
+  final VoidCallback? onShareVibe;
   final VoidCallback? onLeaveMessage;
-  final VoidCallback onPlanSomething;
-  final VoidCallback? onDatePlanner;
-  final VoidCallback? onSharedCanvas;
-  final VoidCallback? onCoupleGames;
   final int bloomsCount;
   final int lettersCount;
   final int sealedLettersCount;
@@ -1146,33 +1144,6 @@ class MakeALittleMomentRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = [
-      if (onCoupleGames != null)
-        (
-          label: 'Couple Games',
-          sublabel: 'Play in chat',
-          icon: Icons.casino_rounded,
-          tint: kMagentaTint,
-          accent: kMagenta,
-          onTap: onCoupleGames!,
-        ),
-      if (onDatePlanner != null)
-        (
-          label: 'Date Planner',
-          sublabel: 'Vibes & seats',
-          icon: Icons.calendar_today_rounded,
-          tint: kCobaltTint,
-          accent: kCobalt,
-          onTap: onDatePlanner!,
-        ),
-      if (onSharedCanvas != null)
-        (
-          label: 'Doodle Canvas',
-          sublabel: 'Draw love notes',
-          icon: Icons.palette_rounded,
-          tint: kTealTint,
-          accent: kTeal,
-          onTap: onSharedCanvas!,
-        ),
       (
         label: 'Send a Bloom',
         sublabel: bloomsCount > 0 ? '$bloomsCount blooming' : 'Virtual petals',
@@ -1191,14 +1162,32 @@ class MakeALittleMomentRail extends StatelessWidget {
         accent: kCoral,
         onTap: onWriteLetter,
       ),
-      if (onCoupleGames == null && onDatePlanner == null && onSharedCanvas == null)
+      if (onSendWarmGesture != null)
         (
-          label: 'Couple Quest',
-          sublabel: 'Play together',
-          icon: Icons.explore_rounded,
-          tint: kCoralTint,
-          accent: kCoral,
-          onTap: onPlanSomething,
+          label: 'A Warm Gesture',
+          sublabel: 'Sweet hug & coffee',
+          icon: Icons.coffee_rounded,
+          tint: kTealTint,
+          accent: kTeal,
+          onTap: onSendWarmGesture!,
+        ),
+      if (onVoiceWhisper != null)
+        (
+          label: 'Voice Whisper',
+          sublabel: 'Audio note',
+          icon: Icons.mic_rounded,
+          tint: kCobaltTint,
+          accent: kCobalt,
+          onTap: onVoiceWhisper!,
+        ),
+      if (onShareVibe != null)
+        (
+          label: 'Vibe Pulse',
+          sublabel: 'Share energy',
+          icon: Icons.auto_awesome_rounded,
+          tint: kMagentaTint,
+          accent: kMagenta,
+          onTap: onShareVibe!,
         ),
       if (onLeaveMessage != null)
         (

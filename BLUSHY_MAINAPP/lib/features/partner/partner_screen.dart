@@ -1246,34 +1246,61 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           ),
           const SizedBox(height: 24),
 
-          // 04 — MAKE A LITTLE MOMENT (Tactile Surprises & Actions)
+          // 04 — MAKE A LITTLE MOMENT (Tactile Surprises & Micro-Gestures)
           MakeALittleMomentRail(
             onSendBloom: () => _openPartnerTab(1),
             onWriteLetter: () => _showWriteLetterModal(context),
-            onPlanSomething: () => showCoupleGamesSheet(
+            onSendWarmGesture: () => showWarmGestureSheet(
               context,
               partnerName: partnerName,
-              onSendGameQuestion: (msg) => _sendDirectWhisper(msg),
+              onSendGesture: (msg) {
+                _sendDirectWhisper(msg);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Sent a warm gesture to $partnerName ☕❤️',
+                      style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w600),
+                    ),
+                    backgroundColor: kSanctuaryCharcoal,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                );
+              },
             ),
-            onDatePlanner: () => showDatePlannerSheet(
+            onVoiceWhisper: () {
+              _openPartnerTab(2);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Tap the voice whisper icon to record audio for $partnerName 🎙️',
+                    style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w600),
+                  ),
+                  backgroundColor: kSanctuaryCharcoal,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              );
+            },
+            onShareVibe: () => showVibePulseSheet(
               context,
               partnerName: partnerName,
-              onSendInvite: (msg) => _sendDirectWhisper(msg),
-              onAskDocsy: (prompt) => openDocsyWith(
-                context,
-                prompt.isNotEmpty ? prompt : _getDocsyPrompt(state, partnerName),
-              ),
+              onSendVibe: (msg) {
+                _sendDirectWhisper(msg);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Shared your vibe with $partnerName ✨❤️',
+                      style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w600),
+                    ),
+                    backgroundColor: kSanctuaryCharcoal,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                );
+              },
             ),
-            onSharedCanvas: () => showSharedCanvasSheet(
-              context,
-              partnerName: partnerName,
-              onSendDrawing: (msg) => _sendDirectWhisper(msg),
-            ),
-            onCoupleGames: () => showCoupleGamesSheet(
-              context,
-              partnerName: partnerName,
-              onSendGameQuestion: (msg) => _sendDirectWhisper(msg),
-            ),
+            onLeaveMessage: () => _openPartnerTab(2),
             bloomsCount: bloomsCount,
             lettersCount: lettersCount,
             sealedLettersCount: sealedLettersCount,
