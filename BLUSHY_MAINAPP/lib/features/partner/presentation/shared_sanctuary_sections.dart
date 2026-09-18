@@ -144,22 +144,6 @@ class SharedSanctuaryHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.favorite_rounded, size: 13, color: kSanctuaryCrimson),
-                  const SizedBox(width: 5),
-                  Text(
-                    'PARTNER',
-                    style: GoogleFonts.manrope(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.1,
-                      color: kSanctuaryCrimson,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
               Text.rich(
                 TextSpan(
                   children: [
@@ -509,6 +493,7 @@ enum RightNowEventType {
   letter,
   memory,
   lowData,
+  followUp,
 }
 
 class RightNowCard extends StatelessWidget {
@@ -549,6 +534,12 @@ class RightNowCard extends StatelessWidget {
           kCobaltTint,
           Icons.chat_bubble_rounded,
           Icons.sms_rounded,
+        ),
+      RightNowEventType.followUp => (
+          kAmber,
+          kAmberTint,
+          Icons.outgoing_mail,
+          Icons.reply_all_rounded,
         ),
       RightNowEventType.bloom => (
           kSanctuaryCrimson,
@@ -795,7 +786,7 @@ class RightNowCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   bodyText ?? '',
-                  style: type == RightNowEventType.message
+                  style: (type == RightNowEventType.message || type == RightNowEventType.followUp)
                       ? GoogleFonts.cormorantGaramond(
                           fontSize: 21,
                           fontWeight: FontWeight.w600,

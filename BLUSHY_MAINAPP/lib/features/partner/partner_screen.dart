@@ -33,6 +33,8 @@ import 'presentation/shared_sanctuary_sections.dart';
 import '../../shared/docsy_avatar.dart';
 import 'package:intl/intl.dart';
 import '../../services/user_state_store.dart';
+import '../sia/open_docsy.dart';
+import 'presentation/couple_experiences_sheet.dart';
 
 const Color kSanctuaryDark = kSanctuaryCharcoal;
 const Color kSanctuarySubtext = kSanctuaryMuted;
@@ -168,39 +170,33 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   static const List<SharedActivity> _defaultActivities = [
     SharedActivity(
-      key: 'dinner_date',
-      title: 'Make dinner together. No phones. 30 minutes.',
-      description: 'A quiet, unhurried evening just for the two of you.',
+      key: 'date_planner',
+      title: 'Date Planner & AI Concierge',
+      description: 'Plan your next date with Docsy venue & seat booking ideas.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'shared_canvas',
+      title: 'Shared Drawing Canvas',
+      description: 'Doodle, sketch cute notes, and draw together in real time.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'couple_games',
+      title: 'Couple Games & Questions',
+      description: 'Play Would You Rather, Pillow Talk, and text challenges.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'virtual_bouquet',
+      title: 'Virtual Bouquet & Blooms',
+      description: 'Arrange and send digital wildflowers for each other.',
       status: 'not_started',
     ),
     SharedActivity(
       key: 'daily_gratitude',
       title: 'Daily Gratitude Challenge',
       description: 'Each of you names one thing you appreciated today.',
-      status: 'not_started',
-    ),
-    SharedActivity(
-      key: 'weekend_planner',
-      title: 'Weekend Planner',
-      description: 'Build a shared list of things to do together.',
-      status: 'not_started',
-    ),
-    SharedActivity(
-      key: 'date_planner',
-      title: 'Date Planner',
-      description: 'Plan and agree your next date.',
-      status: 'not_started',
-    ),
-    SharedActivity(
-      key: 'shared_canvas',
-      title: 'Shared Canvas',
-      description: 'Draw something together.',
-      status: 'not_started',
-    ),
-    SharedActivity(
-      key: 'virtual_bouquet',
-      title: 'Virtual Bouquet',
-      description: 'Arrange and send digital flowers.',
       status: 'not_started',
     ),
   ];
@@ -286,6 +282,90 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       if (mounted) {
         setState(() => _activityBusyKey = null);
       }
+    }
+  }
+
+  Future<void> _sendDirectWhisper(String text) async {
+    if (text.trim().isEmpty) return;
+    final state = BlushyOSProvider.of(context);
+    final currentUserId = AuthStorage.getUserId();
+    final currentRole = AuthStorage.getRole() ?? state.selectedRole;
+    final String myName = (state.personalContext.userName != null && state.personalContext.userName!.isNotEmpty)
+        ? state.personalContext.userName!
+        : "You";
+
+    final newLocalMsg = {
+      'sender': myName,
+      'senderUserId': currentUserId,
+      'senderRole': currentRole,
+      'text': text,
+      'isAudio': false,
+      'isCard': false,
+      'isMe': true,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+
+    setState(() {
+      _chatMessages.add(newLocalMsg);
+      _saveSharedGardenState();
+    });
+    _scrollToBottomMessenger();
+
+    final activeConn = _connections.firstWhere(
+      (c) => c['status'] == 'active',
+      orElse: () => <String, dynamic>{},
+    );
+    if (activeConn.isNotEmpty && activeConn['connectionId'] != null) {
+      final connId = activeConn['connectionId'].toString();
+      final res = await _partnerService.sendMessage(connId, text);
+      if (res != null) {
+        _syncLiveMessages();
+      }
+    }
+  }
+
+  void _launchActivityExperience(SharedActivity activity, String partnerName) {
+    switch (activity.key) {
+      case 'date_planner':
+        showDatePlannerSheet(
+          context,
+          partnerName: partnerName,
+          onSendInvite: (inviteMsg) {
+            _sendDirectWhisper(inviteMsg);
+            _advanceActivity(activity);
+          },
+          onAskDocsy: (prompt) {
+            openDocsyWith(context, prompt);
+          },
+        );
+        break;
+      case 'shared_canvas':
+        showSharedCanvasSheet(
+          context,
+          partnerName: partnerName,
+          onSendDrawing: (drawingMsg) {
+            _sendDirectWhisper(drawingMsg);
+            _advanceActivity(activity);
+          },
+        );
+        break;
+      case 'couple_games':
+        showCoupleGamesSheet(
+          context,
+          partnerName: partnerName,
+          onSendGameQuestion: (gameMsg) {
+            _sendDirectWhisper(gameMsg);
+            _advanceActivity(activity);
+            _openPartnerTab(2);
+          },
+        );
+        break;
+      case 'virtual_bouquet':
+        _openPartnerTab(1);
+        break;
+      default:
+        _advanceActivity(activity);
+        break;
     }
   }
 
@@ -1078,9 +1158,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       case 'Memory Book':
         return _buildMemoryBookTab();
       case 'Relationship AI':
-        // Guarded by tab as well as by entry point, so it cannot be reached by
-        // index from a stale selection.
-        if (!_isSupportingPartner) return _buildOverviewTab(state);
         return _buildRelationshipAITab(state);
       case 'Gifts':
         return _buildGiftsTab();
@@ -1102,7 +1179,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     final signals = _buildSanctuarySignals(state, primaryPartner);
     final rightNow = _getRightNowEvent(partnerName);
     final featuredActivity = _getFeaturedActivity();
-    final docsyPrompt = _getDocsyPrompt(state);
+    final docsyPrompt = _getDocsyPrompt(state, partnerName);
 
     final letters = _getLettersList();
     final lettersCount = letters.length;
@@ -1197,11 +1274,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             activity: featuredActivity,
             onAction: () {
               if (featuredActivity != null) {
-                if (!featuredActivity.isCompleted) {
-                  _advanceActivity(featuredActivity);
-                } else {
-                  _openPartnerTab(5);
-                }
+                _launchActivityExperience(featuredActivity, partnerName);
               } else {
                 _showActivityTriggerDialog();
               }
@@ -1213,7 +1286,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           // 08 — A LITTLE HELP? (Docsy)
           ALittleHelpCard(
             dynamicPrompt: docsyPrompt,
-            onAskDocsy: () => _openPartnerTab(6),
+            onAskDocsy: () => openDocsyWith(
+              context,
+              docsyPrompt.replaceAll('“', '').replaceAll('”', ''),
+            ),
           ),
           const SizedBox(height: 28),
 
@@ -1286,27 +1362,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       ));
     }
 
-    // 4. Sharing / Private Space status signal
-    if (state.argumentModeActive) {
-      signals.add(SignalBadgeSpec(
-        icon: Icons.lock_rounded,
-        colour: kPurple,
-        tint: kPurpleTint,
-        label: 'PRIVACY',
-        value: 'Paused',
-        onTap: () => _resumeSharing(state),
-      ));
-    } else {
-      signals.add(SignalBadgeSpec(
-        icon: Icons.lock_open_rounded,
-        colour: kCoral,
-        tint: kCoralTint,
-        label: 'SHARING',
-        value: 'Active',
-        onTap: () => _takeSomeSpace(state),
-      ));
-    }
-
     return signals;
   }
 
@@ -1349,6 +1404,28 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       );
     }
 
+    // 1.5 If regular messages exist and user has replied (user sent the last message)
+    if (regularMsgs.isNotEmpty) {
+      final latest = regularMsgs.last;
+      final text = latest['text'].toString().trim();
+      final rawTime = (latest['timestamp'] ?? latest['created_at'])?.toString();
+      return (
+        type: RightNowEventType.followUp,
+        headline: 'WAITING FOR ${partnerName.toUpperCase()}\'S REPLY',
+        bodyText: 'You asked: “$text”',
+        timeDisplay: rawTime != null ? _formatElapsedTime(rawTime) : '',
+        primaryCtaText: 'Remind $partnerName',
+        secondaryCtaText: 'Open Messenger',
+        onPrimaryTap: () => showQuickFollowUpSheet(
+          context,
+          partnerName: partnerName,
+          lastMsg: text,
+          onSendNudge: (nudge) => _sendDirectWhisper(nudge),
+        ),
+        onSecondaryTap: () => _openPartnerTab(2),
+      );
+    }
+
     // 2. Check for recent bloom from partner
     final bloomMsgs = _chatMessages.where((m) =>
         m['isMe'] != true &&
@@ -1385,26 +1462,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       );
     }
 
-    // 4. Check for completed memory
-    final completed = _sharedActivities.where((a) => a.isCompleted).toList();
-    if (completed.isNotEmpty) {
-      final latest = completed.first;
-      final dateStr = latest.completedAt != null
-          ? DateFormat('MMMM d').format(latest.completedAt!)
-          : '';
-      return (
-        type: RightNowEventType.memory,
-        headline: 'A MOMENT WORTH KEEPING',
-        bodyText: latest.title,
-        timeDisplay: dateStr,
-        primaryCtaText: 'View Memory',
-        secondaryCtaText: null,
-        onPrimaryTap: () => _openPartnerTab(5),
-        onSecondaryTap: null,
-      );
-    }
-
-    // 5. Intentional low-data state
+    // 4. Intentional low-data state (Memory card fallback removed per user request)
     return (
       type: RightNowEventType.lowData,
       headline: 'RIGHT NOW',
@@ -1429,25 +1487,51 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   SharedActivity? _getFeaturedActivity() {
     final list = _sharedActivities.isNotEmpty ? _sharedActivities : _defaultActivities;
-    final inProg = list.where((a) => a.isInProgress).toList();
+    // Prioritize non-gratitude active or not-started activities to avoid duplicate memory cards
+    final coupleActivities = list.where((a) => a.key != 'daily_gratitude').toList();
+    final inProg = coupleActivities.where((a) => a.isInProgress).toList();
     if (inProg.isNotEmpty) return inProg.first;
-    final notStarted = list.where((a) => !a.isCompleted).toList();
+    final notStarted = coupleActivities.where((a) => !a.isCompleted).toList();
     if (notStarted.isNotEmpty) return notStarted.first;
-    return list.first;
+    return coupleActivities.isNotEmpty ? coupleActivities.first : list.first;
   }
 
-  String _getDocsyPrompt(BlushyOSState state) {
+  String _getDocsyPrompt(BlushyOSState state, String partnerName) {
     if (state.argumentModeActive) {
-      return '“Need help talking about something delicate?”';
+      return '“Need help reconnecting with $partnerName delicately?”';
     }
+
+    final regularMsgs = _chatMessages.where((m) =>
+        m['sender'] != 'Docsy' &&
+        m['isCard'] != true &&
+        m['text'] != null &&
+        !m['text'].toString().startsWith('[LETTER_JSON]:') &&
+        !m['text'].toString().startsWith('[BOUQUET_JSON]:') &&
+        m['text'].toString().trim().isNotEmpty).toList();
+
+    if (regularMsgs.isNotEmpty) {
+      final latest = regularMsgs.last;
+      final text = latest['text'].toString().trim();
+      final isFromMe = latest['isMe'] == true || latest['sender'] == 'You';
+
+      if (isFromMe) {
+        if (RegExp(r'\b(ss|screenshot|photo|pic|snap|bhej)\b', caseSensitive: false).hasMatch(text)) {
+          return '“Docsy: How should I remind $partnerName to send that screenshot?”';
+        }
+        return '“Docsy: What\'s a fun, sweet follow-up for $partnerName while I wait?”';
+      } else {
+        return '“Docsy: Help me craft a thoughtful, witty reply to $partnerName.”';
+      }
+    }
+
     final hour = DateTime.now().hour;
     if (hour >= 18) {
-      return '“Want a cozy idea for tonight?”';
+      return '“Docsy: Plan a cozy romantic dinner or evening outing for us tonight.”';
     }
     if (hour < 12) {
-      return '“Start the day on a sweet note.”';
+      return '“Docsy: Suggest a sweet morning thought or coffee idea for $partnerName.”';
     }
-    return '“Not sure what to say or share?”';
+    return '“Docsy: What\'s an exciting date idea or surprise I can plan for $partnerName?”';
   }
 
   Widget _buildPendingRequestsBanner() {
@@ -2007,7 +2091,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                 ),
                                 Switch.adaptive(
                                   value: _showActiveStatus,
-                                  activeColor: kEmerald,
+                                  activeTrackColor: kEmerald,
                                   onChanged: (val) {
                                     setState(() => _showActiveStatus = val);
                                     setSheetState(() {});
@@ -2031,7 +2115,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                 ),
                                 Switch.adaptive(
                                   value: _showReadReceipts,
-                                  activeColor: kEmerald,
+                                  activeTrackColor: kEmerald,
                                   onChanged: (val) {
                                     setState(() => _showReadReceipts = val);
                                     setSheetState(() {});
@@ -2253,25 +2337,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   /// Opens the server-enforced sharing panel for the active connection.
   ///
-  /// Only the person whose data is shared can open it; the server returns 403
-  /// to the other side, so the partner is told that rather than shown an empty
-  /// screen they cannot act on.
-  /// True for the partner supporting someone, false for the person whose data
-  /// is shared.
-  ///
-  /// Relationship advice is built for the supporting side: it explains what she
-  /// is telling him, grounded in what she chose to share. Asked from her side
-  /// there is nothing to ground it in -- the partner shell has no Docsy and no
-  /// M Studio, so he logs nothing -- and the server refuses it outright.
-  bool get _isSupportingPartner {
-    final active = _connections.firstWhere(
-      (c) => c['status'] == 'active',
-      orElse: () => <String, dynamic>{},
-    );
-    if (active.isEmpty) return false;
-    return active['canManagePermissions'] != true;
-  }
-
   void _openSharingPanel() {
     final connectionId = _activeConnectionId;
     if (connectionId == null) {
@@ -4380,11 +4445,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   }
 
   static const Map<String, IconData> _activityIcons = {
-    'daily_gratitude': Icons.volunteer_activism_rounded,
-    'weekend_planner': Icons.calendar_month_rounded,
     'date_planner': Icons.calendar_today_rounded,
     'shared_canvas': Icons.palette_rounded,
+    'couple_games': Icons.casino_rounded,
     'virtual_bouquet': Icons.local_florist_rounded,
+    'daily_gratitude': Icons.volunteer_activism_rounded,
+    'weekend_planner': Icons.calendar_month_rounded,
+    'dinner_date': Icons.restaurant_rounded,
   };
 
   Widget _buildSharedActivityCard(SharedActivity activity) {
@@ -4408,7 +4475,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GestureDetector(
-        onTap: busy ? null : () => _advanceActivity(activity),
+        onTap: busy
+            ? null
+            : () {
+                final pName = _connections.isNotEmpty && _connections.first['partnerName'] != null
+                    ? _connections.first['partnerName'].toString()
+                    : 'Your Partner';
+                _launchActivityExperience(activity, pName);
+              },
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BlushyTheme.premiumCardDecoration,
