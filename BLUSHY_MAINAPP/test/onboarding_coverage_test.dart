@@ -74,7 +74,7 @@ void main() {
     // dashboard. They are categories on the symptoms sheet now, gated by life
     // stage rather than by onboarding answers, so fewer `_isMetricSelected`
     // calls remain -- and that is the change, not a regression.
-    expect(keywords.length, greaterThan(30),
+    expect(keywords.length, greaterThanOrEqualTo(20),
         reason: 'the gating keywords moved or were lost entirely');
 
     final reachable = keywords

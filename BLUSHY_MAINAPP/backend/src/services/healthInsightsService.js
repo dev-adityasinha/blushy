@@ -111,8 +111,21 @@ class HealthInsightsService {
       suggestions.push(...cycleAnalysis.suggestions);
     }
 
+    // Analyze diagnosed/reported conditions and tracked symptoms from onboarding
+    if (Object.keys(onboardingAnswers).length > 0) {
+      const conditionAnalysis = this._analyzeConditionsAndSymptoms(onboardingAnswers);
+      insights.push(...conditionAnalysis.insights);
+      alerts.push(...conditionAnalysis.alerts);
+      suggestions.push(...conditionAnalysis.suggestions);
+
+      const stageAnalysis = this._analyzeLifeStageSpecifics(onboardingAnswers, cycleStartDate, periodEntries);
+      insights.push(...stageAnalysis.insights);
+      alerts.push(...stageAnalysis.alerts);
+      suggestions.push(...stageAnalysis.suggestions);
+    }
+
     return {
-      hasData: moods.length > 0 || sleeps.length > 0,
+      hasData: moods.length > 0 || sleeps.length > 0 || (periodEntries && periodEntries.length > 0) || cycleStartDate != null || Object.keys(onboardingAnswers).length > 0,
       dataPoints: {
         moodEntries: moods.length,
         sleepEntries: sleeps.length,
@@ -363,11 +376,15 @@ class HealthInsightsService {
 
     const rawStart = cycleStartDate != null
       ? new Date(cycleStartDate)
-      : (onboardingAnswers?.period_last_start_date
-        ? new Date(onboardingAnswers.period_last_start_date)
-        : (onboardingAnswers?.cycle_last_period_start
-          ? new Date(onboardingAnswers.cycle_last_period_start)
-          : null));
+      : (onboardingAnswers?.last_period
+        ? new Date(onboardingAnswers.last_period)
+        : (onboardingAnswers?.last_period_date
+          ? new Date(onboardingAnswers.last_period_date)
+          : (onboardingAnswers?.period_last_start_date
+            ? new Date(onboardingAnswers.period_last_start_date)
+            : (onboardingAnswers?.cycle_last_period_start
+              ? new Date(onboardingAnswers.cycle_last_period_start)
+              : null))));
 
     if (!rawStart || Number.isNaN(rawStart.getTime())) {
       return { insights, alerts, suggestions };
@@ -431,6 +448,304 @@ class HealthInsightsService {
         severity: 'medium',
         title: 'Period Delayed',
         message: `Your period is approximately ${daysLate} day(s) late (Day ${dayOfCycle} of cycle).`,
+      });
+    }
+
+    return { insights, alerts, suggestions };
+  }
+
+  _extractItems(source) {
+    if (Array.isArray(source)) {
+      return source.map((s) => String(s).trim()).filter((s) => s.length > 0);
+    }
+    if (typeof source === 'string' && source.trim().length > 0) {
+      return source.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+    }
+    return [];
+  }
+
+  _analyzeConditionsAndSymptoms(onboardingAnswers) {
+    const insights = [];
+    const alerts = [];
+    const suggestions = [];
+
+    const conditions = this._extractItems(onboardingAnswers.conditions).map((c) => c.toLowerCase());
+    const symptoms = this._extractItems(onboardingAnswers.symptoms).map((s) => s.toLowerCase());
+
+    // ── Conditions Analysis ────────────────────────────────────────────────
+    if (conditions.some((c) => c.includes('pcos') || c.includes('pcod') || c.includes('polycystic'))) {
+      insights.push({
+        type: 'condition_pcos',
+        message: 'PCOS hormonal profile: Blood sugar stability, balanced protein, and daily low-impact resistance movement support healthy androgen and insulin regulation.',
+      });
+      suggestions.push({
+        type: 'pcos_support',
+        suggestion: 'Pair carbohydrates with protein and healthy fats to minimize glucose spikes, and incorporate gentle walking after meals.',
+      });
+    }
+
+    if (conditions.some((c) => c.includes('endo') || c.includes('endometriosis'))) {
+      insights.push({
+        type: 'condition_endometriosis',
+        message: 'Endometriosis care: Estrogen-dependent inflammatory tissue benefits from pacing, anti-inflammatory nutrition, and pelvic floor relaxation.',
+      });
+      suggestions.push({
+        type: 'endo_support',
+        suggestion: 'Apply gentle thermal heat to the lower pelvis during discomfort, prioritize omega-3 rich foods, and avoid prolonged physical straining.',
+      });
+    }
+
+    if (conditions.some((c) => c.includes('adeno') || c.includes('adenomyosis'))) {
+      insights.push({
+        type: 'condition_adenomyosis',
+        message: 'Adenomyosis support: Endometrial tissue within the uterine muscle wall can cause deep cramping and heavier menstrual flow.',
+      });
+      suggestions.push({
+        type: 'adeno_care',
+        suggestion: 'Keep a heat pack handy for sacral and lower abdominal warmth, and maintain healthy iron stores with leafy greens and citrus.',
+      });
+    }
+
+    if (conditions.some((c) => c.includes('thyroid') || c.includes('hypothyroid') || c.includes('hashimoto'))) {
+      insights.push({
+        type: 'condition_thyroid',
+        message: 'Thyroid modulation: Thyroid hormones regulate your metabolic rate and directly influence menstrual regularity, body temperature, and energy rhythm.',
+      });
+      suggestions.push({
+        type: 'thyroid_support',
+        suggestion: 'Take any prescribed thyroid medication on an empty stomach consistently, and track your morning resting temperature for clinical review.',
+      });
+    }
+
+    if (conditions.some((c) => c.includes('pmdd') || c.includes('premenstrual dysphoric'))) {
+      insights.push({
+        type: 'condition_pmdd',
+        message: 'PMDD neuro-hormonal pattern: Cellular sensitivity to the post-ovulatory progesterone drop can provoke acute emotional dysregulation and physical tension.',
+      });
+      suggestions.push({
+        type: 'pmdd_care',
+        suggestion: 'Create protected calm in the late luteal phase (days 21-28), limit high caffeine, and incorporate magnesium-rich foods to nurture the nervous system.',
+      });
+    }
+
+    if (conditions.some((c) => c.includes('fibroid'))) {
+      insights.push({
+        type: 'condition_fibroids',
+        message: 'Uterine fibroids awareness: Benign muscular growths can increase bleeding volume and pelvic fullness.',
+      });
+      suggestions.push({
+        type: 'fibroid_care',
+        suggestion: 'Monitor bleeding duration, prioritize iron replenishment, and maintain regular pelvic checkups with your gynecologist.',
+      });
+    }
+
+    // ── Tracked Symptoms Analysis ──────────────────────────────────────────
+    if (symptoms.some((s) => s.includes('cramp') || s.includes('dysmenorrhea') || s.includes('pelvic ache'))) {
+      alerts.push({
+        type: 'symptom_cramps',
+        severity: 'medium',
+        title: 'Cramp Relief',
+        message: 'Menstrual cramps are driven by uterine prostaglandins. Heat therapy increases pelvic blood flow and calms myometrial spasms.',
+      });
+      suggestions.push({
+        type: 'cramp_relief',
+        suggestion: 'Apply warmth (water bottle or heating pad) to the lower pelvis and sip warm ginger or chamomile tea.',
+      });
+    }
+
+    if (symptoms.some((s) => s.includes('heavy') || s.includes('menorrhagia') || s.includes('flooding') || s.includes('clots'))) {
+      alerts.push({
+        type: 'symptom_heavy_bleeding',
+        severity: 'medium',
+        title: 'Heavy Flow & Iron Protection',
+        message: 'Heavy menstrual blood loss can deplete ferritin and red blood cells over time.',
+      });
+      suggestions.push({
+        type: 'heavy_flow_care',
+        suggestion: 'Consume iron-rich foods (beans, lentils, spinach, seeds) paired with Vitamin C. Consult your doctor if bleeding exceeds 7 days or requires changing pads every hour.',
+      });
+    }
+
+    if (symptoms.some((s) => s.includes('hot flash') || s.includes('night sweat') || s.includes('flushes'))) {
+      alerts.push({
+        type: 'symptom_vasomotor',
+        severity: 'medium',
+        title: 'Vasomotor Flushes',
+        message: 'Estrogen fluctuations alter the hypothalamus set-point, triggering temporary warmth and flushing.',
+      });
+      suggestions.push({
+        type: 'vasomotor_care',
+        suggestion: 'Dress in layers of natural breathable fibers, keep cool water accessible, and practice paced diaphragmatic breathing.',
+      });
+    }
+
+    if (symptoms.some((s) => s.includes('fatigue') || s.includes('tired') || s.includes('exhaustion') || s.includes('low energy'))) {
+      insights.push({
+        type: 'symptom_fatigue',
+        message: 'Energy dips often correlate with hormone transitions, restorative sleep deficits, or nutrient demands.',
+      });
+      suggestions.push({
+        type: 'energy_care',
+        suggestion: 'Honor your body with a 20-minute rest pause, ensure consistent hydration, and get morning natural light.',
+      });
+    }
+
+    if (symptoms.some((s) => s.includes('bloat') || s.includes('water retention'))) {
+      insights.push({
+        type: 'symptom_bloating',
+        message: 'Hormonal fluid shifts can slow digestive motility and cause abdominal fullness.',
+      });
+      suggestions.push({
+        type: 'bloating_care',
+        suggestion: 'Eat warm, easily digestible foods in smaller portions, limit excess sodium, and enjoy herbal peppermint or fennel tea.',
+      });
+    }
+
+    if (symptoms.some((s) => s.includes('mood') || s.includes('irritab') || s.includes('anxiety') || s.includes('tearful'))) {
+      insights.push({
+        type: 'symptom_mood',
+        message: 'Neurotransmitters shift alongside estrogen and progesterone. Emotional waves are biological signals, not personal shortcomings.',
+      });
+      suggestions.push({
+        type: 'mood_care',
+        suggestion: 'Step outside for fresh air, practice 4-7-8 breathing, and give yourself grace without judgment.',
+      });
+    }
+
+    return { insights, alerts, suggestions };
+  }
+
+  _analyzeLifeStageSpecifics(onboardingAnswers, cycleStartDate, periodEntries = []) {
+    const insights = [];
+    const alerts = [];
+    const suggestions = [];
+
+    const stage = String(onboardingAnswers.life_stage || onboardingAnswers.lifeStage || '').toLowerCase();
+
+    // ── Pregnancy Analysis ─────────────────────────────────────────────────
+    const rawDueDate = onboardingAnswers.due_date || onboardingAnswers.dueDate;
+    if (stage.includes('pregnan') || rawDueDate) {
+      if (rawDueDate) {
+        const due = new Date(rawDueDate);
+        if (!Number.isNaN(due.getTime())) {
+          const today = new Date();
+          const todayNorm = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const dueNorm = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+          const diffDays = Math.round((dueNorm.getTime() - todayNorm.getTime()) / 86400000);
+          const gestDays = 280 - diffDays;
+          const gestWeeks = Math.floor(gestDays / 7);
+          const gestDayRemainder = Math.max(0, gestDays % 7);
+
+          if (gestWeeks >= 1 && gestWeeks <= 44) {
+            let trimester = 1;
+            if (gestWeeks >= 13 && gestWeeks <= 27) trimester = 2;
+            if (gestWeeks >= 28) trimester = 3;
+
+            insights.push({
+              type: 'pregnancy_gestational_progress',
+              message: `You are approximately ${gestWeeks} weeks, ${gestDayRemainder} days along (Trimester ${trimester}). Your body is nurturing vital development every single day.`,
+            });
+
+            if (trimester === 1) {
+              suggestions.push({
+                type: 'pregnancy_trimester_1',
+                suggestion: 'Trimester 1 focus: Prioritize active folate/folic acid, stay hydrated with small frequent sips, and manage nausea with bland snacks like crackers before rising.',
+              });
+            } else if (trimester === 2) {
+              suggestions.push({
+                type: 'pregnancy_trimester_2',
+                suggestion: 'Trimester 2 focus: As energy rebounds, maintain gentle pelvic floor and core stability with walking or prenatal yoga, and consider sleeping on your left side with pillow support.',
+              });
+            } else {
+              suggestions.push({
+                type: 'pregnancy_trimester_3',
+                suggestion: 'Trimester 3 focus: Rest frequently with feet elevated, practice slow labor breathing, and monitor daily fetal kick counts when resting quietly.',
+              });
+              alerts.push({
+                type: 'pregnancy_third_trimester_safety',
+                severity: 'medium',
+                title: 'Maternal Safety Note',
+                message: 'Contact your OB/GYN or midwife promptly if you notice severe headaches, visual changes, sudden facial/hand swelling, decreased fetal movements, or fluid leakage.',
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // ── Postpartum Analysis ────────────────────────────────────────────────
+    const rawBirthDate = onboardingAnswers.baby_birth_date || onboardingAnswers.babyBirthDate;
+    if (stage.includes('postpartum') || rawBirthDate) {
+      if (rawBirthDate) {
+        const birth = new Date(rawBirthDate);
+        if (!Number.isNaN(birth.getTime())) {
+          const today = new Date();
+          const todayNorm = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const birthNorm = new Date(birth.getFullYear(), birth.getMonth(), birth.getDate());
+          const daysElapsed = Math.max(0, Math.round((todayNorm.getTime() - birthNorm.getTime()) / 86400000));
+          const weeksElapsed = Math.floor(daysElapsed / 7);
+
+          insights.push({
+            type: 'postpartum_milestone',
+            message: `You are in week ${weeksElapsed + 1} of your fourth trimester recovery. Tissue healing, uterine involution, and hormone recalibration are actively progressing.`,
+          });
+
+          if (weeksElapsed < 6) {
+            suggestions.push({
+              type: 'postpartum_early_healing',
+              suggestion: 'Early postpartum care: Rest whenever possible, practice gentle perineal/incision care, and honor normal lochia flow progression (gradually lightening from red to pink to pale cream).',
+            });
+          } else {
+            suggestions.push({
+              type: 'postpartum_gradual_rebuild',
+              suggestion: 'Gradual rebuilding: Reconnect gently with transverse abdominal and pelvic floor breathing before resuming high-impact exercise, and attend your comprehensive 6-week postpartum visit.',
+            });
+          }
+
+          const feeding = String(onboardingAnswers.postpartum_feeding || '').toLowerCase();
+          if (feeding.includes('breast') || feeding.includes('nursing')) {
+            suggestions.push({
+              type: 'lactation_hydration',
+              suggestion: 'Lactation hydration: Breastfeeding utilizes significant fluids and electrolytes. Keep a large water bottle at your nursing station and nourish your body with steady protein snacks.',
+            });
+          }
+        }
+      }
+    }
+
+    // ── Trying To Conceive (TTC) ───────────────────────────────────────────
+    if (stage.includes('ttc') || stage.includes('conceive') || stage.includes('fertility')) {
+      insights.push({
+        type: 'ttc_physiology',
+        message: 'Conception science: Healthy conception relies on the 6-day fertile window (5 days prior to ovulation plus ovulation day), guided by estrogenic cervical fluid and an LH surge.',
+      });
+      suggestions.push({
+        type: 'ttc_pacing',
+        suggestion: 'Focus on observing fertile cervical fluid signs rather than stress-inducing schedules, and wait until at least 12–14 days post-ovulation before testing to prevent false negatives.',
+      });
+    }
+
+    // ── First Period / Puberty ─────────────────────────────────────────────
+    if (stage.includes('firstperiodnotstarted') || stage.includes('not_started') || stage.includes('puberty')) {
+      insights.push({
+        type: 'puberty_milestone',
+        message: 'Puberty progression: Breast buds (thelarche) and clear or white vaginal discharge (physiological leukorrhea) naturally precede your first period by 6 to 18 months.',
+      });
+      suggestions.push({
+        type: 'puberty_prep',
+        suggestion: 'Keep a small, discreet pouch in your school bag with two pads, backup underwear, and wipes so you always feel confident and prepared.',
+      });
+    }
+
+    // ── Perimenopause / Menopause ──────────────────────────────────────────
+    if (stage.includes('peri') || stage.includes('meno')) {
+      insights.push({
+        type: 'menopause_transition',
+        message: 'Hormonal transition: Declining ovarian follicles shift the balance of estrogen and progesterone, changing cycle lengths and thermoregulation.',
+      });
+      suggestions.push({
+        type: 'menopause_vitality',
+        suggestion: 'Support bone density and metabolic health with resistance training, calcium and Vitamin D3 nutrition, and restful sleep routines.',
       });
     }
 
