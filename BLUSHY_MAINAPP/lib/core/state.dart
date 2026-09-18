@@ -670,9 +670,10 @@ class BlushyOSState extends ChangeNotifier {
           final answers = onboarding['onboardingAnswers'] as Map<String, dynamic>;
           if (answers.isNotEmpty && answers.length >= 2) {
             _onboardingCompleted = true;
-          } else if (profile?['onboardingCompleted'] != true) {
-            _onboardingCompleted = false;
+          } else if (profile?['onboardingCompleted'] == true) {
+            _onboardingCompleted = true;
           }
+          // Do not downgrade _onboardingCompleted to false if already completed on this device!
 
           if (answers['life_stage'] != null && answers['life_stage'].toString().isNotEmpty) {
             lifeStage = answers['life_stage'].toString();

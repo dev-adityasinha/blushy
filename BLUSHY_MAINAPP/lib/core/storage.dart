@@ -94,15 +94,17 @@ class BlushyStorage {
       return 'usr_${sanitizedUid}_$cleanKey.json';
     }
 
-    // Missing authenticated userId for private health/profile data
-    return null;
+    // When there is no verified authenticated userId yet (e.g., initial app launch,
+    // guest mode, or before sign-in completes), write and read from a local device guest
+    // namespace so user preferences, onboarding progress, and stage setup are not lost!
+    final cleanKey = key.replaceAll('.json', '');
+    return 'guest_$cleanKey.json';
   }
 
   static void write(String key, Map<String, dynamic> data) {
     final resolvedKey = _resolveKey(key);
-    // Block/skip writing private health/profile data when there is no authenticated user
     if (resolvedKey == null) {
-      debugPrint('[BlushyStorage] Skipped private write for key "$key": No authenticated user session.');
+      debugPrint('[BlushyStorage] Skipped private write for key "$key": No key resolved.');
       return;
     }
 
@@ -123,7 +125,6 @@ class BlushyStorage {
 
   static Map<String, dynamic> read(String key) {
     final resolvedKey = _resolveKey(key);
-    // Return empty for private health/profile data when there is no authenticated user
     if (resolvedKey == null) {
       return {};
     }
@@ -132,14 +133,14 @@ class BlushyStorage {
       return _memoryCache[resolvedKey] ?? {};
     }
 
+    Map<String, dynamic> result = {};
     if (kIsWeb) {
       final webDataStr = readWebStorage(resolvedKey);
       if (webDataStr != null && webDataStr.isNotEmpty) {
         try {
           final decoded = jsonDecode(webDataStr);
           if (decoded is Map<String, dynamic>) {
-            _memoryCache[resolvedKey] = decoded;
-            return decoded;
+            result = decoded;
           }
         } catch (_) {}
       }
@@ -150,14 +151,43 @@ class BlushyStorage {
           final content = file.readAsStringSync();
           final decoded = jsonDecode(content);
           if (decoded is Map<String, dynamic>) {
-            _memoryCache[resolvedKey] = decoded;
-            return decoded;
+            result = decoded;
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[BlushyStorage] Error reading file "$resolvedKey": $e');
+      }
     }
 
-    return {};
+    // Resilient fallback: If user-scoped key is empty, check if guest namespace has existing data (e.g. from onboarding or pre-auth setup)
+    if (result.isEmpty && resolvedKey.startsWith('usr_')) {
+      final cleanKey = key.replaceAll('.json', '');
+      final guestKey = 'guest_$cleanKey.json';
+      if (_memoryCache.containsKey(guestKey)) {
+        result = _memoryCache[guestKey] ?? {};
+      } else if (kIsWeb) {
+        final guestStr = readWebStorage(guestKey);
+        if (guestStr != null && guestStr.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(guestStr);
+            if (decoded is Map<String, dynamic>) result = decoded;
+          } catch (_) {}
+        }
+      } else {
+        try {
+          final file = File(_filePath(guestKey));
+          if (file.existsSync()) {
+            final decoded = jsonDecode(file.readAsStringSync());
+            if (decoded is Map<String, dynamic>) result = decoded;
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (result.isNotEmpty) {
+      _memoryCache[resolvedKey] = result;
+    }
+    return result;
   }
 
   static void delete(String key) {

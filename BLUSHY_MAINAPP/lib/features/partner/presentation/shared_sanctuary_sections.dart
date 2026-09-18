@@ -248,23 +248,16 @@ class SharedSanctuaryHeader extends StatelessWidget {
                       height: 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: kMagenta,
-                        boxShadow: [
-                          BoxShadow(
-                            color: kMagenta.withValues(alpha: 0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                        border: Border.all(color: Colors.white, width: 2),
+                        color: kMagentaTint,
+                        border: Border.all(color: kSanctuaryBorder, width: 1.5),
                       ),
                       child: Center(
                         child: Text(
                           'Y',
                           style: GoogleFonts.manrope(
-                            fontSize: 14,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: kMagenta,
                           ),
                         ),
                       ),
@@ -277,23 +270,16 @@ class SharedSanctuaryHeader extends StatelessWidget {
                       height: 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: kCobalt,
-                        boxShadow: [
-                          BoxShadow(
-                            color: kCobalt.withValues(alpha: 0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                        border: Border.all(color: Colors.white, width: 2),
+                        color: kCobaltTint,
+                        border: Border.all(color: kSanctuaryBorder, width: 1.5),
                       ),
                       child: Center(
                         child: Text(
                           partnerInitial,
                           style: GoogleFonts.manrope(
-                            fontSize: 14,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: kCobalt,
                           ),
                         ),
                       ),
@@ -312,11 +298,11 @@ class SharedSanctuaryHeader extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: kSanctuaryCard,
                     shape: BoxShape.circle,
-                    border: Border.all(color: kCobalt.withValues(alpha: 0.25)),
+                    border: Border.all(color: kSanctuaryBorder),
                     boxShadow: [
                       BoxShadow(
-                        color: kCobalt.withValues(alpha: 0.12),
-                        blurRadius: 8,
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -324,7 +310,7 @@ class SharedSanctuaryHeader extends StatelessWidget {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      const Icon(Icons.send_rounded, color: kCobalt, size: 18),
+                      const Icon(Icons.send_rounded, color: kSanctuaryCrimson, size: 18),
                       Positioned(
                         right: -2,
                         top: -2,
@@ -445,12 +431,12 @@ class TodayTogetherSignalRail extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: kSanctuaryCard,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: spec.colour.withValues(alpha: 0.2)),
+                    border: Border.all(color: kSanctuaryBorder),
                     boxShadow: [
                       BoxShadow(
-                        color: spec.colour.withValues(alpha: 0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -458,21 +444,14 @@ class TodayTogetherSignalRail extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 50,
-                        height: 50,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: spec.colour,
-                          boxShadow: [
-                            BoxShadow(
-                              color: spec.colour.withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                          color: spec.tint,
                         ),
                         child: Center(
-                          child: Icon(spec.icon, size: 24, color: Colors.white),
+                          child: Icon(spec.icon, size: 22, color: spec.colour),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -616,12 +595,12 @@ class RightNowCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: kSanctuaryCard,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: accentColor.withValues(alpha: 0.25), width: 1.5),
+          border: Border.all(color: kSanctuaryBorder),
           boxShadow: [
             BoxShadow(
-              color: accentColor.withValues(alpha: 0.08),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -633,6 +612,7 @@ class RightNowCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accentTint,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: kSanctuaryBorder),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -655,21 +635,14 @@ class RightNowCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    color: accentColor,
-                    boxShadow: [
-                      BoxShadow(
-                        color: accentColor.withValues(alpha: 0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    shape: BoxShape.circle,
+                    color: accentTint,
                   ),
                   child: Center(
-                    child: Icon(heroIcon, size: 28, color: Colors.white),
+                    child: Icon(heroIcon, size: 24, color: accentColor),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -745,17 +718,12 @@ class RightNowCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: kSanctuaryCard,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: accentColor.withValues(alpha: 0.25), width: 1.5),
+        border: Border.all(color: kSanctuaryBorder),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -770,7 +738,7 @@ class RightNowCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: accentTint,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+                  border: Border.all(color: kSanctuaryBorder),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -820,21 +788,14 @@ class RightNowCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 58,
-                height: 58,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: accentColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: accentColor.withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  shape: BoxShape.circle,
+                  color: accentTint,
                 ),
                 child: Center(
-                  child: Icon(heroIcon, size: 28, color: Colors.white),
+                  child: Icon(heroIcon, size: 24, color: accentColor),
                 ),
               ),
               const SizedBox(width: 14),
@@ -957,12 +918,12 @@ class MessengerSpotlightCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: kSanctuaryCard,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: kCobalt.withValues(alpha: 0.22), width: 1.5),
+          border: Border.all(color: kSanctuaryBorder),
           boxShadow: [
             BoxShadow(
-              color: kCobalt.withValues(alpha: 0.08),
-              blurRadius: 18,
-              offset: const Offset(0, 5),
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -975,7 +936,7 @@ class MessengerSpotlightCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.send_rounded, size: 12, color: kCobalt),
+                    const Icon(Icons.send_rounded, size: 12, color: kSanctuaryCrimson),
                     const SizedBox(width: 5),
                     Text(
                       'DIRECT MESSENGER',
@@ -983,7 +944,7 @@ class MessengerSpotlightCard extends StatelessWidget {
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.1,
-                        color: kCobalt,
+                        color: kSanctuaryCrimson,
                       ),
                     ),
                   ],
@@ -993,6 +954,7 @@ class MessengerSpotlightCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: unreadCount > 0 ? kCrimsonTint : kCobaltTint,
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: kSanctuaryBorder),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1033,27 +995,20 @@ class MessengerSpotlightCard extends StatelessWidget {
                   children: [
                     // Main Avatar Circle
                     Container(
-                      width: 54,
-                      height: 54,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: kCobalt,
-                        boxShadow: [
-                          BoxShadow(
-                            color: kCobalt.withValues(alpha: 0.35),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                        border: Border.all(color: Colors.white, width: 2.5),
+                        color: kCobaltTint,
+                        border: Border.all(color: kSanctuaryBorder, width: 1.5),
                       ),
                       child: Center(
                         child: Text(
                           partnerInitial,
                           style: GoogleFonts.manrope(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: kCobalt,
                           ),
                         ),
                       ),
@@ -1067,10 +1022,10 @@ class MessengerSpotlightCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: kCobalt.withValues(alpha: 0.25)),
+                          border: Border.all(color: kSanctuaryBorder),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
+                              color: Colors.black.withValues(alpha: 0.06),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -1136,13 +1091,13 @@ class MessengerSpotlightCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F8FC),
+                color: kSanctuaryCanvas,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: kCobalt.withValues(alpha: 0.18)),
+                border: Border.all(color: kSanctuaryBorder),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.edit_note_rounded, size: 18, color: kCobalt.withValues(alpha: 0.8)),
+                  const Icon(Icons.edit_note_rounded, size: 18, color: kSanctuaryCrimson),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -1150,23 +1105,16 @@ class MessengerSpotlightCard extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF8A94A6),
+                        color: kSanctuaryMuted,
                       ),
                     ),
                   ),
                   Container(
                     width: 32,
                     height: 32,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: kCobalt,
-                      boxShadow: [
-                        BoxShadow(
-                          color: kCobalt.withValues(alpha: 0.35),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      color: kSanctuaryCrimson,
                     ),
                     child: const Center(
                       child: Icon(Icons.send_rounded, size: 15, color: Colors.white),
@@ -1290,12 +1238,12 @@ class MakeALittleMomentRail extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: kSanctuaryCard,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: a.accent.withValues(alpha: 0.25), width: 1.5),
+                    border: Border.all(color: kSanctuaryBorder),
                     boxShadow: [
                       BoxShadow(
-                        color: a.accent.withValues(alpha: 0.1),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -1304,21 +1252,14 @@ class MakeALittleMomentRail extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: a.accent,
-                          boxShadow: [
-                            BoxShadow(
-                              color: a.accent.withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                          shape: BoxShape.circle,
+                          color: a.tint,
                         ),
                         child: Center(
-                          child: Icon(a.icon, size: 24, color: Colors.white),
+                          child: Icon(a.icon, size: 22, color: a.accent),
                         ),
                       ),
                       Column(
@@ -1439,12 +1380,12 @@ class YourStoryCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: kSanctuaryCard,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: kMagenta.withValues(alpha: 0.25), width: 1.5),
+            border: Border.all(color: kSanctuaryBorder),
             boxShadow: [
               BoxShadow(
-                color: kMagenta.withValues(alpha: 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 5),
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -1455,21 +1396,14 @@ class YourStoryCard extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          width: 54,
-                          height: 54,
+                          width: 48,
+                          height: 48,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(18),
-                            color: kMagenta,
-                            boxShadow: [
-                              BoxShadow(
-                                color: kMagenta.withValues(alpha: 0.35),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            shape: BoxShape.circle,
+                            color: kMagentaTint,
                           ),
                           child: const Center(
-                            child: Icon(Icons.auto_stories_rounded, size: 26, color: Colors.white),
+                            child: Icon(Icons.auto_stories_rounded, size: 22, color: kMagenta),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -1551,21 +1485,14 @@ class YourStoryCard extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          width: 52,
-                          height: 52,
+                          width: 48,
+                          height: 48,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: kMagenta,
-                            boxShadow: [
-                              BoxShadow(
-                                color: kMagenta.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+                            shape: BoxShape.circle,
+                            color: kMagentaTint,
                           ),
                           child: const Center(
-                            child: Icon(Icons.collections_bookmark_rounded, size: 26, color: Colors.white),
+                            child: Icon(Icons.collections_bookmark_rounded, size: 22, color: kMagenta),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -1688,12 +1615,12 @@ class LittleThingsCards extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: kSanctuaryCard,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: kCoral.withValues(alpha: 0.25), width: 1.5),
+                    border: Border.all(color: kSanctuaryBorder),
                     boxShadow: [
                       BoxShadow(
-                        color: kCoral.withValues(alpha: 0.1),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -1701,21 +1628,14 @@ class LittleThingsCards extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: kCoral,
-                          boxShadow: [
-                            BoxShadow(
-                              color: kCoral.withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                          shape: BoxShape.circle,
+                          color: kCoralTint,
                         ),
                         child: const Center(
-                          child: Icon(Icons.mark_email_read_rounded, size: 24, color: Colors.white),
+                          child: Icon(Icons.mark_email_read_rounded, size: 22, color: kCoral),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -1756,12 +1676,12 @@ class LittleThingsCards extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: kSanctuaryCard,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: kTeal.withValues(alpha: 0.25), width: 1.5),
+                    border: Border.all(color: kSanctuaryBorder),
                     boxShadow: [
                       BoxShadow(
-                        color: kTeal.withValues(alpha: 0.1),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -1769,21 +1689,14 @@ class LittleThingsCards extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: kTeal,
-                          boxShadow: [
-                            BoxShadow(
-                              color: kTeal.withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                          shape: BoxShape.circle,
+                          color: kTealTint,
                         ),
                         child: const Center(
-                          child: Icon(Icons.local_florist_rounded, size: 24, color: Colors.white),
+                          child: Icon(Icons.local_florist_rounded, size: 22, color: kTeal),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -1880,12 +1793,12 @@ class DoSomethingTogetherCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: kSanctuaryCard,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: kAmber.withValues(alpha: 0.25), width: 1.5),
+            border: Border.all(color: kSanctuaryBorder),
             boxShadow: [
               BoxShadow(
-                color: kAmber.withValues(alpha: 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 5),
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -1897,6 +1810,7 @@ class DoSomethingTogetherCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: kAmberTint,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: kSanctuaryBorder),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1920,24 +1834,17 @@ class DoSomethingTogetherCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: kAmber,
-                      boxShadow: [
-                        BoxShadow(
-                          color: kAmber.withValues(alpha: 0.35),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                      shape: BoxShape.circle,
+                      color: kAmberTint,
                     ),
                     child: Center(
                       child: Icon(
                         isComp ? Icons.check_circle_rounded : Icons.favorite_rounded,
-                        size: 26,
-                        color: Colors.white,
+                        size: 22,
+                        color: kAmber,
                       ),
                     ),
                   ),
@@ -2089,12 +1996,12 @@ class ALittleHelpCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: kSanctuaryCard,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: kSanctuaryCrimson.withValues(alpha: 0.25), width: 1.5),
+            border: Border.all(color: kSanctuaryBorder),
             boxShadow: [
               BoxShadow(
-                color: kSanctuaryCrimson.withValues(alpha: 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 5),
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -2105,26 +2012,16 @@ class ALittleHelpCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
+                      shape: BoxShape.circle,
                       color: kCrimsonTint,
-                      border: Border.all(
-                        color: kSanctuaryCrimson.withValues(alpha: 0.25),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kSanctuaryCrimson.withValues(alpha: 0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                      border: Border.all(color: kSanctuaryBorder),
                     ),
                     child: const Center(
                       child: DocsyAvatar(
-                        size: 32,
+                        size: 26,
                         color: kSanctuaryCrimson,
                       ),
                     ),
@@ -2278,24 +2175,28 @@ class UnpairedAspirationalExperience extends StatelessWidget {
       (
         icon: Icons.local_florist_rounded,
         accent: kTeal,
+        tint: kTealTint,
         title: 'Blooms & Postcards',
         desc: 'Send digital flower blooms and sweet postcards throughout the day.',
       ),
       (
         icon: Icons.mark_email_unread_rounded,
         accent: kMagenta,
+        tint: kMagentaTint,
         title: 'Time Capsule Letters',
         desc: 'Leave sealed letters for anniversaries, milestones, and quiet days.',
       ),
       (
         icon: Icons.auto_stories_rounded,
         accent: kCobalt,
+        tint: kCobaltTint,
         title: 'Living Memory Book',
         desc: 'A living scrapbook of memories and challenges you experience together.',
       ),
       (
         icon: Icons.shield_outlined,
         accent: kPurple,
+        tint: kPurpleTint,
         title: 'Consent-First Sharing',
         desc: 'You have complete control over what is shared and can take private space anytime.',
       ),
@@ -2321,12 +2222,12 @@ class UnpairedAspirationalExperience extends StatelessWidget {
             decoration: BoxDecoration(
               color: kSanctuaryCard,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: p.accent.withValues(alpha: 0.2), width: 1.5),
+              border: Border.all(color: kSanctuaryBorder),
               boxShadow: [
                 BoxShadow(
-                  color: p.accent.withValues(alpha: 0.08),
+                  color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 10,
-                  offset: const Offset(0, 3),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -2334,21 +2235,14 @@ class UnpairedAspirationalExperience extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    color: p.accent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: p.accent.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+                    shape: BoxShape.circle,
+                    color: p.tint,
                   ),
                   child: Center(
-                    child: Icon(p.icon, size: 24, color: Colors.white),
+                    child: Icon(p.icon, size: 22, color: p.accent),
                   ),
                 ),
                 const SizedBox(width: 14),
