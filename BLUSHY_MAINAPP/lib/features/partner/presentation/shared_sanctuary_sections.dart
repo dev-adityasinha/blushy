@@ -1124,6 +1124,9 @@ class MakeALittleMomentRail extends StatelessWidget {
     required this.onWriteLetter,
     this.onLeaveMessage,
     required this.onPlanSomething,
+    this.onDatePlanner,
+    this.onSharedCanvas,
+    this.onCoupleGames,
     this.bloomsCount = 0,
     this.lettersCount = 0,
     this.sealedLettersCount = 0,
@@ -1133,6 +1136,9 @@ class MakeALittleMomentRail extends StatelessWidget {
   final VoidCallback onWriteLetter;
   final VoidCallback? onLeaveMessage;
   final VoidCallback onPlanSomething;
+  final VoidCallback? onDatePlanner;
+  final VoidCallback? onSharedCanvas;
+  final VoidCallback? onCoupleGames;
   final int bloomsCount;
   final int lettersCount;
   final int sealedLettersCount;
@@ -1140,6 +1146,33 @@ class MakeALittleMomentRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = [
+      if (onCoupleGames != null)
+        (
+          label: 'Couple Games',
+          sublabel: 'Play in chat',
+          icon: Icons.casino_rounded,
+          tint: kMagentaTint,
+          accent: kMagenta,
+          onTap: onCoupleGames!,
+        ),
+      if (onDatePlanner != null)
+        (
+          label: 'Date Planner',
+          sublabel: 'Vibes & seats',
+          icon: Icons.calendar_today_rounded,
+          tint: kCobaltTint,
+          accent: kCobalt,
+          onTap: onDatePlanner!,
+        ),
+      if (onSharedCanvas != null)
+        (
+          label: 'Doodle Canvas',
+          sublabel: 'Draw love notes',
+          icon: Icons.palette_rounded,
+          tint: kTealTint,
+          accent: kTeal,
+          onTap: onSharedCanvas!,
+        ),
       (
         label: 'Send a Bloom',
         sublabel: bloomsCount > 0 ? '$bloomsCount blooming' : 'Virtual petals',
@@ -1154,18 +1187,19 @@ class MakeALittleMomentRail extends StatelessWidget {
             ? '$sealedLettersCount sealed'
             : (lettersCount > 0 ? '$lettersCount written' : 'Time capsule'),
         icon: Icons.mark_email_unread_rounded,
-        tint: kMagentaTint,
-        accent: kMagenta,
-        onTap: onWriteLetter,
-      ),
-      (
-        label: 'Couple Quest',
-        sublabel: 'Play together',
-        icon: Icons.explore_rounded,
         tint: kCoralTint,
         accent: kCoral,
-        onTap: onPlanSomething,
+        onTap: onWriteLetter,
       ),
+      if (onCoupleGames == null && onDatePlanner == null && onSharedCanvas == null)
+        (
+          label: 'Couple Quest',
+          sublabel: 'Play together',
+          icon: Icons.explore_rounded,
+          tint: kCoralTint,
+          accent: kCoral,
+          onTap: onPlanSomething,
+        ),
       if (onLeaveMessage != null)
         (
           label: 'Leave a Note',
@@ -1712,6 +1746,260 @@ class LittleThingsCards extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+// ============================================================================
+// 06.5 — COUPLE EXPERIENCES & GAMES HUB
+// ============================================================================
+class CoupleExperiencesHubCard extends StatelessWidget {
+  const CoupleExperiencesHubCard({
+    super.key,
+    required this.partnerName,
+    required this.onOpenGames,
+    required this.onOpenDatePlanner,
+    required this.onOpenSharedCanvas,
+    this.onViewAllActivities,
+  });
+
+  final String partnerName;
+  final VoidCallback onOpenGames;
+  final VoidCallback onOpenDatePlanner;
+  final VoidCallback onOpenSharedCanvas;
+  final VoidCallback? onViewAllActivities;
+
+  @override
+  Widget build(BuildContext context) {
+    final pName = partnerName.trim().isNotEmpty ? partnerName.trim() : 'Your Partner';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'PLAY & PLAN TOGETHER',
+              style: GoogleFonts.manrope(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+                color: kSanctuaryCrimson,
+              ),
+            ),
+            if (onViewAllActivities != null)
+              GestureDetector(
+                onTap: onViewAllActivities,
+                child: Text(
+                  'More couple ideas',
+                  style: GoogleFonts.manrope(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: kSanctuaryCrimson,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Experiences with $pName',
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: kSanctuaryCharcoal,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // 1. Couple Games Card (Text Virtually)
+        _buildExperienceCard(
+          context: context,
+          badgeText: 'COUPLE GAME • TEXT VIRTUALLY',
+          badgeTint: kMagentaTint,
+          badgeColor: kMagenta,
+          icon: Icons.casino_rounded,
+          iconTint: kMagentaTint,
+          iconColor: kMagenta,
+          title: 'Would You Rather? & Pillow Talk',
+          description: 'Shuffle fun questions, send them into Messenger, and take turns texting your answers virtually.',
+          ctaLabel: 'Play Games with $pName 🎲',
+          ctaColor: kMagenta,
+          onTap: onOpenGames,
+        ),
+        const SizedBox(height: 12),
+
+        // 2. Date Planner & Concierge Card
+        _buildExperienceCard(
+          context: context,
+          badgeText: 'ROMANTIC CONCIERGE • SEAT BOOKING',
+          badgeTint: kCobaltTint,
+          badgeColor: kCobalt,
+          icon: Icons.calendar_today_rounded,
+          iconTint: kCobaltTint,
+          iconColor: kCobalt,
+          title: 'Plan a Date & Book Seats',
+          description: 'Pick candlelight vibes, get Docsy AI venue recommendations, and send a date invite to chat.',
+          ctaLabel: 'Plan a Date with $pName ✨',
+          ctaColor: kCobalt,
+          onTap: onOpenDatePlanner,
+        ),
+        const SizedBox(height: 12),
+
+        // 3. Shared Drawing Canvas Card
+        _buildExperienceCard(
+          context: context,
+          badgeText: 'LIVE CREATIVE CANVAS',
+          badgeTint: kTealTint,
+          badgeColor: kTeal,
+          icon: Icons.palette_rounded,
+          iconTint: kTealTint,
+          iconColor: kTeal,
+          title: 'Shared Drawing Canvas',
+          description: 'Doodle love notes, sketch cute drawings together, and send sweet artwork into chat.',
+          ctaLabel: 'Open Drawing Canvas 🎨',
+          ctaColor: kTeal,
+          onTap: onOpenSharedCanvas,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExperienceCard({
+    required BuildContext context,
+    required String badgeText,
+    required Color badgeTint,
+    required Color badgeColor,
+    required IconData icon,
+    required Color iconTint,
+    required Color iconColor,
+    required String title,
+    required String description,
+    required String ctaLabel,
+    required Color ctaColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: kSanctuaryCard,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: kSanctuaryBorder),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: badgeTint,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: GoogleFonts.manrope(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.9,
+                      color: badgeColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: iconTint,
+                  ),
+                  child: Center(
+                    child: Icon(icon, size: 22, color: iconColor),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: kSanctuaryCharcoal,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: kSanctuaryMuted,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 11),
+              decoration: BoxDecoration(
+                color: ctaColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: ctaColor.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    ctaLabel,
+                    style: GoogleFonts.manrope(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

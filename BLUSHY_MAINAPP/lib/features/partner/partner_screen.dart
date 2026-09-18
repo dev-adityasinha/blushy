@@ -1178,8 +1178,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         : '';
     final signals = _buildSanctuarySignals(state, primaryPartner);
     final rightNow = _getRightNowEvent(partnerName);
-    final featuredActivity = _getFeaturedActivity();
-    final docsyPrompt = _getDocsyPrompt(state, partnerName);
 
     final letters = _getLettersList();
     final lettersCount = letters.length;
@@ -1252,14 +1250,63 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           MakeALittleMomentRail(
             onSendBloom: () => _openPartnerTab(1),
             onWriteLetter: () => _showWriteLetterModal(context),
-            onPlanSomething: _showActivityTriggerDialog,
+            onPlanSomething: () => showCoupleGamesSheet(
+              context,
+              partnerName: partnerName,
+              onSendGameQuestion: (msg) => _sendDirectWhisper(msg),
+            ),
+            onDatePlanner: () => showDatePlannerSheet(
+              context,
+              partnerName: partnerName,
+              onSendInvite: (msg) => _sendDirectWhisper(msg),
+              onAskDocsy: (prompt) => openDocsyWith(
+                context,
+                prompt.isNotEmpty ? prompt : _getDocsyPrompt(state, partnerName),
+              ),
+            ),
+            onSharedCanvas: () => showSharedCanvasSheet(
+              context,
+              partnerName: partnerName,
+              onSendDrawing: (msg) => _sendDirectWhisper(msg),
+            ),
+            onCoupleGames: () => showCoupleGamesSheet(
+              context,
+              partnerName: partnerName,
+              onSendGameQuestion: (msg) => _sendDirectWhisper(msg),
+            ),
             bloomsCount: bloomsCount,
             lettersCount: lettersCount,
             sealedLettersCount: sealedLettersCount,
           ),
           const SizedBox(height: 28),
 
-          // 05 — YOUR STORY (Living Memory Archive)
+          // 05 — PLAY & PLAN TOGETHER (Couple Experiences Hub: Games, Date Planner, Drawing Canvas)
+          CoupleExperiencesHubCard(
+            partnerName: partnerName,
+            onOpenGames: () => showCoupleGamesSheet(
+              context,
+              partnerName: partnerName,
+              onSendGameQuestion: (msg) => _sendDirectWhisper(msg),
+            ),
+            onOpenDatePlanner: () => showDatePlannerSheet(
+              context,
+              partnerName: partnerName,
+              onSendInvite: (msg) => _sendDirectWhisper(msg),
+              onAskDocsy: (prompt) => openDocsyWith(
+                context,
+                prompt.isNotEmpty ? prompt : _getDocsyPrompt(state, partnerName),
+              ),
+            ),
+            onOpenSharedCanvas: () => showSharedCanvasSheet(
+              context,
+              partnerName: partnerName,
+              onSendDrawing: (msg) => _sendDirectWhisper(msg),
+            ),
+            onViewAllActivities: () => _openPartnerTab(3),
+          ),
+          const SizedBox(height: 28),
+
+          // 06 — YOUR STORY (Living Memory Archive)
           YourStoryCard(
             memoryCount: memoryCount,
             latestMemoryTitle: latestMemoryTitle,
@@ -1267,33 +1314,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             onOpenMemoryBook: () => _openPartnerTab(5),
             onStartMemory: () => _openPartnerTab(3),
           ),
-          const SizedBox(height: 24),
-
-          // 07 — DO SOMETHING TOGETHER (Contextual Activity)
-          DoSomethingTogetherCard(
-            activity: featuredActivity,
-            onAction: () {
-              if (featuredActivity != null) {
-                _launchActivityExperience(featuredActivity, partnerName);
-              } else {
-                _showActivityTriggerDialog();
-              }
-            },
-            onViewAll: () => _openPartnerTab(3),
-          ),
-          const SizedBox(height: 24),
-
-          // 08 — A LITTLE HELP? (Docsy)
-          ALittleHelpCard(
-            dynamicPrompt: docsyPrompt,
-            onAskDocsy: () => openDocsyWith(
-              context,
-              docsyPrompt.replaceAll('“', '').replaceAll('”', ''),
-            ),
-          ),
           const SizedBox(height: 28),
 
-          // 09 — MANAGE CONNECTION (Subtle Sanctuary Settings)
+          // 07 — MANAGE CONNECTION (Subtle Sanctuary Settings)
           ManageConnectionFooter(
             onTap: () => _showManageConnectionSheet(state),
           ),
@@ -1483,17 +1506,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
     if (diff.inHours < 24) return '${diff.inHours} hr ago';
     return DateFormat('MMM d').format(dt);
-  }
-
-  SharedActivity? _getFeaturedActivity() {
-    final list = _sharedActivities.isNotEmpty ? _sharedActivities : _defaultActivities;
-    // Prioritize non-gratitude active or not-started activities to avoid duplicate memory cards
-    final coupleActivities = list.where((a) => a.key != 'daily_gratitude').toList();
-    final inProg = coupleActivities.where((a) => a.isInProgress).toList();
-    if (inProg.isNotEmpty) return inProg.first;
-    final notStarted = coupleActivities.where((a) => !a.isCompleted).toList();
-    if (notStarted.isNotEmpty) return notStarted.first;
-    return coupleActivities.isNotEmpty ? coupleActivities.first : list.first;
   }
 
   String _getDocsyPrompt(BlushyOSState state, String partnerName) {
