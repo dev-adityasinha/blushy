@@ -493,11 +493,11 @@ class _PartnerLearnScreenState extends State<PartnerLearnScreen> {
         children: [
           Row(
             children: [
-              const DocsyIcon(color: BlushyColors.success, size: 18),
+              const DocsyIcon(color: BlushyColors.primary, size: 18),
               const SizedBox(width: 8),
               Text(
                 "DOCSY AI PARTNER INSIGHTS",
-                style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.success, letterSpacing: 1.1),
+                style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: BlushyColors.primary, letterSpacing: 1.1),
               ),
             ],
           ),

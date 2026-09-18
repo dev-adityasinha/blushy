@@ -1000,6 +1000,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           isPrivateSpaceActive: state.argumentModeActive,
           onInvite: _showPartnerConnectionsModal,
           onManageConnection: () => _showManageConnectionSheet(state),
+          onOpenMessenger: hasConnection ? () => _openPartnerTab(2) : null,
         ),
         const SizedBox(height: 20),
 
@@ -1029,12 +1030,22 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           ),
           const SizedBox(height: 24),
 
-          // 04 — MAKE A LITTLE MOMENT (Tactile Action Rail)
+          // 03.5 — DIRECT MESSENGER (Spotlight Stealer — Instagram Direct & Notes style)
+          MessengerSpotlightCard(
+            partnerName: partnerName,
+            onOpenMessenger: () => _openPartnerTab(2),
+            unreadCount: 0,
+          ),
+          const SizedBox(height: 24),
+
+          // 04 — MAKE A LITTLE MOMENT (Tactile Surprises & Actions)
           MakeALittleMomentRail(
             onSendBloom: () => _openPartnerTab(1),
             onWriteLetter: () => _showWriteLetterModal(context),
-            onLeaveMessage: () => _openPartnerTab(2),
             onPlanSomething: _showActivityTriggerDialog,
+            bloomsCount: bloomsCount,
+            lettersCount: lettersCount,
+            sealedLettersCount: sealedLettersCount,
           ),
           const SizedBox(height: 28),
 
@@ -1045,16 +1056,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             latestMemoryDate: latestMemoryDate,
             onOpenMemoryBook: () => _openPartnerTab(5),
             onStartMemory: () => _openPartnerTab(3),
-          ),
-          const SizedBox(height: 24),
-
-          // 06 — LITTLE THINGS (Letters & Blooms)
-          LittleThingsCards(
-            lettersCount: lettersCount,
-            sealedLettersCount: sealedLettersCount,
-            bloomsCount: bloomsCount,
-            onOpenLetters: () => _openPartnerTab(4),
-            onOpenBouquet: () => _openPartnerTab(1),
           ),
           const SizedBox(height: 24),
 
@@ -1131,8 +1132,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     if (perms['shareSleep'] == true && energyVal != null && energyVal.isNotEmpty) {
       signals.add(SignalBadgeSpec(
         icon: Icons.bolt_rounded,
-        colour: kTeal,
-        tint: kTealTint,
+        colour: kAmber,
+        tint: kAmberTint,
         label: 'ENERGY',
         value: energyVal,
         onTap: _openSharingPanel,
@@ -1165,8 +1166,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     } else {
       signals.add(SignalBadgeSpec(
         icon: Icons.lock_open_rounded,
-        colour: kTeal,
-        tint: kTealTint,
+        colour: kCoral,
+        tint: kCoralTint,
         label: 'SHARING',
         value: 'Active',
         onTap: () => _takeSomeSpace(state),
@@ -1810,11 +1811,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                 width: 40,
                                 height: 40,
                                 decoration: const BoxDecoration(
-                                  color: kTealTint,
+                                  color: kPurpleTint,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Center(
-                                  child: Icon(Icons.shield_outlined, color: kTeal, size: 20),
+                                  child: Icon(Icons.shield_outlined, color: kPurple, size: 20),
                                 ),
                               ),
                               const SizedBox(width: 14),
@@ -1917,7 +1918,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                         _resumeSharing(state);
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: kTeal,
+                                        backgroundColor: kSanctuaryCrimson,
                                         foregroundColor: Colors.white,
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -3024,9 +3025,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DocsyIcon(
+                      const DocsyIcon(
                         size: 13,
-                        color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
+                        color: BlushyColors.primary,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -3191,7 +3192,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         children: [
           Row(
             children: [
-              const DocsyIcon(color: BlushyColors.warning, size: 14),
+              const DocsyIcon(color: BlushyColors.primary, size: 14),
               const SizedBox(width: 8),
               Text(
                 msg['title'] ?? '',

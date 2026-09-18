@@ -101,8 +101,8 @@ class DocsyIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final IconThemeData iconTheme = IconTheme.of(context);
-    final Color effectiveColor = color ?? iconTheme.color ?? const Color(0xFFDD0D22);
+    // Docsy icon must always be in brand red color
+    final Color effectiveColor = color ?? const Color(0xFFDD0D22);
 
     return DocsyAvatar(
       size: size,

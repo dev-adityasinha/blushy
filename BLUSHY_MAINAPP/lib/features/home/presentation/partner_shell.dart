@@ -115,7 +115,7 @@ class _PartnerShellState extends State<PartnerShell>
               label: _labels[1],
             ),
             BottomNavigationBarItem(
-              icon: const DocsyIcon(size: 22, color: BlushyColors.secondaryText),
+              icon: const DocsyIcon(size: 22, color: BlushyColors.primary),
               activeIcon: const DocsyIcon(size: 22, color: BlushyColors.primary),
               label: _labels[2],
             ),

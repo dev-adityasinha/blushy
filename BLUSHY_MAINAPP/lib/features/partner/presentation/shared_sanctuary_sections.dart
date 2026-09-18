@@ -58,6 +58,7 @@ class SharedSanctuaryHeader extends StatelessWidget {
     required this.isPrivateSpaceActive,
     required this.onInvite,
     required this.onManageConnection,
+    this.onOpenMessenger,
   });
 
   final bool hasConnection;
@@ -66,6 +67,7 @@ class SharedSanctuaryHeader extends StatelessWidget {
   final bool isPrivateSpaceActive;
   final VoidCallback onInvite;
   final VoidCallback onManageConnection;
+  final VoidCallback? onOpenMessenger;
 
   @override
   Widget build(BuildContext context) {
@@ -184,10 +186,10 @@ class SharedSanctuaryHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isPrivateSpaceActive ? kPurpleTint : kEmeraldTint,
+                  color: isPrivateSpaceActive ? kPurpleTint : kCobaltTint,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: (isPrivateSpaceActive ? kPurple : kEmerald).withValues(alpha: 0.35),
+                    color: (isPrivateSpaceActive ? kPurple : kCobalt).withValues(alpha: 0.35),
                   ),
                 ),
                 child: Row(
@@ -197,11 +199,11 @@ class SharedSanctuaryHeader extends StatelessWidget {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: isPrivateSpaceActive ? kPurple : kEmerald,
+                        color: isPrivateSpaceActive ? kPurple : kCobalt,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: (isPrivateSpaceActive ? kPurple : kEmerald).withValues(alpha: 0.55),
+                            color: (isPrivateSpaceActive ? kPurple : kCobalt).withValues(alpha: 0.55),
                             blurRadius: 6,
                             spreadRadius: 1,
                           ),
@@ -219,7 +221,7 @@ class SharedSanctuaryHeader extends StatelessWidget {
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.6,
-                        color: isPrivateSpaceActive ? kPurple : kEmerald,
+                        color: isPrivateSpaceActive ? kPurple : kCobalt,
                       ),
                     ),
                   ],
@@ -300,6 +302,47 @@ class SharedSanctuaryHeader extends StatelessWidget {
                 ],
               ),
             ),
+            if (onOpenMessenger != null) ...[
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: onOpenMessenger,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: kSanctuaryCard,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: kCobalt.withValues(alpha: 0.25)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kCobalt.withValues(alpha: 0.12),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(Icons.send_rounded, color: kCobalt, size: 18),
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: kSanctuaryCrimson,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(width: 8),
             InkWell(
               onTap: onManageConnection,
@@ -361,20 +404,20 @@ class TodayTogetherSignalRail extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: kTealTint,
+                color: kCoralTint,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.flash_on_rounded, size: 11, color: kTeal),
+                  const Icon(Icons.flash_on_rounded, size: 11, color: kCoral),
                   const SizedBox(width: 3),
                   Text(
                     'LIVE SIGNALS',
                     style: GoogleFonts.manrope(
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
-                      color: kTeal,
+                      color: kCoral,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -554,9 +597,9 @@ class RightNowCard extends StatelessWidget {
           Icons.bookmark_rounded,
         ),
       RightNowEventType.lowData => (
-          kTeal,
-          kTealTint,
-          Icons.favorite_border_rounded,
+          kCoral,
+          kCoralTint,
+          Icons.favorite_rounded,
           Icons.sync_rounded,
         ),
     };
@@ -884,6 +927,262 @@ class RightNowCard extends StatelessWidget {
 }
 
 // ============================================================================
+// 03.5 — MESSENGER SPOTLIGHT (CLEAN INSTAGRAM-STYLE SPOTLIGHT STEALER)
+// ============================================================================
+class MessengerSpotlightCard extends StatelessWidget {
+  const MessengerSpotlightCard({
+    super.key,
+    required this.partnerName,
+    required this.onOpenMessenger,
+    this.unreadCount = 0,
+    this.latestSnippet,
+  });
+
+  final String partnerName;
+  final VoidCallback onOpenMessenger;
+  final int unreadCount;
+  final String? latestSnippet;
+
+  @override
+  Widget build(BuildContext context) {
+    final pName = partnerName.trim().isNotEmpty ? partnerName.trim() : 'her';
+    final partnerInitial = pName.isNotEmpty ? pName[0].toUpperCase() : 'P';
+
+    return InkWell(
+      onTap: onOpenMessenger,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: kSanctuaryCard,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: kCobalt.withValues(alpha: 0.22), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: kCobalt.withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top row: Eyebrow + Live Indicator / Instagram Direct badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.send_rounded, size: 12, color: kCobalt),
+                    const SizedBox(width: 5),
+                    Text(
+                      'DIRECT MESSENGER',
+                      style: GoogleFonts.manrope(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.1,
+                        color: kCobalt,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: unreadCount > 0 ? kCrimsonTint : kCobaltTint,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: unreadCount > 0 ? kSanctuaryCrimson : kCobalt,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        unreadCount > 0 ? '$unreadCount NEW' : 'PRIVATE & DIRECT',
+                        style: GoogleFonts.manrope(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: unreadCount > 0 ? kSanctuaryCrimson : kCobalt,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Middle: Instagram "Notes" Avatar with Floating Speech Bubble & Callout
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Avatar with Instagram Notes Bubble
+                Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    // Main Avatar Circle
+                    Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: kCobalt,
+                        boxShadow: [
+                          BoxShadow(
+                            color: kCobalt.withValues(alpha: 0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                        border: Border.all(color: Colors.white, width: 2.5),
+                      ),
+                      child: Center(
+                        child: Text(
+                          partnerInitial,
+                          style: GoogleFonts.manrope(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Instagram Notes Style Floating Bubble
+                    Positioned(
+                      top: -10,
+                      right: -8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: kCobalt.withValues(alpha: 0.25)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('💭', style: TextStyle(fontSize: 9)),
+                            const SizedBox(width: 2),
+                            Text(
+                              'Note',
+                              style: GoogleFonts.manrope(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: kCobalt,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 14),
+
+                // Editorial Copy
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Leave a note for $pName',
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w600,
+                          color: kSanctuaryCharcoal,
+                          height: 1.15,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        latestSnippet != null && latestSnippet!.isNotEmpty
+                            ? latestSnippet!
+                            : 'Send a quiet thought, sweet whisper, or quick check-in.',
+                        style: GoogleFonts.manrope(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: kSanctuaryMuted,
+                          height: 1.35,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Bottom: Instagram-style Clean Message Bar (Spotlight Stealer)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F8FC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: kCobalt.withValues(alpha: 0.18)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_note_rounded, size: 18, color: kCobalt.withValues(alpha: 0.8)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Whisper something to $pName...',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF8A94A6),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: kCobalt,
+                      boxShadow: [
+                        BoxShadow(
+                          color: kCobalt.withValues(alpha: 0.35),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.send_rounded, size: 15, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
 // 04 — MAKE A LITTLE MOMENT (BIG ICONS & BRIGHT SATURATED ACTION CARDS)
 // ============================================================================
 class MakeALittleMomentRail extends StatelessWidget {
@@ -891,50 +1190,59 @@ class MakeALittleMomentRail extends StatelessWidget {
     super.key,
     required this.onSendBloom,
     required this.onWriteLetter,
-    required this.onLeaveMessage,
+    this.onLeaveMessage,
     required this.onPlanSomething,
+    this.bloomsCount = 0,
+    this.lettersCount = 0,
+    this.sealedLettersCount = 0,
   });
 
   final VoidCallback onSendBloom;
   final VoidCallback onWriteLetter;
-  final VoidCallback onLeaveMessage;
+  final VoidCallback? onLeaveMessage;
   final VoidCallback onPlanSomething;
+  final int bloomsCount;
+  final int lettersCount;
+  final int sealedLettersCount;
 
   @override
   Widget build(BuildContext context) {
     final actions = [
       (
         label: 'Send a Bloom',
-        sublabel: 'Virtual petals',
+        sublabel: bloomsCount > 0 ? '$bloomsCount blooming' : 'Virtual petals',
         icon: Icons.local_florist_rounded,
-        tint: kCrimsonTint,
-        accent: kSanctuaryCrimson,
+        tint: kAmberTint,
+        accent: kAmber,
         onTap: onSendBloom,
       ),
       (
         label: 'Write a Letter',
-        sublabel: 'Time capsule',
+        sublabel: sealedLettersCount > 0
+            ? '$sealedLettersCount sealed'
+            : (lettersCount > 0 ? '$lettersCount written' : 'Time capsule'),
         icon: Icons.mark_email_unread_rounded,
         tint: kMagentaTint,
         accent: kMagenta,
         onTap: onWriteLetter,
       ),
       (
-        label: 'Leave a Note',
-        sublabel: 'Private chat',
-        icon: Icons.chat_bubble_rounded,
-        tint: kCobaltTint,
-        accent: kCobalt,
-        onTap: onLeaveMessage,
-      ),
-      (
-        label: 'Plan Together',
-        sublabel: 'Couple quest',
-        icon: Icons.event_note_rounded,
-        tint: kAmberTint,
-        accent: kAmber,
+        label: 'Couple Quest',
+        sublabel: 'Play together',
+        icon: Icons.explore_rounded,
+        tint: kCoralTint,
+        accent: kCoral,
         onTap: onPlanSomething,
       ),
+      if (onLeaveMessage != null)
+        (
+          label: 'Leave a Note',
+          sublabel: 'Private chat',
+          icon: Icons.chat_bubble_rounded,
+          tint: kCobaltTint,
+          accent: kCobalt,
+          onTap: onLeaveMessage!,
+        ),
     ];
 
     return Column(
@@ -1091,21 +1399,21 @@ class YourStoryCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: kEmeraldTint,
+                  color: kMagentaTint,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: kEmerald.withValues(alpha: 0.3)),
+                  border: Border.all(color: kMagenta.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.bookmark_added_rounded, size: 11, color: kEmerald),
+                    const Icon(Icons.bookmark_added_rounded, size: 11, color: kMagenta),
                     const SizedBox(width: 4),
                     Text(
                       memoryCount == 1 ? '1 MEMORY KEPT' : '$memoryCount MEMORIES KEPT',
                       style: GoogleFonts.manrope(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w800,
-                        color: kEmerald,
+                        color: kMagenta,
                         letterSpacing: 0.6,
                       ),
                     ),
@@ -1668,11 +1976,11 @@ class DoSomethingTogetherCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(
-                    color: isComp ? kTeal : kSanctuaryCrimson,
+                    color: isComp ? kCobalt : kSanctuaryCrimson,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: (isComp ? kTeal : kSanctuaryCrimson).withValues(alpha: 0.35),
+                        color: (isComp ? kCobalt : kSanctuaryCrimson).withValues(alpha: 0.35),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -1742,20 +2050,20 @@ class ALittleHelpCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: kPurpleTint,
+                color: kCrimsonTint,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const DocsyIcon(size: 13, color: kPurple),
+                  const DocsyIcon(size: 13, color: kSanctuaryCrimson),
                   const SizedBox(width: 4),
                   Text(
                     'AI GUIDE',
                     style: GoogleFonts.manrope(
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
-                      color: kPurple,
+                      color: kSanctuaryCrimson,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -1781,10 +2089,10 @@ class ALittleHelpCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: kSanctuaryCard,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: kPurple.withValues(alpha: 0.25), width: 1.5),
+            border: Border.all(color: kSanctuaryCrimson.withValues(alpha: 0.25), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: kPurple.withValues(alpha: 0.08),
+                color: kSanctuaryCrimson.withValues(alpha: 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 5),
               ),
@@ -1801,10 +2109,14 @@ class ALittleHelpCard extends StatelessWidget {
                     height: 52,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      color: kPurple,
+                      color: kCrimsonTint,
+                      border: Border.all(
+                        color: kSanctuaryCrimson.withValues(alpha: 0.25),
+                        width: 1.5,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: kPurple.withValues(alpha: 0.35),
+                          color: kSanctuaryCrimson.withValues(alpha: 0.15),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
@@ -1812,8 +2124,8 @@ class ALittleHelpCard extends StatelessWidget {
                     ),
                     child: const Center(
                       child: DocsyAvatar(
-                        size: 30,
-                        color: Colors.white,
+                        size: 32,
+                        color: kSanctuaryCrimson,
                       ),
                     ),
                   ),
