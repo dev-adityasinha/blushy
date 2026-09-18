@@ -157,13 +157,53 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   bool _dateIdeasLoading = false;
 
   String? get _activeConnectionId {
+    if (_connections.isEmpty) return null;
     final active = _connections.firstWhere(
       (c) => c['status'] == 'active',
-      orElse: () => <String, dynamic>{},
+      orElse: () => _connections.first,
     );
-    final id = active['connectionId'];
+    final id = active['connectionId'] ?? active['id'] ?? active['_id'];
     return id?.toString();
   }
+
+  static const List<SharedActivity> _defaultActivities = [
+    SharedActivity(
+      key: 'dinner_date',
+      title: 'Make dinner together. No phones. 30 minutes.',
+      description: 'A quiet, unhurried evening just for the two of you.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'daily_gratitude',
+      title: 'Daily Gratitude Challenge',
+      description: 'Each of you names one thing you appreciated today.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'weekend_planner',
+      title: 'Weekend Planner',
+      description: 'Build a shared list of things to do together.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'date_planner',
+      title: 'Date Planner',
+      description: 'Plan and agree your next date.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'shared_canvas',
+      title: 'Shared Canvas',
+      description: 'Draw something together.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'virtual_bouquet',
+      title: 'Virtual Bouquet',
+      description: 'Arrange and send digital flowers.',
+      status: 'not_started',
+    ),
+  ];
 
   Future<void> _loadSharedActivities() async {
     final connId = _activeConnectionId;
@@ -175,33 +215,94 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     final activities = await _partnerService.getSharedActivities(connId);
     if (!mounted) return;
     setState(() {
-      _sharedActivities = activities;
+      _sharedActivities = activities.isNotEmpty ? activities : _defaultActivities;
       _activitiesLoading = false;
     });
   }
 
   Future<void> _advanceActivity(SharedActivity activity) async {
-    final connId = _activeConnectionId;
-    if (connId == null) return;
-
-    // Tapping moves it one step: not started -> in progress -> completed, and
-    // a completed repeatable activity starts again.
     final next = activity.isInProgress ? 'completed' : 'in_progress';
+    final nextCount = next == 'completed' ? activity.completionCount + 1 : activity.completionCount;
+    final nextCompletedAt = next == 'completed' ? DateTime.now() : null;
 
-    setState(() => _activityBusyKey = activity.key);
-    final updated = await _partnerService.setSharedActivityStatus(connId, activity.key, next);
-    if (!mounted) return;
-
+    // Optimistically update local state so user sees instant feedback
     setState(() {
-      _activityBusyKey = null;
-      if (updated != null) _sharedActivities = updated;
+      _activityBusyKey = activity.key;
+      final currentList = List<SharedActivity>.from(_sharedActivities.isNotEmpty ? _sharedActivities : _defaultActivities);
+      final idx = currentList.indexWhere((a) => a.key == activity.key);
+      final updatedItem = SharedActivity(
+        key: activity.key,
+        title: activity.title,
+        description: activity.description,
+        status: next,
+        completionCount: nextCount,
+        completedAt: nextCompletedAt,
+      );
+      if (idx >= 0) {
+        currentList[idx] = updatedItem;
+      } else {
+        currentList.add(updatedItem);
+      }
+      _sharedActivities = currentList;
     });
 
-    if (updated == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not update the activity. Please try again.')),
-      );
+    if (next == 'completed') {
+      await _growGarden(flowers: 1);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: kSanctuaryCharcoal,
+            content: Text(
+              '“${activity.title}” completed together! 🌸',
+              style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: kSanctuaryCharcoal,
+            content: Text(
+              'Activity started! “${activity.title}”',
+              style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+        );
+      }
     }
+
+    final connId = _activeConnectionId;
+    if (connId != null) {
+      final updated = await _partnerService.setSharedActivityStatus(connId, activity.key, next);
+      if (mounted) {
+        setState(() {
+          _activityBusyKey = null;
+          if (updated != null && updated.isNotEmpty) _sharedActivities = updated;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() => _activityBusyKey = null);
+      }
+    }
+  }
+
+  bool _showActiveStatus = true;
+  bool _showReadReceipts = true;
+
+  void _loadPresenceSettings() {
+    try {
+      final activeSaved = BlushyStorage.read('partner_show_active_status');
+      if (activeSaved['enabled'] is bool) {
+        _showActiveStatus = activeSaved['enabled'] as bool;
+      }
+      final receiptsSaved = BlushyStorage.read('partner_read_receipts');
+      if (receiptsSaved['enabled'] is bool) {
+        _showReadReceipts = receiptsSaved['enabled'] as bool;
+      }
+    } catch (_) {}
   }
   List<Map<String, dynamic>> _incomingInvitations = [];
   List<Map<String, dynamic>> _outgoingInvitations = [];
@@ -389,10 +490,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           );
         }
         _hadActiveConnection = _connections.any((c) => c['status'] == 'active');
+        if (_connections.isNotEmpty) {
+          unawaited(_loadSharedActivities());
+        }
       }
     } catch (_) {}
 
     _loadMessageDecoderState();
+    _loadPresenceSettings();
     _fetchPartnerData();
     _startLiveSync();
     _initWebSocket();
@@ -783,7 +888,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!isHome) ...[
+                if (!isHome && _tabs[_selectedTabIndex] != 'Messenger') ...[
                   Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: BlushyTheme.getPagePadding(context),
@@ -804,7 +909,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'SHARED SANCTUARY',
+                              'PARTNER',
                               style: GoogleFonts.manrope(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w800,
@@ -984,7 +1089,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     }
   }
 
-  // --- TAB 1: SHARED SANCTUARY (WOMAN'S HOME) ---
+  // --- TAB 1: PARTNER SPACE (WOMAN'S HOME) ---
   Widget _buildOverviewTab(BlushyOSState state) {
     final hasConnection = _connections.isNotEmpty;
     final primaryPartner = hasConnection ? _connections.first : null;
@@ -1016,7 +1121,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(top: 14, bottom: 48),
       children: [
-        // 01 — SHARED SANCTUARY (Unboxed Editorial Header)
+        // 01 — PARTNER SPACE (Unboxed Editorial Header)
         SharedSanctuaryHeader(
           hasConnection: hasConnection,
           partnerName: partnerName,
@@ -1215,19 +1320,21 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     VoidCallback? onPrimaryTap,
     VoidCallback? onSecondaryTap,
   }) _getRightNowEvent(String partnerName) {
-    // 1. Check for real incoming message from partner
-    final partnerMsgs = _chatMessages.where((m) =>
-        m['isMe'] != true &&
+    // 1. Check for real incoming message from partner that has NOT been replied to
+    final regularMsgs = _chatMessages.where((m) =>
         m['sender'] != 'Docsy' &&
-        m['sender'] != 'You' &&
         m['isCard'] != true &&
         m['text'] != null &&
         !m['text'].toString().startsWith('[LETTER_JSON]:') &&
         !m['text'].toString().startsWith('[BOUQUET_JSON]:') &&
         m['text'].toString().trim().isNotEmpty).toList();
 
-    if (partnerMsgs.isNotEmpty) {
-      final latest = partnerMsgs.last;
+    final hasUnrepliedPartnerMsg = regularMsgs.isNotEmpty &&
+        regularMsgs.last['isMe'] != true &&
+        regularMsgs.last['sender'] != 'You';
+
+    if (hasUnrepliedPartnerMsg) {
+      final latest = regularMsgs.last;
       final text = latest['text'].toString().trim();
       final rawTime = (latest['timestamp'] ?? latest['created_at'])?.toString();
       return (
@@ -1321,12 +1428,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   }
 
   SharedActivity? _getFeaturedActivity() {
-    if (_sharedActivities.isEmpty) return null;
-    final inProg = _sharedActivities.where((a) => a.isInProgress).toList();
+    final list = _sharedActivities.isNotEmpty ? _sharedActivities : _defaultActivities;
+    final inProg = list.where((a) => a.isInProgress).toList();
     if (inProg.isNotEmpty) return inProg.first;
-    final notStarted = _sharedActivities.where((a) => !a.isCompleted).toList();
+    final notStarted = list.where((a) => !a.isCompleted).toList();
     if (notStarted.isNotEmpty) return notStarted.first;
-    return _sharedActivities.first;
+    return list.first;
   }
 
   String _getDocsyPrompt(BlushyOSState state) {
@@ -1440,7 +1547,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Connected! Your Shared Sanctuary is now live 🎉'),
+                              content: Text('Connected! Your Partner Space is now live 🎉'),
                               backgroundColor: Color(0xFF0D9488),
                             ),
                           );
@@ -1752,7 +1859,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
                       // Heading
                       Text(
-                        'Shared Sanctuary Settings',
+                        'Partner Settings',
                         style: GoogleFonts.cormorantGaramond(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
@@ -1827,6 +1934,113 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                                   color: kSanctuaryCrimson,
                                 ),
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 1.5. Active Status & Read Receipts Settings Card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: kSanctuaryCard,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: kSanctuaryBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: const BoxDecoration(
+                                    color: kEmeraldTint,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: Icon(Icons.mark_chat_read_outlined, color: kEmerald, size: 20),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Active Status & Read Receipts',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: kSanctuaryCharcoal,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Control presence indicators and message read confirmations.',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w400,
+                                          color: kSanctuaryMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Divider(color: kSanctuaryDivider, height: 1),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Show Active Status',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: kSanctuaryCharcoal,
+                                  ),
+                                ),
+                                Switch.adaptive(
+                                  value: _showActiveStatus,
+                                  activeColor: kEmerald,
+                                  onChanged: (val) {
+                                    setState(() => _showActiveStatus = val);
+                                    setSheetState(() {});
+                                    try {
+                                      BlushyStorage.write('partner_show_active_status', {'enabled': val});
+                                    } catch (_) {}
+                                  },
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Read Receipts',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: kSanctuaryCharcoal,
+                                  ),
+                                ),
+                                Switch.adaptive(
+                                  value: _showReadReceipts,
+                                  activeColor: kEmerald,
+                                  onChanged: (val) {
+                                    setState(() => _showReadReceipts = val);
+                                    setSheetState(() {});
+                                    try {
+                                      BlushyStorage.write('partner_read_receipts', {'enabled': val});
+                                    } catch (_) {}
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -3027,8 +3241,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(bottom: BorderSide(color: kSanctuaryBorder)),
+            color: kSanctuaryCanvas,
           ),
           child: Row(
             children: [
@@ -3060,19 +3273,20 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       ),
                     ),
                   ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 11,
-                      height: 11,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                  if (_showActiveStatus)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 11,
+                        height: 11,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(width: 10),
@@ -3090,14 +3304,24 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      'Shared Sanctuary · Active now',
-                      style: GoogleFonts.manrope(
-                        fontSize: 10.5,
-                        color: kSanctuarySubtext,
-                        fontWeight: FontWeight.w500,
+                    if (_showActiveStatus)
+                      Text(
+                        'Active now',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          color: const Color(0xFF0D9488),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    else
+                      Text(
+                        'Direct & Private',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          color: kSanctuarySubtext,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -3131,11 +3355,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded, color: kSanctuarySubtext, size: 20),
-                onPressed: _syncLiveMessages,
               ),
             ],
           ),
@@ -3215,10 +3434,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         // 3. Instagram DM / Docsy AI Uniform Pill Message Composer
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: kSanctuaryBorder)),
-          ),
+          color: kSanctuaryCanvas,
           child: Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
@@ -5172,51 +5388,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   }
 
   void _showActivityTriggerDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: const Text('Start Shared Activity'),
-          content: const Text('Would you like to notify Partner to start the Gratitude Checklist together?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                final navigator = Navigator.of(context);
-                final connectionId = _activeConnectionId;
-                navigator.pop();
-
-                if (connectionId == null) {
-                  _showComposerNotice('Connect with your partner first.');
-                  return;
-                }
-
-                // Started on the connection, so it genuinely appears for both
-                // of you rather than only on this device.
-                final updated = await _partnerService.setSharedActivityStatus(
-                  connectionId,
-                  'daily_gratitude',
-                  'in_progress',
-                );
-                if (!mounted) return;
-
-                if (updated == null) {
-                  _showComposerNotice('Could not start that activity. Please try again.');
-                  return;
-                }
-
-                setState(() => _sharedActivities = updated);
-                await _growGarden(flowers: 1);
-              },
-              child: const Text('Start'),
-            ),
-          ],
-        );
-      },
-    );
+    _openPartnerTab(3);
   }
 }

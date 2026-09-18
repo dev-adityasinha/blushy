@@ -5,7 +5,7 @@ import '../../../services/api_partner_service.dart';
 import '../../../shared/docsy_avatar.dart';
 
 // ============================================================================
-// STAGE 1 DESIGN SYSTEM TOKENS (Shared Sanctuary)
+// STAGE 1 DESIGN SYSTEM TOKENS (Partner Space)
 // Strictly follows STAGE1_DESIGN_RULES.md & AGENTS.md
 // Enhanced with Vivid Saturated Accents, Radiant Gradients & Big Icons
 // ============================================================================
@@ -149,7 +149,7 @@ class SharedSanctuaryHeader extends StatelessWidget {
                   const Icon(Icons.favorite_rounded, size: 13, color: kSanctuaryCrimson),
                   const SizedBox(width: 5),
                   Text(
-                    'SHARED SANCTUARY',
+                    'PARTNER',
                     style: GoogleFonts.manrope(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
@@ -185,59 +185,67 @@ class SharedSanctuaryHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: isPrivateSpaceActive ? kPurpleTint : kCobaltTint,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: (isPrivateSpaceActive ? kPurple : kCobalt).withValues(alpha: 0.35),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: isPrivateSpaceActive ? kPurple : kCobalt,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isPrivateSpaceActive ? kPurple : kCobalt).withValues(alpha: 0.55),
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
+              InkWell(
+                onTap: onManageConnection,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isPrivateSpaceActive ? kPurpleTint : kCobaltTint,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: (isPrivateSpaceActive ? kPurple : kCobalt).withValues(alpha: 0.35),
                     ),
-                    const SizedBox(width: 7),
-                    Flexible(
-                      child: Text(
-                        isPrivateSpaceActive
-                            ? 'PRIVATE SPACE ACTIVE'
-                            : ((durationText != null && durationText!.isNotEmpty)
-                                ? '$durationText  ·  SYNCED'
-                                : 'CONNECTED'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.manrope(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
                           color: isPrivateSpaceActive ? kPurple : kCobalt,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isPrivateSpaceActive ? kPurple : kCobalt).withValues(alpha: 0.55),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 7),
+                      Flexible(
+                        child: Text(
+                          isPrivateSpaceActive
+                              ? 'PRIVATE SPACE ACTIVE'
+                              : 'SHARING ACTIVE',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.manrope(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                            color: isPrivateSpaceActive ? kPurple : kCobalt,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 14,
+                        color: isPrivateSpaceActive ? kPurple : kCobalt,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(width: 12),
-        // Couple Monograms + Manage Settings Button
+        // Couple Monograms
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -335,27 +343,6 @@ class SharedSanctuaryHeader extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(width: 8),
-            InkWell(
-              onTap: onManageConnection,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: kSanctuaryCard,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: kSanctuaryBorder),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.tune_rounded, color: kSanctuaryCharcoal, size: 18),
-              ),
-            ),
           ],
         ),
       ],
@@ -1793,24 +1780,27 @@ class DoSomethingTogetherCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: kSanctuaryCard,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: kSanctuaryBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        InkWell(
+          onTap: onAction,
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: kSanctuaryCard,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: kSanctuaryBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
@@ -1925,9 +1915,10 @@ class DoSomethingTogetherCard extends StatelessWidget {
             ],
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 }
 
 // ============================================================================
