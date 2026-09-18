@@ -174,6 +174,8 @@ class SharedSanctuaryHeader extends StatelessWidget {
                     ),
                   ],
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.cormorantGaramond(
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
@@ -211,17 +213,21 @@ class SharedSanctuaryHeader extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 7),
-                    Text(
-                      isPrivateSpaceActive
-                          ? 'PRIVATE SPACE ACTIVE'
-                          : ((durationText != null && durationText!.isNotEmpty)
-                              ? '$durationText  ·  SYNCED'
-                              : 'CONNECTED'),
-                      style: GoogleFonts.manrope(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.6,
-                        color: isPrivateSpaceActive ? kPurple : kCobalt,
+                    Flexible(
+                      child: Text(
+                        isPrivateSpaceActive
+                            ? 'PRIVATE SPACE ACTIVE'
+                            : ((durationText != null && durationText!.isNotEmpty)
+                                ? '$durationText  ·  SYNCED'
+                                : 'CONNECTED'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                          color: isPrivateSpaceActive ? kPurple : kCobalt,
+                        ),
                       ),
                     ),
                   ],
