@@ -12,6 +12,7 @@ import 'l10n/app_localizations.dart';
 import 'features/auth/presentation/auth_screen.dart';
 import 'features/auth/presentation/onboarding_wizard.dart';
 import 'features/legal/consent_gate.dart';
+import 'features/legal/legal_documents_screen.dart';
 import 'features/auth/presentation/partner_onboarding_wizard.dart';
 import 'features/auth/presentation/choose_experience_screen.dart';
 import 'features/dev/developer_playground.dart';
@@ -164,7 +165,18 @@ class BlushyApp extends StatelessWidget {
         // decides to show -- sign-in, onboarding or the app itself.
         home: const SplashGate(child: LanguageGate(child: AppRouter())),
         routes: {
-          '/login': (context) => const AppRouter(),
+          '/login': (context) => const UnauthenticatedAuthFlow(),
+          '/auth': (context) => const UnauthenticatedAuthFlow(),
+          '/privacy': (context) => const Scaffold(
+                body: SafeArea(
+                  child: LegalDocumentsScreen(initialTab: LegalTab.privacyPolicy),
+                ),
+              ),
+          '/terms': (context) => const Scaffold(
+                body: SafeArea(
+                  child: LegalDocumentsScreen(initialTab: LegalTab.termsAndConditions),
+                ),
+              ),
           // Debug builds only. The playground exposes internal state and stage
           // simulation, has no entry point in the UI, and has no business in a
           // published build; the route itself is what made it reachable.

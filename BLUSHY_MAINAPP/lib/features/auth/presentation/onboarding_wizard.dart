@@ -344,7 +344,15 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           _nameController.text = _profile.preferredName;
           _currentStepIndex = decoded['stepIndex'] ?? 0;
           if (decoded['phase'] != null) {
-            _phase = OnboardingPhase.values.firstWhere((e) => e.name == decoded['phase'], orElse: () => OnboardingPhase.privacy);
+            final savedPhase = OnboardingPhase.values.firstWhere(
+              (e) => e.name == decoded['phase'],
+              orElse: () => OnboardingPhase.privacy,
+            );
+            if (savedPhase == OnboardingPhase.ready || !_hasAgreedToEverything) {
+              _phase = OnboardingPhase.privacy;
+            } else {
+              _phase = savedPhase;
+            }
           }
         });
       }

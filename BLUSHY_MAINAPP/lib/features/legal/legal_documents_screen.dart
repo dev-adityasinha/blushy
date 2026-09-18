@@ -23,7 +23,7 @@ class LegalDocumentsScreen extends StatefulWidget {
         heightFactor: 0.9,
         child: Container(
           decoration: const BoxDecoration(
-            color: Color(0xFFFFF7F9),
+            color: Color(0xFFFAF7F2),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: ClipRRect(
@@ -108,23 +108,29 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFF76B8A);
-    const bgPinkColor = Color(0xFFFFF7F9);
-    const textDark = Color(0xFF2D2529);
+    const primaryColor = Color(0xFFDD0D22);
+    const bgCanvas = Color(0xFFFAF7F2);
+    const cardBorderColor = Color(0xFFEFE8E0);
+    const textDark = Color(0xFF221510);
     const textMuted = Color(0xFF7A6B72);
 
     return Scaffold(
-      backgroundColor: bgPinkColor,
+      backgroundColor: bgCanvas,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.5,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: cardBorderColor),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.close, color: textDark),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           _tabTitle(_currentTab),
-          style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: textDark),
+          style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textDark),
         ),
         centerTitle: true,
       ),
@@ -133,13 +139,14 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
           // Tab selector bar
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Container(
-              height: 42,
-              padding: const EdgeInsets.all(3),
+              height: 44,
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5EBF0),
-                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFFF7F3EE),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: cardBorderColor),
               ),
               child: Row(
                 children: [
@@ -151,7 +158,7 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
                           duration: const Duration(milliseconds: 200),
                           decoration: BoxDecoration(
                             color: _currentTab == tab ? primaryColor : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
                           child: Text(
@@ -159,8 +166,8 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.manrope(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 12.5,
+                              fontWeight: _currentTab == tab ? FontWeight.w700 : FontWeight.w500,
                               color: _currentTab == tab ? Colors.white : textMuted,
                             ),
                           ),
@@ -175,7 +182,7 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
           // Scrollable Document Content
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 760),
@@ -204,20 +211,54 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
 
         // Sanctuary Promise Box
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF0F3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFF5D6DE)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFEFE8E0)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF221510).withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('🔒 ', style: TextStyle(fontSize: 20)),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFECEB),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFDD0D22), size: 20),
+              ),
+              const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  'Our Sanctuary Promise:\nWe do NOT sell, rent, or monetize your health data. Your intimate cycle and wellness logs belong exclusively to you.',
-                  style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF2D2529), height: 1.4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Our Sanctuary Promise',
+                      style: GoogleFonts.cormorantGaramond(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF221510),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'We do NOT sell, rent, or monetize your health data. Your intimate cycle and wellness logs belong exclusively to you.',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF7A6B72),
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -351,23 +392,54 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
 
         // Medical Disclaimer Box
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF3CD),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFFFEEBA)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFEFE8E0)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF221510).withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '⚠️ Medical Disclaimer (Important Notice)',
-                style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF856404)),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Medical Disclaimer & Notice',
+                      style: GoogleFonts.cormorantGaramond(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF221510),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 12),
               Text(
                 'NOT MEDICAL ADVICE OR CONTRACEPTION:\nBlushy is an informational wellness and cycle tracking tool. It is NOT a medical device, diagnostic tool, or licensed healthcare provider.\n\n• No Medical Diagnosis: Information provided by Blushy, health insights, or Docsy AI Companion responses are for general educational and self-care tracking purposes only and must never replace professional medical advice, diagnosis, or treatment.\n• Not a Contraceptive Method: Period and fertility predictions generated by Blushy are estimates based on user-entered logs and statistical algorithms. Do not use Blushy as a primary method of birth control or contraception.\n• Emergency Care: If you are experiencing a medical emergency, severe pain, or unexpected symptoms, please consult a qualified physician or contact emergency medical services immediately.',
-                style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF856404), height: 1.4),
+                style: GoogleFonts.manrope(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF7A6B72),
+                  height: 1.45,
+                ),
               ),
             ],
           ),
@@ -465,20 +537,54 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
 
         // The one thing to take away if nothing else on this screen is read.
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF0F3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFF5D6DE)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFEFE8E0)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF221510).withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('⚠️ ', style: TextStyle(fontSize: 20)),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFECEB),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.emergency_outlined, color: Color(0xFFDD0D22), size: 20),
+              ),
+              const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  'Blushy is not a doctor.\nNothing here is medical advice, diagnosis or treatment. In an emergency call 112 or go to the nearest hospital — do not wait for anything in this app.',
-                  style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF2D2529), height: 1.4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Blushy is not a doctor',
+                      style: GoogleFonts.cormorantGaramond(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFDD0D22),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Nothing here is medical advice, diagnosis or treatment. In an emergency call 112 or go to the nearest hospital — do not wait for anything in this app.',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF7A6B72),
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -580,7 +686,7 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
       children: [
         Text(
           title,
-          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF2D2529)),
+          style: GoogleFonts.cormorantGaramond(fontSize: 26, fontWeight: FontWeight.w700, color: const Color(0xFF221510)),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -600,7 +706,7 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
                   appUrl,
                   style: GoogleFonts.manrope(
                     fontSize: 12,
-                    color: const Color(0xFFF76B8A),
+                    color: const Color(0xFFDD0D22),
                     fontWeight: FontWeight.w600,
                     decoration: TextDecoration.underline,
                     height: 1.4,
@@ -616,10 +722,10 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 8),
+      padding: const EdgeInsets.only(top: 24, bottom: 8),
       child: Text(
         title,
-        style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFFF76B8A)),
+        style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: const Color(0xFF221510)),
       ),
     );
   }
@@ -629,7 +735,7 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
       padding: const EdgeInsets.only(top: 14, bottom: 6),
       child: Text(
         title,
-        style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF2D2529)),
+        style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF221510)),
       ),
     );
   }
@@ -639,7 +745,7 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF4A3B43), height: 1.5),
+        style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72), height: 1.5),
       ),
     );
   }
@@ -650,13 +756,13 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(fontSize: 14, color: Color(0xFFF76B8A), fontWeight: FontWeight.bold)),
+          const Text('• ', style: TextStyle(fontSize: 14, color: Color(0xFFDD0D22), fontWeight: FontWeight.bold)),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF4A3B43), height: 1.4),
+                style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72), height: 1.45),
                 children: [
-                  TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF221510))),
                   TextSpan(text: detail),
                 ],
               ),
@@ -679,14 +785,14 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(fontSize: 14, color: Color(0xFFF76B8A), fontWeight: FontWeight.bold)),
+          const Text('• ', style: TextStyle(fontSize: 14, color: Color(0xFFDD0D22), fontWeight: FontWeight.bold)),
           Expanded(
             child: Wrap(
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text('$label: ', style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF4A3B43))),
+                Text('$label: ', style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF221510))),
                 if (prefixText.isNotEmpty)
-                  Text(prefixText, style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF4A3B43))),
+                  Text(prefixText, style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72))),
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
@@ -695,15 +801,15 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
                       linkText,
                       style: GoogleFonts.manrope(
                         fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFF76B8A),
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFDD0D22),
                         decoration: TextDecoration.underline,
                       ),
                     ),
                   ),
                 ),
                 if (suffixText.isNotEmpty)
-                  Text(suffixText, style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF4A3B43))),
+                  Text(suffixText, style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF7A6B72))),
               ],
             ),
           ),
