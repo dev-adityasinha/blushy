@@ -63,12 +63,20 @@ class CycleViewModel extends BlushyViewModel {
       final result = await _fetch();
       state = result.state;
       final prediction = result.data;
-      if (prediction != null && prediction.hasData) {
+      final start = prediction?.lastPeriodStartDate == null
+          ? null
+          : DateTime.tryParse(prediction!.lastPeriodStartDate!);
+
+      // A logged period is a real day even when the server flags the history
+      // as too short for predictions (`hasData == false`). The day was gated
+      // on `hasData`, so an account with a real last-period date but limited
+      // history fell through to the screen's placeholder -- Day 1 on the
+      // first-period screen, Day 14 elsewhere -- rather than her real day.
+      // Apply it whenever a start date is present; only a genuinely empty
+      // read (no data and no start) leaves the defaults untouched.
+      if (prediction != null && (prediction.hasData || start != null)) {
         if (prediction.cycleLengthDays > 0) cycleLength = prediction.cycleLengthDays;
         if (prediction.periodLengthDays > 0) periodLength = prediction.periodLengthDays;
-        final start = prediction.lastPeriodStartDate == null
-            ? null
-            : DateTime.tryParse(prediction.lastPeriodStartDate!);
         if (start != null) {
           lastPeriodStart = start;
           hasLoggedPeriod = true;

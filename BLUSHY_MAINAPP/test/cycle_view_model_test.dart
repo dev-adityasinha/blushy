@@ -68,6 +68,28 @@ void main() {
     expect(vm.hasLoggedPeriod, isFalse, reason: 'the server genuinely had nothing');
   });
 
+  test('a real last-period date shows the day even when hasData is false', () async {
+    // The server marks an account with too little history for predictions as
+    // hasData:false, but still returns the real last-period date. The day is
+    // hers and must show, not fall back to the screen's placeholder (Day 1/14).
+    final vm = CycleViewModel(
+      defaultCycleDay: 1, // the first-period screen's placeholder
+      fetchPredictions: _returns(ApiResult<PeriodPrediction>(
+        state: ApiState.insufficientData,
+        data: PeriodPrediction(
+          hasData: false,
+          cycleLengthDays: 28,
+          lastPeriodStartDate:
+              DateTime.now().subtract(const Duration(days: 5)).toIso8601String(),
+        ),
+      )),
+    );
+    await vm.load();
+
+    expect(vm.hasLoggedPeriod, isTrue, reason: 'a real start date is real logged data');
+    expect(vm.cycleDayOrNull, 6, reason: 'day 6, not the placeholder Day 1');
+  });
+
   test('notifies its listeners so the View can rebuild', () async {
     final vm = CycleViewModel(fetchPredictions: _returns(ApiResult<PeriodPrediction>(
       state: ApiState.ready,
