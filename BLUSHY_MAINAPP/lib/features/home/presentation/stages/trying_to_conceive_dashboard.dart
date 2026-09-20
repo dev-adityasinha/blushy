@@ -170,7 +170,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           _lastPeriodStartDate = parsed;
           _hasLoggedPeriod = true;
           final diff = DateTime.now().difference(parsed).inDays;
-          _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
         }
       }
 
@@ -1909,7 +1909,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           _lastPeriodStartDate = selectedDate;
                           _hasLoggedPeriod = true;
                           final diff = DateTime.now().difference(selectedDate).inDays;
-                          _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+                          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
                         });
                         try {
                           BlushyStorage.write('last_period_entry.json', {

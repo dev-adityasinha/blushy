@@ -125,7 +125,7 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
           _lastPeriodStartDate = event.date;
           _hasLoggedPeriod = true;
           final diff = DateTime.now().difference(event.date).inDays;
-          _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
         });
         _fetchDynamicAiInsights();
       }
@@ -329,7 +329,7 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
                           _lastPeriodStartDate = selectedDate;
                           _hasLoggedPeriod = true;
                           final diff = DateTime.now().difference(selectedDate).inDays;
-                          _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+                          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
                         });
                         try {
                           BlushyStorage.write('last_period_entry.json', {

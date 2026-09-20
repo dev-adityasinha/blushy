@@ -290,7 +290,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
         setState(() {
           _lastPeriodStartDate = event.date;
           _hasLoggedPeriod = true;
-          _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
           if (event.flowIntensity.isNotEmpty) {
             _loggedFlow = event.flowIntensity;
           }
@@ -344,7 +344,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
 
     if (picked != null) {
       final diff = now.difference(picked).inDays;
-      final newDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+      final newDay = (diff + 1).clamp(1, _cycleLength);
 
       setState(() {
         _lastPeriodStartDate = picked;

@@ -111,7 +111,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
         setState(() {
           _lastPeriodStartDate = event.date;
           _hasLoggedPeriod = true;
-          _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
         });
         _fetchDynamicAiInsights();
       }
@@ -229,7 +229,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
 
     if (picked != null) {
       final diff = now.difference(picked).inDays;
-      final newDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+      final newDay = (diff + 1).clamp(1, _cycleLength);
 
       setState(() {
         _lastPeriodStartDate = picked;
