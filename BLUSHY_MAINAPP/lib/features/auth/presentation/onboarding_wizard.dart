@@ -5,7 +5,6 @@ import '../../../core/storage.dart';
 import '../../../core/state.dart';
 import '../../../core/cycle_calculator.dart';
 import '../../../theme/colors.dart';
-import '../../../theme/scale.dart';
 import '../../../services/api_auth_service.dart';
 import '../../../services/api_consent_service.dart';
 import '../../legal/legal_documents_screen.dart';
@@ -145,6 +144,154 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   final List<bool> _buildingChecks = [false, false, false, false, false, false];
   Timer? _buildingTimer;
 
+  int _calculateAge(DateTime dob) {
+    final now = DateTime.now();
+    int age = now.year - dob.year;
+    if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  int? get _userAge {
+    final dob = _profile.dateOfBirth;
+    if (dob == null) return null;
+    return _calculateAge(dob);
+  }
+
+  bool _isStageAllowedForAge(LifeStage stage, int? age) {
+    if (age == null) return true;
+    if (age < 9) {
+      // Under 9 is clinically inappropriate for self-directed app registration
+      return false;
+    }
+    if (age < 13) {
+      // Pre-teens (9-12): strictly first period stages
+      return stage == LifeStage.firstPeriodNotStarted || stage == LifeStage.firstPeriodStarted;
+    }
+    if (age < 18) {
+      // Adolescents / Teens (13-17): puberty, adolescent cycle, and hormonal health
+      return stage == LifeStage.firstPeriodNotStarted ||
+          stage == LifeStage.firstPeriodStarted ||
+          stage == LifeStage.reproductiveYears ||
+          stage == LifeStage.hormonalHealth;
+    }
+    if (age < 45) {
+      // Adult reproductive years (18-44)
+      return stage != LifeStage.firstPeriodNotStarted && stage != LifeStage.menopause;
+    }
+    if (age < 52) {
+      // Perimenopausal transition / late reproductive (45-51)
+      return stage != LifeStage.firstPeriodNotStarted && stage != LifeStage.firstPeriodStarted;
+    }
+    // Post-52 (Mature adult): perimenopause, menopause, hormonal health
+    return stage == LifeStage.menopause ||
+        stage == LifeStage.perimenopause ||
+        stage == LifeStage.hormonalHealth;
+  }
+
+  void _showStageAgeGuidance(LifeStage stage) {
+    String title = "Age-Appropriate Care";
+    String message = "This stage is designed for a different age range.";
+
+    final age = _userAge;
+    if (age != null && age < 13) {
+      if (stage == LifeStage.pregnancy ||
+          stage == LifeStage.tryingToConceive ||
+          stage == LifeStage.postpartum) {
+        title = "Maternity Tracking (Age 18+)";
+        message =
+            "Maternal and pregnancy health tools in Blushy are medically configured for users aged 18 and older.\n\n"
+            "For your age, we recommend our specialized 'First Period' tracks, thoughtfully crafted with pediatric guidance to help you understand your body and puberty with confidence.";
+      } else if (stage == LifeStage.perimenopause || stage == LifeStage.menopause) {
+        title = "Midlife Transition Care";
+        message =
+            "Perimenopause and menopause tracks are clinically designed for adults navigating natural cycle cessation in midlife.\n\n"
+            "We recommend choosing 'First Period (Not Started)' or 'First Period (Started)' to track puberty and early cycle milestones.";
+      } else {
+        title = "Adolescent Guidance";
+        message =
+            "For girls under 13, our dedicated First Period tracks provide gentle, safe, age-appropriate educational guidance.";
+      }
+    } else if (age != null && age < 18) {
+      if (stage == LifeStage.pregnancy || stage == LifeStage.tryingToConceive) {
+        title = "Adult Health Feature (Age 18+)";
+        message =
+            "Conception and pregnancy tracking tools are reserved for users aged 18 and older.\n\n"
+            "If you are experiencing menstrual changes or hormonal questions, we recommend our adolescent-adapted tracks: 'Living with my cycle' or 'Hormonal Health'.";
+      } else if (stage == LifeStage.perimenopause || stage == LifeStage.menopause) {
+        title = "Midlife Transition Care";
+        message =
+            "This track is clinically designed for midlife transitions. For your age, please explore 'Living with my cycle' or 'Hormonal Health'.";
+      }
+    } else if (age != null && age >= 18) {
+      if (stage == LifeStage.firstPeriodNotStarted) {
+        title = "Primary Amenorrhea Care";
+        message =
+            "The 'First Period (Not Started)' track is specifically created for young girls entering puberty.\n\n"
+            "If you are 18 or older and have never experienced a menstrual period (known clinically as primary amenorrhea), we strongly recommend consulting a gynecologist or endocrinologist for clinical evaluation.\n\n"
+            "For tracking your hormonal wellness in Blushy, please select 'Hormonal Health' or 'Living with my cycle'.";
+      } else if (age >= 52 && (stage == LifeStage.pregnancy || stage == LifeStage.tryingToConceive)) {
+        title = "Fertility Timeline Guidance";
+        message =
+            "Conception and pregnancy algorithms in Blushy are clinically calibrated for reproductive ages up to 51.\n\n"
+            "For your stage, our specialized Perimenopause and Menopause tracks offer personalized insights for bone density, cardiovascular health, and deep sleep.";
+      }
+    }
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xFFFFFFFF),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFECEB),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.info_outline_rounded, color: Color(0xFFDD0D22), size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF221510),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: GoogleFonts.manrope(
+            fontSize: 13,
+            color: const Color(0xFF5A4A52),
+            height: 1.45,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFDD0D22),
+            ),
+            child: Text(
+              "Understood",
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -197,7 +344,15 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           _nameController.text = _profile.preferredName;
           _currentStepIndex = decoded['stepIndex'] ?? 0;
           if (decoded['phase'] != null) {
-            _phase = OnboardingPhase.values.firstWhere((e) => e.name == decoded['phase'], orElse: () => OnboardingPhase.privacy);
+            final savedPhase = OnboardingPhase.values.firstWhere(
+              (e) => e.name == decoded['phase'],
+              orElse: () => OnboardingPhase.privacy,
+            );
+            if (savedPhase == OnboardingPhase.ready || !_hasAgreedToEverything) {
+              _phase = OnboardingPhase.privacy;
+            } else {
+              _phase = savedPhase;
+            }
           }
         });
       }
@@ -265,62 +420,75 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
     switch (_profile.lifeStage!) {
       case LifeStage.firstPeriodNotStarted:
-        steps.add(_buildNotStartedStep4());
+        steps.addAll([
+          _buildNotStartedStep4(), // Learning focus
+          _buildNotStartedStep5(), // Body changes noticed
+          _buildNotStartedStep6(), // Goals & comfort
+        ]);
         break;
       case LifeStage.firstPeriodStarted:
-        steps.addAll([_buildStartedStep4(), _buildStartedStep5()]);
+        steps.addAll([
+          _buildStartedStep4(), // Start timing
+          _buildStartedStep5(), // Predictability / regularity
+          _buildStartedStep6(), // Symptoms noticed
+          _buildStartedStep7(), // Goals
+        ]);
         break;
       case LifeStage.reproductiveYears:
         steps.addAll([
-          _buildReproductiveStep4(),
-          _buildReproductiveStep5(),
-          _buildReproductiveStep6(),
-          _buildReproductiveStep7(),
-          _buildReproductiveStep8()
+          _buildReproductiveStep4(), // Regularity
+          _buildReproductiveStep5(), // Last period date
+          _buildReproductiveStep6(), // Contraception
+          _buildReproductiveStep7(), // Goals
+          _buildReproductiveStep8(), // Symptoms noticed
         ]);
         break;
       case LifeStage.hormonalHealth:
         steps.addAll([
-          _buildHormonalStep4(),
-          _buildHormonalStep5(),
-          _buildHormonalStep6()
+          _buildHormonalStep4(), // Conditions
+          _buildHormonalStep5(), // Symptoms
+          _buildHormonalStep6(), // Treatment
+          _buildHormonalStep7(), // Goals
         ]);
         break;
       case LifeStage.tryingToConceive:
         steps.addAll([
-          _buildTtcStep4(),
-          _buildTtcStep5(),
-          _buildTtcStep6(),
-          _buildTtcStep7()
+          _buildTtcStep4(), // Duration
+          _buildTtcStep5(), // Biomarker tracking
+          _buildTtcStep6(), // Treatment
+          _buildTtcStep7(), // Symptoms
+          _buildTtcStep8(), // Goals
         ]);
         break;
       case LifeStage.pregnancy:
         steps.addAll([
-          _buildPregnancyStep4(),
-          _buildPregnancyStep5(),
-          _buildPregnancyStep6()
+          _buildPregnancyStep4(), // Due date
+          _buildPregnancyStep5(), // First pregnancy
+          _buildPregnancyStep6(), // Trimester symptoms
+          _buildPregnancyStep7(), // Goals
         ]);
         break;
       case LifeStage.postpartum:
         steps.addAll([
-          _buildPostpartumStep4(),
-          _buildPostpartumStep5(),
-          _buildPostpartumStep6(),
-          _buildPostpartumStep7()
+          _buildPostpartumStep4(), // Baby birth date
+          _buildPostpartumStep5(), // Feeding
+          _buildPostpartumStep6(), // Goals
+          _buildPostpartumStep7(), // Recovery symptoms
         ]);
         break;
       case LifeStage.perimenopause:
         steps.addAll([
-          _buildPerimenopauseStep4(),
-          _buildPerimenopauseStep5(),
-          _buildPerimenopauseStep6()
+          _buildPerimenopauseStep4(), // Cycle changes
+          _buildPerimenopauseStep5(), // Vasomotor / neuro symptoms
+          _buildPerimenopauseStep6(), // Therapy
+          _buildPerimenopauseStep7(), // Goals
         ]);
         break;
       case LifeStage.menopause:
         steps.addAll([
-          _buildMenopauseStep4(),
-          _buildMenopauseStep5(),
-          _buildMenopauseStep6()
+          _buildMenopauseStep4(), // Duration
+          _buildMenopauseStep5(), // Symptoms
+          _buildMenopauseStep6(), // Goals
         ]);
         break;
     }
@@ -330,8 +498,16 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   bool _isStepInputValid() {
     if (_currentStepIndex == 0) return _profile.preferredName.trim().isNotEmpty;
-    if (_currentStepIndex == 1) return _profile.dateOfBirth != null;
-    if (_currentStepIndex == 2) return _profile.lifeStage != null;
+    if (_currentStepIndex == 1) {
+      if (_profile.dateOfBirth == null) return false;
+      final age = _userAge;
+      if (age != null && age < 9) return false;
+      return true;
+    }
+    if (_currentStepIndex == 2) {
+      if (_profile.lifeStage == null) return false;
+      return _isStageAllowedForAge(_profile.lifeStage!, _userAge);
+    }
 
     final stage = _profile.lifeStage;
     if (stage == null) return false;
@@ -340,33 +516,40 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
     if (stage == LifeStage.firstPeriodNotStarted) {
       if (branchStep == 0) return _profile.answers['not_started_learn'] != null;
+      if (branchStep == 1) return _profile.symptoms.isNotEmpty;
+      if (branchStep == 2) return _profile.goals.isNotEmpty;
     }
     if (stage == LifeStage.firstPeriodStarted) {
       if (branchStep == 0) return _profile.answers['first_period_start_time'] != null;
-      if (branchStep == 1) return _profile.goals.isNotEmpty;
+      if (branchStep == 1) return _profile.answers['first_period_regularity'] != null;
+      if (branchStep == 2) return _profile.symptoms.isNotEmpty;
+      if (branchStep == 3) return _profile.goals.isNotEmpty;
     }
     if (stage == LifeStage.reproductiveYears) {
       if (branchStep == 0) return _profile.answers['reproductive_cycle_type'] != null;
       if (branchStep == 1) return _profile.lastPeriod != null || _profile.answers['last_period_unknown'] == true;
-      if (branchStep == 2) return _profile.goals.isNotEmpty;
-      if (branchStep == 3) return _profile.answers['contraception_choice'] != null;
+      if (branchStep == 2) return _profile.answers['contraception_choice'] != null;
+      if (branchStep == 3) return _profile.goals.isNotEmpty;
       if (branchStep == 4) return _profile.symptoms.isNotEmpty;
     }
     if (stage == LifeStage.hormonalHealth) {
       if (branchStep == 0) return _profile.conditions.isNotEmpty;
       if (branchStep == 1) return _profile.symptoms.isNotEmpty;
       if (branchStep == 2) return _profile.answers['hormonal_treatment'] != null;
+      if (branchStep == 3) return _profile.goals.isNotEmpty;
     }
     if (stage == LifeStage.tryingToConceive) {
       if (branchStep == 0) return _profile.answers['ttc_duration'] != null;
       if (branchStep == 1) return _profile.answers['ttc_tracking_method'] != null;
       if (branchStep == 2) return _profile.answers['ttc_treatment'] != null;
       if (branchStep == 3) return _profile.symptoms.isNotEmpty;
+      if (branchStep == 4) return _profile.goals.isNotEmpty;
     }
     if (stage == LifeStage.pregnancy) {
       if (branchStep == 0) return _profile.dueDate != null;
       if (branchStep == 1) return _profile.answers['pregnancy_first'] != null;
-      if (branchStep == 2) return _profile.goals.isNotEmpty;
+      if (branchStep == 2) return _profile.symptoms.isNotEmpty;
+      if (branchStep == 3) return _profile.goals.isNotEmpty;
     }
     if (stage == LifeStage.postpartum) {
       if (branchStep == 0) return _profile.babyBirthDate != null;
@@ -377,7 +560,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     if (stage == LifeStage.perimenopause) {
       if (branchStep == 0) return _profile.answers['perimenopause_cycle_change'] != null;
       if (branchStep == 1) return _profile.symptoms.isNotEmpty;
-      if (branchStep == 2) return _profile.goals.isNotEmpty;
+      if (branchStep == 2) return _profile.answers['perimenopause_therapy'] != null;
+      if (branchStep == 3) return _profile.goals.isNotEmpty;
     }
     if (stage == LifeStage.menopause) {
       if (branchStep == 0) return _profile.answers['menopause_duration'] != null;
@@ -581,6 +765,13 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     if (_profile.lifeStage == LifeStage.postpartum) lifeContexts.add(LifeContext.postpartum);
     if (_profile.lifeStage == LifeStage.menopause) lifeContexts.add(LifeContext.menopause);
     if (_profile.lifeStage == LifeStage.perimenopause) lifeContexts.add(LifeContext.perimenopause);
+    if (_profile.answers['postpartum_feeding']?.toString().toLowerCase().contains('breast') == true) {
+      lifeContexts.add(LifeContext.breastfeeding);
+    }
+    if (_profile.answers['contraception_choice'] == 'Birth control pill' ||
+        _profile.answers['contraception_choice'] == 'Hormonal IUD / Implant') {
+      lifeContexts.add(LifeContext.hormonalContraception);
+    }
 
     int userCycleLength = 28;
     if (_profile.answers['cycle_length'] != null) {
@@ -618,7 +809,10 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
         confidence: DataConfidence.medium,
         lifeContexts: lifeContexts,
         userGoals: Set<String>.from(_profile.goals),
+        userSymptoms: Set<String>.from(_profile.symptoms),
         medicalConditions: medicalConditions,
+        dueDate: _profile.dueDate,
+        babyBirthDate: _profile.babyBirthDate,
         preferences: UserPreferences(),
         cycleLength: rawAnswerPeriod != null ? cycleCalc.cycleLength : userCycleLength,
         cycleDay: rawAnswerPeriod != null ? cycleCalc.currentCycleDay : null,
@@ -627,11 +821,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
         medications: [],
       ),
     );
-
-    // The first-run tour decides for itself whether it has been shown, from
-    // `product_tour.json` in BlushyStorage. This used to write a flag here with
-    // a raw File() at a relative path -- unwritable on Android -- which the
-    // dashboard then read, acted on with an empty setState, and deleted.
 
     // Complete authentication flags
     state.setAuthenticated(true);
@@ -643,10 +832,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   /// Records the chosen branch with the life stage engine, carrying the
   /// context that branch needs to render immediately.
-  ///
-  /// `confirmed: true` is correct here: this is the user's own explicit
-  /// selection during onboarding, which is exactly the confirmation the
-  /// sensitive transitions require (spec section 23).
   Future<void> _enterLifeStage(String chosenStage) async {
     final context = <String, dynamic>{
       if (_profile.lastPeriod != null)
@@ -656,6 +841,9 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       if (_profile.babyBirthDate != null)
         'baby_birth_date': _profile.babyBirthDate!.toIso8601String().split('T').first,
       if (_profile.conditions.isNotEmpty) 'diagnosed_conditions': _profile.conditions,
+      if (_profile.symptoms.isNotEmpty) 'symptoms': _profile.symptoms,
+      if (_profile.goals.isNotEmpty) 'goals': _profile.goals,
+      ..._profile.answers,
     };
 
     final result = await LifeStageApi.transition(
@@ -704,188 +892,217 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   // --- 1. PRIVACY & CONSENT SCREEN ---
   Widget _buildPrivacyScreen() {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: const Color(0xFFFAF7F2), // Warm Cream Neutral (STAGE1_DESIGN_RULES)
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 440),
             child: Padding(
-              padding: const EdgeInsets.only(top: 28, bottom: 20, left: 20, right: 20),
+              padding: const EdgeInsets.only(top: 24, bottom: 20, left: 20, right: 20),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 8),
+                          // Brand Shield Badge
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFECEB),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFEFE8E0), width: 1.2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFDD0D22).withValues(alpha: 0.12),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.shield_outlined,
+                              size: 28,
+                              color: Color(0xFFDD0D22),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Category Eyebrow
+                          Text(
+                            "DATA SOVEREIGNTY & PRIVACY",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.manrope(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.1,
+                              color: const Color(0xFFDD0D22),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+
+                          // Editorial Headline
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(text: "Your health. "),
+                                TextSpan(
+                                  text: "Your privacy.",
+                                  style: GoogleFonts.cormorantGaramond(
+                                    fontStyle: FontStyle.italic,
+                                    color: const Color(0xFFDD0D22),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.cormorantGaramond(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w600,
+                              height: 1.15,
+                              color: const Color(0xFF221510),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Subtitle
+                          Text(
+                            "Blushy is built as your private wellness sanctuary. Everything you share is protected with local device encryption and remains under your absolute control.",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.manrope(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w400,
+                              height: 1.45,
+                              color: const Color(0xFF7A6B72),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+
+                          // 3 Luxury Privacy Pillars Card
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: const Color(0xFFEFE8E0), width: 1.0),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                _buildPrivacyPillar(
+                                  icon: Icons.lock_outline_rounded,
+                                  title: "On-Device Encryption",
+                                  subtitle: "Sensitive health logs encrypted locally before storing.",
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: Divider(color: Color(0xFFF3EEE9), height: 1),
+                                ),
+                                _buildPrivacyPillar(
+                                  icon: Icons.phonelink_erase_rounded,
+                                  title: "Zero Data Selling",
+                                  subtitle: "We never monetize, broker, or share your health records.",
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: Divider(color: Color(0xFFF3EEE9), height: 1),
+                                ),
+                                _buildPrivacyPillar(
+                                  icon: Icons.admin_panel_settings_outlined,
+                                  title: "Complete Sovereignty",
+                                  subtitle: "Export or permanently erase your data whenever you choose.",
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Bottom Controls (Unified White Card with 3 Check Rows + CTA)
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const SizedBox(height: 16),
-                      // Compact Luxury Soft Ambient Shield Icon Badge
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF4F1),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFF4DCD6), width: 1.2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: BlushyColors.primary.withValues(alpha: 0.1),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.shield_outlined,
-                          size: 26,
-                          color: BlushyColors.primary,
-                        ),
-                      ),
                       const SizedBox(height: 12),
-
-                      // Headline: Cormorant Garamond w700 (24px)
-                      Text(
-                        "Your health. Your privacy.",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.cormorantGaramond(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          fontStyle: FontStyle.normal,
-                          letterSpacing: 0.2,
-                          height: 1.15,
-                          color: const Color(0xFF2D2529),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Subtitle: Manrope w400 (12.5px)
-                      Text(
-                        "Blushy is built as your private wellness space. Everything you share is protected with local device encryption and under your absolute control.",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.manrope(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: 0.15,
-                          height: 1.4,
-                          color: const Color(0xFF7A6B72),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 3 Compact Luxury Privacy Pillars Card
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFFDF9),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: const Color(0xFFECE4DC), width: 1.0),
+                          border: Border.all(color: const Color(0xFFEFE8E0), width: 1.0),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 14,
-                              offset: const Offset(0, 3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: Column(
                           children: [
-                            _buildPrivacyPillar(
-                              icon: Icons.lock_outline_rounded,
-                              title: "On-Device Encryption",
-                              subtitle: "Sensitive logs encrypted locally before storing.",
+                            _buildInteractiveConsentRow(
+                              titlePrefix: AppLocalizations.of(context).oIAgreeToThe,
+                              linkText: AppLocalizations.of(context).oPrivacyPolicy,
+                              isChecked: _agreePrivacy,
+                              onTapLink: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.privacyPolicy),
+                              onChanged: (val) => setState(() => _agreePrivacy = val),
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 6),
-                              child: Divider(color: Color(0xFFF2ECE4), height: 1),
+                            const Divider(color: Color(0xFFF3EEE9), height: 1),
+                            _buildInteractiveConsentRow(
+                              titlePrefix: AppLocalizations.of(context).oIAgreeToThe,
+                              linkText: AppLocalizations.of(context).oTermsOfService,
+                              isChecked: _agreeTerms,
+                              onTapLink: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
+                              onChanged: (val) => setState(() => _agreeTerms = val),
                             ),
-                            _buildPrivacyPillar(
-                              icon: Icons.phonelink_erase_rounded,
-                              title: "Zero Data Selling",
-                              subtitle: "We never monetize or share your health records.",
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 6),
-                              child: Divider(color: Color(0xFFF2ECE4), height: 1),
-                            ),
-                            _buildPrivacyPillar(
-                              icon: Icons.admin_panel_settings_outlined,
-                              title: "Complete Sovereignty",
-                              subtitle: "Export or delete your data whenever you choose.",
+                            const Divider(color: Color(0xFFF3EEE9), height: 1),
+                            _buildInteractiveConsentRow(
+                              titlePrefix: AppLocalizations.of(context).oIAgreeToThe,
+                              linkText: AppLocalizations.of(context).oMedicalDisclaimer,
+                              isChecked: _agreeDisclaimer,
+                              onTapLink: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.medicalDisclaimer),
+                              onChanged: (val) => setState(() => _agreeDisclaimer = val),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                      const SizedBox(height: 14),
 
-                  // Bottom Controls (Checkboxes + CTA)
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildInteractiveCheckTile(
-                        titlePrefix: AppLocalizations.of(context).oIAgreeToThe,
-                        linkText: AppLocalizations.of(context).oPrivacyPolicy,
-                        isChecked: _agreePrivacy,
-                        onTapLink: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.privacyPolicy),
-                        onChanged: (val) {
-                          setState(() {
-                            _agreePrivacy = val;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-
-                      _buildInteractiveCheckTile(
-                        titlePrefix: AppLocalizations.of(context).oIAgreeToThe,
-                        linkText: AppLocalizations.of(context).oTermsOfService,
-                        isChecked: _agreeTerms,
-                        onTapLink: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
-                        onChanged: (val) {
-                          setState(() {
-                            _agreeTerms = val;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-
-                      // The disclaimer's own acknowledgement section says the
-                      // user confirms they have read it. That was only true if
-                      // they were ever asked, and until now they were not.
-                      _buildInteractiveCheckTile(
-                        titlePrefix: AppLocalizations.of(context).oIAgreeToThe,
-                        linkText: AppLocalizations.of(context).oMedicalDisclaimer,
-                        isChecked: _agreeDisclaimer,
-                        onTapLink: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.medicalDisclaimer),
-                        onChanged: (val) {
-                          setState(() {
-                            _agreeDisclaimer = val;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Compact Luxury Button (46px Pill)
+                      // CTA Button: Brand Crimson 48px Pill
                       SizedBox(
                         width: double.infinity,
-                        height: 46,
+                        height: 48,
                         child: ElevatedButton(
                           onPressed: (_hasAgreedToEverything && !_recordingConsent)
                               ? _recordConsentAndContinue
                               : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: BlushyColors.primary,
-                            disabledBackgroundColor: const Color(0xFFEFE9E4),
+                            backgroundColor: const Color(0xFFDD0D22),
+                            disabledBackgroundColor: const Color(0xFFEFE8E0),
                             disabledForegroundColor: const Color(0xFFAFA59E),
-                            elevation: _hasAgreedToEverything ? 3 : 0,
-                            shadowColor: BlushyColors.primary.withValues(alpha: 0.3),
+                            elevation: _hasAgreedToEverything ? 2 : 0,
+                            shadowColor: const Color(0xFFDD0D22).withValues(alpha: 0.3),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(23),
+                              borderRadius: BorderRadius.circular(24),
                             ),
                           ),
                           child: _recordingConsent
                               ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
+                                  width: 20,
+                                  height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -893,17 +1110,16 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                                 )
                               : Text(
                                   "Agree & Continue",
-                                  style: TextStyle(
-                                    fontFamily: 'Manrope',
+                                  style: GoogleFonts.manrope(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.w700,
-                                    fontStyle: FontStyle.normal,
                                     letterSpacing: 0.3,
                                     color: _hasAgreedToEverything ? Colors.white : const Color(0xFFAFA59E),
                                   ),
                                 ),
                         ),
                       ),
+                      const SizedBox(height: 6),
                     ],
                   ),
                 ],
@@ -916,21 +1132,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   }
 
   /// Records the acceptance, then moves on.
-  ///
-  /// The tick boxes used to be the whole of it: they gated the button and were
-  /// then forgotten, so there was no evidence anyone had ever agreed to
-  /// anything. This sends the acceptance -- which documents, at which versions
-  /// -- to the server before the user is asked for a single health detail.
-  ///
-  /// Two failures, treated differently:
-  ///
-  /// * The documents on the server are newer than the ones this build can
-  ///   show. Continuing would record agreement to text the user never saw, so
-  ///   it stops and asks them to update.
-  /// * The server could not be reached. It continues anyway. The consent was
-  ///   genuinely given, the network merely failed to carry it, and the consent
-  ///   gate will ask again on the next launch -- whereas refusing to proceed
-  ///   would strand a new user at a wall they cannot get past.
   Future<void> _recordConsentAndContinue() async {
     if (!_hasAgreedToEverything || _recordingConsent) return;
 
@@ -977,13 +1178,13 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     return Row(
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF4F1),
+            color: const Color(0xFFFFECEB),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 16, color: BlushyColors.primary),
+          child: Icon(icon, size: 17, color: const Color(0xFFDD0D22)),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -995,18 +1196,18 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                 style: GoogleFonts.manrope(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF2D2529),
+                  color: const Color(0xFF221510),
                   letterSpacing: 0.1,
                 ),
               ),
-              const SizedBox(height: 1),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: GoogleFonts.manrope(
                   fontSize: 11,
                   fontWeight: FontWeight.w400,
-                  color: const Color(0xFF8A7C83),
-                  height: 1.3,
+                  color: const Color(0xFF7A6B72),
+                  height: 1.35,
                 ),
               ),
             ],
@@ -1016,7 +1217,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     );
   }
 
-  Widget _buildInteractiveCheckTile({
+  Widget _buildInteractiveConsentRow({
     required String titlePrefix,
     required String linkText,
     required bool isChecked,
@@ -1025,64 +1226,57 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   }) {
     return InkWell(
       onTap: () => onChanged(!isChecked),
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isChecked ? const Color(0xFFFFF9F8) : const Color(0xFFFFFDF9),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isChecked ? BlushyColors.primary.withValues(alpha: 0.5) : const Color(0xFFECE4DC),
-            width: isChecked ? 1.3 : 1.0,
-          ),
-        ),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              width: 20,
-              height: 20,
+              width: 22,
+              height: 22,
               decoration: BoxDecoration(
-                color: isChecked ? BlushyColors.primary : Colors.white,
+                color: isChecked ? const Color(0xFFDD0D22) : Colors.white,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: isChecked ? BlushyColors.primary : const Color(0xFFC8BEB7),
+                  color: isChecked ? const Color(0xFFDD0D22) : const Color(0xFFD4C8BE),
                   width: 1.4,
                 ),
               ),
               child: isChecked
-                  ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                  ? const Icon(Icons.check, size: 14, color: Colors.white)
                   : null,
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    titlePrefix,
-                    style: const TextStyle(
-                      fontFamily: 'Manrope',
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF3D3237),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: onTapLink,
-                    child: Text(
-                      linkText,
-                      style: const TextStyle(
-                        fontFamily: 'Manrope',
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: titlePrefix,
+                      style: GoogleFonts.manrope(
                         fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: BlushyColors.primary,
-                        decoration: TextDecoration.underline,
-                        decorationColor: BlushyColors.primary,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF221510),
                       ),
                     ),
-                  ),
-                ],
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: onTapLink,
+                        child: Text(
+                          linkText,
+                          style: GoogleFonts.manrope(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFFDD0D22),
+                            decoration: TextDecoration.underline,
+                            decorationColor: const Color(0xFFDD0D22),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -1917,14 +2111,63 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   // --- "Why we're asking this" Widget ---
   Widget _buildWhyAskingExpandable() {
-    String explanation = "This information helps customize your daily insights and companion interactions.";
+    String explanation = "This clinical context ensures your home cards, predictions, and companion responses are medically aligned with your exact journey.";
     
     if (_currentStepIndex == 0) {
-      explanation = "Your preferred name is used by Docsy to personalize letters, notes, and wellness greetings.";
+      explanation = "Your preferred name is used by Docsy to personalize daily wellness notes and compassionate check-ins.";
     } else if (_currentStepIndex == 1) {
-      explanation = "Your age dictates key physiological milestones, health warnings, and maturity checkins.";
+      explanation = "Your date of birth ensures all biological tracking, cycle prediction ranges, and educational content are clinically appropriate for your age.";
     } else if (_currentStepIndex == 2) {
-      explanation = "Choosing your current life stage selects the correct medical condition track and cycle calculations.";
+      explanation = "Selecting your life stage tailors the clinical tracking algorithms, biomarker checklists, and home dashboard layout to your current hormonal phase.";
+    } else if (_profile.lifeStage != null) {
+      final branchStep = _currentStepIndex - 3;
+      final stage = _profile.lifeStage!;
+      if (stage == LifeStage.firstPeriodNotStarted) {
+        if (branchStep == 0) explanation = "Understanding your focus areas allows Docsy to tailor puberty preparation guides to what matters most to you right now.";
+        if (branchStep == 1) explanation = "Tracking bodily shifts like growth spurts or discharge helps estimate readiness without anxiety or medical jargon.";
+        if (branchStep == 2) explanation = "Your comfort priorities shape which practical tips and conversation guides we highlight first.";
+      } else if (stage == LifeStage.firstPeriodStarted) {
+        if (branchStep == 0) explanation = "Early cycles often take 1 to 2 years to mature. Knowing your start timeline calibrates the irregularity window.";
+        if (branchStep == 1) explanation = "Young cycles naturally fluctuate due to anovulatory cycles. This informs our prediction algorithms.";
+        if (branchStep == 2) explanation = "Logging early symptoms helps identify patterns like cramps or mood changes before flow begins.";
+        if (branchStep == 3) explanation = "Your goals customize your daily dashboard so you feel confident at school, sports, and home.";
+      } else if (stage == LifeStage.reproductiveYears) {
+        if (branchStep == 0) explanation = "Typical cycle lengths span 21 to 35 days. Your cycle regularity tunes our baseline ovulation and phase engines.";
+        if (branchStep == 1) explanation = "Your latest period start date anchors your follicular, ovulatory, and luteal phase calculations.";
+        if (branchStep == 2) explanation = "Hormonal contraception alters natural ovulation patterns; knowing this ensures we provide biologically accurate advice.";
+        if (branchStep == 3) explanation = "Connecting your recurrent symptoms enables proactive phase-synced relief strategies on your home cards.";
+        if (branchStep == 4) explanation = "Your primary goals determine which lifestyle and wellness trackers are pinned to your home screen.";
+      } else if (stage == LifeStage.hormonalHealth) {
+        if (branchStep == 0) explanation = "Targeted protocols for PCOS, endometriosis, or PMDD adjust our hormonal insight models specifically for your condition.";
+        if (branchStep == 1) explanation = "Monitoring key symptoms helps track treatment response, inflammatory flare-ups, and cyclic variations.";
+        if (branchStep == 2) explanation = "Knowing your treatment context helps Docsy complement your physician care with lifestyle and nutrition support.";
+        if (branchStep == 3) explanation = "Your focus areas determine whether pain management, metabolic balance, or mood support takes priority.";
+      } else if (stage == LifeStage.tryingToConceive) {
+        if (branchStep == 0) explanation = "TTC timelines guide clinically appropriate fertility tracking advice and clinical consultation markers.";
+        if (branchStep == 1) explanation = "Synchronizing with your tracking method (LH strips, BBT, cervical mucus) refines fertile window predictions.";
+        if (branchStep == 2) explanation = "Understanding clinical treatments ensures Docsy aligns with medical protocols and appointment tracking.";
+        if (branchStep == 3) explanation = "Fertility symptoms like ovulation cramps or mucus changes offer real-time biological clues of fertile days.";
+        if (branchStep == 4) explanation = "Your goals shape our preconception nutrition, partner synchronization, and stress-reduction insights.";
+      } else if (stage == LifeStage.pregnancy) {
+        if (branchStep == 0) explanation = "Your estimated due date calculates exact gestational weeks, fetal developmental stages, and trimester markers.";
+        if (branchStep == 1) explanation = "First-time and subsequent pregnancies carry distinct physical and emotional expectations.";
+        if (branchStep == 2) explanation = "Tracking trimester symptoms provides timely obstetric comfort measures and flags warning signs.";
+        if (branchStep == 3) explanation = "Your goals tailor weekly baby growth cards, nutrition advice, and birth preparation checklists.";
+      } else if (stage == LifeStage.postpartum) {
+        if (branchStep == 0) explanation = "Your baby's birth date sets the postpartum recovery timeline (the 'fourth trimester') for healing milestones.";
+        if (branchStep == 1) explanation = "Feeding methods directly impact maternal caloric requirements, hydration needs, and prolactin cycles.";
+        if (branchStep == 2) explanation = "Monitoring lochia, pelvic floor sensations, and emotional wellbeing supports comprehensive maternal recovery.";
+        if (branchStep == 3) explanation = "Your priorities personalize newborn logging, pelvic floor rehab, and gentle mental wellness check-ins.";
+      } else if (stage == LifeStage.perimenopause) {
+        if (branchStep == 0) explanation = "Perimenopause transition is marked by fluctuating cycle lengths and skipping months as ovarian reserve changes.";
+        if (branchStep == 1) explanation = "Vasomotor and neuroendocrine symptoms like hot flashes and night sweats guide targeted symptom-relief strategies.";
+        if (branchStep == 2) explanation = "Knowing your therapy status helps Docsy support symptom tracking for doctor reviews.";
+        if (branchStep == 3) explanation = "Your goals determine whether sleep restoration, cognitive clarity, or metabolic vitality takes front stage.";
+      } else if (stage == LifeStage.menopause) {
+        if (branchStep == 0) explanation = "Menopause is officially reached after 12 consecutive months without a period. Timeline details guide post-menopausal care.";
+        if (branchStep == 1) explanation = "Monitoring estrogen-related symptoms like hot flashes and joint stiffness helps preserve vitality and comfort.";
+        if (branchStep == 2) explanation = "Longevity goals guide daily nutrition, bone-density exercises, and cardiovascular wellness metrics.";
+      }
     }
 
     return Column(
@@ -1975,12 +2218,12 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       children: [
         Text(
           AppLocalizations.of(context).onbLetsGetIntroduced,
-          style: GoogleFonts.manrope(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 34, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
           "What name would you like Docsy to call you?",
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 32),
         TextField(
@@ -2000,24 +2243,27 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   // Step 2: Date of Birth
   Widget _buildDobStep() {
+    final age = _userAge;
+    final isUnderage = age != null && age < 9;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context).oWhenIsYourBirthday,
-          style: GoogleFonts.manrope(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 34, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
           "Knowing your birthday helps customize age-based biology recommendations.",
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 32),
         InkWell(
           onTap: () async {
             final picked = await showDatePicker(
               context: context,
-              initialDate: DateTime.now().subtract(const Duration(days: 365 * 25)),
+              initialDate: _profile.dateOfBirth ?? DateTime.now().subtract(const Duration(days: 365 * 24)),
               firstDate: DateTime(1900),
               lastDate: DateTime.now(),
               builder: (context, child) {
@@ -2036,6 +2282,10 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
             if (picked != null) {
               setState(() {
                 _profile.dateOfBirth = picked;
+                // If lifeStage was previously selected and is no longer valid for new age, clear it
+                if (_profile.lifeStage != null && !_isStageAllowedForAge(_profile.lifeStage!, _calculateAge(picked))) {
+                  _profile.lifeStage = null;
+                }
               });
               _saveProgress();
             }
@@ -2051,9 +2301,10 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                 Text(
                   _profile.dateOfBirth == null 
                       ? "Select your date of birth" 
-                      : "${_profile.dateOfBirth!.day}/${_profile.dateOfBirth!.month}/${_profile.dateOfBirth!.year}",
+                      : "${_profile.dateOfBirth!.day}/${_profile.dateOfBirth!.month}/${_profile.dateOfBirth!.year}${age != null ? '  (Age $age)' : ''}",
                   style: GoogleFonts.manrope(
                     fontSize: 16, 
+                    fontWeight: _profile.dateOfBirth == null ? FontWeight.w400 : FontWeight.w600,
                     color: _profile.dateOfBirth == null ? BlushyColors.secondaryText : BlushyColors.text
                   ),
                 ),
@@ -2062,6 +2313,35 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
             ),
           ),
         ),
+        if (isUnderage) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFECEB),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFFD5D2)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline, color: BlushyColors.primary, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    "Blushy is medically calibrated for individuals aged 9 and older experiencing or preparing for menstrual and hormonal transitions. For children under 9, please consult a pediatrician or pediatric endocrinologist for developmental questions.",
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF9E1B22),
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -2069,15 +2349,60 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   // Step 3: Life Stage Choices
   Widget _buildStageStep() {
     final stages = [
-      {"label": "First Period (Not Started)", "value": LifeStage.firstPeriodNotStarted, "desc": "Puberty changes & first cycle preparations."},
-      {"label": "First Period (Started)", "value": LifeStage.firstPeriodStarted, "desc": "Cycle tracking confidence for young girls."},
-      {"label": "Living with my cycle", "value": LifeStage.reproductiveYears, "desc": "Cycle tracking, daily energy & phase-synced living."},
-      {"label": "Hormonal Health", "value": LifeStage.hormonalHealth, "desc": "Support for PCOS, PMDD, and condition management."},
-      {"label": "Trying to Conceive", "value": LifeStage.tryingToConceive, "desc": "Fertility analysis, markers, and checklists."},
-      {"label": "Pregnancy", "value": LifeStage.pregnancy, "desc": "Weekly baby growth logs and maternity tracking."},
-      {"label": "Postpartum", "value": LifeStage.postpartum, "desc": "Newborn check-ins, feeds, and maternal healing."},
-      {"label": "Perimenopause", "value": LifeStage.perimenopause, "desc": "Tracking changes in your cycle rhythm."},
-      {"label": "Menopause", "value": LifeStage.menopause, "desc": "Supports bone wellness and hot flash tracking."},
+      {
+        "label": "First Period (Not Started)",
+        "value": LifeStage.firstPeriodNotStarted,
+        "desc": "Puberty bodily changes & preparing for your first cycle.",
+        "ageRange": "Ages 9–17",
+      },
+      {
+        "label": "First Period (Started)",
+        "value": LifeStage.firstPeriodStarted,
+        "desc": "Cycle tracking confidence, early flow patterns & comfort.",
+        "ageRange": "Ages 9–19",
+      },
+      {
+        "label": "Living with my cycle",
+        "value": LifeStage.reproductiveYears,
+        "desc": "Cycle tracking, energy syncing, PMS & phase-synced living.",
+        "ageRange": "Ages 13–51",
+      },
+      {
+        "label": "Hormonal Health",
+        "value": LifeStage.hormonalHealth,
+        "desc": "Targeted support for PCOS, PMDD, endometriosis & hormonal balance.",
+        "ageRange": "Ages 13+",
+      },
+      {
+        "label": "Trying to Conceive",
+        "value": LifeStage.tryingToConceive,
+        "desc": "Fertility analysis, ovulation timing, LH strips & conception wellness.",
+        "ageRange": "Ages 18–50",
+      },
+      {
+        "label": "Pregnancy",
+        "value": LifeStage.pregnancy,
+        "desc": "Weekly baby growth milestones, trimester symptoms & maternity health.",
+        "ageRange": "Ages 18–50",
+      },
+      {
+        "label": "Postpartum & New Mother",
+        "value": LifeStage.postpartum,
+        "desc": "Physical recovery, newborn feeding, pelvic floor & maternal healing.",
+        "ageRange": "Ages 18–50",
+      },
+      {
+        "label": "Perimenopause",
+        "value": LifeStage.perimenopause,
+        "desc": "Tracking cycle shifts, vasomotor flushes & hormonal transition.",
+        "ageRange": "Ages 35–55",
+      },
+      {
+        "label": "Menopause & Post-Menopause",
+        "value": LifeStage.menopause,
+        "desc": "Bone wellness, hot flash management & healthy longevity.",
+        "ageRange": "Ages 40+",
+      },
     ];
 
     return Column(
@@ -2085,25 +2410,33 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       children: [
         Text(
           AppLocalizations.of(context).oWhereAreYouToday,
-          style: GoogleFonts.manrope(fontSize: 38, fontWeight: FontWeight.w400, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 34, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
-          "This selection defines the entire branching layout for your onboarding questionnaire.",
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          "This selection defines the clinical tracking layout for your onboarding questionnaire and home dashboard.",
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 24),
         ...stages.map((stage) {
-          final isSelected = _profile.lifeStage == stage['value'];
+          final stageValue = stage['value'] as LifeStage;
+          final isAllowed = _isStageAllowedForAge(stageValue, _userAge);
+          final isSelected = _profile.lifeStage == stageValue;
           return _buildPremiumSelectionRow(
             title: stage['label'] as String,
             desc: stage['desc'] as String,
+            badge: stage['ageRange'] as String?,
             isSelected: isSelected,
+            isLocked: !isAllowed,
             onTap: () {
-              setState(() {
-                _profile.lifeStage = stage['value'] as LifeStage;
-              });
-              _saveProgress();
+              if (!isAllowed) {
+                _showStageAgeGuidance(stageValue);
+              } else {
+                setState(() {
+                  _profile.lifeStage = stageValue;
+                });
+                _saveProgress();
+              }
             },
           );
         }),
@@ -2114,116 +2447,49 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   // --- BRANCH A: FIRST PERIOD (NOT STARTED) ---
   Widget _buildNotStartedStep4() {
     final options = [
-      "Puberty & body changes",
+      "Puberty & bodily changes",
       "Preparing for my first period",
-      "Hygiene",
-      "Mood & emotions",
-      "School & sports"
+      "Hygiene & period care products",
+      "Mood, emotions & changes in feelings",
+      "School, sports & swimming with a period"
     ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oWhatWouldYouLike,
-      subtitle: "We'll build custom guides to help you feel ready.",
+      subtitle: "We'll build custom guides to help you feel completely prepared.",
       options: options,
       storageKey: "not_started_learn",
     );
   }
 
-  /// What she actually notices, for the branch most women take.
-  ///
-  /// The hormonal health, perimenopause and menopause branches each asked about
-  /// symptoms; reproductive years — the most common route — asked about cycle
-  /// type, last period, goals and contraception, and never about symptoms at
-  /// all. So the dashboard had nothing to work with and fell back to a fixed
-  /// set of cards for most people.
-  ///
-  /// Every option here maps to a card the dashboard can already show. Before
-  /// this, 67 of its 100 keywords were unreachable from onboarding: the
-  /// personalisation was built and could not be switched on.
-  /// What she is noticing while trying to conceive.
-  ///
-  /// Only the reproductive-years branch asked this, so anyone who came through
-  /// TTC or postpartum finished onboarding with an empty symptom list and got a
-  /// home page with every symptom-keyed card switched off -- not because she
-  /// tracks nothing, but because she was never asked.
-  ///
-  /// Deliberately about symptoms, not method: step 5 already asks how she
-  /// tracks.
-  Widget _buildTtcStep7() {
+  Widget _buildNotStartedStep5() {
     final options = [
-      "Cramps",
-      "Bloating",
-      "Spotting",
-      "Discharge",
-      "Fatigue",
-      "Mood swings",
-      "Headache",
-      "Acne",
-      "Back pain",
-      "Pelvic pain",
-      "Anxiety",
-      "Insomnia",
+      "Growth spurts / Getting taller",
+      "Body hair changes (underarm or pubic)",
+      "Skin breakouts / Acne",
+      "Vaginal discharge (white or clear)",
+      "Mild lower tummy aches / Cramps",
+      "Mood swings / Sensitive emotions",
+      "Breast budding / Chest tenderness",
+      "None yet / Not sure"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "Which of these do you notice?",
-      subtitle: "Pick as many as you like. Your home page shows what you track.",
+      title: "What changes have you noticed?",
+      subtitle: "It's normal for changes to occur in any order. Pick all that you notice.",
       options: options,
     );
   }
 
-  /// What she is noticing while recovering.
-  ///
-  /// The branch asked how she feeds and what she wants help with, and never
-  /// what her body is actually doing -- so recovery was the one thing the
-  /// postpartum onboarding could not hear about.
-  ///
-  /// The clinical words are paired with plain ones ("Bleeding (lochia)")
-  /// because she may know either. These ask what she notices; they do not tell
-  /// her what any of it means, which stays with the reviewed content.
-  Widget _buildPostpartumStep7() {
+  Widget _buildNotStartedStep6() {
     final options = [
-      "Bleeding (lochia)",
-      "Perineal soreness",
-      "C-section incision",
-      "Stitches",
-      "Pelvic floor",
-      "Swelling",
-      "Back pain",
-      "Fatigue",
-      "Insomnia",
-      "Mood swings",
-      "Anxiety",
-      "Night sweats",
+      "Feel prepared before it starts",
+      "Understand my changing body",
+      "Know what products to use",
+      "Learn how to talk to a parent or adult",
+      "Feel confident and calm at school"
     ];
-    return _buildMultiSelectSymptomsStep(
-      title: "How is your body doing?",
-      subtitle: "Pick as many as you like. Your home page shows what you track.",
-      options: options,
-    );
-  }
-
-  Widget _buildReproductiveStep8() {
-    final options = [
-      "Cramps",
-      "Bloating",
-      "Headache",
-      "Mood swings",
-      "Fatigue",
-      "Acne",
-      "Heavy period",
-      "Spotting",
-      "Discharge",
-      "Digestion",
-      "Anxiety",
-      "Insomnia",
-      "Back pain",
-      // Breast tenderness was here and removed: the dashboard has no card
-      // keyed to it, so selecting it changed nothing. Asking a question whose
-      // answer is discarded is how this feature got into trouble in the first
-      // place. Worth adding back alongside a card that responds to it.
-    ];
-    return _buildMultiSelectSymptomsStep(
-      title: "Which of these do you notice?",
-      subtitle: "Pick as many as you like. Your home page shows what you track.",
+    return _buildMultiSelectGoalsStep(
+      title: "What would help you feel most confident?",
+      subtitle: "Select everything you'd like Docsy to guide you through.",
       options: options,
     );
   }
@@ -2231,13 +2497,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   // --- BRANCH B: FIRST PERIOD (STARTED) ---
   Widget _buildStartedStep4() {
     final options = [
-      "Within the last month",
-      "1–6 months ago",
-      "More than 6 months ago"
+      "Within the last 3 months",
+      "3–6 months ago",
+      "6–12 months ago",
+      "More than 1 year ago"
     ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oWhenDidYourFirst,
-      subtitle: "This sets cycle prediction baseline metrics.",
+      subtitle: "This helps Docsy calibrate early cycle irregularity ranges.",
       options: options,
       storageKey: "first_period_start_time",
     );
@@ -2245,16 +2512,50 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   Widget _buildStartedStep5() {
     final options = [
-      "Tracking periods",
+      "Still irregular / Unpredictable (Normal in early years)",
+      "Starting to become regular",
+      "I haven't been tracking yet"
+    ];
+    return _buildSingleSelectBranchStep(
+      title: "How predictable are your periods?",
+      subtitle: "Early cycles naturally vary. We adjust predictions to match your rhythm.",
+      options: options,
+      storageKey: "first_period_regularity",
+    );
+  }
+
+  Widget _buildStartedStep6() {
+    final options = [
       "Cramps",
-      "Mood changes",
-      "Understanding my body",
-      "Hygiene",
-      "School & sports"
+      "Mood swings",
+      "Headache",
+      "Acne",
+      "Heavy flow",
+      "Spotting",
+      "Fatigue",
+      "Back pain",
+      "Bloating",
+      "Digestive changes",
+      "No notable symptoms"
+    ];
+    return _buildMultiSelectSymptomsStep(
+      title: "Which of these do you notice?",
+      subtitle: "Pick as many as you like. Your home page shows what you track.",
+      options: options,
+    );
+  }
+
+  Widget _buildStartedStep7() {
+    final options = [
+      "Predict when my period arrives",
+      "Ease cramps and physical discomfort",
+      "Track mood and energy shifts",
+      "Feel secure with hygiene & flow management",
+      "Confident in sports & physical activity"
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatWouldYouLike2,
-      subtitle: "Select all parameters that apply to you.",
+      subtitle: "Select all goals that apply to your journey.",
       options: options,
     );
   }
@@ -2262,15 +2563,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   // --- BRANCH C: REPRODUCTIVE YEARS ---
   Widget _buildReproductiveStep4() {
     final options = [
-      "Very regular",
-      "Mostly regular",
-      "Sometimes irregular",
-      "Highly unpredictable",
-      "I don't know"
+      "Regular (21–35 days)",
+      "Somewhat irregular",
+      "Frequently irregular",
+      "I don't track yet"
     ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oHowWouldYouDescribe,
-      subtitle: "Cycles fluctuate dynamically based on hormonal states.",
+      subtitle: "Typical cycles range between 21 and 35 days.",
       options: options,
       storageKey: "reproductive_cycle_type",
     );
@@ -2282,12 +2582,12 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       children: [
         Text(
           AppLocalizations.of(context).oWhenDidYourLast,
-          style: GoogleFonts.manrope(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 34, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
-          "Used to forecast your upcoming cycle length.",
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          "Used to forecast your upcoming cycle length and biological phases.",
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 24),
         InkWell(
@@ -2320,6 +2620,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                       : "${_profile.lastPeriod!.day}/${_profile.lastPeriod!.month}/${_profile.lastPeriod!.year}",
                   style: GoogleFonts.manrope(
                     fontSize: 16, 
+                    fontWeight: _profile.lastPeriod == null ? FontWeight.w400 : FontWeight.w600,
                     color: _profile.lastPeriod == null ? BlushyColors.secondaryText : BlushyColors.text
                   ),
                 ),
@@ -2415,73 +2716,97 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   Widget _buildReproductiveStep6() {
     final options = [
-      "Predict periods",
-      "Reduce cramps",
-      "PMS",
-      "Mood",
-      "Sleep",
-      "Energy",
-      "Acne",
-      "Ovulation",
-      "Fitness",
-      "Nutrition",
-      "Walking",
-      "Yoga",
-      "Strength",
-      "Stress",
-      "Medication reminders"
+      "No hormonal contraception",
+      "Combined pill / Patch / Ring",
+      "Progestin-only (Mini-pill / Implant / Depo)",
+      "Hormonal IUD",
+      "Copper IUD (non-hormonal)",
+      "Prefer not to say"
     ];
-    return _buildMultiSelectGoalsStep(
-      title: AppLocalizations.of(context).oWhatWouldYouLike3,
-      subtitle: "Customize your companion track.",
+    return _buildSingleSelectBranchStep(
+      title: AppLocalizations.of(context).oAreYouCurrentlyUsing,
+      subtitle: "Hormonal contraception alters natural ovulatory surges.",
       options: options,
+      storageKey: "contraception_choice",
     );
   }
 
   Widget _buildReproductiveStep7() {
-    final options = ["Yes", "No", "Prefer not to say"];
-    return _buildSingleSelectBranchStep(
-      title: AppLocalizations.of(context).oAreYouCurrentlyUsing,
-      subtitle: "This shifts cycle predictability and calculations.",
+    final options = [
+      "Predict periods & cycle phases",
+      "Manage cramps & PMS",
+      "Optimize daily energy & fitness",
+      "Track ovulation & fertility windows",
+      "Improve sleep & stress resilience",
+      "Skin & nutrition support",
+      "Medication & habit reminders"
+    ];
+    return _buildMultiSelectGoalsStep(
+      title: AppLocalizations.of(context).oWhatWouldYouLike3,
+      subtitle: "Docsy prioritizes these on your home dashboard.",
       options: options,
-      storageKey: "contraception_choice",
+    );
+  }
+
+  Widget _buildReproductiveStep8() {
+    final options = [
+      "Cramps",
+      "Bloating",
+      "Headache",
+      "Mood swings",
+      "Fatigue",
+      "Acne",
+      "Heavy period",
+      "Spotting",
+      "Discharge",
+      "Digestion",
+      "Anxiety",
+      "Insomnia",
+      "Back pain",
+      "Pelvic pain",
+      "No notable symptoms"
+    ];
+    return _buildMultiSelectSymptomsStep(
+      title: "Which of these do you notice?",
+      subtitle: "Pick as many as you like. Your home page shows what you track.",
+      options: options,
     );
   }
 
   // --- BRANCH D: HORMONAL HEALTH ---
   Widget _buildHormonalStep4() {
     final options = [
-      "PCOS",
+      "PCOS (Polycystic Ovary Syndrome)",
       "Endometriosis",
       "Fibroids",
       "Adenomyosis",
-      "Thyroid disorder",
-      "PMDD",
-      "I'm not diagnosed yet"
+      "Thyroid disorder (Hypo/Hyper)",
+      "PMDD (Premenstrual Dysphoric Disorder)",
+      "Investigating / Not yet formally diagnosed"
     ];
     return _buildMultiSelectConditionsStep(
       title: AppLocalizations.of(context).oWhichConditionBestMatches,
-      subtitle: "Helps reorder custom home layout trackers.",
+      subtitle: "Helps tailor condition-specific tracking modules.",
       options: options,
     );
   }
 
   Widget _buildHormonalStep5() {
     final options = [
-      "Pain",
-      "Irregular periods",
+      "Severe pelvic pain",
+      "Irregular / Missing periods",
+      "Cramps",
       "Acne",
-      "Hair fall",
-      "Facial hair",
-      "Weight gain",
+      "Hair thinning / Hair loss",
+      "Hirsutism (Excess facial/body hair)",
+      "Weight fluctuations",
       "Fatigue",
-      "Mood",
-      "Sleep",
-      "Bloating",
-      "Headache",
-      "Digestion",
-      "Anxiety",
-      "Heavy period"
+      "Mood swings / PMDD lows",
+      "Insomnia / Sleep disruption",
+      "Bloating & gut issues",
+      "Headache / Migraines",
+      "Heavy menstrual bleeding",
+      "No notable symptoms"
     ];
     return _buildMultiSelectSymptomsStep(
       title: AppLocalizations.of(context).oWhichSymptomsAffectYou,
@@ -2491,26 +2816,48 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   }
 
   Widget _buildHormonalStep6() {
-    final options = ["Yes", "No", "In progress"];
+    final options = [
+      "Working with a doctor / On treatment",
+      "Managing through lifestyle & nutrition",
+      "Seeking answers / Diagnostic phase",
+      "Not currently receiving treatment"
+    ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oAreYouCurrentlyReceiving,
-      subtitle: "We prioritize wellness metrics rather than diagnosis.",
+      subtitle: "Helps Docsy complement your physician's care plan.",
       options: options,
       storageKey: "hormonal_treatment",
+    );
+  }
+
+  Widget _buildHormonalStep7() {
+    final options = [
+      "Hormone & cycle regulation",
+      "Chronic pain management",
+      "Skin & hair health balance",
+      "Metabolic & weight wellness",
+      "Emotional balance & mental health",
+      "Fertility preservation & planning",
+      "Doctor visit logs & symptom summaries"
+    ];
+    return _buildMultiSelectGoalsStep(
+      title: "What support would help most?",
+      subtitle: "Tailor your hormonal health tracking workspace.",
+      options: options,
     );
   }
 
   // --- BRANCH E: TRYING TO CONCEIVE ---
   Widget _buildTtcStep4() {
     final options = [
-      "Just starting",
-      "Under 6 months",
+      "Just starting (< 3 months)",
+      "3–6 months",
       "6–12 months",
-      "More than 12 months"
+      "Over 12 months"
     ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oHowLongHaveYou,
-      subtitle: "Provides tracking and testing timeline metrics.",
+      subtitle: "Helps adjust clinical fertile tracking recommendations.",
       options: options,
       storageKey: "ttc_duration",
     );
@@ -2518,50 +2865,93 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   Widget _buildTtcStep5() {
     final options = [
-      "Ovulation strips",
-      "Basal body temperature",
-      "Cervical mucus",
-      "Cycle tracking",
-      "I'm not tracking yet"
+      "Ovulation prediction kits (LH strips)",
+      "Basal Body Temperature (BBT)",
+      "Cervical fluid / mucus observation",
+      "Calendar / Cycle math only",
+      "Not tracking fertility markers yet"
     ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oHowAreYouTracking,
-      subtitle: "Select the method you use most frequently.",
+      subtitle: "Select the primary biomarker you observe.",
       options: options,
       storageKey: "ttc_tracking_method",
     );
   }
 
   Widget _buildTtcStep6() {
-    final options = ["No", "IUI", "IVF", "Other"];
+    final options = [
+      "Natural conception (No clinical assistance)",
+      "Ovulation induction (e.g. Clomid/Letrozole)",
+      "IUI (Intrauterine Insemination)",
+      "IVF (In Vitro Fertilization)",
+      "Preconception medical checkups"
+    ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oAreYouCurrentlyReceiving2,
-      subtitle: "Tailors recommendations around your cycles.",
+      subtitle: "Tailors recommendations around your clinical care.",
       options: options,
       storageKey: "ttc_treatment",
     );
   }
 
-  // --- BRANCH E: PREGNANCY ---
+  Widget _buildTtcStep7() {
+    final options = [
+      "Ovulation cramping (Mittelschmerz)",
+      "Cervical mucus shifts",
+      "Breast tenderness",
+      "Pelvic pain",
+      "Spotting",
+      "Fatigue",
+      "Mood fluctuations",
+      "Bloating",
+      "Headache",
+      "Anxiety / TTC stress",
+      "No notable symptoms"
+    ];
+    return _buildMultiSelectSymptomsStep(
+      title: "Which bodily signs do you notice?",
+      subtitle: "Tracks ovulation biomarkers and hormonal sensations.",
+      options: options,
+    );
+  }
+
+  Widget _buildTtcStep8() {
+    final options = [
+      "Pinpoint fertile window & ovulation peak",
+      "Understand basal body temperature patterns",
+      "Preconception nutrition & prenatal prep",
+      "Sperm-egg friendly lifestyle guidance",
+      "Stress & emotional wellness support",
+      "Partner sync & fertile timing notifications"
+    ];
+    return _buildMultiSelectGoalsStep(
+      title: "What are your conception priorities?",
+      subtitle: "We'll optimize your daily fertility window analysis.",
+      options: options,
+    );
+  }
+
+  // --- BRANCH F: PREGNANCY ---
   Widget _buildPregnancyStep4() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context).oWhatSYourDue,
-          style: GoogleFonts.manrope(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 34, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
           "Calculates gestational week and baby growth size benchmarks.",
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 24),
         InkWell(
           onTap: () async {
             final picked = await showDatePicker(
               context: context,
-              initialDate: DateTime.now().add(const Duration(days: 120)),
+              initialDate: _profile.dueDate ?? DateTime.now().add(const Duration(days: 140)),
               firstDate: DateTime.now().subtract(const Duration(days: 30)),
               lastDate: DateTime.now().add(const Duration(days: 280)),
             );
@@ -2586,6 +2976,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                       : "${_profile.dueDate!.day}/${_profile.dueDate!.month}/${_profile.dueDate!.year}",
                   style: GoogleFonts.manrope(
                     fontSize: 16, 
+                    fontWeight: _profile.dueDate == null ? FontWeight.w400 : FontWeight.w600,
                     color: _profile.dueDate == null ? BlushyColors.secondaryText : BlushyColors.text
                   ),
                 ),
@@ -2599,10 +2990,10 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   }
 
   Widget _buildPregnancyStep5() {
-    final options = ["Yes", "No"];
+    final options = ["Yes, first pregnancy", "No, have experienced pregnancy before"];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oIsThisYourFirst,
-      subtitle: "Personalizes education content pacing.",
+      subtitle: "Personalizes education pacing and clinical reassurance.",
       options: options,
       storageKey: "pregnancy_first",
     );
@@ -2610,17 +3001,34 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   Widget _buildPregnancyStep6() {
     final options = [
-      "Baby development",
-      "Symptoms",
-      "Nutrition",
-      "Exercise",
-      "Sleep",
-      "Mental wellbeing",
-      "Appointments",
-      "Fetal movement",
-      "Contractions",
-      "Swelling",
-      "Walking"
+      "Morning sickness / Nausea",
+      "Fatigue / Exhaustion",
+      "Tender breasts",
+      "Heartburn / Acid reflux",
+      "Back pain & pelvic pressure",
+      "Food aversions & cravings",
+      "Swelling (feet/hands)",
+      "Mood fluctuations",
+      "Pelvic pain",
+      "Insomnia / Restless sleep",
+      "No notable symptoms"
+    ];
+    return _buildMultiSelectSymptomsStep(
+      title: "What symptoms are you experiencing?",
+      subtitle: "Your dashboard prioritizes trimester-specific relief cards.",
+      options: options,
+    );
+  }
+
+  Widget _buildPregnancyStep7() {
+    final options = [
+      "Fetal movement & development milestones",
+      "Trimester symptom relief",
+      "Prenatal safe exercises & walking",
+      "Pregnancy nutrition & hydration",
+      "Birth plan & labor preparation",
+      "Partner involvement & kick counts",
+      "Doctor appointment & test reminders"
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatSupportWouldYou,
@@ -2629,26 +3037,26 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     );
   }
 
-  // --- BRANCH F: POSTPARTUM ---
+  // --- BRANCH G: POSTPARTUM ---
   Widget _buildPostpartumStep4() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context).oWhenWasYourBaby,
-          style: GoogleFonts.manrope(fontSize: 34, fontWeight: FontWeight.bold, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 34, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
           "Drives maternal postpartum healing calendars and recovery tracking.",
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 24),
         InkWell(
           onTap: () async {
             final picked = await showDatePicker(
               context: context,
-              initialDate: DateTime.now(),
+              initialDate: _profile.babyBirthDate ?? DateTime.now(),
               firstDate: DateTime.now().subtract(const Duration(days: 365)),
               lastDate: DateTime.now(),
             );
@@ -2673,6 +3081,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                       : "${_profile.babyBirthDate!.day}/${_profile.babyBirthDate!.month}/${_profile.babyBirthDate!.year}",
                   style: GoogleFonts.manrope(
                     fontSize: 16, 
+                    fontWeight: _profile.babyBirthDate == null ? FontWeight.w400 : FontWeight.w600,
                     color: _profile.babyBirthDate == null ? BlushyColors.secondaryText : BlushyColors.text
                   ),
                 ),
@@ -2686,10 +3095,15 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   }
 
   Widget _buildPostpartumStep5() {
-    final options = ["Breastfeeding", "Formula", "Combination"];
+    final options = [
+      "Exclusively breastfeeding / chestfeeding",
+      "Exclusive pumping",
+      "Bottle or formula feeding",
+      "Combination feeding (breast & formula)"
+    ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oHowAreYouFeeding,
-      subtitle: "Dynamically tracks hydration recommendations.",
+      subtitle: "Directly personalizes maternal hydration and calorie recommendations.",
       options: options,
       storageKey: "postpartum_feeding",
     );
@@ -2697,35 +3111,54 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   Widget _buildPostpartumStep6() {
     final options = [
-      "Recovery",
-      "Feeding",
-      "Sleep",
-      "Mental health",
-      "Exercise",
-      "Nutrition",
-      "Pelvic floor",
-      "Healing",
-      "Pumping",
-      "Walking"
+      "Maternal physical healing & recovery",
+      "Pelvic floor, core & kegel rehabilitation",
+      "Newborn feeding & pumping logs",
+      "Sleep rhythm optimization",
+      "Postpartum mental health & baby blues care",
+      "Gentle postnatal nourishment",
+      "Partner bonding & chore sharing"
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatWouldYouLike2,
-      subtitle: "Tailor postpartum workspace settings.",
+      subtitle: "Tailor your postpartum recovery workspace.",
       options: options,
     );
   }
 
-  // --- BRANCH G: PERIMENOPAUSE ---
+  Widget _buildPostpartumStep7() {
+    final options = [
+      "Bleeding or lochia",
+      "Perineal soreness / Episiotomy healing",
+      "Incision or stitches recovery",
+      "Uterine cramping (Afterpains)",
+      "Breast engorgement / Nipple tenderness",
+      "Pelvic floor weakness",
+      "Extreme exhaustion / Sleep deprivation",
+      "Postpartum baby blues / Mood dips",
+      "Hair shedding (Postpartum telogen effluvium)",
+      "Night sweats",
+      "Back pain",
+      "No notable symptoms"
+    ];
+    return _buildMultiSelectSymptomsStep(
+      title: "How is your body healing?",
+      subtitle: "Pick as many as you notice. Your home page supports what you track.",
+      options: options,
+    );
+  }
+
+  // --- BRANCH H: PERIMENOPAUSE ---
   Widget _buildPerimenopauseStep4() {
     final options = [
-      "Still regular",
-      "Becoming irregular",
-      "Rare",
-      "Stopped recently"
+      "Cycles getting shorter or longer",
+      "Skipping periods / Irregular intervals",
+      "Heavier or lighter flow than before",
+      "Cycles have nearly stopped (Past 6+ months)"
     ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oHowHaveYourPeriods,
-      subtitle: "Tracks fluctuations in menstrual metrics.",
+      subtitle: "Tracks fluctuations in menstrual rhythms during hormonal transition.",
       options: options,
       storageKey: "perimenopause_cycle_change",
     );
@@ -2734,16 +3167,17 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   Widget _buildPerimenopauseStep5() {
     final options = [
       "Hot flashes",
-      "Brain fog",
-      "Mood",
-      "Sleep",
-      "Joint pain",
-      "Weight changes",
-      "Night sweats",
-      "Irregular periods",
-      "Anxiety",
-      "Memory",
-      "Headache"
+      "Night sweats & chills",
+      "Brain fog & focus changes",
+      "Sleep disturbance / Insomnia",
+      "Mood changes & irritability",
+      "Fatigue & low energy",
+      "Joint aches & muscle stiffness",
+      "Weight & metabolic changes",
+      "Heart palpitations",
+      "Vaginal dryness / Discomfort",
+      "Headaches / Migraines",
+      "No notable symptoms"
     ];
     return _buildMultiSelectSymptomsStep(
       title: AppLocalizations.of(context).oWhichSymptomsAffectYou,
@@ -2754,29 +3188,47 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   Widget _buildPerimenopauseStep6() {
     final options = [
-      "Sleep",
-      "Energy",
-      "Exercise",
-      "Nutrition",
-      "Mood"
+      "Hormone Replacement Therapy (HRT / MHT)",
+      "Non-hormonal prescription therapy",
+      "Herbal & nutritional supplements",
+      "Lifestyle & holistic management",
+      "Exploring options with my doctor"
+    ];
+    return _buildSingleSelectBranchStep(
+      title: "Are you using any therapy or support?",
+      subtitle: "Helps tailor recommendations around medical or lifestyle regimens.",
+      options: options,
+      storageKey: "perimenopause_therapy",
+    );
+  }
+
+  Widget _buildPerimenopauseStep7() {
+    final options = [
+      "Track cycle pattern changes accurately",
+      "Hot flash & symptom trigger logs",
+      "Sleep restoration & night cooling strategies",
+      "Cardiovascular & metabolic vitality",
+      "Cognitive clarity & mood resilience",
+      "Hormone therapy discussion checklists"
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatWouldYouMost,
-      subtitle: "Saves priorities for home insights.",
+      subtitle: "Saves priorities for home insights and tracking.",
       options: options,
     );
   }
 
-  // --- BRANCH H: MENOPAUSE ---
+  // --- BRANCH I: MENOPAUSE ---
   Widget _buildMenopauseStep4() {
     final options = [
-      "Less than 12 months",
-      "More than 12 months",
-      "I'm not sure"
+      "12 to 24 months (Early post-menopause)",
+      "2 to 5 years",
+      "Over 5 years",
+      "Surgical menopause (Oophorectomy / Hysterectomy)"
     ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oHowLongHasIt,
-      subtitle: "Identifies transition status indicators.",
+      subtitle: "Identifies transition stage and bone/cardiovascular care timeline.",
       options: options,
       storageKey: "menopause_duration",
     );
@@ -2784,36 +3236,38 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
 
   Widget _buildMenopauseStep5() {
     final options = [
-      "Hot flashes",
+      "Hot flashes / Temperature spikes",
       "Night sweats",
-      "Sleep",
-      "Mood",
-      "Vaginal dryness",
-      "Bone health",
-      "Joint stiffness",
-      "Memory",
-      "Anxiety",
-      "Heart health"
+      "Sleep disruption",
+      "Vaginal dryness / Genitourinary discomfort",
+      "Bone or joint aches",
+      "Memory & focus changes",
+      "Mood changes / Anxiety",
+      "Skin dryness / Elasticity changes",
+      "Weight distribution shifts",
+      "Cardiovascular awareness",
+      "No notable symptoms"
     ];
     return _buildMultiSelectSymptomsStep(
       title: AppLocalizations.of(context).oWhichSymptomsAffectYour,
-      subtitle: "Select all that apply to you.",
+      subtitle: "Select all that affect your daily comfort.",
       options: options,
     );
   }
 
   Widget _buildMenopauseStep6() {
     final options = [
-      "Healthy ageing",
-      "Exercise",
-      "Heart health",
-      "Bone health",
-      "Nutrition",
-      "Mental wellbeing"
+      "Bone density & osteoporosis prevention",
+      "Cardiovascular & lipid health",
+      "Cognitive health & brain vitality",
+      "Sleep quality & temperature balance",
+      "Pelvic floor & intimacy wellness",
+      "Strength training & muscle preservation",
+      "Healthy active longevity"
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatWouldYouLike4,
-      subtitle: "Tailors long-term healthy wellness priorities.",
+      subtitle: "Tailors long-term healthy active longevity priorities.",
       options: options,
     );
   }
@@ -2829,12 +3283,12 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       children: [
         Text(
           title,
-          style: GoogleFonts.manrope(fontSize: 38, fontWeight: FontWeight.w400, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 32, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 24),
         ...options.map((opt) {
@@ -2864,12 +3318,12 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       children: [
         Text(
           title,
-          style: GoogleFonts.manrope(fontSize: 38, fontWeight: FontWeight.w400, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 32, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 24),
         ...options.map((opt) {
@@ -2904,12 +3358,12 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       children: [
         Text(
           title,
-          style: GoogleFonts.manrope(fontSize: 38, fontWeight: FontWeight.w400, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 32, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 24),
         ...options.map((opt) {
@@ -2944,16 +3398,17 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       children: [
         Text(
           title,
-          style: GoogleFonts.manrope(fontSize: 38, fontWeight: FontWeight.w400, color: BlushyColors.text),
+          style: GoogleFonts.cormorantGaramond(fontSize: 32, fontWeight: FontWeight.w600, color: BlushyColors.text),
         ),
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: GoogleFonts.manrope(fontSize: 14, color: BlushyColors.secondaryText),
+          style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
         const SizedBox(height: 24),
         ...options.map((opt) {
           final isSelected = _profile.symptoms.contains(opt);
+          final isNoneOption = opt.toLowerCase().contains("none") || opt.toLowerCase().contains("no notable");
           return _buildPremiumSelectionRow(
             title: opt,
             isSelected: isSelected,
@@ -2963,7 +3418,17 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                 if (isSelected) {
                   _profile.symptoms.remove(opt);
                 } else {
-                  _profile.symptoms.add(opt);
+                  if (isNoneOption) {
+                    // Deselect other symptoms when selecting 'None' / 'No notable symptoms'
+                    _profile.symptoms.clear();
+                    _profile.symptoms.add(opt);
+                  } else {
+                    // Deselect 'None' when choosing a specific symptom
+                    _profile.symptoms.removeWhere(
+                      (s) => s.toLowerCase().contains("none") || s.toLowerCase().contains("no notable"),
+                    );
+                    _profile.symptoms.add(opt);
+                  }
                 }
               });
               _saveProgress();
@@ -2977,14 +3442,18 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
   Widget _buildPremiumSelectionRow({
     required String title,
     String? desc,
+    String? badge,
     required bool isSelected,
+    bool isLocked = false,
     required VoidCallback onTap,
     bool isMulti = false,
   }) {
     return PremiumSelectionRow(
       title: title,
       desc: desc,
+      badge: badge,
       isSelected: isSelected,
+      isLocked: isLocked,
       onTap: onTap,
       isMulti: isMulti,
     );
@@ -3050,7 +3519,9 @@ class _ContinueButtonState extends State<_ContinueButton> {
 class PremiumSelectionRow extends StatefulWidget {
   final String title;
   final String? desc;
+  final String? badge;
   final bool isSelected;
+  final bool isLocked;
   final VoidCallback onTap;
   final bool isMulti;
 
@@ -3058,7 +3529,9 @@ class PremiumSelectionRow extends StatefulWidget {
     super.key,
     required this.title,
     this.desc,
+    this.badge,
     required this.isSelected,
+    this.isLocked = false,
     required this.onTap,
     this.isMulti = false,
   });
@@ -3093,14 +3566,18 @@ class _PremiumSelectionRowState extends State<PremiumSelectionRow> with SingleTi
             margin: const EdgeInsets.symmetric(vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: widget.isSelected 
-                  ? BlushyColors.primary.withValues(alpha: 0.04) 
-                  : (_isHovered ? Colors.white.withValues(alpha: 0.4) : Colors.transparent),
+              color: widget.isLocked
+                  ? const Color(0xFFF7F4EF)
+                  : widget.isSelected 
+                      ? BlushyColors.primary.withValues(alpha: 0.04) 
+                      : (_isHovered ? Colors.white.withValues(alpha: 0.4) : Colors.transparent),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: widget.isSelected 
-                    ? BlushyColors.primary.withValues(alpha: 0.3) 
-                    : (_isHovered ? BlushyColors.border : Colors.transparent),
+                color: widget.isLocked
+                    ? const Color(0xFFE8DFD5)
+                    : widget.isSelected 
+                        ? BlushyColors.primary.withValues(alpha: 0.3) 
+                        : (_isHovered ? BlushyColors.border : Colors.transparent),
                 width: 1.0,
               ),
             ),
@@ -3116,7 +3593,9 @@ class _PremiumSelectionRowState extends State<PremiumSelectionRow> with SingleTi
                         style: GoogleFonts.manrope(
                           fontSize: 15,
                           fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w400,
-                          color: widget.isSelected ? BlushyColors.primary : BlushyColors.text,
+                          color: widget.isLocked
+                              ? const Color(0xFF8A7C83)
+                              : widget.isSelected ? BlushyColors.primary : BlushyColors.text,
                         ),
                       ),
                       if (widget.desc != null) ...[
@@ -3125,7 +3604,9 @@ class _PremiumSelectionRowState extends State<PremiumSelectionRow> with SingleTi
                           widget.desc!,
                           style: GoogleFonts.manrope(
                             fontSize: 12,
-                            color: BlushyColors.secondaryText,
+                            color: widget.isLocked
+                                ? const Color(0xFFA5979E)
+                                : BlushyColors.secondaryText,
                           ),
                         ),
                       ],
@@ -3133,20 +3614,47 @@ class _PremiumSelectionRowState extends State<PremiumSelectionRow> with SingleTi
                   ),
                 ),
                 const SizedBox(width: 16),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOutCubic,
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    borderRadius: widget.isMulti ? BorderRadius.circular(4) : BorderRadius.circular(100),
-                    border: Border.all(
-                      color: widget.isSelected ? BlushyColors.primary : BlushyColors.border,
-                      width: widget.isSelected ? 5.0 : 1.2,
+                if (widget.isLocked) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFE8E0),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    color: Colors.transparent,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.lock_outline_rounded, size: 13, color: Color(0xFF7A6B72)),
+                        if (widget.badge != null) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.badge!,
+                            style: GoogleFonts.manrope(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF7A6B72),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
+                ] else ...[
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOutCubic,
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      borderRadius: widget.isMulti ? BorderRadius.circular(4) : BorderRadius.circular(100),
+                      border: Border.all(
+                        color: widget.isSelected ? BlushyColors.primary : BlushyColors.border,
+                        width: widget.isSelected ? 5.0 : 1.2,
+                      ),
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
