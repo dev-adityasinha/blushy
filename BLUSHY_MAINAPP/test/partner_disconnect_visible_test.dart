@@ -268,8 +268,16 @@ void main() {
         isTrue,
         reason: 'the screen should have asked for its connections',
       );
+      // Disconnect is safely located in the Manage Connection sheet, opened via Sharing Active button or Manage Connection footer
+      final manageTrigger = find.byIcon(Icons.keyboard_arrow_down_rounded);
+      if (manageTrigger.evaluate().isNotEmpty) {
+        await tester.tap(manageTrigger.first);
+      } else {
+        await tester.tap(find.text('Manage Connection').first);
+      }
+      await tester.pumpAndSettle();
       expect(
-        find.text('Disconnect'),
+        find.text('Disconnect Partner'),
         findsWidgets,
         reason: '$role must be able to end the connection from the portal',
       );
@@ -287,7 +295,14 @@ void main() {
     ]);
 
     expect(find.text('Disconnect pending'), findsNothing);
-    expect(find.text('Disconnect'), findsWidgets);
+    final manageTrigger = find.byIcon(Icons.keyboard_arrow_down_rounded);
+    if (manageTrigger.evaluate().isNotEmpty) {
+      await tester.tap(manageTrigger.first);
+    } else {
+      await tester.tap(find.text('Manage Connection').first);
+    }
+    await tester.pumpAndSettle();
+    expect(find.text('Disconnect Partner'), findsWidgets);
   });
 
   testWidgets('the partner who was left is not asked to agree to anything',

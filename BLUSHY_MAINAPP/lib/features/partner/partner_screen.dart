@@ -29,7 +29,15 @@ import 'partner_chat.dart';
 import 'pending_invite_code.dart';
 import 'private_space.dart';
 import 'presentation/private_space_sheet.dart';
+import 'presentation/shared_sanctuary_sections.dart';
+import '../../shared/docsy_avatar.dart';
+import 'package:intl/intl.dart';
 import '../../services/user_state_store.dart';
+import '../sia/open_docsy.dart';
+import 'presentation/couple_experiences_sheet.dart';
+
+const Color kSanctuaryDark = kSanctuaryCharcoal;
+const Color kSanctuarySubtext = kSanctuaryMuted;
 
 
 class BlushyPartnerScreen extends StatefulWidget {
@@ -63,18 +71,15 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   int _flowersCount = 0;
   int _treesCount = 0;
   bool _hasPond = false;
-  bool _gardenLoading = false;
 
   Future<void> _loadGarden() async {
     final connectionId = _activeConnectionId;
     if (connectionId == null) return;
 
-    if (mounted) setState(() => _gardenLoading = true);
     final result = await PartnerApi.garden(connectionId);
     if (!mounted) return;
 
     setState(() {
-      _gardenLoading = false;
       final data = result.data;
       if (data != null) {
         _flowersCount = (data['flowers'] as num?)?.toInt() ?? 0;
@@ -120,8 +125,21 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // Messenger states
   final List<Map<String, dynamic>> _chatMessages = [];
   final TextEditingController _msgController = TextEditingController();
+  final ScrollController _messengerScrollController = ScrollController();
   int _selectedMessageIndexForActions = -1;
   bool _showComposerActionsMenu = false;
+
+  void _scrollToBottomMessenger() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_messengerScrollController.hasClients) {
+        _messengerScrollController.animateTo(
+          _messengerScrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 
   // Partner connections state
   List<Map<String, dynamic>> _connections = [];
@@ -141,13 +159,47 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   bool _dateIdeasLoading = false;
 
   String? get _activeConnectionId {
+    if (_connections.isEmpty) return null;
     final active = _connections.firstWhere(
       (c) => c['status'] == 'active',
-      orElse: () => <String, dynamic>{},
+      orElse: () => _connections.first,
     );
-    final id = active['connectionId'];
+    final id = active['connectionId'] ?? active['id'] ?? active['_id'];
     return id?.toString();
   }
+
+  static const List<SharedActivity> _defaultActivities = [
+    SharedActivity(
+      key: 'date_planner',
+      title: 'Date Planner & AI Concierge',
+      description: 'Plan your next date with Docsy venue & seat booking ideas.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'shared_canvas',
+      title: 'Shared Drawing Canvas',
+      description: 'Doodle, sketch cute notes, and draw together in real time.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'couple_games',
+      title: 'Couple Games & Questions',
+      description: 'Play Would You Rather, Pillow Talk, and text challenges.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'virtual_bouquet',
+      title: 'Virtual Bouquet & Blooms',
+      description: 'Arrange and send digital wildflowers for each other.',
+      status: 'not_started',
+    ),
+    SharedActivity(
+      key: 'daily_gratitude',
+      title: 'Daily Gratitude Challenge',
+      description: 'Each of you names one thing you appreciated today.',
+      status: 'not_started',
+    ),
+  ];
 
   Future<void> _loadSharedActivities() async {
     final connId = _activeConnectionId;
@@ -159,33 +211,178 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     final activities = await _partnerService.getSharedActivities(connId);
     if (!mounted) return;
     setState(() {
-      _sharedActivities = activities;
+      _sharedActivities = activities.isNotEmpty ? activities : _defaultActivities;
       _activitiesLoading = false;
     });
   }
 
   Future<void> _advanceActivity(SharedActivity activity) async {
-    final connId = _activeConnectionId;
-    if (connId == null) return;
-
-    // Tapping moves it one step: not started -> in progress -> completed, and
-    // a completed repeatable activity starts again.
     final next = activity.isInProgress ? 'completed' : 'in_progress';
+    final nextCount = next == 'completed' ? activity.completionCount + 1 : activity.completionCount;
+    final nextCompletedAt = next == 'completed' ? DateTime.now() : null;
 
-    setState(() => _activityBusyKey = activity.key);
-    final updated = await _partnerService.setSharedActivityStatus(connId, activity.key, next);
-    if (!mounted) return;
-
+    // Optimistically update local state so user sees instant feedback
     setState(() {
-      _activityBusyKey = null;
-      if (updated != null) _sharedActivities = updated;
+      _activityBusyKey = activity.key;
+      final currentList = List<SharedActivity>.from(_sharedActivities.isNotEmpty ? _sharedActivities : _defaultActivities);
+      final idx = currentList.indexWhere((a) => a.key == activity.key);
+      final updatedItem = SharedActivity(
+        key: activity.key,
+        title: activity.title,
+        description: activity.description,
+        status: next,
+        completionCount: nextCount,
+        completedAt: nextCompletedAt,
+      );
+      if (idx >= 0) {
+        currentList[idx] = updatedItem;
+      } else {
+        currentList.add(updatedItem);
+      }
+      _sharedActivities = currentList;
     });
 
-    if (updated == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not update the activity. Please try again.')),
-      );
+    if (next == 'completed') {
+      await _growGarden(flowers: 1);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: kSanctuaryCharcoal,
+            content: Text(
+              '“${activity.title}” completed together! 🌸',
+              style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: kSanctuaryCharcoal,
+            content: Text(
+              'Activity started! “${activity.title}”',
+              style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+        );
+      }
     }
+
+    final connId = _activeConnectionId;
+    if (connId != null) {
+      final updated = await _partnerService.setSharedActivityStatus(connId, activity.key, next);
+      if (mounted) {
+        setState(() {
+          _activityBusyKey = null;
+          if (updated != null && updated.isNotEmpty) _sharedActivities = updated;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() => _activityBusyKey = null);
+      }
+    }
+  }
+
+  Future<void> _sendDirectWhisper(String text) async {
+    if (text.trim().isEmpty) return;
+    final state = BlushyOSProvider.of(context);
+    final currentUserId = AuthStorage.getUserId();
+    final currentRole = AuthStorage.getRole() ?? state.selectedRole;
+    final String myName = (state.personalContext.userName != null && state.personalContext.userName!.isNotEmpty)
+        ? state.personalContext.userName!
+        : "You";
+
+    final newLocalMsg = {
+      'sender': myName,
+      'senderUserId': currentUserId,
+      'senderRole': currentRole,
+      'text': text,
+      'isAudio': false,
+      'isCard': false,
+      'isMe': true,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+
+    setState(() {
+      _chatMessages.add(newLocalMsg);
+      _saveSharedGardenState();
+    });
+    _scrollToBottomMessenger();
+
+    final activeConn = _connections.firstWhere(
+      (c) => c['status'] == 'active',
+      orElse: () => <String, dynamic>{},
+    );
+    if (activeConn.isNotEmpty && activeConn['connectionId'] != null) {
+      final connId = activeConn['connectionId'].toString();
+      final res = await _partnerService.sendMessage(connId, text);
+      if (res != null) {
+        _syncLiveMessages();
+      }
+    }
+  }
+
+  void _launchActivityExperience(SharedActivity activity, String partnerName) {
+    switch (activity.key) {
+      case 'date_planner':
+        showDatePlannerSheet(
+          context,
+          partnerName: partnerName,
+          onSendInvite: (inviteMsg) {
+            _sendDirectWhisper(inviteMsg);
+            _advanceActivity(activity);
+          },
+          onAskDocsy: (prompt) {
+            openDocsyWith(context, prompt);
+          },
+        );
+        break;
+      case 'shared_canvas':
+        showSharedCanvasSheet(
+          context,
+          partnerName: partnerName,
+          onSendDrawing: (drawingMsg) {
+            _sendDirectWhisper(drawingMsg);
+            _advanceActivity(activity);
+          },
+        );
+        break;
+      case 'couple_games':
+        showCoupleGamesSheet(
+          context,
+          partnerName: partnerName,
+          onSendGameQuestion: (gameMsg) {
+            _sendDirectWhisper(gameMsg);
+            _advanceActivity(activity);
+            _openPartnerTab(2);
+          },
+        );
+        break;
+      case 'virtual_bouquet':
+        _openPartnerTab(1);
+        break;
+      default:
+        _advanceActivity(activity);
+        break;
+    }
+  }
+
+  bool _showActiveStatus = true;
+  bool _showReadReceipts = true;
+
+  void _loadPresenceSettings() {
+    try {
+      final activeSaved = BlushyStorage.read('partner_show_active_status');
+      if (activeSaved['enabled'] is bool) {
+        _showActiveStatus = activeSaved['enabled'] as bool;
+      }
+      final receiptsSaved = BlushyStorage.read('partner_read_receipts');
+      if (receiptsSaved['enabled'] is bool) {
+        _showReadReceipts = receiptsSaved['enabled'] as bool;
+      }
+    } catch (_) {}
   }
   List<Map<String, dynamic>> _incomingInvitations = [];
   List<Map<String, dynamic>> _outgoingInvitations = [];
@@ -351,8 +548,36 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         _saveSharedGardenState();
       }
     } catch (_) {}
+    try {
+      final cachedConnections = BlushyStorage.read('partner_connections_cache');
+      if (cachedConnections.isNotEmpty) {
+        if (cachedConnections['connections'] is List) {
+          _connections = List<Map<String, dynamic>>.from(
+            (cachedConnections['connections'] as List)
+                .map((e) => Map<String, dynamic>.from(e as Map)),
+          );
+        }
+        if (cachedConnections['incoming'] is List) {
+          _incomingInvitations = List<Map<String, dynamic>>.from(
+            (cachedConnections['incoming'] as List)
+                .map((e) => Map<String, dynamic>.from(e as Map)),
+          );
+        }
+        if (cachedConnections['outgoing'] is List) {
+          _outgoingInvitations = List<Map<String, dynamic>>.from(
+            (cachedConnections['outgoing'] as List)
+                .map((e) => Map<String, dynamic>.from(e as Map)),
+          );
+        }
+        _hadActiveConnection = _connections.any((c) => c['status'] == 'active');
+        if (_connections.isNotEmpty) {
+          unawaited(_loadSharedActivities());
+        }
+      }
+    } catch (_) {}
 
     _loadMessageDecoderState();
+    _loadPresenceSettings();
     _fetchPartnerData();
     _startLiveSync();
     _initWebSocket();
@@ -595,6 +820,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           _incomingInvitations = incoming;
           _outgoingInvitations = outgoing;
         });
+        try {
+          UserStateStore.write('partner_connections_cache', {
+            'connections': connections,
+            'incoming': incoming,
+            'outgoing': outgoing,
+          });
+        } catch (_) {}
         // The connection id is only known now, and the activities hang off it.
         unawaited(_loadSharedActivities());
         unawaited(_loadGarden());
@@ -614,6 +846,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   @override
   void dispose() {
+    _messengerScrollController.dispose();
     _wsSubscription?.cancel();
     _liveChatTimer?.cancel();
     _msgController.dispose();
@@ -708,6 +941,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       _chatMessages.add(newLocalMsg);
       _saveSharedGardenState();
     });
+    _scrollToBottomMessenger();
 
     final activeConn = _connections.firstWhere(
       (c) => c['status'] == 'active',
@@ -724,42 +958,59 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _syncWithStorage();
     final state = BlushyOSProvider.of(context);
     final isHome = _selectedTabIndex == 0;
     return Scaffold(
-      backgroundColor: BlushyColors.background,
+      backgroundColor: kSanctuaryCanvas,
       body: SafeArea(
         child: Stack(
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!isHome) ...[
+                if (!isHome && _tabs[_selectedTabIndex] != 'Messenger') ...[
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: BlushyTheme.getPagePadding(context), vertical: 8.0),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: BlushyTheme.getPagePadding(context),
+                      vertical: 10.0,
+                    ),
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back_ios_rounded, color: BlushyColors.dark, size: 18),
+                          icon: const Icon(Icons.arrow_back_ios_rounded, color: kSanctuaryCharcoal, size: 18),
                           onPressed: () {
                             setState(() {
                               _selectedTabIndex = 0;
                             });
                           },
                         ),
-                        Text(
-                          _tabs[_selectedTabIndex],
-                          style: GoogleFonts.manrope(height: 1.5, 
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text,
-                          ),
+                        const SizedBox(width: 4),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'PARTNER',
+                              style: GoogleFonts.manrope(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.1,
+                                color: kSanctuaryCrimson,
+                              ),
+                            ),
+                            Text(
+                              _tabs[_selectedTabIndex],
+                              style: GoogleFonts.cormorantGaramond(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                                color: kSanctuaryCharcoal,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  const Divider(color: BlushyColors.border),
+                  const Divider(color: kSanctuaryDivider, height: 1),
                 ],
 
                 Expanded(
@@ -790,381 +1041,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     );
   }
 
-
-  void _showHelpOptionsDialog(BuildContext context) {
-    final state = BlushyOSProvider.of(context);
-    final currentRole = AuthStorage.getRole() ?? state.selectedRole;
-    final bool isUserWoman = (currentRole != 'partner' && currentRole != 'man');
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: BlushyColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return FutureBuilder<Map<String, dynamic>>(
-          future: () async {
-            try {
-              final service = ApiPartnerService();
-              final conns = await service.getConnections();
-              final active = conns.firstWhere((c) => c['status'] == 'active', orElse: () => <String, dynamic>{});
-              if (active.isNotEmpty) {
-                final connId = (active['connectionId'] ?? active['_id'] ?? '').toString();
-                if (connId.isNotEmpty) {
-                  return await service.getPartnerSharedData(connId);
-                }
-              }
-            } catch (_) {}
-            return <String, dynamic>{};
-          }(),
-          builder: (context, snapshot) {
-            final sharedData = snapshot.data;
-            final dynamic dynamicNeeds = sharedData?['dynamicNeeds'];
-            final bool hasDynamicData = dynamicNeeds != null && dynamicNeeds is Map;
-            final bool hasNeeds = hasDynamicData && (dynamicNeeds['hasNeeds'] == true);
-            final List<dynamic> customNeedsList = hasDynamicData && (dynamicNeeds['needs'] is List)
-                ? (dynamicNeeds['needs'] as List)
-                : [];
-
-            final String dialogTitle = hasDynamicData && dynamicNeeds['title'] != null
-                ? dynamicNeeds['title'].toString()
-                : (isUserWoman ? "What does he need today?" : "What does she need today?");
-
-            final defaultNeeds = isUserWoman
-                ? [
-                    {
-                      "label": "He needs appreciation & validation",
-                      "tip": "Docsy recommends: Acknowledge his effort, say thank you for something specific, or let him know how much you value him."
-                    },
-                    {
-                      "label": "He needs quiet space to decompress",
-                      "tip": "Docsy recommends: Give him some uninterrupted downtime to unwind after a stressful day without pressure."
-                    },
-                    {
-                      "label": "He needs words of encouragement",
-                      "tip": "Docsy recommends: Remind him that you believe in him and that you're right by his side through current pressures."
-                    },
-                    {
-                      "label": "He wants comfort & physical affection",
-                      "tip": "Docsy recommends: Offer a warm hug, a gentle massage, or a quiet moment relaxing together."
-                    },
-                    {
-                      "label": "He wants fun & quality time",
-                      "tip": "Docsy recommends: Suggest a casual game, watch a movie, share a favorite snack, or go for an easy walk together."
-                    },
-                    {
-                      "label": "I don't know what he needs",
-                      "tip": "Docsy recommends: Ask gently: 'Are you looking for encouragement, quiet downtime, or just want to hang out?'"
-                    },
-                  ]
-                : [
-                    {
-                      "label": "She needs rest",
-                      "tip": "Docsy recommends: Cancel non-essential tasks, dim the lights, and handle dinner tonight."
-                    },
-                    {
-                      "label": "She needs comfort",
-                      "tip": "Docsy recommends: Bring a warm heat pack, brew her favorite herbal tea, or offer a back rub."
-                    },
-                    {
-                      "label": "She needs practical help",
-                      "tip": "Docsy recommends: Check the laundry, wash dishes, or ask: 'Which chore can I take off your plate right now?'"
-                    },
-                    {
-                      "label": "She wants company",
-                      "tip": "Docsy recommends: Put away phones, suggest a relaxed walk, or watch a movie together."
-                    },
-                    {
-                      "label": "She wants space",
-                      "tip": "Docsy recommends: Give her quiet time. Say: 'I am right here in the other room if you need anything.'"
-                    },
-                    {
-                      "label": "I don't know what she needs",
-                      "tip": "Docsy recommends: Ask gently: 'Are you looking for comfort, help, or quiet space right now?'"
-                    },
-                  ];
-
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: BlushyColors.primary.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.favorite, size: 20, color: BlushyColors.primary),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            dialogTitle,
-                            style: GoogleFonts.manrope(height: 1.5, 
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: BlushyColors.text,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (snapshot.connectionState == ConnectionState.waiting)
-                      // The shape of the needs list, rather than a spinner
-                      // where the needs are about to be.
-                      SkeletonList(
-                        count: 2,
-                        itemBuilder: (context, index) => const SkeletonListRow(),
-                      )
-                    else if (hasNeeds && customNeedsList.isNotEmpty) ...[
-                      if (dynamicNeeds['message'] != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: Text(
-                            dynamicNeeds['message'].toString(),
-                            style: GoogleFonts.manrope(height: 1.5, 
-                              fontSize: 13,
-                              color: BlushyColors.text.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                      Flexible(
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: customNeedsList.length,
-                          separatorBuilder: (_, _) => const Divider(height: 1, color: BlushyColors.border),
-                          itemBuilder: (context, index) {
-                            final item = customNeedsList[index];
-                            final String label = (item is Map ? item['label'] : null) ?? item.toString();
-                            final String tip = (item is Map ? item['tip'] : null) ?? "Docsy recommends: Show love and patience.";
-                            final String? category = (item is Map ? item['category'] : null);
-                            final String? source = (item is Map ? item['source'] : null);
-
-                            return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                              title: Text(
-                                label,
-                                style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
-                              ),
-                              subtitle: (source != null || category != null)
-                                  ? Padding(
-                                      padding: const EdgeInsets.only(top: 4.0),
-                                      child: Row(
-                                        children: [
-                                          if (category != null)
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: BlushyColors.primary.withValues(alpha: 0.1),
-                                                borderRadius: BorderRadius.circular(20),
-                                              ),
-                                              child: Text(
-                                                category,
-                                                style: GoogleFonts.manrope(height: 1.5, 
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: BlushyColors.primary,
-                                                ),
-                                              ),
-                                            ),
-                                          if (category != null && source != null) const SizedBox(width: 8),
-                                          if (source != null)
-                                            Expanded(
-                                              child: Text(
-                                                source,
-                                                style: GoogleFonts.manrope(height: 1.5, 
-                                                  fontSize: 11,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    )
-                                  : null,
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: BlushyColors.primary),
-                              onTap: () {
-                                Navigator.pop(context);
-                                _showTipDialog(context, label, tip);
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ] else if (hasDynamicData && !hasNeeds) ...[
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: BlushyColors.surface,
-                          borderRadius: BorderRadius.circular(20),
-
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: const BoxDecoration(
-                                    color: BlushyColors.successSoft,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.spa, size: 24, color: BlushyColors.success),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        isUserWoman ? "He's feeling peaceful" : "She's feeling peaceful",
-                                        style: GoogleFonts.manrope(height: 1.5, 
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: BlushyColors.success,
-                                        ),
-                                      ),
-                                      Text(
-                                        "No distress or special needs logged",
-                                        style: GoogleFonts.manrope(height: 1.5, 
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Text(
-                              dynamicNeeds['message']?.toString() ??
-                                  (isUserWoman
-                                      ? "He hasn't logged any discomfort or asked for specific help recently."
-                                      : "She hasn't logged any discomfort or asked for specific help recently."),
-                              style: GoogleFonts.manrope(
-                                fontSize: 13,
-                                height: 1.4,
-                                color: BlushyColors.text.withValues(alpha: 0.85),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: BlushyColors.background,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: BlushyColors.border),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.lightbulb_outline, size: 18, color: BlushyColors.primary),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      dynamicNeeds['tip']?.toString() ??
-                                          "Docsy recommends: A warm check-in or simple 'Thinking of you' goes a long way.",
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 12,
-                                        height: 1.4,
-                                        color: BlushyColors.text,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BlushyColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context).pGotIt,
-                          style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ] else ...[
-                      Text(
-                        AppLocalizations.of(context).pHereAreGeneralWays,
-                        style: GoogleFonts.manrope(height: 1.5, fontSize: 13, color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 8),
-                      Flexible(
-                        child: ListView(
-                          shrinkWrap: true,
-                          children: defaultNeeds.map((need) {
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(need["label"]!, style: GoogleFonts.manrope(height: 1.5, fontSize: 14, fontWeight: FontWeight.w600)),
-                              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: BlushyColors.primary),
-                              onTap: () {
-                                Navigator.pop(context);
-                                _showTipDialog(context, need["label"]!, need["tip"]!);
-                              },
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showTipDialog(BuildContext context, String title, String tip) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text(title, style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
-        content: Text(tip, style: GoogleFonts.manrope(fontSize: 14, height: 1.5, color: BlushyColors.text)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).pGotIt, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: BlushyColors.primary)),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// How long is left, for the label under "Private space active".
   String _privateSpaceRemaining() {
@@ -1264,23 +1140,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     );
   }
 
-  Widget _buildHeader(BlushyOSState state) {
-    final bool canPop = Navigator.canPop(context);
-    final double pagePadding = BlushyTheme.getPagePadding(context);
 
-    if (!canPop) {
-      return const SizedBox(height: 16);
-    }
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: pagePadding, vertical: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-        ],
-      ),
-    );
-  }
 
 
   Widget _buildWorkspaceTabContent(BlushyOSState state) {
@@ -1298,9 +1158,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       case 'Memory Book':
         return _buildMemoryBookTab();
       case 'Relationship AI':
-        // Guarded by tab as well as by entry point, so it cannot be reached by
-        // index from a stale selection.
-        if (!_isSupportingPartner) return _buildOverviewTab(state);
         return _buildRelationshipAITab(state);
       case 'Gifts':
         return _buildGiftsTab();
@@ -1309,29 +1166,411 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     }
   }
 
-  // --- TAB 1: OVERVIEW & RELATIONSHIP GARDEN ---
+  // --- TAB 1: PARTNER SPACE (WOMAN'S HOME) ---
   Widget _buildOverviewTab(BlushyOSState state) {
+    final hasConnection = _connections.isNotEmpty;
+    final primaryPartner = hasConnection ? _connections.first : null;
+    final partnerName = primaryPartner != null
+        ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner))
+        : 'Your Partner';
+    final durationText = primaryPartner != null
+        ? formatConnectionDuration(primaryPartner['created_at'] ?? primaryPartner['createdAt'])
+        : '';
+    final signals = _buildSanctuarySignals(state, primaryPartner);
+    final rightNow = _getRightNowEvent(partnerName);
+
+    final letters = _getLettersList();
+    final lettersCount = letters.length;
+    final sealedLettersCount = letters.where((l) => l['sealed'] == true).length;
+    final bloomsCount = _flowersCount;
+
+    final completedMemories = _sharedActivities.where((a) => a.isCompleted).toList();
+    final memoryCount = completedMemories.length;
+    final latestMemory = completedMemories.isNotEmpty ? completedMemories.first : null;
+    final latestMemoryTitle = latestMemory?.title;
+    final latestMemoryDate = latestMemory?.completedAt != null
+        ? DateFormat('MMMM d').format(latestMemory!.completedAt!)
+        : null;
+
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 40),
+      padding: const EdgeInsets.only(top: 14, bottom: 48),
       children: [
-        _buildHeader(state),
-        if (_incomingInvitations.isNotEmpty) _buildPendingRequestsBanner(),
-        _buildRelationshipStatusCard(state),
+        // 01 — PARTNER SPACE (Unboxed Editorial Header)
+        SharedSanctuaryHeader(
+          hasConnection: hasConnection,
+          partnerName: partnerName,
+          durationText: durationText,
+          isPrivateSpaceActive: state.argumentModeActive,
+          onInvite: _showPartnerConnectionsModal,
+          onManageConnection: () => _showManageConnectionSheet(state),
+          onOpenMessenger: hasConnection ? () => _openPartnerTab(2) : null,
+        ),
+        const SizedBox(height: 20),
 
-        // The "TOGETHER" grid -- Empathy Bloom, Time Capsules, Memory
-        // Sanctuary, Docsy, Message and Send a gift -- was removed on
-        // request. Every one of those is still reachable from the tabs it
-        // linked to; only the shortcut grid is gone.
+        if (_incomingInvitations.isNotEmpty) ...[
+          _buildPendingRequestsBanner(),
+          const SizedBox(height: 20),
+        ],
 
-        // The quick actions now sit under the Your Timeline heading, with the
-        // entries they open -- they were floating between the portal card and
-        // that heading, belonging to neither.
-        _buildRelationshipTimeline(state),
-        const SizedBox(height: 24),
-        _buildRecentMomentsCarousel(state),
+        if (hasConnection) ...[
+          // 02 — TODAY, TOGETHER (Dynamic Signal Rail)
+          if (signals.isNotEmpty) ...[
+            TodayTogetherSignalRail(signals: signals),
+            const SizedBox(height: 24),
+          ],
+
+          // 03 — RIGHT NOW (Primary Real-Time Relationship Experience)
+          // Suppressed when rightNow is a message event to avoid duplicate messaging cards
+          if (rightNow.type != RightNowEventType.message) ...[
+            RightNowCard(
+              type: rightNow.type,
+              partnerName: partnerName,
+              headline: rightNow.headline,
+              bodyText: rightNow.bodyText,
+              timeDisplay: rightNow.timeDisplay,
+              primaryCtaText: rightNow.primaryCtaText,
+              secondaryCtaText: rightNow.secondaryCtaText,
+              onPrimaryTap: rightNow.onPrimaryTap,
+              onSecondaryTap: rightNow.onSecondaryTap,
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // 03.5 — DIRECT MESSENGER (Spotlight Stealer — Instagram Direct & Notes style)
+          MessengerSpotlightCard(
+            partnerName: partnerName,
+            onOpenMessenger: () => _openPartnerTab(2),
+            unreadCount: rightNow.type == RightNowEventType.message ? 1 : 0,
+            latestSnippet: rightNow.type == RightNowEventType.message ? rightNow.bodyText : null,
+          ),
+          const SizedBox(height: 24),
+
+          // 04 — MAKE A LITTLE MOMENT (Tactile Surprises & Micro-Gestures)
+          MakeALittleMomentRail(
+            onSendBloom: () => _openPartnerTab(1),
+            onWriteLetter: () => _showWriteLetterModal(context),
+            onSendWarmGesture: () => showWarmGestureSheet(
+              context,
+              partnerName: partnerName,
+              onSendGesture: (msg) {
+                _sendDirectWhisper(msg);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Sent a warm gesture to $partnerName ☕❤️',
+                      style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w600),
+                    ),
+                    backgroundColor: kSanctuaryCharcoal,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                );
+              },
+            ),
+            onVoiceWhisper: () {
+              _openPartnerTab(2);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Tap the voice whisper icon to record audio for $partnerName 🎙️',
+                    style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w600),
+                  ),
+                  backgroundColor: kSanctuaryCharcoal,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              );
+            },
+            onShareVibe: () => showVibePulseSheet(
+              context,
+              partnerName: partnerName,
+              onSendVibe: (msg) {
+                _sendDirectWhisper(msg);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Shared your vibe with $partnerName ✨❤️',
+                      style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w600),
+                    ),
+                    backgroundColor: kSanctuaryCharcoal,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                );
+              },
+            ),
+            onLeaveMessage: () => _openPartnerTab(2),
+            bloomsCount: bloomsCount,
+            lettersCount: lettersCount,
+            sealedLettersCount: sealedLettersCount,
+          ),
+          const SizedBox(height: 28),
+
+          // 05 — PLAY & PLAN TOGETHER (Couple Experiences Hub: Games, Date Planner, Drawing Canvas)
+          CoupleExperiencesHubCard(
+            partnerName: partnerName,
+            onOpenGames: () => showCoupleGamesSheet(
+              context,
+              partnerName: partnerName,
+              onSendGameQuestion: (msg) => _sendDirectWhisper(msg),
+            ),
+            onOpenDatePlanner: () => showDatePlannerSheet(
+              context,
+              partnerName: partnerName,
+              onSendInvite: (msg) => _sendDirectWhisper(msg),
+              onAskDocsy: (prompt) => openDocsyWith(
+                context,
+                prompt.isNotEmpty ? prompt : _getDocsyPrompt(state, partnerName),
+              ),
+            ),
+            onOpenSharedCanvas: () => showSharedCanvasSheet(
+              context,
+              partnerName: partnerName,
+              onSendDrawing: (msg) => _sendDirectWhisper(msg),
+            ),
+            onViewAllActivities: () => _openPartnerTab(3),
+          ),
+          const SizedBox(height: 28),
+
+          // 06 — YOUR STORY (Living Memory Archive)
+          YourStoryCard(
+            memoryCount: memoryCount,
+            latestMemoryTitle: latestMemoryTitle,
+            latestMemoryDate: latestMemoryDate,
+            onOpenMemoryBook: () => _openPartnerTab(5),
+            onStartMemory: () => _openPartnerTab(3),
+          ),
+          const SizedBox(height: 28),
+
+          // 07 — MANAGE CONNECTION (Subtle Sanctuary Settings)
+          ManageConnectionFooter(
+            onTap: () => _showManageConnectionSheet(state),
+          ),
+        ] else ...[
+          // UNPAIRED ASPIRATIONAL PREVIEW
+          UnpairedAspirationalExperience(
+            onInvite: _showPartnerConnectionsModal,
+          ),
+        ],
       ],
     );
+  }
+
+  List<SignalBadgeSpec> _buildSanctuarySignals(BlushyOSState state, Map<String, dynamic>? primaryPartner) {
+    if (primaryPartner == null) return [];
+    final perms = primaryPartner['permissions'] is Map
+        ? Map<String, dynamic>.from(primaryPartner['permissions'] as Map)
+        : <String, dynamic>{};
+    final pc = state.personalContext;
+    final wb = state.wellbeingState;
+    final checkinData = BlushyStorage.read('daily_checkin.json');
+
+    final List<SignalBadgeSpec> signals = [];
+
+    // 1. Cycle signal (only if shareCycle is permitted and valid cycle data exists)
+    if (perms['shareCycle'] == true) {
+      final DateTime? pStart = pc.lastPeriodStart;
+      final int? cDay = (pStart != null)
+          ? (DateTime.now().difference(pStart).inDays + 1)
+          : pc.cycleDay;
+      if (cDay != null && cDay > 0 && cDay < 120) {
+        signals.add(SignalBadgeSpec(
+          icon: Icons.water_drop_rounded,
+          colour: kCobalt,
+          tint: kCobaltTint,
+          label: 'CYCLE',
+          value: 'Day $cDay',
+          onTap: _openSharingPanel,
+        ));
+      }
+    }
+
+    // 2. Energy signal (only if logged and shareSleep/energy is permitted)
+    final String? energyVal = checkinData['energy'] ?? (wb.energy != null ? (wb.energy! >= 7 ? 'High' : (wb.energy! >= 4 ? 'Medium' : 'Low')) : null);
+    if (perms['shareSleep'] == true && energyVal != null && energyVal.isNotEmpty) {
+      signals.add(SignalBadgeSpec(
+        icon: Icons.bolt_rounded,
+        colour: kAmber,
+        tint: kAmberTint,
+        label: 'ENERGY',
+        value: energyVal,
+        onTap: _openSharingPanel,
+      ));
+    }
+
+    // 3. Mood signal (only if permitted and actually logged)
+    final String? moodVal = checkinData['mood'] ?? wb.mood;
+    if (perms['shareMood'] == true && moodVal != null && moodVal.isNotEmpty) {
+      signals.add(SignalBadgeSpec(
+        icon: Icons.favorite_rounded,
+        colour: kMagenta,
+        tint: kMagentaTint,
+        label: 'MOOD',
+        value: moodVal.substring(0, 1).toUpperCase() + moodVal.substring(1).toLowerCase(),
+        onTap: _openSharingPanel,
+      ));
+    }
+
+    return signals;
+  }
+
+  ({
+    RightNowEventType type,
+    String? headline,
+    String? bodyText,
+    String? timeDisplay,
+    String? primaryCtaText,
+    String? secondaryCtaText,
+    VoidCallback? onPrimaryTap,
+    VoidCallback? onSecondaryTap,
+  }) _getRightNowEvent(String partnerName) {
+    // 1. Check for real incoming message from partner that has NOT been replied to
+    final regularMsgs = _chatMessages.where((m) =>
+        m['sender'] != 'Docsy' &&
+        m['isCard'] != true &&
+        m['text'] != null &&
+        !m['text'].toString().startsWith('[LETTER_JSON]:') &&
+        !m['text'].toString().startsWith('[BOUQUET_JSON]:') &&
+        m['text'].toString().trim().isNotEmpty).toList();
+
+    final hasUnrepliedPartnerMsg = regularMsgs.isNotEmpty &&
+        regularMsgs.last['isMe'] != true &&
+        regularMsgs.last['sender'] != 'You';
+
+    if (hasUnrepliedPartnerMsg) {
+      final latest = regularMsgs.last;
+      final text = latest['text'].toString().trim();
+      final rawTime = (latest['timestamp'] ?? latest['created_at'])?.toString();
+      return (
+        type: RightNowEventType.message,
+        headline: 'A LITTLE MESSAGE FROM ${partnerName.toUpperCase()}',
+        bodyText: '“$text”',
+        timeDisplay: rawTime != null ? _formatElapsedTime(rawTime) : '',
+        primaryCtaText: 'Reply',
+        secondaryCtaText: null,
+        onPrimaryTap: () => _openPartnerTab(2),
+        onSecondaryTap: null,
+      );
+    }
+
+    // 1.5 If regular messages exist and user has replied (user sent the last message)
+    if (regularMsgs.isNotEmpty) {
+      final latest = regularMsgs.last;
+      final text = latest['text'].toString().trim();
+      final rawTime = (latest['timestamp'] ?? latest['created_at'])?.toString();
+      return (
+        type: RightNowEventType.followUp,
+        headline: 'WAITING FOR ${partnerName.toUpperCase()}\'S REPLY',
+        bodyText: 'You asked: “$text”',
+        timeDisplay: rawTime != null ? _formatElapsedTime(rawTime) : '',
+        primaryCtaText: 'Remind $partnerName',
+        secondaryCtaText: 'Open Messenger',
+        onPrimaryTap: () => showQuickFollowUpSheet(
+          context,
+          partnerName: partnerName,
+          lastMsg: text,
+          onSendNudge: (nudge) => _sendDirectWhisper(nudge),
+        ),
+        onSecondaryTap: () => _openPartnerTab(2),
+      );
+    }
+
+    // 2. Check for recent bloom from partner
+    final bloomMsgs = _chatMessages.where((m) =>
+        m['isMe'] != true &&
+        m['text'] != null &&
+        m['text'].toString().startsWith('[BOUQUET_JSON]:')).toList();
+    if (bloomMsgs.isNotEmpty) {
+      final latest = bloomMsgs.last;
+      final rawTime = (latest['timestamp'] ?? latest['created_at'])?.toString();
+      return (
+        type: RightNowEventType.bloom,
+        headline: 'A LITTLE SOMETHING',
+        bodyText: '$partnerName sent you a Bloom',
+        timeDisplay: rawTime != null ? _formatElapsedTime(rawTime) : '',
+        primaryCtaText: 'Open Bloom',
+        secondaryCtaText: 'Save to Memories',
+        onPrimaryTap: () => _openPartnerTab(1),
+        onSecondaryTap: () => _openPartnerTab(5),
+      );
+    }
+
+    // 3. Check for waiting sealed letter
+    final letters = _getLettersList();
+    final sealed = letters.where((l) => l['isFromMe'] != true && l['sealed'] == true).toList();
+    if (sealed.isNotEmpty) {
+      return (
+        type: RightNowEventType.letter,
+        headline: 'SOMETHING WAITING FOR YOU',
+        bodyText: 'A sealed letter from $partnerName',
+        timeDisplay: null,
+        primaryCtaText: 'Open when you\'re ready',
+        secondaryCtaText: null,
+        onPrimaryTap: () => _showReadLetterModal(context, sealed.first),
+        onSecondaryTap: null,
+      );
+    }
+
+    // 4. Intentional low-data state (Memory card fallback removed per user request)
+    return (
+      type: RightNowEventType.lowData,
+      headline: 'RIGHT NOW',
+      bodyText: null,
+      timeDisplay: null,
+      primaryCtaText: 'Send something',
+      secondaryCtaText: null,
+      onPrimaryTap: () => _openPartnerTab(2),
+      onSecondaryTap: null,
+    );
+  }
+
+  String _formatElapsedTime(String raw) {
+    final dt = DateTime.tryParse(raw);
+    if (dt == null) return '';
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return '${diff.inHours} hr ago';
+    return DateFormat('MMM d').format(dt);
+  }
+
+  String _getDocsyPrompt(BlushyOSState state, String partnerName) {
+    if (state.argumentModeActive) {
+      return '“Need help reconnecting with $partnerName delicately?”';
+    }
+
+    final regularMsgs = _chatMessages.where((m) =>
+        m['sender'] != 'Docsy' &&
+        m['isCard'] != true &&
+        m['text'] != null &&
+        !m['text'].toString().startsWith('[LETTER_JSON]:') &&
+        !m['text'].toString().startsWith('[BOUQUET_JSON]:') &&
+        m['text'].toString().trim().isNotEmpty).toList();
+
+    if (regularMsgs.isNotEmpty) {
+      final latest = regularMsgs.last;
+      final text = latest['text'].toString().trim();
+      final isFromMe = latest['isMe'] == true || latest['sender'] == 'You';
+
+      if (isFromMe) {
+        if (RegExp(r'\b(ss|screenshot|photo|pic|snap|bhej)\b', caseSensitive: false).hasMatch(text)) {
+          return '“Docsy: How should I remind $partnerName to send that screenshot?”';
+        }
+        return '“Docsy: What\'s a fun, sweet follow-up for $partnerName while I wait?”';
+      } else {
+        return '“Docsy: Help me craft a thoughtful, witty reply to $partnerName.”';
+      }
+    }
+
+    final hour = DateTime.now().hour;
+    if (hour >= 18) {
+      return '“Docsy: Plan a cozy romantic dinner or evening outing for us tonight.”';
+    }
+    if (hour < 12) {
+      return '“Docsy: Suggest a sweet morning thought or coffee idea for $partnerName.”';
+    }
+    return '“Docsy: What\'s an exciting date idea or surprise I can plan for $partnerName?”';
   }
 
   Widget _buildPendingRequestsBanner() {
@@ -1340,17 +1579,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         final invId = (inv['invitationId'] ?? inv['_id'] ?? '').toString();
         final senderEmail = inv['senderEmail'] as String? ?? inv['senderUserId'] as String? ?? 'Your Partner';
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [BlushyColors.lutealSoft, BlushyColors.lutealSoft],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: kSanctuaryCard,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: BlushyColors.secondary, width: 1.2),
-
+            border: Border.all(color: kSanctuaryBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1359,11 +1593,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: BlushyColors.primary.withValues(alpha: 0.12),
+                    decoration: const BoxDecoration(
+                      color: kCrimsonTint,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.favorite_rounded, color: BlushyColors.primary, size: 18),
+                    child: const Icon(Icons.favorite_rounded, color: kSanctuaryCrimson, size: 16),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -1371,40 +1605,24 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Incoming Partner Request',
-                          style: GoogleFonts.manrope(height: 1.5, 
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.primary,
-                            letterSpacing: 0.5,
+                          'INCOMING PARTNER REQUEST',
+                          style: GoogleFonts.manrope(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: kSanctuaryCrimson,
+                            letterSpacing: 1.0,
                           ),
                         ),
                         Text(
                           senderEmail,
-                          style: GoogleFonts.manrope(height: 1.5, 
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: BlushyColors.text,
+                          style: GoogleFonts.cormorantGaramond(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: kSanctuaryCharcoal,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: BlushyColors.surface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: BlushyColors.secondary),
-                    ),
-                    child: Text(
-                      'Live Pending',
-                      style: GoogleFonts.manrope(height: 1.5, 
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.bold,
-                        color: BlushyColors.primary,
-                      ),
                     ),
                   ),
                 ],
@@ -1412,7 +1630,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const SizedBox(height: 10),
               Text(
                 'Accept to connect your spaces and begin sharing cycles, insights, and live couple chat.',
-                style: GoogleFonts.manrope(height: 1.5, fontSize: 11.5, color: BlushyColors.secondaryText),
+                style: GoogleFonts.manrope(fontSize: 12, color: kSanctuaryMuted, height: 1.4),
               ),
               const SizedBox(height: 14),
               Row(
@@ -1420,10 +1638,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 children: [
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: BlushyColors.secondaryText,
-                      side: const BorderSide(color: BlushyColors.border),
+                      foregroundColor: kSanctuaryMuted,
+                      side: const BorderSide(color: kSanctuaryBorder),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: () async {
                       final ok = await _partnerService.respondToInvitation(invId, 'reject');
@@ -1431,16 +1649,19 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         await _fetchPartnerData();
                       }
                     },
-                    child: Text(AppLocalizations.of(context).partnerDecline, style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.w600)),
+                    child: Text(
+                      AppLocalizations.of(context).partnerDecline,
+                      style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary,
+                      backgroundColor: kSanctuaryCrimson,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 1,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
                     ),
                     onPressed: () async {
                       final ok = await _partnerService.respondToInvitation(invId, 'accept');
@@ -1450,14 +1671,17 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Connected! Your Partner Space is now live 🎉'),
-                              backgroundColor: BlushyColors.success,
+                              backgroundColor: Color(0xFF0D9488),
                             ),
                           );
                         }
                       }
                     },
                     icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
-                    label: Text('Accept Request', style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold)),
+                    label: Text(
+                      'Accept Request',
+                      style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
@@ -1465,67 +1689,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           ),
         );
       }).toList(),
-    );
-  }
-
-  /// The portal card before there is a partner: the mark, the name, the one
-  /// line about what to do, and the action across the full width.
-  Widget _buildUnpairedPortalHeader(String subtitle) {
-    return Column(
-      // Stretch so the button runs the width of the card.
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Center(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: BlushyColors.primary.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.favorite_rounded,
-              color: BlushyColors.primary,
-              size: 28,
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          'Partner Portal',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.manrope(height: 1.5, 
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: BlushyColors.text,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          subtitle,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.manrope(height: 1.5, 
-            fontSize: 12,
-            color: BlushyColors.secondaryText,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 18),
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: BlushyColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            elevation: 0,
-          ),
-          onPressed: _showPartnerConnectionsModal,
-          icon: const Icon(Icons.person_add_rounded, size: 18, color: Colors.white),
-          label: Text(
-            AppLocalizations.of(context).pConnect,
-            style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ],
     );
   }
 
@@ -1550,6 +1713,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       return;
     }
     setState(() => _selectedTabIndex = index);
+    if (index == 2) {
+      _scrollToBottomMessenger();
+    }
   }
 
   /// Explains a closed shared space, and offers the one thing that opens it.
@@ -1723,6 +1889,17 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
     if (confirm != true) return;
 
+    try {
+      UserStateStore.write('partner_connections_cache', {
+        'connections': <Map<String, dynamic>>[],
+        'incoming': <Map<String, dynamic>>[],
+        'outgoing': <Map<String, dynamic>>[],
+      });
+    } catch (_) {}
+    setState(() {
+      _connections = [];
+    });
+
     final status = await _partnerService.breakupConnection(connectionId);
     if (!mounted) return;
 
@@ -1742,429 +1919,463 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     );
   }
 
-  Widget _buildRelationshipStatusCard(BlushyOSState state) {
-    final active = state.argumentModeActive;
-
-    // ============================================================================
-    // 🔒 [PRODUCTION MODE: STRICT SEPARATE ACCOUNTS - ACTIVE]
-    // Strictly enforces 1-to-1 account invite, token handshake, and connection verification.
-    // ============================================================================
-    final pc = state.personalContext;
-    final wb = state.wellbeingState;
-
-    final checkinData = BlushyStorage.read('daily_checkin.json');
-    final String currentEnergy = checkinData['energy'] ?? (wb.energy != null ? (wb.energy! >= 7 ? 'High' : (wb.energy! >= 4 ? 'Medium' : 'Low')) : 'Medium');
-
-    final DateTime? pStart = pc.lastPeriodStart;
-    final int cycleDay = (pStart != null)
-        ? (DateTime.now().difference(pStart).inDays + 1)
-        : (pc.cycleDay ?? 1);
-
+  void _showManageConnectionSheet(BlushyOSState state) {
     final hasConnection = _connections.isNotEmpty;
     final primaryPartner = hasConnection ? _connections.first : null;
-    final partnerNameOrEmail = primaryPartner != null
-        ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner))
-        : 'No Partner Connected';
+    final partnerName = primaryPartner != null
+        ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner), fallback: 'Your Partner')
+        : 'Your Partner';
+    final durationText = primaryPartner != null
+        ? formatConnectionDuration(primaryPartner['created_at'] ?? primaryPartner['createdAt'])
+        : '';
+    final isPrivateSpaceActive = state.argumentModeActive;
 
-    final currentRole = AuthStorage.getRole() ?? state.selectedRole;
-    final bool isUserWoman = (currentRole != 'partner' && currentRole != 'man');
-
-    final String statusSubtitle = hasConnection
-        ? (isUserWoman
-            ? 'Live Sync • Shared Connection • $currentEnergy Energy'
-            : 'Live Sync • Day $cycleDay of Cycle • $currentEnergy Energy')
-        : 'Send an invite to begin sharing';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: BlushyColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: BlushyColors.border),
-
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Unpaired, the card has one thing to say and one thing to do, so it
-          // says it down the middle instead of squeezing a subtitle and a
-          // button either side of the icon.
-          if (!hasConnection)
-            _buildUnpairedPortalHeader(statusSubtitle)
-          // Identity first, with the whole width to say it in. The name and
-          // the status line used to share this row with two buttons, leaving
-          // them about 90px: the name truncated to "code..." and the status
-          // wrapped onto four lines.
-          else ...[
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: BlushyColors.primary.withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.favorite_rounded,
-                    color: BlushyColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "$partnerNameOrEmail's Portal",
-                        style: GoogleFonts.manrope(
-                          height: 1.3,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: BlushyColors.text,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        statusSubtitle,
-                        style: GoogleFonts.manrope(
-                          height: 1.3,
-                          fontSize: 11,
-                          color: BlushyColors.secondaryText,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // The three things you do here, one row, equal shares.
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BlushyColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _selectedTabIndex = 2; // Messenger tab
-                      });
-                    },
-                    icon: const Icon(Icons.chat_bubble_rounded,
-                        size: 14, color: Colors.white),
-                    label: Text(
-                      'Open Chat',
-                      style: GoogleFonts.manrope(
-                          height: 1.2, fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: BlushyColors.success,
-                      side: const BorderSide(color: BlushyColors.successSoft),
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () => _showHelpOptionsDialog(context),
-                    child: Text(
-                      AppLocalizations.of(context).pTips,
-                      style: GoogleFonts.manrope(
-                          height: 1.2, fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: BlushyColors.primary,
-                      side: const BorderSide(color: BlushyColors.border),
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: _showPartnerConnectionsModal,
-                    child: Text(
-                      'Manage',
-                      style: GoogleFonts.manrope(
-                          height: 1.2, fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            // Ending the connection gets its own full-width row, above
-            // Argument Mode. It was a third link crowded onto the toggle row,
-            // where the most consequential control on the card read as the
-            // least important one.
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: primaryPartner == null
-                    ? null
-                    : () => _disconnectPartner(
-                          Map<String, dynamic>.from(primaryPartner),
-                        ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: BlushyColors.danger,
-                  side: BorderSide(
-                      color: BlushyColors.danger.withValues(alpha: 0.35)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text(
-                  AppLocalizations.of(context).partnerDisconnect,
-                  style: GoogleFonts.manrope(
-                    height: 1.2,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: kSanctuaryCanvas,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          const Divider(color: BlushyColors.border),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    active ? Icons.circle : Icons.circle_outlined,
-                    size: 10,
-                    color: active ? BlushyColors.success : BlushyColors.secondaryText,
-                  ),
-                  const SizedBox(width: 8),
-                  // Not Expanded: the enclosing Row is itself inside a Row
-                  // with unbounded width, where a flex child has nothing to
-                  // expand into and the layout throws.
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 14,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                        Text(
-                          // "Argument Mode" made wanting privacy sound like a
-                          // fight, and asked her to declare one to get it.
-                          active ? "Private space active" : "Private space",
-                          style: GoogleFonts.manrope(
-                            height: 1.4,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: active ? BlushyColors.primary : BlushyColors.text,
+                      // Top Drag Pill
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: kSanctuaryBorder,
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        if (active)
-                          Text(
-                            _privateSpaceRemaining(),
-                            style: GoogleFonts.manrope(
-                              fontSize: 10.5,
-                              color: BlushyColors.secondaryText,
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Eyebrow
+                      Text(
+                        'MANAGE YOUR CONNECTION',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: kSanctuaryCrimson,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Heading
+                      Text(
+                        'Partner Settings',
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: kSanctuaryCharcoal,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 1. Connection Section Card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: kSanctuaryCard,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: kSanctuaryBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                color: kCrimsonTint,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.favorite_rounded, color: kSanctuaryCrimson, size: 20),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    partnerName,
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: kSanctuaryCharcoal,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    hasConnection
+                                        ? (durationText.isNotEmpty ? '$durationText · Synced' : 'Connected · Synced')
+                                        : 'Not connected',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: kSanctuaryMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(sheetCtx);
+                                _showPartnerConnectionsModal();
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'Manage',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: kSanctuaryCrimson,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 1.5. Active Status & Read Receipts Settings Card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: kSanctuaryCard,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: kSanctuaryBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: const BoxDecoration(
+                                    color: kEmeraldTint,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: Icon(Icons.mark_chat_read_outlined, color: kEmerald, size: 20),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Active Status & Read Receipts',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: kSanctuaryCharcoal,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Control presence indicators and message read confirmations.',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w400,
+                                          color: kSanctuaryMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Divider(color: kSanctuaryDivider, height: 1),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Show Active Status',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: kSanctuaryCharcoal,
+                                  ),
+                                ),
+                                Switch.adaptive(
+                                  value: _showActiveStatus,
+                                  activeTrackColor: kEmerald,
+                                  onChanged: (val) {
+                                    setState(() => _showActiveStatus = val);
+                                    setSheetState(() {});
+                                    try {
+                                      BlushyStorage.write('partner_show_active_status', {'enabled': val});
+                                    } catch (_) {}
+                                  },
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Read Receipts',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: kSanctuaryCharcoal,
+                                  ),
+                                ),
+                                Switch.adaptive(
+                                  value: _showReadReceipts,
+                                  activeTrackColor: kEmerald,
+                                  onChanged: (val) {
+                                    setState(() => _showReadReceipts = val);
+                                    setSheetState(() {});
+                                    try {
+                                      BlushyStorage.write('partner_read_receipts', {'enabled': val});
+                                    } catch (_) {}
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 2. Privacy & Sharing Card
+                      InkWell(
+                        onTap: () {
+                          Navigator.pop(sheetCtx);
+                          _openSharingPanel();
+                        },
+                        borderRadius: BorderRadius.circular(18),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: kSanctuaryCard,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: kSanctuaryBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: const BoxDecoration(
+                                  color: kPurpleTint,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(
+                                  child: Icon(Icons.shield_outlined, color: kPurple, size: 20),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Privacy & Sharing',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: kSanctuaryCharcoal,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Choose what your partner can see. Nothing is shared without your consent.',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w400,
+                                        color: kSanctuaryMuted,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: kSanctuaryMuted),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 3. Private Space Card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: kSanctuaryCard,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: kSanctuaryBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: const BoxDecoration(
+                                    color: kPurpleTint,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: Icon(Icons.nightlight_round, color: kPurple, size: 18),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isPrivateSpaceActive
+                                            ? '◐ Private Space Active'
+                                            : 'Private Space',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: isPrivateSpaceActive ? kPurple : kSanctuaryCharcoal,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        isPrivateSpaceActive
+                                            ? 'Your personal updates aren\'t being shared right now (${_privateSpaceRemaining()}).'
+                                            : 'Pause personal insights anytime. Shared memories remain.',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w400,
+                                          color: kSanctuaryMuted,
+                                          height: 1.35,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: isPrivateSpaceActive
+                                  ? ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pop(sheetCtx);
+                                        _resumeSharing(state);
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: kSanctuaryCrimson,
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        padding: const EdgeInsets.symmetric(vertical: 11),
+                                      ),
+                                      child: Text(
+                                        'Resume Sharing',
+                                        style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700),
+                                      ),
+                                    )
+                                  : OutlinedButton(
+                                      onPressed: hasConnection
+                                          ? () {
+                                              Navigator.pop(sheetCtx);
+                                              _takeSomeSpace(state);
+                                            }
+                                          : null,
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: kSanctuaryCharcoal,
+                                        side: const BorderSide(color: kSanctuaryBorder),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        padding: const EdgeInsets.symmetric(vertical: 11),
+                                      ),
+                                      child: Text(
+                                        'Take Some Space',
+                                        style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700),
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 4. Separated Destructive Disconnect Section
+                      if (hasConnection && primaryPartner != null) ...[
+                        const Divider(color: kSanctuaryDivider),
+                        const SizedBox(height: 12),
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () {
+                              Navigator.pop(sheetCtx);
+                              _disconnectPartner(Map<String, dynamic>.from(primaryPartner));
+                            },
+                            icon: const Icon(Icons.link_off_rounded, size: 16, color: kSanctuaryCrimson),
+                            label: Text(
+                              'Disconnect Partner',
+                              style: GoogleFonts.manrope(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: kSanctuaryCrimson,
+                              ),
                             ),
                           ),
+                        ),
+                        Center(
+                          child: Text(
+                            'Requires confirmation. Stops all sharing and unpairs this space.',
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              color: kSanctuaryMuted,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                ],
-              ),
-              Row(
-                children: [
-                  // Manage and Disconnect moved to their own rows above;
-                  // what is left beside the label is the toggle it names.
-                  // It pauses what a partner sees, so with nobody connected
-                  // there is nothing for it to pause.
-                  Opacity(
-                    opacity: _hasPartner ? 1 : 0.55,
-                    child: GestureDetector(
-                      onTap: () {
-                        if (!_hasPartner) {
-                          _showConnectFirstDialog();
-                          return;
-                        }
-                        if (!active) {
-                          _takeSomeSpace(state);
-                        } else {
-                          _resumeSharing(state);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: active ? BlushyColors.lutealSoft : BlushyColors.background,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: active ? BlushyColors.secondary : BlushyColors.border),
-                        ),
-                        child: Text(
-                          active ? "ON" : "OFF",
-                          style: GoogleFonts.manrope(height: 1.5, 
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            color: active ? BlushyColors.success : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Pauses what your partner can see. Your mood, cycle and wellbeing '
-            'updates stop reaching them until you switch it off. Shared '
-            'activities and milestones keep working, and nothing already '
-            'shared is deleted.',
-            style: GoogleFonts.manrope(
-              fontSize: 10,
-              height: 1.45,
-              color: BlushyColors.secondaryText,
-            ),
-          ),
-          if (active) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: BlushyColors.background,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: BlushyColors.secondary),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.lock_person_rounded, size: 14, color: BlushyColors.danger),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Argument Mode is ON. Your partner won't receive any new personal insights until you turn it off.",
-                      style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.danger, height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (!isUserWoman) ...[
-            const SizedBox(height: 10),
-            const Divider(color: BlushyColors.border),
-            const SizedBox(height: 10),
-            // Her Message Decoder Option (Only for Male Partner - Default OFF)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      _isMessageDecoderActive ? Icons.circle : Icons.circle_outlined,
-                      size: 10,
-                      color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Her Message Decoder",
-                      style: GoogleFonts.manrope(height: 1.5, 
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.text,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: _toggleMessageDecoder,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _isMessageDecoderActive ? BlushyColors.lutealSoft : BlushyColors.background,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _isMessageDecoderActive ? BlushyColors.accent : BlushyColors.border,
-                          ),
-                        ),
-                        child: Text(
-                          _isMessageDecoderActive ? "ON" : "OFF",
-                          style: GoogleFonts.manrope(height: 1.5, 
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            if (_isMessageDecoderActive) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: BlushyColors.background,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: BlushyColors.lutealSoft),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.auto_awesome_rounded, size: 14, color: BlushyColors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "Decoder is ON. Docsy will translate what she is coming to tell based on her live cycle phase, mood, and sleep levels in Messenger.",
-                        style: GoogleFonts.manrope(fontSize: 10, color: BlushyColors.primary, height: 1.4),
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ],
-          ],
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
   /// Opens the server-enforced sharing panel for the active connection.
   ///
-  /// Only the person whose data is shared can open it; the server returns 403
-  /// to the other side, so the partner is told that rather than shown an empty
-  /// screen they cannot act on.
-  /// True for the partner supporting someone, false for the person whose data
-  /// is shared.
-  ///
-  /// Relationship advice is built for the supporting side: it explains what she
-  /// is telling him, grounded in what she chose to share. Asked from her side
-  /// there is nothing to ground it in -- the partner shell has no Docsy and no
-  /// M Studio, so he logs nothing -- and the server refuses it outright.
-  bool get _isSupportingPartner {
-    final active = _connections.firstWhere(
-      (c) => c['status'] == 'active',
-      orElse: () => <String, dynamic>{},
-    );
-    if (active.isEmpty) return false;
-    return active['canManagePermissions'] != true;
-  }
-
   void _openSharingPanel() {
     final connectionId = _activeConnectionId;
     if (connectionId == null) {
@@ -2773,7 +2984,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         if (res.containsKey('error')) {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(res['error'] as String)),
+                              SnackBar(
+                                content: Text(res['error'] as String),
+                                backgroundColor: BlushyColors.primary,
+                              ),
                             );
                           }
                         } else {
@@ -2781,15 +2995,31 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           await _fetchPartnerData();
                           setModalState(() {});
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Partner invitation sent successfully! 💌')),
+                            final messenger = ScaffoldMessenger.of(context);
+                            final inviteUrl = res['inviteUrl'] as String?;
+                            if (inviteUrl != null && inviteUrl.isNotEmpty) {
+                              await Clipboard.setData(ClipboardData(text: inviteUrl));
+                            }
+                            final msg = res['message']?.toString() ?? 'Partner invitation sent successfully! 💌';
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(inviteUrl != null ? '$msg (Invite link copied!)' : msg),
+                                backgroundColor: BlushyColors.success,
+                                duration: const Duration(seconds: 4),
+                              ),
                             );
+                            if (mounted && inviteUrl != null && inviteUrl.isNotEmpty) {
+                              _showInviteLinkSheet(inviteUrl, res['inviteCode']?.toString());
+                            }
                           }
                         }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to send invitation: $e')),
+                            SnackBar(
+                              content: Text('Failed to send invitation: $e'),
+                              backgroundColor: BlushyColors.primary,
+                            ),
                           );
                         }
                       } finally {
@@ -3091,290 +3321,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     );
   }
 
-  Widget _buildRelationshipTimeline(BlushyOSState state) {
-
-    final activeConn = _connections.firstWhere(
-      (c) => c['status'] == 'active',
-      orElse: () => <String, dynamic>{},
-    );
-    final hasActivePartner = activeConn.isNotEmpty;
-    final partnerIdentifier = partnerDisplayName(activeConn);
-    final connectionDuration = formatConnectionDuration(activeConn['created_at'] ?? activeConn['createdAt']);
-
-    // One list, one card shape. The shared actions used to be a scrolling row
-    // of chips above this, which meant two visual languages for the same set
-    // of destinations -- and "Shared Activity" and the letters appeared in
-    // both.
-    final dynamicTimelineEvents = <Map<String, dynamic>>[
-      if (hasActivePartner)
-        {
-          'title': 'Partner Connected',
-          'time': 'Connected with $partnerIdentifier • $connectionDuration',
-          'icon': Icons.favorite_rounded,
-          'color': BlushyColors.lutealSoft,
-          'enabled': true,
-          'onTap': () => setState(() => _selectedTabIndex = 2), // Messenger
-        }
-      else
-        {
-          'title': 'Invite Your Partner',
-          'time': 'Link accounts to unlock live cycle sharing and messaging',
-          'icon': Icons.person_add_rounded,
-          'color': BlushyColors.lutealSoft,
-          'enabled': true,
-          'onTap': () => _showPartnerConnectionsModal(),
-        },
-      // Reachable only while connected, which is when it matters. The sharing
-      // panel used to sit behind the "Invite Your Partner" tile, and that tile
-      // is replaced by "Partner Connected" the moment a connection exists -- so
-      // once you had someone to share with, there was no way to open it.
-      if (_activeConnectionId != null)
-        {
-          'title': 'Privacy & Sharing',
-          'time': 'Choose what your partner can see. Nothing is shared until you say so.',
-          'icon': Icons.shield_outlined,
-          'color': BlushyColors.lutealSoft,
-          'enabled': true,
-          'onTap': () => _openSharingPanel(),
-        },
-      {
-        'title': 'Bouquet',
-        'time': 'Send a postcard and a flower bloom',
-        'icon': Icons.local_florist_rounded,
-        'color': BlushyColors.lutealSoft,
-        'enabled': _hasPartner,
-        'onTap': () => _openPartnerTab(1),
-      },
-      {
-        'title': 'Message',
-        'time': 'Chat privately with your partner',
-        'icon': Icons.chat_bubble_outline_rounded,
-        'color': BlushyColors.lutealSoft,
-        'enabled': _hasPartner,
-        'onTap': () => _openPartnerTab(2),
-      },
-      {
-        'title': 'Shared Activity',
-        'time': 'Gratitude Checklist & Couple Challenges',
-        'icon': Icons.task_alt_rounded,
-        'color': BlushyColors.successSoft,
-        'enabled': _hasPartner,
-        'onTap': () => _openPartnerTab(3),
-      },
-      {
-        'title': 'Time Capsule Letters',
-        'time': 'Sealed milestones and personal messages',
-        'icon': Icons.mail_outline_rounded,
-        'color': BlushyColors.background,
-        'enabled': _hasPartner,
-        'onTap': () => _openPartnerTab(4),
-      },
-      {
-        'title': 'Memory Book',
-        'time': 'The scrapbook the two of you keep',
-        'icon': Icons.photo_library_outlined,
-        'color': BlushyColors.successSoft,
-        'enabled': _hasPartner,
-        'onTap': () => _openPartnerTab(5),
-      },
-      if (_isSupportingPartner)
-        {
-          'title': 'Ask Relationship AI',
-          'time': 'Talk something through with Docsy',
-          'icon': Icons.psychology_alt_rounded,
-          'color': BlushyColors.lutealSoft,
-          'enabled': _hasPartner,
-          'onTap': () => _openPartnerTab(6),
-        },
-      {
-        'title': 'Surprise',
-        'time': 'Send a small gift, unannounced',
-        'icon': Icons.card_giftcard_rounded,
-        'color': BlushyColors.background,
-        'enabled': _hasPartner,
-        'onTap': () => _openPartnerTab(7),
-      },
-      {
-        'title': 'Garden Blossoming',
-        'time': _gardenLoading
-            ? 'Loading your garden...'
-            : (_flowersCount == 0 && _treesCount == 0
-                // An empty garden says so rather than implying a Season 1 that
-                // is already in bloom.
-                ? 'Nothing planted yet (Tap to tend)'
-                : '$_flowersCount flowers, $_treesCount trees together (Tap to tend)'),
-        'icon': Icons.local_florist_rounded,
-        'color': BlushyColors.successSoft,
-        'enabled': _hasPartner,
-        'onTap': () {
-          // The garden is shared, so growing one alone is the same empty room
-          // as the other shared spaces.
-          if (!_hasPartner) {
-            _showConnectFirstDialog();
-            return;
-          }
-          // Grown on the server, so the flower shows up for both of you.
-          unawaited(_growGarden(flowers: 1));
-        },
-      },
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...dynamicTimelineEvents.map((evt) {
-            final onTap = evt['onTap'] as VoidCallback?;
-            final enabled = evt['enabled'] as bool? ?? true;
-            // Faded and padlocked rather than merely padlocked, so a closed
-            // space reads as closed before you tap it.
-            return Opacity(
-              opacity: enabled ? 1 : 0.55,
-              child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: BlushyColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: BlushyColors.border),
-
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: evt['color'] as Color,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(evt['icon'] as IconData, size: 16, color: BlushyColors.primary),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            evt['title'] as String,
-                            style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            evt['time'] as String,
-                            style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.secondaryText),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      enabled
-                          ? Icons.chevron_right_rounded
-                          : Icons.lock_outline_rounded,
-                      size: 18,
-                      color: BlushyColors.secondaryText,
-                    ),
-                  ],
-                ),
-              ),
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentMomentsCarousel(BlushyOSState state) {
-    final moments = [
-      if (_isSupportingPartner)
-        {
-          'title': "Partner's Check-in",
-          'desc': 'Review latest mood & cycle rhythm',
-          'icon': Icons.sentiment_very_satisfied_rounded,
-          'tab': 6, // Relationship AI
-        },
-      {
-        'title': 'Letter From Partner',
-        'desc': 'Unseals on milestones • View letters',
-        'icon': Icons.mail_outline_rounded,
-        'tab': 4, // Letters
-      },
-      {
-        'title': 'Memory Added',
-        'desc': 'Couple Scrapbook & Memories',
-        'icon': Icons.photo_library_outlined,
-        'tab': 5, // Memory book
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 0),
-          child: Text(
-            'Recent Moments',
-            style: GoogleFonts.manrope(height: 1.5, 
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: BlushyColors.text,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 0),
-          child: Row(
-            children: moments.map((mom) {
-              final tabIndex = mom['tab'] as int;
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedTabIndex = tabIndex;
-                  });
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: 160,
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: BlushyColors.background,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: BlushyColors.border),
-
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(mom['icon'] as IconData, size: 20, color: BlushyColors.primary),
-                      const SizedBox(height: 14),
-                      Text(
-                        mom['title'] as String,
-                        style: GoogleFonts.manrope(height: 1.5, fontSize: 12, fontWeight: FontWeight.bold, color: BlushyColors.text),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        mom['desc'] as String,
-                        style: GoogleFonts.manrope(height: 1.5, fontSize: 10, color: BlushyColors.secondaryText),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
   // --- TAB 2: MESSENGER (INSTAGRAM-QUALITY REDESIGN) ---
   Widget _buildMessengerTab(BlushyOSState state) {
     final messages = state.argumentModeActive
@@ -3383,31 +3329,69 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
     final currentUserId = AuthStorage.getUserId();
     final currentRole = AuthStorage.getRole() ?? state.selectedRole;
+    final hasConnection = _connections.isNotEmpty;
+    final primaryPartner = hasConnection ? _connections.first : null;
+    final String partnerName = primaryPartner != null
+        ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner))
+        : (currentRole == 'partner' ? 'Her' : 'Partner');
+    final String partnerInitial = partnerName.trim().isNotEmpty
+        ? partnerName.trim()[0].toUpperCase()
+        : 'P';
 
     return Column(
       key: const ValueKey('messenger_tab'),
       children: [
-        // 1. Messenger Instagram-inspired Header Bar
+        // 1. Instagram-inspired Messenger Header Bar
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(bottom: BorderSide(color: BlushyColors.border)),
+            color: kSanctuaryCanvas,
           ),
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back_ios_rounded, color: BlushyColors.dark, size: 18),
+                icon: const Icon(Icons.arrow_back_ios_rounded, color: kSanctuaryDark, size: 18),
                 onPressed: () {
                   setState(() {
                     _selectedTabIndex = 0; // Back to Overview
                   });
                 },
               ),
-              CircleAvatar(
-                backgroundColor: BlushyColors.primary.withValues(alpha: 0.1),
-                radius: 18,
-                child: Text('💌', style: GoogleFonts.manrope(height: 1.5, fontSize: 16)),
+              Stack(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: kCobaltTint,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: kSanctuaryBorder),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      partnerInitial,
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: kCobalt,
+                      ),
+                    ),
+                  ),
+                  if (_showActiveStatus)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 11,
+                        height: 11,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -3415,52 +3399,66 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      currentRole == 'partner' ? 'Her Space' : 'Partner',
-                      style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.w700),
+                      partnerName,
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: kSanctuaryDark,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      AppLocalizations.of(context).pLiveSynchronized,
-                      style: GoogleFonts.manrope(height: 1.5, fontSize: 9, color: BlushyColors.success, fontWeight: FontWeight.w600),
-                    ),
+                    if (_showActiveStatus)
+                      Text(
+                        'Active now',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          color: const Color(0xFF0D9488),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    else
+                      Text(
+                        'Direct & Private',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          color: kSanctuarySubtext,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                   ],
                 ),
               ),
               GestureDetector(
                 onTap: _toggleMessageDecoder,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: _isMessageDecoderActive ? BlushyColors.lutealSoft : BlushyColors.background,
+                    color: _isMessageDecoderActive ? kCrimsonTint : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: _isMessageDecoderActive ? BlushyColors.accent : BlushyColors.border,
+                      color: _isMessageDecoderActive ? kSanctuaryCrimson : kSanctuaryBorder,
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 12,
-                        color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
+                      const DocsyIcon(
+                        size: 13,
+                        color: kSanctuaryCrimson,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         _isMessageDecoderActive ? 'Decoder ON' : 'Decoder OFF',
-                        style: GoogleFonts.manrope(height: 1.5, 
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: _isMessageDecoderActive ? BlushyColors.primary : BlushyColors.secondaryText,
+                        style: GoogleFonts.manrope(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _isMessageDecoderActive ? kSanctuaryCrimson : kSanctuarySubtext,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded, color: BlushyColors.secondaryText, size: 20),
-                onPressed: _syncLiveMessages,
               ),
             ],
           ),
@@ -3469,28 +3467,39 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         // 2. Chat history body
         Expanded(
           child: Container(
-            color: BlushyColors.background,
+            color: kSanctuaryCanvas,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: messages.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.chat_bubble_outline_rounded, size: 40, color: BlushyColors.secondaryText),
-                        const SizedBox(height: 10),
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: kCobaltTint,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: kSanctuaryBorder),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.chat_bubble_outline_rounded, size: 26, color: kCobalt),
+                        ),
+                        const SizedBox(height: 12),
                         Text(
                           AppLocalizations.of(context).partnerNoMessages,
-                          style: GoogleFonts.manrope(height: 1.5, fontSize: 13, color: BlushyColors.secondaryText, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.manrope(fontSize: 14, color: kSanctuaryDark, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           AppLocalizations.of(context).partnerSayHello,
-                          style: GoogleFonts.manrope(height: 1.5, fontSize: 11, color: BlushyColors.secondaryText),
+                          style: GoogleFonts.manrope(fontSize: 12, color: kSanctuarySubtext),
                         ),
                       ],
                     ),
                   )
                 : ListView.builder(
+                    controller: _messengerScrollController,
                     physics: const BouncingScrollPhysics(),
                     itemCount: messages.length,
                     itemBuilder: (context, idx) {
@@ -3526,67 +3535,84 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         // Composer dynamic helper triggers drawer
         if (_showComposerActionsMenu) _buildComposerActionsDrawer(),
 
-        // 3. Instagram-inspired Message Composer
+        // 3. Instagram DM / Docsy AI Uniform Pill Message Composer
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: BlushyColors.border)),
-          ),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showComposerActionsMenu = !_showComposerActionsMenu;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: BlushyColors.taupe,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.add_rounded, color: BlushyColors.dark, size: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          color: kSanctuaryCanvas,
+          child: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: kSanctuaryBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: BlushyColors.background,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: BlushyColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _msgController,
-                          style: GoogleFonts.manrope(height: 1.5, fontSize: 13),
-                          decoration: const InputDecoration(
-                            hintText: 'Talk to Partner...',
-                            border: InputBorder.none,
-                            isDense: true,
-                          ),
-                          onSubmitted: (_) => _sendTextMessage(),
-                        ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _showComposerActionsMenu = !_showComposerActionsMenu;
+                    });
+                  },
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: _showComposerActionsMenu ? kCrimsonTint : kSanctuaryCanvas,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _showComposerActionsMenu ? kSanctuaryCrimson : kSanctuaryBorder,
                       ),
-                    ],
+                    ),
+                    child: Icon(
+                      _showComposerActionsMenu ? Icons.close_rounded : Icons.add_rounded,
+                      color: _showComposerActionsMenu ? kSanctuaryCrimson : kSanctuaryDark,
+                      size: 20,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: _sendTextMessage,
-                child: const CircleAvatar(
-                  backgroundColor: BlushyColors.primary,
-                  radius: 18,
-                  child: Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _msgController,
+                    style: GoogleFonts.manrope(fontSize: 13.5, color: kSanctuaryDark),
+                    decoration: InputDecoration(
+                      hintText: 'Message $partnerName...',
+                      hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: kSanctuarySubtext),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    onSubmitted: (_) => _sendTextMessage(),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _sendTextMessage,
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
+                      color: kSanctuaryCrimson,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_upward_rounded,
+                      color: Colors.white,
+                      size: 19,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -3607,7 +3633,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome_rounded, color: BlushyColors.warning, size: 14),
+              const DocsyIcon(color: BlushyColors.primary, size: 14),
               const SizedBox(width: 8),
               Text(
                 msg['title'] ?? '',
@@ -3814,30 +3840,31 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                 decoration: isMe
-                    ? BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [BlushyColors.primary, BlushyColors.primary],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: const BorderRadius.only(
+                    ? const BoxDecoration(
+                        color: kSanctuaryCrimson,
+                        borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(18),
                           topRight: Radius.circular(4),
                           bottomLeft: Radius.circular(18),
                           bottomRight: Radius.circular(18),
                         ),
-
                       )
                     : BoxDecoration(
-                        color: BlushyColors.surface,
+                        color: Colors.white,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(4),
                           topRight: Radius.circular(18),
                           bottomLeft: Radius.circular(18),
                           bottomRight: Radius.circular(18),
                         ),
-                        border: Border.all(color: BlushyColors.border, width: 1.2),
-
+                        border: Border.all(color: kSanctuaryBorder, width: 1.0),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                 child: Column(
                   crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -3847,20 +3874,20 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.play_arrow_rounded, color: isMe ? Colors.white : BlushyColors.primary),
+                          Icon(Icons.play_arrow_rounded, color: isMe ? Colors.white : kSanctuaryCrimson),
                           const SizedBox(width: 6),
                           ...List.generate(12, (index) => Container(
                             margin: const EdgeInsets.symmetric(horizontal: 1.5),
                             width: 2,
                             height: 6.0 + math.Random().nextDouble() * 12.0,
-                            color: isMe ? Colors.white70 : BlushyColors.primary,
+                            color: isMe ? Colors.white70 : kSanctuaryCrimson,
                           )),
                           const SizedBox(width: 8),
                           Text(
                             msg['duration'] ?? '',
                             style: GoogleFonts.manrope(height: 1.5, 
                               fontSize: 10,
-                              color: isMe ? Colors.white70 : BlushyColors.secondaryText,
+                              color: isMe ? Colors.white70 : kSanctuarySubtext,
                             ),
                           ),
                         ],
@@ -3872,7 +3899,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           fontSize: 13.5,
                           height: 1.4,
                           fontWeight: FontWeight.w500,
-                          color: isMe ? Colors.white : BlushyColors.text,
+                          color: isMe ? Colors.white : kSanctuaryDark,
                         ),
                       ),
                     ],
@@ -3882,7 +3909,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         timeDisplay,
                         style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 9,
-                          color: isMe ? Colors.white.withValues(alpha: 0.75) : BlushyColors.secondaryText.withValues(alpha: 0.7),
+                          color: isMe ? Colors.white.withValues(alpha: 0.75) : kSanctuarySubtext,
                         ),
                       ),
                     ],
@@ -3899,9 +3926,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
-                        color: BlushyColors.lutealSoft,
+                        color: kCrimsonTint,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: BlushyColors.lutealSoft),
+                        border: Border.all(color: kSanctuaryBorder),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -3910,19 +3937,19 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             const SizedBox(
                               width: 10,
                               height: 10,
-                              child: CircularProgressIndicator(strokeWidth: 1.5, color: BlushyColors.primary),
+                              child: CircularProgressIndicator(strokeWidth: 1.5, color: kSanctuaryCrimson),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               AppLocalizations.of(context).partnerSiaDecoding,
-                              style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w600, color: BlushyColors.primary),
+                              style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w600, color: kSanctuaryCrimson),
                             ),
                           ] else ...[
-                            const Icon(Icons.auto_awesome_rounded, size: 12, color: BlushyColors.primary),
+                            const DocsyIcon(size: 13, color: kSanctuaryCrimson),
                             const SizedBox(width: 4),
                             Text(
-                              "✨ Decode with Docsy",
-                              style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary),
+                              "Decode with Docsy",
+                              style: GoogleFonts.manrope(height: 1.5, fontSize: 10, fontWeight: FontWeight.w700, color: kSanctuaryCrimson),
                             ),
                           ],
                         ],
@@ -3936,17 +3963,23 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.76),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: BlushyColors.background,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: BlushyColors.lutealSoft, width: 1.2),
-
+                    border: Border.all(color: kSanctuaryBorder, width: 1.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.auto_awesome_rounded, color: BlushyColors.primary, size: 14),
+                          const DocsyIcon(color: BlushyColors.primary, size: 14),
                           const SizedBox(width: 6),
                           Text(
                             "Docsy Decoded Meaning",
@@ -4080,12 +4113,17 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                 style: GoogleFonts.manrope(height: 1.5, fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              _buildOverlayActionItem('Rewrite Kindly', Icons.auto_awesome_rounded, () {
-                setState(() {
-                  _chatMessages[_selectedMessageIndexForActions]['text'] = "“I value our walks. Let's connect tonight.”";
-                  _selectedMessageIndexForActions = -1;
-                });
-              }),
+              _buildOverlayActionItem(
+                'Rewrite Kindly',
+                null,
+                () {
+                  setState(() {
+                    _chatMessages[_selectedMessageIndexForActions]['text'] = "“I value our walks. Let's connect tonight.”";
+                    _selectedMessageIndexForActions = -1;
+                  });
+                },
+                leadingWidget: const DocsyIcon(color: BlushyColors.primary, size: 18),
+              ),
               _buildOverlayActionItem('Save to Memory Book', Icons.bookmark_outline_rounded, () {
                 setState(() {
                   _selectedMessageIndexForActions = -1;
@@ -4106,9 +4144,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     );
   }
 
-  Widget _buildOverlayActionItem(String label, IconData icon, VoidCallback onTap) {
+  Widget _buildOverlayActionItem(String label, IconData? icon, VoidCallback onTap, {Widget? leadingWidget}) {
     return ListTile(
-      leading: Icon(icon, color: BlushyColors.primary, size: 18),
+      leading: leadingWidget ?? Icon(icon, color: BlushyColors.primary, size: 18),
       title: Text(label, style: GoogleFonts.manrope(height: 1.5, fontSize: 12)),
       onTap: onTap,
     );
@@ -4446,11 +4484,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   }
 
   static const Map<String, IconData> _activityIcons = {
-    'daily_gratitude': Icons.volunteer_activism_rounded,
-    'weekend_planner': Icons.calendar_month_rounded,
     'date_planner': Icons.calendar_today_rounded,
     'shared_canvas': Icons.palette_rounded,
+    'couple_games': Icons.casino_rounded,
     'virtual_bouquet': Icons.local_florist_rounded,
+    'daily_gratitude': Icons.volunteer_activism_rounded,
+    'weekend_planner': Icons.calendar_month_rounded,
+    'dinner_date': Icons.restaurant_rounded,
   };
 
   Widget _buildSharedActivityCard(SharedActivity activity) {
@@ -4474,7 +4514,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GestureDetector(
-        onTap: busy ? null : () => _advanceActivity(activity),
+        onTap: busy
+            ? null
+            : () {
+                final pName = _connections.isNotEmpty && _connections.first['partnerName'] != null
+                    ? _connections.first['partnerName'].toString()
+                    : 'Your Partner';
+                _launchActivityExperience(activity, pName);
+              },
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BlushyTheme.premiumCardDecoration,
@@ -5454,51 +5501,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   }
 
   void _showActivityTriggerDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: const Text('Start Shared Activity'),
-          content: const Text('Would you like to notify Partner to start the Gratitude Checklist together?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                final navigator = Navigator.of(context);
-                final connectionId = _activeConnectionId;
-                navigator.pop();
-
-                if (connectionId == null) {
-                  _showComposerNotice('Connect with your partner first.');
-                  return;
-                }
-
-                // Started on the connection, so it genuinely appears for both
-                // of you rather than only on this device.
-                final updated = await _partnerService.setSharedActivityStatus(
-                  connectionId,
-                  'daily_gratitude',
-                  'in_progress',
-                );
-                if (!mounted) return;
-
-                if (updated == null) {
-                  _showComposerNotice('Could not start that activity. Please try again.');
-                  return;
-                }
-
-                setState(() => _sharedActivities = updated);
-                await _growGarden(flowers: 1);
-              },
-              child: const Text('Start'),
-            ),
-          ],
-        );
-      },
-    );
+    _openPartnerTab(3);
   }
 }
