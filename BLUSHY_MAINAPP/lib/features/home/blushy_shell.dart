@@ -208,6 +208,23 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     );
   }
 
+  /// Switches to [index], with the same cross-tab sync and fade the bottom
+  /// navigation uses. Shared so the nav and the system back button move
+  /// between tabs identically.
+  void _selectTab(int index) {
+    if (_currentIndex != index) {
+      final state = BlushyOSProvider.of(context);
+      SiaDashboardService().syncAllDashboardsFromBackend(state: state);
+      // Someone who asked for less motion gets the switch, not the fade.
+      if (!(MediaQuery.maybeDisableAnimationsOf(context) ?? false)) {
+        _tabFade.forward(from: 0);
+      }
+    }
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // Home keeps the wordmark; every other tab names itself instead, since the
@@ -230,28 +247,30 @@ class _BlushyOSShellState extends State<BlushyOSShell>
       bottomNavigationBar: BlushyBottomNavigation(
         itemKeys: _navKeys,
         currentIndex: _currentIndex,
-        onTap: (index) {
-          if (_currentIndex != index) {
-            final state = BlushyOSProvider.of(context);
-            SiaDashboardService().syncAllDashboardsFromBackend(state: state);
-            // Someone who asked for less motion gets the switch, not the fade.
-            if (!(MediaQuery.maybeDisableAnimationsOf(context) ?? false)) {
-              _tabFade.forward(from: 0);
-            }
-          }
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: _selectTab,
       ),
     );
 
-    if (!_showTour) return scaffold;
+    // Back from any tab other than Home returns to Home rather than closing the
+    // app; on Home the default pop stands (Android exits at the root). Wraps the
+    // tour overlay too, so back behaves the same while it is showing.
+    Widget withBack(Widget child) => PopScope(
+          canPop: _currentIndex == BlushyShellTabs.home,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            if (_currentIndex != BlushyShellTabs.home) {
+              _selectTab(BlushyShellTabs.home);
+            }
+          },
+          child: child,
+        );
+
+    if (!_showTour) return withBack(scaffold);
 
     // Stacked over the whole Scaffold rather than inside its body: the tabs
     // being pointed at live in `bottomNavigationBar`, which the body does not
     // cover.
-    return Stack(
+    return withBack(Stack(
       children: [
         scaffold,
         ProductTour(
@@ -264,6 +283,6 @@ class _BlushyOSShellState extends State<BlushyOSShell>
           },
         ),
       ],
-    );
+    ));
   }
 }
