@@ -1190,19 +1190,31 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                         'flow': _loggedFlow,
                         'cramp': _selectedCramp,
                       });
-                      if (f['intensity'] != 'ended') {
-                        ApiPeriodService().logPeriodEntry(
-                          periodStartDate: DateTime.now(),
-                          flowIntensity: f['intensity'],
-                          notes: 'Logged from Stage 2 Home',
+                      // Logging today's flow is a symptom, not a new period
+                      // start. Only bootstrap a start the very first time a
+                      // period is recorded; once one is on record, daily flow
+                      // must not move the cycle start. Posting a start for today
+                      // made the backend supersede the real start (its "logging
+                      // a start corrects the current cycle" rule deletes any
+                      // start within a cycle-length window) and reset the
+                      // tracker to Day 1/2, while the device's cached real start
+                      // was left untouched -- so the day flashed from the real
+                      // value to 1 or 2 on the next refresh.
+                      if (!_hasLoggedPeriod) {
+                        if (f['intensity'] != 'ended') {
+                          ApiPeriodService().logPeriodEntry(
+                            periodStartDate: DateTime.now(),
+                            flowIntensity: f['intensity'],
+                            notes: 'Logged from Stage 2 Home',
+                          );
+                        }
+                        HomeEventBus().emit(
+                          PeriodLoggedEvent(
+                            flowIntensity: f['intensity']!,
+                            date: DateTime.now(),
+                          ),
                         );
                       }
-                      HomeEventBus().emit(
-                        PeriodLoggedEvent(
-                          flowIntensity: f['intensity']!,
-                          date: DateTime.now(),
-                        ),
-                      );
                       ScaffoldMessenger.of(context).clearSnackBars();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
