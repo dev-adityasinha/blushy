@@ -29,6 +29,23 @@ import 'core/theme.dart' hide BlushyColors;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // A build error in release renders as a bare grey box by default (Flutter's
+  // ErrorWidget). Replace it with a quiet, on-brand placeholder so a transient
+  // exception during a rebuild -- e.g. a half-loaded card mid-refresh -- shows a
+  // soft "just a moment" that recovers on the next good frame, instead of a grey
+  // screen. Left as the red diagnostic screen in debug so bugs stay visible.
+  if (!kDebugMode) {
+    ErrorWidget.builder = (FlutterErrorDetails details) => Container(
+          color: BlushyColors.background,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Just a moment…',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: BlushyColors.secondaryText, fontSize: 14),
+          ),
+        );
+  }
   // An invite link opens the app at `/#code=...`, and the first named-route
   // navigation on web overwrites that fragment. Read before anything can
   // navigate; the partner screen claims it when it mounts.

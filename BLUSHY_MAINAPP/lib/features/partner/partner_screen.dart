@@ -144,6 +144,12 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // Partner connections state
   List<Map<String, dynamic>> _connections = [];
 
+  // Whether the first connection load (cache + server) has resolved. Until it
+  // has, an empty _connections means "still loading", not "no partner" -- so the
+  // screen shows a spinner rather than flashing the unpaired "Invite Partner"
+  // view over an account that is in fact connected.
+  bool _connectionsLoaded = false;
+
   // Shared activities belong to the connection: whatever one partner does, the
   // other sees. They are loaded from the server rather than assumed.
   List<SharedActivity> _sharedActivities = const [];
@@ -549,7 +555,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       }
     } catch (_) {}
     try {
-      final cachedConnections = BlushyStorage.read('partner_connections_cache');
+      // Read through UserStateStore -- the same store the cache is WRITTEN
+      // through below (_fetchPartnerData). It previously read via BlushyStorage
+      // with the raw key while the write went through UserStateStore's mirrored
+      // key, so this synchronous read always missed and the screen flashed the
+      // unpaired "Invite Partner" view before the server answered. Reading it
+      // consistently means a returning, connected user sees the paired state on
+      // the very first frame.
+      final cachedConnections = UserStateStore.read('partner_connections_cache');
       if (cachedConnections.isNotEmpty) {
         if (cachedConnections['connections'] is List) {
           _connections = List<Map<String, dynamic>>.from(
@@ -839,6 +852,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     } finally {
       if (mounted) {
         setState(() {
+          // The first load has resolved (succeeded or failed): from here an
+          // empty _connections genuinely means "no partner", so the unpaired
+          // view is correct rather than a premature flash.
+          _connectionsLoaded = true;
         });
       }
     }
@@ -1169,6 +1186,22 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // --- TAB 1: PARTNER SPACE (WOMAN'S HOME) ---
   Widget _buildOverviewTab(BlushyOSState state) {
     final hasConnection = _connections.isNotEmpty;
+
+    // Until the first load resolves, an empty list means "still loading", not
+    // "no partner": show a spinner rather than flashing the unpaired "Invite
+    // Partner" view over an account that is actually connected.
+    if (!hasConnection && !_connectionsLoaded) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.only(top: 96),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: kSanctuaryCrimson,
+          ),
+        ),
+      );
+    }
+
     final primaryPartner = hasConnection ? _connections.first : null;
     final partnerName = primaryPartner != null
         ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner))
