@@ -9,6 +9,7 @@ import '../../../../services/api_period_service.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../services/api_perimenopause_service.dart';
 import '../../view_models/perimenopause_view_model.dart';
+import '../../view_models/cycle_view_model.dart';
 import '../../../../shared/live_refresh.dart';
 import '../../widgets/blushy_period_tracker_card.dart';
 import 'stage_shared_components.dart';
@@ -85,7 +86,15 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
   final TextEditingController _quickAskController = TextEditingController();
 
   // ─── Dynamic Cycle & Period Tracker State ───────────────────────────
-  // ─── Dynamic Cycle & Period Tracker State ───────────────────────────
+  // The cycle DAY is owned by the shared CycleViewModel -- the single source of
+  // truth every cycle stage reads -- so the day number here cannot drift from
+  // the other dashboards. This screen only adds perimenopause-specific context
+  // (phase label + interval history). It used to compute the day itself from
+  // getPeriodEntries().last, which picks the newest entry and so echoed any
+  // stray/recent "start" straight onto the tracker.
+  final CycleViewModel _cycleVM =
+      CycleViewModel(defaultCycleLength: 28, defaultPeriodLength: 5, defaultCycleDay: 1);
+
   int _currentCycleDay = 1;
   int _cycleLength = 28;
   int _periodLength = 5;
@@ -104,19 +113,27 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
   void initState() {
     super.initState();
     _vm.addListener(_onDataChanged);
-    _rehydratePeriodState();
+    _cycleVM.addListener(_onCycleChanged);
+    _cycleVM.load();
+    _loadCycleContext();
     _loadAllData();
     startLiveRefresh();
   }
 
   @override
-  Future<void> refreshNow() => _loadAllData(silent: true);
+  Future<void> refreshNow() async {
+    await _cycleVM.load();
+    await _loadCycleContext();
+    await _loadAllData(silent: true);
+  }
 
   @override
   void dispose() {
     stopLiveRefresh();
     _vm.removeListener(_onDataChanged);
     _vm.dispose();
+    _cycleVM.removeListener(_onCycleChanged);
+    _cycleVM.dispose();
     _quickAskController.dispose();
     _internalScrollController.dispose();
     super.dispose();
@@ -136,33 +153,34 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
     });
   }
 
-  Future<void> _rehydratePeriodState() async {
-    try {
-      final savedPeriod = BlushyStorage.read('last_period_entry.json');
-      if (savedPeriod.isNotEmpty && savedPeriod['periodStartDate'] != null) {
-        final parsed = DateTime.tryParse(savedPeriod['periodStartDate'].toString());
-        if (parsed != null) {
-          _lastPeriodStartDate = parsed;
-          _hasLoggedPeriod = true;
-          final diff = DateTime.now().difference(parsed).inDays;
-          _currentCycleDay = (diff + 1).clamp(1, 999);
-        }
-      }
+  /// The cycle DAY, start date and lengths come from the shared CycleViewModel,
+  /// exactly as they do on the other cycle dashboards. Mirrored here so the
+  /// existing build methods keep reading the same field names.
+  void _onCycleChanged() {
+    if (!mounted) return;
+    setState(() {
+      _hasLoggedPeriod = _cycleVM.hasLoggedPeriod;
+      _lastPeriodStartDate = _cycleVM.lastPeriodStart;
+      _cycleLength = _cycleVM.cycleLength;
+      _periodLength = _cycleVM.periodLength;
+      _currentCycleDay = _cycleVM.currentCycleDay;
+    });
+  }
 
+  /// Perimenopause-specific cycle context: the phase label and the spread of
+  /// real intervals between logged periods. The cycle DAY, start date and
+  /// lengths are deliberately NOT set here -- they come from [_cycleVM] via
+  /// [_onCycleChanged], so this screen reads exactly the same day as every other
+  /// cycle dashboard. (This method used to derive the day from
+  /// getPeriodEntries().last, which picks the newest entry and so echoed any
+  /// stray recent "start" straight onto the tracker.)
+  Future<void> _loadCycleContext() async {
+    try {
       final prediction = await ApiPeriodService().getPredictions();
       if (prediction != null && prediction.hasData && mounted) {
         setState(() {
-          if (prediction.cycleLengthDays > 0) _cycleLength = prediction.cycleLengthDays;
-          if (prediction.periodLengthDays > 0) _periodLength = prediction.periodLengthDays;
-          if (prediction.currentPhase.isNotEmpty) _currentPhaseName = prediction.currentPhase;
-          if (prediction.lastPeriodStartDate != null) {
-            final parsed = DateTime.tryParse(prediction.lastPeriodStartDate!);
-            if (parsed != null) {
-              _lastPeriodStartDate = parsed;
-              _hasLoggedPeriod = true;
-              final diff = DateTime.now().difference(parsed).inDays;
-              _currentCycleDay = (diff + 1).clamp(1, 999);
-            }
+          if (prediction.currentPhase.isNotEmpty) {
+            _currentPhaseName = prediction.currentPhase;
           }
           if (prediction.historicalIntervals.isNotEmpty) {
             _cycleHistory = prediction.historicalIntervals;
@@ -170,31 +188,24 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
         });
       }
 
-      // Compute real intervals from user's logged period entries
-      try {
-        final entries = await ApiPeriodService().getPeriodEntries();
-        if (entries.isNotEmpty) {
-          final sorted = entries.map((e) => e.periodStartDate).toList()..sort();
-          if (sorted.isNotEmpty) {
-            final latest = sorted.last;
-            _lastPeriodStartDate = latest;
-            _hasLoggedPeriod = true;
-            _currentCycleDay = (DateTime.now().difference(latest).inDays + 1).clamp(1, 999);
-          }
-          final List<int> realIntervals = [];
-          for (int i = 0; i < sorted.length - 1; i++) {
-            final diff = sorted[i + 1].difference(sorted[i]).inDays;
-            if (diff >= 10 && diff <= 180) {
-              realIntervals.add(diff);
-            }
-          }
-          if (realIntervals.isNotEmpty && mounted) {
-            setState(() {
-              _cycleHistory = realIntervals;
-            });
+      // The spread of real intervals between her logged periods (interval
+      // variance is the number this stage cares about, not a single day).
+      final entries = await ApiPeriodService().getPeriodEntries();
+      if (entries.isNotEmpty) {
+        final sorted = entries.map((e) => e.periodStartDate).toList()..sort();
+        final List<int> realIntervals = [];
+        for (int i = 0; i < sorted.length - 1; i++) {
+          final diff = sorted[i + 1].difference(sorted[i]).inDays;
+          if (diff >= 10 && diff <= 180) {
+            realIntervals.add(diff);
           }
         }
-      } catch (_) {}
+        if (realIntervals.isNotEmpty && mounted) {
+          setState(() {
+            _cycleHistory = realIntervals;
+          });
+        }
+      }
     } catch (_) {}
   }
 
@@ -339,7 +350,8 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
         color: crimsonPrimary,
         backgroundColor: Colors.white,
         onRefresh: () async {
-          await _rehydratePeriodState();
+          await _cycleVM.load();
+          await _loadCycleContext();
           await _loadAllData(silent: true);
         },
         child: ListView(
@@ -840,9 +852,9 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
         ? _cycleHistory
         : (_overview?.cycleHistory ?? <int>[]);
 
-    final int displayDay = _lastPeriodStartDate != null
-        ? (DateTime.now().difference(_lastPeriodStartDate!).inDays + 1).clamp(1, 999)
-        : (_hasLoggedPeriod ? _currentCycleDay : 1);
+    // The day comes from the shared CycleViewModel (server-preferred), the same
+    // value the other cycle dashboards show -- not a local recompute.
+    final int displayDay = _hasLoggedPeriod ? _currentCycleDay : 1;
 
     return Container(
       width: double.infinity,
@@ -2485,7 +2497,8 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
                           await ApiPerimenopauseService.recordCycleInterval(diff);
                         } catch (_) {}
 
-                        await _rehydratePeriodState();
+                        await _cycleVM.load();
+                        await _loadCycleContext();
                         await _loadAllData(silent: true);
 
                         if (mounted) {
