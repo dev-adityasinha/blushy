@@ -111,23 +111,6 @@ class SharedSanctuaryHeader extends StatelessWidget {
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 18),
-          ElevatedButton.icon(
-            onPressed: onInvite,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: kSanctuaryCrimson,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              elevation: 3,
-              shadowColor: kSanctuaryCrimson.withValues(alpha: 0.35),
-            ),
-            icon: const Icon(Icons.favorite_rounded, size: 18, color: Colors.white),
-            label: Text(
-              'Invite Partner',
-              style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700),
-            ),
-          ),
         ],
       );
     }
