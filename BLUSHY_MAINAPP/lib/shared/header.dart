@@ -27,14 +27,16 @@ const double _headerLeadingSize = 22;
 /// product, and a tab name printed at the same size competes with it.
 const double _tabTitleSize = _headerLeadingSize * 0.75;
 
-/// A tab name, in the display face with the accent full stop.
+/// A tab name, in the same upright face as the BLUSHY. wordmark, with the accent
+/// full stop.
 ///
 /// The stop is the same one BLUSHY. ends on -- the mark that says this is a
-/// Blushy page rather than a screen title.
-TextStyle _tabTitleStyle() => const TextStyle(
-      fontFamily: 'AdaHybrid',
+/// Blushy page rather than a screen title. It uses Manrope (not the slanted
+/// AdaHybrid display face) so the tab name reads upright like BLUSHY. rather
+/// than as italic.
+TextStyle _tabTitleStyle() => GoogleFonts.manrope(
       fontSize: _tabTitleSize,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w800,
       letterSpacing: 1.5,
       color: BlushyColors.primary,
     );
@@ -174,8 +176,8 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(64.0);
 }
 
-/// The BLUSHY. lockup in Ada Hybrid bold style.
-/// One tab's name, ending in the accent stop.
+/// One tab's name, ending in the accent stop, in the same upright face as the
+/// BLUSHY. wordmark.
 class _TabTitle extends StatelessWidget {
   const _TabTitle({required this.title});
 
