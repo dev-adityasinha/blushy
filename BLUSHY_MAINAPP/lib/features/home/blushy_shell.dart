@@ -4,7 +4,6 @@ import '../../shared/bottom_navigation.dart';
 import '../../shared/header.dart';
 import '../../shared/product_tour.dart';
 import '../../l10n/app_localizations.dart';
-import '../community/community_screen.dart';
 import '../m_studio/m_studio_screen.dart';
 import '../sia/sia_screen.dart';
 import '../partner/partner_screen.dart';
@@ -29,10 +28,9 @@ class BlushyShellTabs {
   static final ValueNotifier<int?> requested = ValueNotifier<int?>(null);
 
   static const int home = 0;
-  static const int community = 1;
-  static const int docsy = 2;
-  static const int mStudio = 3;
-  static const int partner = 4;
+  static const int docsy = 1;
+  static const int mStudio = 2;
+  static const int partner = 3;
 
   static void open(int index) => requested.value = index;
 }
@@ -48,17 +46,16 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   int _currentIndex = 0;
 
-  // Order matches BlushyBottomNavigation, with Docsy in the middle slot.
+  // Order matches BlushyBottomNavigation, with Docsy in the raised slot.
   final List<Widget> _screens = [
     const BlushyHomeScreen(),
-    const BlushyCommunityScreen(),
     const BlushySiaScreen(),
     const BlushyMStudioScreen(),
     const BlushyPartnerScreen(),
   ];
 
   /// One anchor per destination, for the first-run tour.
-  final List<GlobalKey> _navKeys = List.generate(5, (_) => GlobalKey());
+  final List<GlobalKey> _navKeys = List.generate(4, (_) => GlobalKey());
 
   bool _showTour = false;
 
@@ -133,22 +130,17 @@ class _BlushyOSShellState extends State<BlushyOSShell>
         body: t.tourHomeBody,
       ),
       TourStep(
-        targetKey: _navKeys[1],
-        title: t.navCommunity,
-        body: t.tourCommunityBody,
-      ),
-      TourStep(
         targetKey: _navKeys[BlushyBottomNavigation.siaIndex],
         title: t.navSia,
         body: t.tourSiaBody,
       ),
       TourStep(
-        targetKey: _navKeys[3],
+        targetKey: _navKeys[2],
         title: t.navStudio,
         body: t.tourStudioBody,
       ),
       TourStep(
-        targetKey: _navKeys[4],
+        targetKey: _navKeys[3],
         title: t.navPartner,
         body: t.tourPartnerBody,
       ),

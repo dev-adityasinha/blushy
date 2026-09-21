@@ -178,10 +178,10 @@ void main() {
     await tester.pumpAndSettle();
 
     final labels = BlushyBottomNavigation.labelsFor(t);
-    expect(labels, hasLength(5));
+    expect(labels, hasLength(4));
     expect(labels[0], t.navHome);
     expect(labels[BlushyBottomNavigation.siaIndex], t.navSia);
-    expect(labels[4], t.navPartner);
+    expect(labels[3], t.navPartner);
 
     // And the bar renders those same names, in those same slots.
     await tester.pumpWidget(_host(

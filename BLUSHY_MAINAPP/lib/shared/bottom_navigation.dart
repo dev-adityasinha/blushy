@@ -15,16 +15,15 @@ class BlushyBottomNavigation extends StatelessWidget {
 
   /// Index of the Docsy destination. Kept here so the shell and the bar cannot
   /// disagree about which slot is the raised one.
-  static const int siaIndex = 2;
+  static const int siaIndex = 1;
 
-  /// The five destination names, in tab order.
+  /// The four destination names, in tab order.
   ///
   /// The bar labels every tab and the header names the current one. Writing
   /// that list in both places is how the two end up disagreeing, so both read
   /// it from here.
   static List<String> labelsFor(AppLocalizations t) => <String>[
         t.navHome,
-        t.navCommunity,
         t.navSia,
         t.navStudio,
         t.navPartner,
@@ -83,10 +82,9 @@ class BlushyBottomNavigation extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 Expanded(child: _buildNavItem(0, labels[0], Icons.home_rounded, Icons.home_outlined)),
-                Expanded(child: _buildNavItem(1, labels[1], Icons.forum_rounded, Icons.forum_outlined)),
                 Expanded(child: _buildSiaItem(labels[siaIndex])),
-                Expanded(child: _buildNavItem(3, labels[3], Icons.self_improvement_rounded, Icons.self_improvement_outlined)),
-                Expanded(child: _buildNavItem(4, labels[4], Icons.favorite_rounded, Icons.favorite_border_rounded)),
+                Expanded(child: _buildNavItem(2, labels[2], Icons.self_improvement_rounded, Icons.self_improvement_outlined)),
+                Expanded(child: _buildNavItem(3, labels[3], Icons.favorite_rounded, Icons.favorite_border_rounded)),
               ],
             ),
           ),
@@ -156,15 +154,11 @@ class BlushyBottomNavigation extends StatelessWidget {
         activeColor = const Color(0xFFDD0D22);
         activeBg = const Color(0xFFFFEAEA);
         break;
-      case 1: // Community
-        activeColor = const Color(0xFF7C3AED);
-        activeBg = const Color(0xFFF3E8FF);
-        break;
-      case 3: // M Studio
+      case 2: // M Studio
         activeColor = const Color(0xFFFF4A00);
         activeBg = const Color(0xFFFFF2E8);
         break;
-      case 4: // Partner
+      case 3: // Partner
         activeColor = const Color(0xFFE02850);
         activeBg = const Color(0xFFFFEBF0);
         break;

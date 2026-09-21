@@ -119,12 +119,12 @@ void main() {
     }
   });
 
-  test('Docsy is a tab in the partner shell, in the centre', () {
+  test('Docsy is a tab in the partner shell', () {
     expect(_shell, contains("'Docsy'"));
     expect(_shell, contains('PartnerSiaScreen()'));
 
-    // Five destinations, with Docsy third -- the middle, the way it sits in
-    // the middle of her own bar.
+    // Four destinations now that Community has been removed from the bar; the
+    // Community screen file is untouched, just no longer a tab here.
     final labels = RegExp(r"_labels = <String>\[(.*?)\];", dotAll: true)
         .firstMatch(_shell)
         ?.group(1);
@@ -133,7 +133,7 @@ void main() {
         .allMatches(labels!)
         .map((m) => m[1]!)
         .toList();
-    expect(names, ['Home', 'Community', 'Docsy', 'Learn', 'Partner']);
+    expect(names, ['Home', 'Docsy', 'Learn', 'Partner']);
   });
 
   test('the screens and the labels cannot drift apart', () {
@@ -144,7 +144,7 @@ void main() {
         ?.group(1);
     expect(screens, isNotNull);
     final count = RegExp(r'const \w+\(\)').allMatches(screens!).length;
-    expect(count, 5);
+    expect(count, 4);
   });
 
   test('the question pills follow her phase, not his profile', () {
