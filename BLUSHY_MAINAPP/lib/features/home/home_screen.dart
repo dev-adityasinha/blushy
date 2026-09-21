@@ -218,7 +218,11 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
           // wrong data rather than data still arriving. A banner beats an
           // unexplained pause, and it keeps whatever is already on screen
           // readable instead of blanking the page behind a spinner.
-          if (osState.isSyncing) const _DashboardSyncBanner(),
+          // Only while genuinely waiting on first data (nothing cached). A
+          // returning user already sees their own last-known dashboard from the
+          // launch restore, so the background refresh stays silent instead of
+          // flashing this banner on every open.
+          if (osState.isInitialSync) const _DashboardSyncBanner(),
           Expanded(child: body),
         ],
       ),
