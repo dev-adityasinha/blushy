@@ -167,6 +167,34 @@ export async function createOrUpdatePeriodEntry(userId, data) {
     );
   }
 
+  // Logging the period you are in now declares the CURRENT cycle start, so
+  // nothing can be dated after it: you cannot have started a later period than
+  // the one you are logging as current. Any entry newer than this start is then
+  // a stray -- most often a day logged by mistake -- and is cleared.
+  //
+  // The ±window supersede above only reaches minCycleLengthDays (18), which is
+  // shorter than a long or irregular cycle (perimenopause runs to 60). Without
+  // this, a stray entry from the last day or two survives when someone re-logs
+  // an older real start, stays the newest row, and keeps currentCycleDay (which
+  // counts from the newest start) stuck on Day 1/2 -- re-logging never fixes it.
+  //
+  // This is opt-in (`supersedeNewer`) precisely because it must NOT fire for
+  // history-building writes -- onboarding seeding and backdated inserts add
+  // dated entries and have to keep the newer ones. The HTTP "log my period"
+  // endpoint sets it, since every log through the tracker is the current cycle.
+  if (data.supersedeNewer === true) {
+    const strayNewer = await db.collection(collName).deleteMany({
+      user_id: cleanUserId,
+      period_start_date: { $gt: startDateStr },
+    });
+    if (strayNewer?.deletedCount) {
+      logger.info(
+        `Period start ${startDateStr} cleared ${strayNewer.deletedCount} ` +
+        `newer stray entry/entries for ${cleanUserId}.`,
+      );
+    }
+  }
+
   const result = await db.collection(collName).findOneAndUpdate(
     { user_id: cleanUserId, period_start_date: startDateStr },
     updateDoc,

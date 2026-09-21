@@ -75,6 +75,10 @@ export async function logPeriodEntry(req, res) {
       flowIntensity,
       source,
       notes,
+      // A period logged through the tracker is the cycle she is in now, so it
+      // clears any stray entry dated after it (see createOrUpdatePeriodEntry).
+      // A caller backfilling history can opt out with supersedeNewer:false.
+      supersedeNewer: req.body?.supersedeNewer !== false,
     });
 
     return res.status(200).json({
