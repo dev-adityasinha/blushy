@@ -2498,6 +2498,8 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
         children: [
           _buildEditorialGreeting(context),
           const SizedBox(height: 8),
+          _buildCycleTrackerCard(context),
+          const SizedBox(height: 14),
           StageStateNotice(
             state: _cycleState,
             hasData: _hasLoggedPeriod,
@@ -2507,8 +2509,6 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
           ),
 
           _buildTodayWithDocsyHero(context),
-          const SizedBox(height: 14),
-          _buildCycleTrackerCard(context),
           const SizedBox(height: 22),
           const LogSymptomsSection(stageKey: 'hormonalhealth'),
           const SizedBox(height: 18),

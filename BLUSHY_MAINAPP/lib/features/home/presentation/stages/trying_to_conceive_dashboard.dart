@@ -2290,11 +2290,15 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       _buildEditorialGreeting(context),
       const SizedBox(height: 18),
 
-      // 02. Today with Docsy
+      // 02. Period / Cycle Rhythm Tracker -- kept at the top, right after the
+      // greeting, so the cycle is the first thing she sees.
+      _buildPeriodTrackerCard(context),
+      const SizedBox(height: 18),
+
+      // 03. Today with Docsy
       _buildTodayWithDocsyCard(context),
       const SizedBox(height: 18),
 
-      // 03. Period / Cycle Rhythm Tracker (Stage 2 Canonical Reusable Tracker)
       // Says which kind of nothing this is before the card asserts one.
       StageStateNotice(
         state: _cycleState,
@@ -2304,7 +2308,6 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             'working from your own cycle instead of general guidance.',
         onRetry: _rehydrateTtcState,
       ),
-      _buildPeriodTrackerCard(context),
       const SizedBox(height: 22),
       const LogSymptomsSection(stageKey: 'tryingtoconceive'),
       const SizedBox(height: 18),

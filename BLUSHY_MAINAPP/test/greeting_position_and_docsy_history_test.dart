@@ -51,7 +51,11 @@ void main() {
       expect(meno, contains("if (secKey == 'editorial_greeting') continue;"));
 
       final peri = stripComments(read('${stageDir}perimenopause_dashboard.dart'));
-      expect(peri, contains("if (section != 'editorial_greeting')"));
+      // The loop skips the greeting -- and now also the cycle tracker, which is
+      // rendered explicitly at the top -- so neither appears twice.
+      expect(peri, contains("section != 'editorial_greeting'"));
+      expect(peri, contains("section != 'my_changing_cycle'"),
+          reason: 'the cycle tracker is rendered at the top and skipped in the loop');
     });
 
     test('every other stage already had it first, and still does', () {

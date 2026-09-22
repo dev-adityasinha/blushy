@@ -366,6 +366,11 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
             // symptom sheet. Rendered here and skipped in the loop below.
             _buildEditorialGreeting(userName),
             const SizedBox(height: 20),
+            // Period/cycle tracker kept at the top, right after the greeting,
+            // rather than wherever the server's sectionOrder would place it.
+            // Skipped in the loop below so it renders exactly once.
+            _buildMyChangingCycleCard(),
+            const SizedBox(height: 20),
             // No server data, so every section below is the stage's general
             // content rather than anything derived from her entries.
             StageStateNotice(
@@ -385,8 +390,8 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
             const HealthLibrarySection(stageKey: 'perimenopause'),
             const SizedBox(height: 20),
             for (final section in sectionOrder)
-              // Already rendered at the top, wherever the server placed it.
-              if (section != 'editorial_greeting') ...[
+              // Greeting and the cycle tracker are already rendered at the top.
+              if (section != 'editorial_greeting' && section != 'my_changing_cycle') ...[
                 _buildSectionByName(section, userName),
                 const SizedBox(height: 20),
               ],

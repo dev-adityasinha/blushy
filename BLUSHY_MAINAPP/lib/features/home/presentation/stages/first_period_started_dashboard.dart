@@ -2161,6 +2161,8 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildEditorialGreeting(context),
+                  const SizedBox(height: 16),
+                  _buildPeriodTrackerCard(context),
                   StageStateNotice(
                     state: _cycleState,
                     hasData: _hasLoggedPeriod,
@@ -2168,7 +2170,6 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                         'works from your own cycle rather than general guidance.',
                     onRetry: _loadPeriodData,
                   ),
-                  _buildPeriodTrackerCard(context),
                   const SizedBox(height: 22),
                   const LogSymptomsSection(stageKey: 'firstperiodstarted'),
                   const SizedBox(height: 18),
