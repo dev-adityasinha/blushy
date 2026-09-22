@@ -20,6 +20,7 @@ import '../../../../shared/docsy_avatar.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
+import 'health_library_section.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
 
@@ -2162,6 +2163,8 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                 _buildCycleTrackerCard(context),
                 const SizedBox(height: 22),
                 const LogSymptomsSection(stageKey: 'livingwithmycycle'),
+                const SizedBox(height: 18),
+                const HealthLibrarySection(stageKey: 'livingwithmycycle'),
                 const SizedBox(height: 22),
                 _buildDocsyNoteSection(context),
                 const SizedBox(height: 22),
@@ -2196,6 +2199,8 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                     _buildCycleTrackerCard(context),
                     const SizedBox(height: 22),
                     const LogSymptomsSection(stageKey: 'livingwithmycycle'),
+                const SizedBox(height: 18),
+                const HealthLibrarySection(stageKey: 'livingwithmycycle'),
                     const SizedBox(height: 24),
                     _buildDocsyNoteSection(context),
                     const SizedBox(height: 24),

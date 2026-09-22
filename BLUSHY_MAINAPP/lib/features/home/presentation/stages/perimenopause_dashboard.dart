@@ -16,6 +16,7 @@ import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
+import 'health_library_section.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// 🌗 THE PERIMENOPAUSE COMMAND CENTER: MY TRANSITION
@@ -380,6 +381,8 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
             // order is server-supplied and need not mention logging.
             const SizedBox(height: 20),
             const LogSymptomsSection(stageKey: 'perimenopause'),
+            const SizedBox(height: 20),
+            const HealthLibrarySection(stageKey: 'perimenopause'),
             const SizedBox(height: 20),
             for (final section in sectionOrder)
               // Already rendered at the top, wherever the server placed it.

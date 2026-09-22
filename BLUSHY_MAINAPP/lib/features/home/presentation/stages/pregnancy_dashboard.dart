@@ -14,6 +14,7 @@ import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
+import 'health_library_section.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
 
@@ -2051,6 +2052,8 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
               _buildMaternalEmotionalCheckIn(),
               const SizedBox(height: 22),
               const LogSymptomsSection(stageKey: 'pregnancy'),
+              const SizedBox(height: 18),
+              const HealthLibrarySection(stageKey: 'pregnancy'),
               const SizedBox(height: 24),
 
               // 05: What Changed? & "My Normal" Baseline

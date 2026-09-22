@@ -15,6 +15,7 @@ import '../../widgets/blushy_period_tracker_card.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
+import 'health_library_section.dart';
 import '../../../../l10n/app_localizations.dart';
 
 class TryingToConceiveDashboard extends StatefulWidget {
@@ -2306,6 +2307,8 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       _buildPeriodTrackerCard(context),
       const SizedBox(height: 22),
       const LogSymptomsSection(stageKey: 'tryingtoconceive'),
+      const SizedBox(height: 18),
+      const HealthLibrarySection(stageKey: 'tryingtoconceive'),
       const SizedBox(height: 18),
 
       // 04. Fertility Signal Confidence & Compass

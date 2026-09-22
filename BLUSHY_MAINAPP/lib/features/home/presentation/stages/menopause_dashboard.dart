@@ -12,6 +12,7 @@ import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
+import 'health_library_section.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// 🌸 THE MENOPAUSE OPERATING SYSTEM: UNDERSTANDING YOUR NEW CHAPTER
@@ -2142,6 +2143,8 @@ class _MenopauseDashboardState extends State<MenopauseDashboard>
     // comes from the API, and one that simply omits a logging key would
     // leave this stage with no way into the sheet at all.
     contentList.add(const LogSymptomsSection(stageKey: 'menopause'));
+    contentList.add(const SizedBox(height: 18));
+    contentList.add(const HealthLibrarySection(stageKey: 'menopause'));
     contentList.add(const SizedBox(height: 24));
     for (final secKey in sectionOrder) {
       // Already rendered at the top, wherever the server placed it.
