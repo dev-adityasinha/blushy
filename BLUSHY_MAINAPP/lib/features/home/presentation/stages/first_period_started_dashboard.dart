@@ -25,6 +25,7 @@ import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../widgets/log_symptoms_section.dart';
 import 'health_library_section.dart';
+import 'first_period_sections.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
 
@@ -2175,6 +2176,12 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                   const SizedBox(height: 18),
                   const HealthLibrarySection(stageKey: 'firstperiodstarted'),
                   const SizedBox(height: 18),
+                  const FirstPeriodHealthSection(),
+                  const SizedBox(height: 20),
+                  const FirstPeriodSymptomsSection(),
+                  const SizedBox(height: 20),
+                  const FirstPeriodCrampSection(),
+                  const SizedBox(height: 18),
                   _buildNoteFromDocsy(context),
                   const SizedBox(height: 18),
                   _buildThingsYouMightNeed(context),
@@ -2221,6 +2228,12 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                                 const LogSymptomsSection(stageKey: 'firstperiodstarted'),
                   const SizedBox(height: 18),
                   const HealthLibrarySection(stageKey: 'firstperiodstarted'),
+                                const SizedBox(height: 18),
+                                const FirstPeriodHealthSection(),
+                                const SizedBox(height: 20),
+                                const FirstPeriodSymptomsSection(),
+                                const SizedBox(height: 20),
+                                const FirstPeriodCrampSection(),
                                 const SizedBox(height: 18),
                                 _buildNoteFromDocsy(context),
                                 const SizedBox(height: 18),
