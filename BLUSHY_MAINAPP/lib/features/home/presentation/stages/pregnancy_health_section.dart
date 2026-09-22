@@ -41,9 +41,10 @@ const List<_PregnancyHealthArticle> _pregnancyHealthArticles = [
 
 /// "Pregnancy health" -- a subsection shown under the pregnancy Health Library.
 ///
-/// Renders the curated illustrations as full-width cards that scroll vertically
-/// with the page. Tapping a card opens [PregnancyHealthArticlePage], which shows
-/// the title, the photo and (until the copy is written) a placeholder body.
+/// Renders the curated illustrations as small cards in a horizontal, left-to-
+/// right scrolling row, each with its title below the image. Tapping a card
+/// opens [PregnancyHealthArticlePage], which shows the title, the photo and
+/// (until the copy is written) a placeholder body.
 class PregnancyHealthSection extends StatelessWidget {
   const PregnancyHealthSection({super.key});
 
@@ -75,10 +76,19 @@ class PregnancyHealthSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        for (var i = 0; i < _pregnancyHealthArticles.length; i++) ...[
-          if (i > 0) const SizedBox(height: 12),
-          _PregnancyHealthCard(article: _pregnancyHealthArticles[i]),
-        ],
+        // Small cards, scrolling left to right.
+        SizedBox(
+          height: 150,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            physics: const BouncingScrollPhysics(),
+            itemCount: _pregnancyHealthArticles.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (context, i) =>
+                _PregnancyHealthCard(article: _pregnancyHealthArticles[i]),
+          ),
+        ),
       ],
     );
   }
@@ -92,7 +102,7 @@ class _PregnancyHealthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(14),
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -103,49 +113,36 @@ class _PregnancyHealthCard extends StatelessWidget {
           ),
         );
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: BlushyColors.border),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(article.image, fit: BoxFit.cover),
-                // Bottom gradient keeps the title legible over any image.
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(14, 30, 14, 14),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0x00000000), Color(0xCC000000)],
-                      ),
-                    ),
-                    child: Text(
-                      article.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.manrope(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.25,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+      child: SizedBox(
+        width: 144,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Image on top.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.asset(
+                article.image,
+                width: 144,
+                height: 88,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
+            const SizedBox(height: 8),
+            // Title below the image.
+            Text(
+              article.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: BlushyColors.text,
+                height: 1.25,
+              ),
+            ),
+          ],
         ),
       ),
     );
