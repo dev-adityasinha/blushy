@@ -65,6 +65,32 @@ const List<_PregnancyArticle> _pregnancyLifestyleArticles = [
   ),
 ];
 
+const List<_PregnancyArticle> _fetalDevelopmentArticles = [
+  _PregnancyArticle(
+    title: 'Cryptic Pregnancy: How Can You Be Pregnant and Not Know?',
+    image: 'assets/fetal_development/cryptic_pregnancy.png',
+  ),
+  _PregnancyArticle(
+    title:
+        'Fetal Brain Development Stages: When Does a Fetus Develop a Brain?',
+    image: 'assets/fetal_development/fetal_brain_development.png',
+  ),
+  _PregnancyArticle(
+    title:
+        'How Long Is Pregnancy: The Weeks, Months, and Trimesters in Full-Term Pregnancy Explained',
+    image: 'assets/fetal_development/how_long_pregnancy.png',
+  ),
+  _PregnancyArticle(
+    title: "What to Expect When You're Pregnant with Triplets",
+    image: 'assets/fetal_development/triplets.png',
+  ),
+  _PregnancyArticle(
+    title:
+        'When Can a Fetus Hear? A Guide to Hearing Development in the Womb',
+    image: 'assets/fetal_development/fetus_hearing.png',
+  ),
+];
+
 /// "Pregnancy health" -- a subsection shown under the pregnancy Health Library.
 class PregnancyHealthSection extends StatelessWidget {
   const PregnancyHealthSection({super.key});
@@ -87,6 +113,19 @@ class PregnancyLifestyleSection extends StatelessWidget {
     return const _PregnancySubsection(
       title: 'Pregnancy Lifestyle',
       articles: _pregnancyLifestyleArticles,
+    );
+  }
+}
+
+/// "Fetal Development" -- a subsection shown next to Pregnancy Lifestyle.
+class FetalDevelopmentSection extends StatelessWidget {
+  const FetalDevelopmentSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _PregnancySubsection(
+      title: 'Fetal Development',
+      articles: _fetalDevelopmentArticles,
     );
   }
 }
