@@ -17,6 +17,7 @@ import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
 import 'health_library_section.dart';
+import 'perimenopause_sections.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// 🌗 THE PERIMENOPAUSE COMMAND CENTER: MY TRANSITION
@@ -388,6 +389,10 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
             const LogSymptomsSection(stageKey: 'perimenopause'),
             const SizedBox(height: 20),
             const HealthLibrarySection(stageKey: 'perimenopause'),
+            const SizedBox(height: 20),
+            const PerimenopauseSymptomsSection(),
+            const SizedBox(height: 20),
+            const PerimenopauseMoreSection(),
             const SizedBox(height: 20),
             for (final section in sectionOrder)
               // Greeting and the cycle tracker are already rendered at the top.

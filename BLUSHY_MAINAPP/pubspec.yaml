@@ -90,6 +90,10 @@ flutter:
     - assets/body_changes/
     - assets/puberty/
     - assets/teenage_life/
+    - assets/perimenopause_symptoms/
+    - assets/perimenopause_more/
+    - assets/menopause_changes/
+    - assets/menopause_more/
 
   # The layouts asked for Georgia and Courier and shipped neither, so on Android
   # both fell back to Roboto and the editorial serif was lost. Neither is
