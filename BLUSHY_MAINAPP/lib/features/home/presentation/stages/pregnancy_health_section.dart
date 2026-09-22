@@ -3,50 +3,103 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../theme/colors.dart';
 
-/// One curated read in the pregnancy stage's "Pregnancy health" subsection.
+/// One curated read in a pregnancy-stage subsection.
 ///
-/// Each entry pairs a full-width illustration with its title. The titles come
-/// from the source image names and are rendered on the card; the images live in
-/// `assets/pregnancy_health/`.
-class _PregnancyHealthArticle {
-  const _PregnancyHealthArticle({required this.title, required this.image});
+/// Each entry pairs an illustration with its title. The titles come from the
+/// source image names; the images live under `assets/pregnancy_health/` and
+/// `assets/pregnancy_lifestyle/`.
+class _PregnancyArticle {
+  const _PregnancyArticle({required this.title, required this.image});
 
   final String title;
   final String image;
 }
 
-const List<_PregnancyHealthArticle> _pregnancyHealthArticles = [
-  _PregnancyHealthArticle(
+const List<_PregnancyArticle> _pregnancyHealthArticles = [
+  _PregnancyArticle(
     title: "10 Things You Can't Do While Pregnant",
     image: 'assets/pregnancy_health/10_things_to_avoid.png',
   ),
-  _PregnancyHealthArticle(
+  _PregnancyArticle(
     title: 'Chlamydia During Pregnancy: What Moms Need to Know',
     image: 'assets/pregnancy_health/chlamydia_pregnancy.png',
   ),
-  _PregnancyHealthArticle(
+  _PregnancyArticle(
     title:
         'Hair Loss During Pregnancy: How to Take Care of Hair Loss in Pregnancy',
     image: 'assets/pregnancy_health/hair_loss_pregnancy.png',
   ),
-  _PregnancyHealthArticle(
+  _PregnancyArticle(
     title: 'Pregnant Belly: What to Expect From Your Growing Baby Bump',
     image: 'assets/pregnancy_health/pregnant_belly.png',
   ),
-  _PregnancyHealthArticle(
+  _PregnancyArticle(
     title: 'Smoking and Breastfeeding: To Quit or Not to Quit',
     image: 'assets/pregnancy_health/smoking_breastfeeding.png',
   ),
 ];
 
+const List<_PregnancyArticle> _pregnancyLifestyleArticles = [
+  _PregnancyArticle(
+    title:
+        'Drinks for Pregnant Women: What Can You Drink While Pregnant, and What Should You Avoid',
+    image: 'assets/pregnancy_lifestyle/drinks_pregnancy.png',
+  ),
+  _PregnancyArticle(
+    title:
+        "Healthy Pregnancy Diet: What Food Is and Isn't Safe to Eat During Pregnancy",
+    image: 'assets/pregnancy_lifestyle/healthy_diet.png',
+  ),
+  _PregnancyArticle(
+    title: 'How to Cope With Pregnancy Insomnia',
+    image: 'assets/pregnancy_lifestyle/cope_insomnia.png',
+  ),
+  _PregnancyArticle(
+    title:
+        'How to Sleep When Pregnant: Your Guide to Good Sleep for Each Trimester',
+    image: 'assets/pregnancy_lifestyle/sleep_when_pregnant.png',
+  ),
+  _PregnancyArticle(
+    title: 'Pregnancy Sex Guide: Sex Positions During Pregnancy',
+    image: 'assets/pregnancy_lifestyle/sex_guide.png',
+  ),
+];
+
 /// "Pregnancy health" -- a subsection shown under the pregnancy Health Library.
-///
-/// Renders the curated illustrations as small cards in a horizontal, left-to-
-/// right scrolling row, each with its title below the image. Tapping a card
-/// opens [PregnancyHealthArticlePage], which shows the title, the photo and
-/// (until the copy is written) a placeholder body.
 class PregnancyHealthSection extends StatelessWidget {
   const PregnancyHealthSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _PregnancySubsection(
+      title: 'Pregnancy health',
+      articles: _pregnancyHealthArticles,
+    );
+  }
+}
+
+/// "Pregnancy Lifestyle" -- a subsection shown next to Pregnancy health.
+class PregnancyLifestyleSection extends StatelessWidget {
+  const PregnancyLifestyleSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _PregnancySubsection(
+      title: 'Pregnancy Lifestyle',
+      articles: _pregnancyLifestyleArticles,
+    );
+  }
+}
+
+/// A titled subsection that renders its articles as small cards in a
+/// horizontal, left-to-right scrolling row, each with its title below the
+/// image. Tapping a card opens [PregnancyArticlePage], which shows the title,
+/// the photo and (until the copy is written) a placeholder body.
+class _PregnancySubsection extends StatelessWidget {
+  const _PregnancySubsection({required this.title, required this.articles});
+
+  final String title;
+  final List<_PregnancyArticle> articles;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +118,7 @@ class PregnancyHealthSection extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'Pregnancy health',
+              title,
               style: GoogleFonts.manrope(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
@@ -83,10 +136,10 @@ class PregnancyHealthSection extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.zero,
             physics: const BouncingScrollPhysics(),
-            itemCount: _pregnancyHealthArticles.length,
+            itemCount: articles.length,
             separatorBuilder: (_, _) => const SizedBox(width: 12),
             itemBuilder: (context, i) =>
-                _PregnancyHealthCard(article: _pregnancyHealthArticles[i]),
+                _PregnancyCard(article: articles[i], sectionLabel: title),
           ),
         ),
       ],
@@ -94,10 +147,11 @@ class PregnancyHealthSection extends StatelessWidget {
   }
 }
 
-class _PregnancyHealthCard extends StatelessWidget {
-  const _PregnancyHealthCard({required this.article});
+class _PregnancyCard extends StatelessWidget {
+  const _PregnancyCard({required this.article, required this.sectionLabel});
 
-  final _PregnancyHealthArticle article;
+  final _PregnancyArticle article;
+  final String sectionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -106,9 +160,10 @@ class _PregnancyHealthCard extends StatelessWidget {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => PregnancyHealthArticlePage(
+            builder: (_) => PregnancyArticlePage(
               title: article.title,
               image: article.image,
+              sectionLabel: sectionLabel,
             ),
           ),
         );
@@ -149,19 +204,21 @@ class _PregnancyHealthCard extends StatelessWidget {
   }
 }
 
-/// The article page opened from a "Pregnancy health" card.
+/// The article page opened from a pregnancy subsection card.
 ///
 /// Title at the top, the illustration below it, then the body. The body is a
 /// deliberate placeholder until the copy is written.
-class PregnancyHealthArticlePage extends StatelessWidget {
-  const PregnancyHealthArticlePage({
+class PregnancyArticlePage extends StatelessWidget {
+  const PregnancyArticlePage({
     super.key,
     required this.title,
     required this.image,
+    required this.sectionLabel,
   });
 
   final String title;
   final String image;
+  final String sectionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +229,7 @@ class PregnancyHealthArticlePage extends StatelessWidget {
         elevation: 0,
         foregroundColor: BlushyColors.text,
         title: Text(
-          'Pregnancy health',
+          sectionLabel,
           style: GoogleFonts.manrope(
             fontSize: 16,
             fontWeight: FontWeight.w700,

@@ -2057,6 +2057,8 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
               const HealthLibrarySection(stageKey: 'pregnancy'),
               const SizedBox(height: 18),
               const PregnancyHealthSection(),
+              const SizedBox(height: 20),
+              const PregnancyLifestyleSection(),
               const SizedBox(height: 24),
 
               // 05: What Changed? & "My Normal" Baseline
