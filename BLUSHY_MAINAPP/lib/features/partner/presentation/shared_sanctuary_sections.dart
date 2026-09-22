@@ -59,6 +59,7 @@ class SharedSanctuaryHeader extends StatelessWidget {
     required this.onInvite,
     required this.onManageConnection,
     this.onOpenMessenger,
+    this.partnerOnline = false,
   });
 
   final bool hasConnection;
@@ -68,6 +69,10 @@ class SharedSanctuaryHeader extends StatelessWidget {
   final VoidCallback onInvite;
   final VoidCallback onManageConnection;
   final VoidCallback? onOpenMessenger;
+
+  /// Whether the connected partner currently has a live socket -- drives the
+  /// online/offline dot under their name.
+  final bool partnerOnline;
 
   @override
   Widget build(BuildContext context) {
@@ -150,6 +155,33 @@ class SharedSanctuaryHeader extends StatelessWidget {
                   height: 1.15,
                   letterSpacing: -0.3,
                 ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: partnerOnline
+                          ? const Color(0xFF22C55E)
+                          : const Color(0xFF9E9296),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    partnerOnline ? 'Online' : 'Offline',
+                    style: GoogleFonts.manrope(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: partnerOnline
+                          ? const Color(0xFF16A34A)
+                          : kSanctuaryMuted,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               InkWell(

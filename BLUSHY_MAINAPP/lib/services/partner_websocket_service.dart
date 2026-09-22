@@ -186,6 +186,16 @@ class PartnerWebSocketService {
     });
   }
 
+  /// Sends a small typing ping up the socket. Best-effort: dropped if there is
+  /// no live connection, and never throws (a typing hint is not worth an error).
+  void sendTyping(bool typing) {
+    final channel = _channel;
+    if (channel == null) return;
+    try {
+      channel.sink.add(jsonEncode({'type': 'typing', 'typing': typing}));
+    } catch (_) {}
+  }
+
   void disconnect() {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;

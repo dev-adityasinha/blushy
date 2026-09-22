@@ -150,6 +150,25 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // view over an account that is in fact connected.
   bool _connectionsLoaded = false;
 
+  // Whether the connected partner currently has a live socket. Seeded from the
+  // connection's `partnerOnline` on each load and kept live by the
+  // 'partner.presence' events the server sends on connect/disconnect.
+  bool _partnerOnline = false;
+
+  /// The partner's online flag as it stands in the latest connection payload.
+  bool _connectionPartnerOnline() =>
+      _connections.isNotEmpty && _connections.first['partnerOnline'] == true;
+
+  // Whether the partner is currently typing, driven by 'partner.typing' events.
+  bool _partnerTyping = false;
+  // Clears the indicator if the partner's "stopped" ping never arrives (socket
+  // drop, backgrounded app), so it can never stick "typing…" for ever.
+  Timer? _partnerTypingClearTimer;
+  // Throttles our own outgoing typing pings and remembers the last state sent,
+  // so we send at most one ping per burst and one "stopped" when idle.
+  Timer? _typingIdleTimer;
+  bool _typingSent = false;
+
   // Shared activities belong to the connection: whatever one partner does, the
   // other sees. They are loaded from the server rather than assumed.
   List<SharedActivity> _sharedActivities = const [];
@@ -583,6 +602,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           );
         }
         _hadActiveConnection = _connections.any((c) => c['status'] == 'active');
+        _partnerOnline = _connectionPartnerOnline();
         if (_connections.isNotEmpty) {
           unawaited(_loadSharedActivities());
         }
@@ -605,6 +625,30 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     ws.connect();
     _wsSubscription = ws.events.listen((event) {
       if (!mounted) return;
+      if (event.event == 'partner.presence') {
+        // The server sends this to a user when their partner's socket connects
+        // or fully disconnects. Only sent about this user's partner, so applies
+        // straight to the online dot.
+        final online = event.rawPayload['online'] == true;
+        if (online != _partnerOnline) {
+          setState(() => _partnerOnline = online);
+        }
+        return;
+      }
+      if (event.event == 'partner.typing') {
+        final typing = event.rawPayload['typing'] == true;
+        _partnerTypingClearTimer?.cancel();
+        if (typing) {
+          if (!_partnerTyping) setState(() => _partnerTyping = true);
+          // Safety net: if the "stopped" ping is lost, clear it anyway.
+          _partnerTypingClearTimer = Timer(const Duration(seconds: 6), () {
+            if (mounted && _partnerTyping) setState(() => _partnerTyping = false);
+          });
+        } else {
+          if (_partnerTyping) setState(() => _partnerTyping = false);
+        }
+        return;
+      }
       if (event.reason == 'message-sent') {
         _syncLiveMessages();
       } else if (event.reason == 'invitation-accepted' ||
@@ -832,6 +876,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           _connections = connections;
           _incomingInvitations = incoming;
           _outgoingInvitations = outgoing;
+          _partnerOnline = _connectionPartnerOnline();
         });
         try {
           UserStateStore.write('partner_connections_cache', {
@@ -866,6 +911,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     _messengerScrollController.dispose();
     _wsSubscription?.cancel();
     _liveChatTimer?.cancel();
+    _partnerTypingClearTimer?.cancel();
+    _typingIdleTimer?.cancel();
     _msgController.dispose();
     _partnerInviteEmailController.dispose();
     _relationshipController.dispose();
@@ -931,11 +978,42 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     }
   }
 
+  /// Sends throttled typing pings as she types: one "typing" at the start of a
+  /// burst, and one "stopped" after ~3s idle or when the field is cleared.
+  void _handleTypingInput(String text) {
+    final ws = PartnerWebSocketService();
+    if (text.trim().isNotEmpty) {
+      if (!_typingSent) {
+        _typingSent = true;
+        ws.sendTyping(true);
+      }
+      _typingIdleTimer?.cancel();
+      _typingIdleTimer = Timer(const Duration(seconds: 3), () {
+        if (_typingSent) {
+          _typingSent = false;
+          ws.sendTyping(false);
+        }
+      });
+    } else {
+      _stopTyping();
+    }
+  }
+
+  /// Immediately tells the partner we've stopped typing (on send or on clear).
+  void _stopTyping() {
+    _typingIdleTimer?.cancel();
+    if (_typingSent) {
+      _typingSent = false;
+      PartnerWebSocketService().sendTyping(false);
+    }
+  }
+
   void _sendTextMessage() async {
     final text = _msgController.text.trim();
     if (text.isEmpty) return;
 
     _msgController.clear();
+    _stopTyping();
     final state = BlushyOSProvider.of(context);
     final currentUserId = AuthStorage.getUserId();
     final currentRole = AuthStorage.getRole() ?? state.selectedRole;
@@ -1238,6 +1316,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           onInvite: _showPartnerConnectionsModal,
           onManageConnection: () => _showManageConnectionSheet(state),
           onOpenMessenger: hasConnection ? () => _openPartnerTab(2) : null,
+          partnerOnline: _partnerOnline,
         ),
         const SizedBox(height: 20),
 
@@ -3410,7 +3489,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       ),
                     ),
                   ),
-                  if (_showActiveStatus)
+                  if (_showActiveStatus && _partnerOnline)
                     Positioned(
                       right: 0,
                       bottom: 0,
@@ -3441,7 +3520,17 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (_showActiveStatus)
+                    if (_partnerTyping)
+                      Text(
+                        'typing…',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          color: const Color(0xFF0D9488),
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      )
+                    else if (_showActiveStatus && _partnerOnline)
                       Text(
                         'Active now',
                         style: GoogleFonts.manrope(
@@ -3624,6 +3713,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     ),
+                    onChanged: _handleTypingInput,
                     onSubmitted: (_) => _sendTextMessage(),
                   ),
                 ),
