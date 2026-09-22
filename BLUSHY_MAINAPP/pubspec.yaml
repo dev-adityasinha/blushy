@@ -87,6 +87,9 @@ flutter:
     - assets/period_started/
     - assets/period_symptoms/
     - assets/period_cramp/
+    - assets/body_changes/
+    - assets/puberty/
+    - assets/teenage_life/
 
   # The layouts asked for Georgia and Courier and shipped neither, so on Android
   # both fell back to Roboto and the editorial serif was lost. Neither is

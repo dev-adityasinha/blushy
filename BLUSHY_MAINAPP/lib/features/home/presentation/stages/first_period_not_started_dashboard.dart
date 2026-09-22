@@ -18,6 +18,7 @@ import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../widgets/log_symptoms_section.dart';
 import 'health_library_section.dart';
+import 'first_period_not_started_sections.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
 
@@ -1855,6 +1856,12 @@ class _FirstPeriodNotStartedDashboardState extends State<FirstPeriodNotStartedDa
                   const SizedBox(height: 18),
                   const HealthLibrarySection(stageKey: 'firstperiodnotstarted'),
                   const SizedBox(height: 18),
+                  const NotStartedBodyChangesSection(),
+                  const SizedBox(height: 20),
+                  const NotStartedMorePubertySection(),
+                  const SizedBox(height: 20),
+                  const NotStartedTeenageLifeSection(),
+                  const SizedBox(height: 18),
                   _buildTodayAiMoment(context),
                   const SizedBox(height: 18),
                   _buildYourBodyLately(context),
@@ -1896,6 +1903,12 @@ class _FirstPeriodNotStartedDashboardState extends State<FirstPeriodNotStartedDa
                                 const LogSymptomsSection(stageKey: 'firstperiodnotstarted'),
                   const SizedBox(height: 18),
                   const HealthLibrarySection(stageKey: 'firstperiodnotstarted'),
+                                const SizedBox(height: 18),
+                                const NotStartedBodyChangesSection(),
+                                const SizedBox(height: 20),
+                                const NotStartedMorePubertySection(),
+                                const SizedBox(height: 20),
+                                const NotStartedTeenageLifeSection(),
                                 const SizedBox(height: 18),
                                 _buildTodayAiMoment(context),
                                 const SizedBox(height: 18),
