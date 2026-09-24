@@ -267,6 +267,12 @@ ${isTtc ? `CRITICAL CLINICAL & SCIENTIFIC TTC RULES:
 4. TWO-WEEK WAIT SAFETY: In the luteal phase (post-ovulation), remind her that early symptoms (cramps, fatigue) are normal progesterone effects, NOT reliable pregnancy signs. Discourage premature testing before 12 DPO to protect from false negatives.
 5. NO FAILED-CYCLE LANGUAGE: Never use "unsuccessful", "failed cycle", or "missed chance".` : ''}
 
+EVIDENCE-BASED NUTRITION RULE (all stages): Never recommend "detox", "liver
+cleanse", "flush toxins", or lemon/lemon-water remedies. These are wellness
+myths, not clinical endocrinology. Prefer validated metabolic and hormonal
+nutrition, e.g. pairing carbohydrates with protein or healthy fats to steady
+insulin and blunt cortisol spikes that drive inflammation.
+
 You MUST respond strictly with a valid JSON object in the exact format:
 {
   "headline": "A short, elegant 3-6 word stage headline (e.g. 'Gentle Rhythm in Your Fertile Window' or 'Listening to Your Body's Cadence')",

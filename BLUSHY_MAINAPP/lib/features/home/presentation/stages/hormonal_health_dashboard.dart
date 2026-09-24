@@ -94,6 +94,14 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
   // ─── Support Circle ────────────────────────────────────────────────────────
   final List<Map<String, dynamic>> _supportCircle = [];
 
+  // Amenorrhea / irregular mode: when on, the tracker does not force a cyclic
+  // forecast (no "next cycle in N days"), for PCOS/amenorrhea users.
+  bool _amenorrheaMode = false;
+
+  // Which tab the "My Medical Vault" card shows: 0 = Treatments, 1 = Records.
+  // The vault merges the old Treatments and Health Records sections into one.
+  int _vaultTab = 0;
+
   late final ScrollController _internalScrollController = ScrollController();
   ScrollController get _effectiveScrollController => widget.scrollController ?? _internalScrollController;
 
@@ -126,7 +134,9 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
           _lastPeriodStartDate = event.date;
           _hasLoggedPeriod = true;
           final diff = DateTime.now().difference(event.date).inDays;
-          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
+          // True continuous counting: never clamp at the cycle length, so an
+          // extended hormonal cycle shows its real day (e.g. Day 41).
+          _currentCycleDay = (diff + 1).clamp(1, 999);
         });
         _fetchDynamicAiInsights();
       }
@@ -178,6 +188,11 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
       if (savedCircle is Map && savedCircle['items'] is List && (savedCircle['items'] as List).isNotEmpty) {
         _supportCircle.clear();
         _supportCircle.addAll((savedCircle['items'] as List).map((e) => Map<String, dynamic>.from(e as Map)));
+      }
+
+      final savedMode = UserStateStore.read('stage4_amenorrhea_mode');
+      if (savedMode['on'] == true) {
+        _amenorrheaMode = true;
       }
     } catch (_) {}
   }
@@ -330,7 +345,8 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
                           _lastPeriodStartDate = selectedDate;
                           _hasLoggedPeriod = true;
                           final diff = DateTime.now().difference(selectedDate).inDays;
-                          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
+                          // True continuous counting (see the event handler).
+                          _currentCycleDay = (diff + 1).clamp(1, 999);
                         });
                         try {
                           BlushyStorage.write('last_period_entry.json', {
@@ -440,7 +456,7 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
     } else {
       phaseHeadline = 'Cycle Day $_currentCycleDay · $_currentPhaseName';
       phaseNarrative = 'Your body is navigating hormonal balance. Track how your pelvic ease, stamina, and digestion feel today so Docsy can personalize your rhythm.';
-      oneThingToKeepInMind = 'Restorative hydration and gentle movement help support steady hormonal transitions.';
+      oneThingToKeepInMind = 'Pair carbohydrates with protein or healthy fats to keep insulin steady and blunt the cortisol spikes that can drive inflammation.';
     }
 
     if (_dynamicDocsyHeadline != null && _dynamicDocsyHeadline!.isNotEmpty) {
@@ -552,6 +568,9 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
               height: 1.5,
             ),
           ),
+
+          // Pattern badges: calm, at-a-glance rhythm markers.
+          _buildHeroPatternBadges(context),
           const SizedBox(height: 12),
 
           // One Thing to Keep in Mind
@@ -638,8 +657,280 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
     );
   }
 
+  // Best-effort "pattern badges" on the hero: calm, at-a-glance markers of her
+  // rhythm. Long-cycle baseline when her average cycle runs long; a pre-bleed
+  // (luteal) flare hint for the PMDD/hormonal-flare window; and a spotting-vs-
+  // flow clarifier so light spotting is never mistaken for a new Day 1. Copy is
+  // deliberately non-alarming (no "late"/"overdue"). Review the thresholds.
+  Widget _buildHeroPatternBadges(BuildContext context) {
+    if (!_hasLoggedPeriod) return const SizedBox.shrink();
+
+    Widget badge(String label, Color fg, Color bg) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: fg,
+            ),
+          ),
+        );
+
+    final List<Widget> badges = [];
+
+    // Long-cycle baseline: her configured/learned cycle runs notably long
+    // (>35 days), common in PCOS/hormonal health. Framed as a baseline, not a
+    // problem.
+    if (_cycleLength > 35) {
+      badges.add(badge('Long-Cycle Baseline · ~${_cycleLength}d',
+          const Color(0xFF7C3AED), const Color(0xFFF6F1FB)));
+    }
+
+    // Pre-bleed flare window: the luteal phase, when hormonal-health flares
+    // (PMDD-type sensitivity, inflammation) tend to peak. Not shown in
+    // amenorrhea mode, where no cyclic forecast is forced.
+    if (!_amenorrheaMode && _currentPhaseName == 'Luteal Phase') {
+      badges.add(badge('Pre-Bleed Flare Window',
+          const Color(0xFFB45309), const Color(0xFFFFF7ED)));
+    }
+
+    // Spotting-vs-flow clarifier: always available once she has a cycle, so she
+    // can distinguish spotting (keeps counting) from a full flow (new Day 1).
+    badges.add(
+      InkWell(
+        onTap: () => _openSpottingVsFlowSheet(context),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFDF2F8),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFFBCFE8)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('🩸', style: TextStyle(fontSize: 11)),
+              const SizedBox(width: 4),
+              Text('Spotting vs flow?',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF9D174D),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Wrap(spacing: 8, runSpacing: 8, children: badges),
+    );
+  }
+
+  // A gentle chooser that spells out the spotting-vs-flow distinction: spotting
+  // does not reset the cycle, a full flow does (and logs a new period start).
+  void _openSpottingVsFlowSheet(BuildContext context) {
+    void snack(String msg) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF7C3AED),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        content: Text(msg, style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
+      ));
+    }
+
+    Widget option(String emoji, String title, String sub, VoidCallback onTap) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cardBorderColor),
+          ),
+          child: Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                      style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w800, color: textMain),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(sub,
+                      style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFB0A2A8)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Spotting or full flow?',
+                style: GoogleFonts.cormorantGaramond(fontSize: 24, fontWeight: FontWeight.w700, color: textMain),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Light spotting isn’t the same as your period starting. Spotting doesn’t reset your cycle to Day 1 — only a full flow does.',
+                style: GoogleFonts.manrope(fontSize: 12.5, color: textMuted, height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              option('💧', 'Just spotting',
+                  'Keep counting — I won’t reset your day.', () {
+                Navigator.pop(ctx);
+                snack('Noted — spotting, not a full flow. Your cycle keeps counting; spotting isn’t a new Day 1.');
+              }),
+              const SizedBox(height: 10),
+              option('🩸', 'Full flow — log as period start',
+                  'This starts a new cycle at Day 1.', () {
+                Navigator.pop(ctx);
+                _openLogPeriodDialog(context);
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Quick actions shown in the extended-cycle zone. Non-alarming: log a real
+  // period, note spotting (which does not restart the count), or acknowledge
+  // still waiting.
+  Widget _buildExtendedQuickActions(BuildContext context) {
+    Widget chip(String emoji, String label, VoidCallback onTap) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAF7F2),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: cardBorderColor),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 12)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF221510),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    void snack(String msg) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF7C3AED),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        content: Text(msg, style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
+      ));
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.center,
+      children: [
+        chip('🩸', 'Period Started', () => _openLogPeriodDialog(context)),
+        chip('💧', 'Just Spotting',
+            () => snack("Noted — spotting, not a full flow. Your cycle keeps counting; spotting isn't a new Day 1.")),
+        chip('⏳', 'Still Waiting',
+            () => snack("That's okay — extended cycles are common in hormonal health. We'll keep counting with you.")),
+      ],
+    );
+  }
+
+  // Explicit irregular / amenorrhea toggle: PCOS and amenorrhea users should
+  // not have an artificial cyclic forecast forced on them.
+  Widget _buildAmenorrheaToggle(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: InkWell(
+        onTap: () {
+          setState(() => _amenorrheaMode = !_amenorrheaMode);
+          UserStateStore.write('stage4_amenorrhea_mode', {'on': _amenorrheaMode});
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _amenorrheaMode
+                  ? Icons.check_circle_rounded
+                  : Icons.circle_outlined,
+              size: 15,
+              color: _amenorrheaMode
+                  ? const Color(0xFF7C3AED)
+                  : const Color(0xFF9E9296),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Not currently bleeding (irregular / amenorrhea)',
+              style: GoogleFonts.manrope(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: _amenorrheaMode
+                    ? const Color(0xFF7C3AED)
+                    : const Color(0xFF7A6B72),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCycleTrackerCard(BuildContext context) {
     final int daysLeft = (_cycleLength - _currentCycleDay).clamp(0, _cycleLength);
+    // Hormonal-health cycles often stretch. Past the baseline it is an extended
+    // pattern, not "overdue": counted, never clamped, and worded calmly.
+    final bool isExtendedCycle = _hasLoggedPeriod && _currentCycleDay > _cycleLength;
+    final int extendedByDays = _currentCycleDay - _cycleLength;
 
     return Container(
       width: double.infinity,
@@ -759,40 +1050,94 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              _currentPhaseName,
-              style: GoogleFonts.cormorantGaramond(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                fontStyle: FontStyle.italic,
-                color: const Color(0xFF221510),
-                letterSpacing: -0.2,
+            if (_amenorrheaMode) ...[
+              Text(
+                'Not currently bleeding',
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  fontStyle: FontStyle.italic,
+                  color: const Color(0xFF221510),
+                  letterSpacing: -0.2,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Next cycle begins in ',
-                    style: GoogleFonts.manrope(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF7A6B72),
-                    ),
-                  ),
-                  TextSpan(
-                    text: '$daysLeft Days',
-                    style: GoogleFonts.manrope(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF221510),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 6),
+              Text(
+                'Tracking your baseline — no cycle forecast is forced in amenorrhea mode.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(
+                  fontSize: 11.5,
+                  height: 1.45,
+                  color: const Color(0xFF5A4E54),
+                ),
               ),
-            ),
+            ] else ...[
+              Text(
+                _currentPhaseName,
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  fontStyle: FontStyle.italic,
+                  color: const Color(0xFF221510),
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 6),
+              if (isExtendedCycle) ...[
+              // Calm status badge — never "OVERDUE" or "LATE ALERT".
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF6F1FB),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE7DBF3)),
+                ),
+                child: Text(
+                  'Extended Cycle Pattern (+$extendedByDays days)',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF7C3AED),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Educational hormonal context.
+              Text(
+                'Day $_currentCycleDay: in hormonal health, cycles often stretch when '
+                'ovulation is delayed or anovulatory. Progesterone has not dropped yet.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(
+                  fontSize: 11.5,
+                  height: 1.45,
+                  color: const Color(0xFF5A4E54),
+                ),
+              ),
+            ] else
+              RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Next cycle begins in ',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF7A6B72),
+                      ),
+                    ),
+                    TextSpan(
+                      text: '$daysLeft Days',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF221510),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ] else ...[
             RichText(
               text: TextSpan(
@@ -876,7 +1221,14 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
           ),
           const SizedBox(height: 10),
 
-          if (_hasLoggedPeriod) ...[
+          if (isExtendedCycle) ...[
+            _buildExtendedQuickActions(context),
+            const SizedBox(height: 10),
+          ],
+
+          if (_hasLoggedPeriod) _buildAmenorrheaToggle(context),
+
+          if (_hasLoggedPeriod && !_amenorrheaMode) ...[
             const SizedBox(height: 6),
             // 4-Phase Dot Legend
             FittedBox(
@@ -1104,61 +1456,6 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
   // ════════════════════════════════════════════════════════════════
   // 05 — WHAT'S DIFFERENT LATELY? (AI Change Detection)
   // ════════════════════════════════════════════════════════════════
-  Widget _buildWhatsDifferentLatelySection(BuildContext context) {
-    final bool isFirstTime = !_hasLoggedPeriod && _selectedSignals.isEmpty;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeaderWithIcon(
-          title: 'WHAT’S DIFFERENT LATELY?',
-          icon: Icons.auto_graph_rounded,
-          badgeColor: const Color(0xFF0284C7),
-        ),
-        const SizedBox(height: 10),
-        if (isFirstTime)
-          _buildChangeCard(
-            icon: Icons.track_changes_rounded,
-            title: 'Establishing Your Baseline',
-            desc: 'Log today’s signals to allow Docsy to detect shifts from your normal rhythm.',
-            badge: 'Day 1 Baseline',
-            badgeColor: const Color(0xFF0284C7),
-            onTap: () => _openDocsyWithPrompt(
-              context,
-              'Docsy, I am starting my hormonal health journey. How do you track my personal baseline?',
-            ),
-          )
-        else ...[
-          if (_selectedSignals.isNotEmpty)
-            _buildChangeCard(
-              icon: Icons.bolt_rounded,
-              title: '${_selectedSignals.first} Noted Today',
-              desc: 'Recorded ${_selectedSignals.length} active signal${_selectedSignals.length > 1 ? "s" : ""} in today\'s log',
-              badge: 'Real-time',
-              badgeColor: const Color(0xFF059669),
-              onTap: () => _openDocsyWithPrompt(
-                context,
-                'Docsy, I logged ${_selectedSignals.join(", ")} today. What does this mean for my hormonal rhythm?',
-              ),
-            ),
-          if (_hasLoggedPeriod) ...[
-            const SizedBox(height: 8),
-            _buildChangeCard(
-              icon: Icons.calendar_today_rounded,
-              title: 'Cycle Day $_currentCycleDay',
-              desc: 'Current phase: $_currentPhaseName',
-              badge: 'Tracked',
-              badgeColor: const Color(0xFFD97706),
-              onTap: () => _openDocsyWithPrompt(
-                context,
-                'Docsy, tell me what hormones are active on Day $_currentCycleDay ($_currentPhaseName) for $_userHealthContext.',
-              ),
-            ),
-          ],
-        ],
-      ],
-    );
-  }
-
   Widget _buildChangeCard({
     required IconData icon,
     required String title,
@@ -1377,6 +1674,53 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
               );
             },
           ),
+
+          // Merge #1: the old "What's Different Lately" reflection is folded in
+          // here, directly under the signals grid, so what she logs and the
+          // read-back of what it means sit in one card instead of two sections.
+          if (!_hasLoggedPeriod && _selectedSignals.isEmpty) ...[
+            const SizedBox(height: 12),
+            _buildChangeCard(
+              icon: Icons.track_changes_rounded,
+              title: 'Establishing Your Baseline',
+              desc: 'Log today’s signals to allow Docsy to detect shifts from your normal rhythm.',
+              badge: 'Day 1 Baseline',
+              badgeColor: const Color(0xFF0284C7),
+              onTap: () => _openDocsyWithPrompt(
+                context,
+                'Docsy, I am starting my hormonal health journey. How do you track my personal baseline?',
+              ),
+            ),
+          ] else ...[
+            if (_selectedSignals.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _buildChangeCard(
+                icon: Icons.bolt_rounded,
+                title: '${_selectedSignals.first} Noted Today',
+                desc: 'Recorded ${_selectedSignals.length} active signal${_selectedSignals.length > 1 ? "s" : ""} in today\'s log',
+                badge: 'Real-time',
+                badgeColor: const Color(0xFF059669),
+                onTap: () => _openDocsyWithPrompt(
+                  context,
+                  'Docsy, I logged ${_selectedSignals.join(", ")} today. What does this mean for my hormonal rhythm?',
+                ),
+              ),
+            ],
+            if (_hasLoggedPeriod) ...[
+              const SizedBox(height: 8),
+              _buildChangeCard(
+                icon: Icons.calendar_today_rounded,
+                title: 'Cycle Day $_currentCycleDay',
+                desc: 'Current phase: $_currentPhaseName',
+                badge: 'Tracked',
+                badgeColor: const Color(0xFFD97706),
+                onTap: () => _openDocsyWithPrompt(
+                  context,
+                  'Docsy, tell me what hormones are active on Day $_currentCycleDay ($_currentPhaseName) for $_userHealthContext.',
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );
@@ -1691,14 +2035,43 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
   // ════════════════════════════════════════════════════════════════
   // 08 — WHAT CHANGED AFTER TREATMENT? (Clean & Visual)
   // ════════════════════════════════════════════════════════════════
-  Widget _buildTreatmentTimelineSection(BuildContext context) {
+  // Merge #2: "My Medical Vault" folds the old Treatments & Protocols and My
+  // Health Records sections into a single card with a Treatments / Records tab,
+  // so clinical data lives in one place instead of two stacked sections.
+  Widget _buildMedicalVaultSection(BuildContext context) {
+    Widget tab(String label, int count, int index) {
+      final bool active = _vaultTab == index;
+      return Expanded(
+        child: InkWell(
+          onTap: () => setState(() => _vaultTab = index),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: active ? blushyPrimary : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              count > 0 ? '$label ($count)' : label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: active ? Colors.white : textMuted,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeaderWithIcon(
-          title: 'TREATMENTS & PROTOCOLS',
-          icon: Icons.medication_rounded,
-          badgeColor: const Color(0xFF059669),
+          title: 'MY MEDICAL VAULT',
+          icon: Icons.medical_information_outlined,
+          badgeColor: const Color(0xFF0284C7),
         ),
         const SizedBox(height: 10),
         Container(
@@ -1712,7 +2085,37 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_treatments.isEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAF7F2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFEDE4DC)),
+                ),
+                child: Row(
+                  children: [
+                    tab('Treatments', _treatments.length, 0),
+                    const SizedBox(width: 4),
+                    tab('Records', _healthRecords.length, 1),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              _vaultTab == 0
+                  ? _buildTreatmentsVaultBody(context)
+                  : _buildRecordsVaultBody(context),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTreatmentsVaultBody(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_treatments.isEmpty) ...[
                 Row(
                   children: [
                     Container(
@@ -1812,9 +2215,6 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -1873,100 +2273,66 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
   // ════════════════════════════════════════════════════════════════
   // 09 — MY HEALTH RECORDS (Compact & Visual)
   // ════════════════════════════════════════════════════════════════
-  Widget _buildHealthRecordsSection(BuildContext context) {
+  Widget _buildRecordsVaultBody(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeaderWithIcon(
-          title: 'MY HEALTH RECORDS',
-          icon: Icons.folder_shared_outlined,
-          badgeColor: const Color(0xFF0284C7),
-        ),
-        const SizedBox(height: 10),
-        if (_healthRecords.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: cardBorderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        if (_healthRecords.isEmpty) ...[
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.science_outlined, color: Color(0xFF16A34A), size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.science_outlined, color: Color(0xFF16A34A), size: 18),
+                    Text(
+                      'No health records uploaded yet',
+                      style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700, color: textMain),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'No health records uploaded yet',
-                            style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700, color: textMain),
-                          ),
-                          Text(
-                            'Upload ultrasound reports or hormone panels for Docsy to organize.',
-                            style: GoogleFonts.manrope(fontSize: 10.5, color: textMuted),
-                          ),
-                        ],
-                      ),
+                    Text(
+                      'Upload ultrasound reports or hormone panels for Docsy to organize.',
+                      style: GoogleFonts.manrope(fontSize: 10.5, color: textMuted),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                InkWell(
-                  onTap: () => _openAddHealthRecordModal(context),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.add_circle_outline_rounded, size: 14, color: blushyPrimary),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Upload lab report / scan',
-                        style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w700, color: blushyPrimary),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          )
-        else ...[
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ] else ...[
           ..._healthRecords.asMap().entries.map((entry) {
             final idx = entry.key;
             final rec = entry.value;
             return Container(
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cardBorderColor),
+                color: cardBgColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFEDE4DC)),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF0FDF4),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.science_outlined, color: Color(0xFF16A34A), size: 18),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2002,23 +2368,24 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
               ),
             );
           }),
-          InkWell(
-            onTap: () => _openAddHealthRecordModal(context),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add_circle_outline_rounded, size: 14, color: blushyPrimary),
-                  const SizedBox(width: 6),
-                  Text(AppLocalizations.of(context).hhUploadAnotherRecord,
-                    style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w700, color: blushyPrimary),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          const SizedBox(height: 4),
         ],
+        InkWell(
+          onTap: () => _openAddHealthRecordModal(context),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.add_circle_outline_rounded, size: 14, color: blushyPrimary),
+              const SizedBox(width: 6),
+              Text(
+                _healthRecords.isEmpty
+                    ? 'Upload lab report / scan'
+                    : AppLocalizations.of(context).hhUploadAnotherRecord,
+                style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w700, color: blushyPrimary),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -2516,15 +2883,11 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
           const SizedBox(height: 14),
           _buildFlareModeBanner(context),
           const SizedBox(height: 16),
-          _buildWhatsDifferentLatelySection(context),
-          const SizedBox(height: 16),
           _buildHowAreYouFeelingSection(context),
           const SizedBox(height: 16),
           _buildSymptomRelationshipsSection(context),
           const SizedBox(height: 16),
-          _buildTreatmentTimelineSection(context),
-          const SizedBox(height: 16),
-          _buildHealthRecordsSection(context),
+          _buildMedicalVaultSection(context),
           const SizedBox(height: 16),
           _buildDoctorReadinessSection(context),
           const SizedBox(height: 16),
