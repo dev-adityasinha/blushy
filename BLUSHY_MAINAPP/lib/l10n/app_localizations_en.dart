@@ -9,6 +9,102 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get vnRecordPrompt =>
+      'Please record or write a short reflection note.';
+
+  @override
+  String get vnSaveError => 'Could not save your reflection. Please try again.';
+
+  @override
+  String get vnSaved => 'Saved to your journal.';
+
+  @override
+  String get vnReRecord => 'Re-record';
+
+  @override
+  String get dsNothingToSave =>
+      'Nothing left to save. Keep at least one entry.';
+
+  @override
+  String get dsSummarySaved => 'Summary saved.';
+
+  @override
+  String get dsNothingToShare =>
+      'Nothing left to share. Keep at least one entry.';
+
+  @override
+  String get dsSummaryCopied => 'Summary copied.';
+
+  @override
+  String get dsForAppointment => 'For your appointment';
+
+  @override
+  String get dsCopy => 'Copy';
+
+  @override
+  String get dsChange => 'Change';
+
+  @override
+  String get dsIncludeScores => 'Include questionnaire scores';
+
+  @override
+  String get dsRemoveQuestion => 'Remove question';
+
+  @override
+  String get dsRaise => 'Something you want to raise';
+
+  @override
+  String get dsAddQuestion => 'Add question';
+
+  @override
+  String get ssSendBloom => 'Send a Bloom';
+
+  @override
+  String get ssWriteLetter => 'Write a Letter';
+
+  @override
+  String get ssWarmGesture => 'A Warm Gesture';
+
+  @override
+  String get ssSweetHug => 'Sweet hug & coffee';
+
+  @override
+  String get ssVoiceWhisper => 'Voice Whisper';
+
+  @override
+  String get ssAudioNote => 'Audio note';
+
+  @override
+  String get ssVibePulse => 'Vibe Pulse';
+
+  @override
+  String get ssShareEnergy => 'Share energy';
+
+  @override
+  String get ssLeaveNote => 'Leave a Note';
+
+  @override
+  String get ssPrivateChat => 'Private chat';
+
+  @override
+  String get ssWouldYouRather => 'Would You Rather? & Pillow Talk';
+
+  @override
+  String get ssPlanDate => 'Plan a Date & Book Seats';
+
+  @override
+  String get ssBloomsPostcards => 'Blooms & Postcards';
+
+  @override
+  String get ssTimeCapsuleLetters => 'Time Capsule Letters';
+
+  @override
+  String get ssLivingMemoryBook => 'Living Memory Book';
+
+  @override
+  String get ssConsentFirst => 'Consent-First Sharing';
+
+  @override
   String get ceRemindScreenshot => 'Remind to send screenshot 📸';
 
   @override

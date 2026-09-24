@@ -147,7 +147,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
       if (mounted) {
         setState(() => _isTranscribing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
               'Could not transcribe that recording. '
               'You can type your reflection instead.',
@@ -164,7 +164,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
         _isTranscribing = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'That recording came through empty. Try holding the button a '
             'little longer, or type your reflection instead.',
@@ -178,7 +178,7 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
     final text = _noteController.text.trim();
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please record or write a short reflection note.")),
+        SnackBar(content: Text(AppLocalizations.of(context).vnRecordPrompt)),
       );
       return;
     }
@@ -199,8 +199,8 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
 
     if (!saved) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text("Could not save your reflection. Please try again."),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).vnSaveError),
           backgroundColor: BlushyColors.primary,
         ),
       );
@@ -209,8 +209,8 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
 
     navigator.pop();
     messenger.showSnackBar(
-      const SnackBar(
-        content: Text("Saved to your journal."),
+      SnackBar(
+        content: Text(AppLocalizations.of(context).vnSaved),
         backgroundColor: BlushyColors.primary,
         duration: Duration(seconds: 2),
       ),
@@ -420,9 +420,9 @@ class _VoiceNoteBottomSheetState extends State<VoiceNoteBottomSheet> with Single
                         child: OutlinedButton.icon(
                           onPressed: _startRecording,
                           icon: const Icon(Icons.refresh_rounded, size: 16),
-                          label: const FittedBox(
+                          label: FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text("Re-record"),
+                            child: Text(AppLocalizations.of(context).vnReRecord),
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: BlushyColors.primary,

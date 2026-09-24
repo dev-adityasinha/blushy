@@ -9,6 +9,103 @@ class AppLocalizationsTe extends AppLocalizations {
   AppLocalizationsTe([String locale = 'te']) : super(locale);
 
   @override
+  String get vnRecordPrompt =>
+      'దయచేసి ఒక చిన్న రిఫ్లెక్షన్ నోట్‌ను రికార్డ్ చేయండి లేదా రాయండి.';
+
+  @override
+  String get vnSaveError =>
+      'మీ రిఫ్లెక్షన్‌ను సేవ్ చేయలేకపోయాం. దయచేసి మళ్లీ ప్రయత్నించండి.';
+
+  @override
+  String get vnSaved => 'మీ జర్నల్‌లో సేవ్ చేయబడింది.';
+
+  @override
+  String get vnReRecord => 'మళ్లీ రికార్డ్ చేయండి';
+
+  @override
+  String get dsNothingToSave =>
+      'సేవ్ చేయడానికి ఏమీ లేదు. కనీసం ఒక ఎంట్రీని ఉంచండి.';
+
+  @override
+  String get dsSummarySaved => 'సారాంశం సేవ్ చేయబడింది.';
+
+  @override
+  String get dsNothingToShare =>
+      'షేర్ చేయడానికి ఏమీ లేదు. కనీసం ఒక ఎంట్రీని ఉంచండి.';
+
+  @override
+  String get dsSummaryCopied => 'సారాంశం కాపీ చేయబడింది.';
+
+  @override
+  String get dsForAppointment => 'మీ అపాయింట్‌మెంట్ కోసం';
+
+  @override
+  String get dsCopy => 'కాపీ చేయండి';
+
+  @override
+  String get dsChange => 'మార్చండి';
+
+  @override
+  String get dsIncludeScores => 'ప్రశ్నావళి స్కోర్‌లను చేర్చండి';
+
+  @override
+  String get dsRemoveQuestion => 'ప్రశ్నను తీసివేయండి';
+
+  @override
+  String get dsRaise => 'మీరు లేవనెత్తాలనుకుంటున్న ఏదైనా';
+
+  @override
+  String get dsAddQuestion => 'ప్రశ్నను జోడించండి';
+
+  @override
+  String get ssSendBloom => 'ఒక పువ్వు పంపండి';
+
+  @override
+  String get ssWriteLetter => 'ఒక లేఖ రాయండి';
+
+  @override
+  String get ssWarmGesture => 'ఒక వెచ్చని సంజ్ఞ';
+
+  @override
+  String get ssSweetHug => 'తీపి కౌగిలి & కాఫీ';
+
+  @override
+  String get ssVoiceWhisper => 'వాయిస్ గుసగుస';
+
+  @override
+  String get ssAudioNote => 'ఆడియో నోట్';
+
+  @override
+  String get ssVibePulse => 'వైబ్ పల్స్';
+
+  @override
+  String get ssShareEnergy => 'శక్తిని పంచుకోండి';
+
+  @override
+  String get ssLeaveNote => 'ఒక నోట్ ఉంచండి';
+
+  @override
+  String get ssPrivateChat => 'ప్రైవేట్ చాట్';
+
+  @override
+  String get ssWouldYouRather => 'నువ్వు ఏది కోరుకుంటావు? & పిల్లో టాక్';
+
+  @override
+  String get ssPlanDate => 'డేట్ ప్లాన్ చేసి సీట్లు బుక్ చేయండి';
+
+  @override
+  String get ssBloomsPostcards => 'పూలు & పోస్ట్‌కార్డ్‌లు';
+
+  @override
+  String get ssTimeCapsuleLetters => 'టైమ్ క్యాప్సూల్ లేఖలు';
+
+  @override
+  String get ssLivingMemoryBook => 'సజీవ మెమరీ బుక్';
+
+  @override
+  String get ssConsentFirst => 'సమ్మతి-మొదటి భాగస్వామ్యం';
+
+  @override
   String get ceRemindScreenshot => 'స్క్రీన్‌షాట్ పంపమని గుర్తు చేయండి 📸';
 
   @override

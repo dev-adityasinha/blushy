@@ -9,6 +9,103 @@ class AppLocalizationsMr extends AppLocalizations {
   AppLocalizationsMr([String locale = 'mr']) : super(locale);
 
   @override
+  String get vnRecordPrompt =>
+      'कृपया एक छोटी चिंतन टीप रेकॉर्ड करा किंवा लिहा.';
+
+  @override
+  String get vnSaveError =>
+      'तुमचे चिंतन जतन करता आले नाही. कृपया पुन्हा प्रयत्न करा.';
+
+  @override
+  String get vnSaved => 'तुमच्या जर्नलमध्ये जतन केले.';
+
+  @override
+  String get vnReRecord => 'पुन्हा रेकॉर्ड करा';
+
+  @override
+  String get dsNothingToSave =>
+      'जतन करण्यासाठी काही उरले नाही. किमान एक नोंद ठेवा.';
+
+  @override
+  String get dsSummarySaved => 'सारांश जतन केला.';
+
+  @override
+  String get dsNothingToShare =>
+      'शेअर करण्यासाठी काही उरले नाही. किमान एक नोंद ठेवा.';
+
+  @override
+  String get dsSummaryCopied => 'सारांश कॉपी केला.';
+
+  @override
+  String get dsForAppointment => 'तुमच्या भेटीसाठी';
+
+  @override
+  String get dsCopy => 'कॉपी करा';
+
+  @override
+  String get dsChange => 'बदला';
+
+  @override
+  String get dsIncludeScores => 'प्रश्नावली स्कोअर समाविष्ट करा';
+
+  @override
+  String get dsRemoveQuestion => 'प्रश्न काढा';
+
+  @override
+  String get dsRaise => 'तुम्हाला मांडायचे असलेले काही';
+
+  @override
+  String get dsAddQuestion => 'प्रश्न जोडा';
+
+  @override
+  String get ssSendBloom => 'एक फूल पाठवा';
+
+  @override
+  String get ssWriteLetter => 'एक पत्र लिहा';
+
+  @override
+  String get ssWarmGesture => 'एक उबदार हावभाव';
+
+  @override
+  String get ssSweetHug => 'गोड मिठी आणि कॉफी';
+
+  @override
+  String get ssVoiceWhisper => 'आवाजाची कुजबुज';
+
+  @override
+  String get ssAudioNote => 'ऑडिओ टीप';
+
+  @override
+  String get ssVibePulse => 'व्हाइब पल्स';
+
+  @override
+  String get ssShareEnergy => 'ऊर्जा शेअर करा';
+
+  @override
+  String get ssLeaveNote => 'एक टीप ठेवा';
+
+  @override
+  String get ssPrivateChat => 'खाजगी चॅट';
+
+  @override
+  String get ssWouldYouRather => 'तू काय पसंत करशील? आणि उशी गप्पा';
+
+  @override
+  String get ssPlanDate => 'डेट प्लॅन करा आणि सीट बुक करा';
+
+  @override
+  String get ssBloomsPostcards => 'फुले आणि पोस्टकार्ड';
+
+  @override
+  String get ssTimeCapsuleLetters => 'टाइम कॅप्सूल पत्रे';
+
+  @override
+  String get ssLivingMemoryBook => 'जिवंत मेमरी बुक';
+
+  @override
+  String get ssConsentFirst => 'संमती-प्रथम शेअरिंग';
+
+  @override
   String get ceRemindScreenshot => 'स्क्रीनशॉट पाठवण्याची आठवण करा 📸';
 
   @override

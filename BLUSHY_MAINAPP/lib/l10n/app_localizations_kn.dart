@@ -9,6 +9,103 @@ class AppLocalizationsKn extends AppLocalizations {
   AppLocalizationsKn([String locale = 'kn']) : super(locale);
 
   @override
+  String get vnRecordPrompt =>
+      'ದಯವಿಟ್ಟು ಒಂದು ಚಿಕ್ಕ ಚಿಂತನೆ ಟಿಪ್ಪಣಿ ರೆಕಾರ್ಡ್ ಮಾಡಿ ಅಥವಾ ಬರೆಯಿರಿ.';
+
+  @override
+  String get vnSaveError =>
+      'ನಿಮ್ಮ ಚಿಂತನೆಯನ್ನು ಉಳಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get vnSaved => 'ನಿಮ್ಮ ಜರ್ನಲ್‌ನಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get vnReRecord => 'ಮತ್ತೆ ರೆಕಾರ್ಡ್ ಮಾಡಿ';
+
+  @override
+  String get dsNothingToSave =>
+      'ಉಳಿಸಲು ಏನೂ ಉಳಿದಿಲ್ಲ. ಕನಿಷ್ಠ ಒಂದು ನಮೂದನ್ನು ಇರಿಸಿ.';
+
+  @override
+  String get dsSummarySaved => 'ಸಾರಾಂಶ ಉಳಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get dsNothingToShare =>
+      'ಹಂಚಿಕೊಳ್ಳಲು ಏನೂ ಉಳಿದಿಲ್ಲ. ಕನಿಷ್ಠ ಒಂದು ನಮೂದನ್ನು ಇರಿಸಿ.';
+
+  @override
+  String get dsSummaryCopied => 'ಸಾರಾಂಶ ನಕಲಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get dsForAppointment => 'ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಾಗಿ';
+
+  @override
+  String get dsCopy => 'ನಕಲಿಸಿ';
+
+  @override
+  String get dsChange => 'ಬದಲಾಯಿಸಿ';
+
+  @override
+  String get dsIncludeScores => 'ಪ್ರಶ್ನಾವಳಿ ಸ್ಕೋರ್‌ಗಳನ್ನು ಸೇರಿಸಿ';
+
+  @override
+  String get dsRemoveQuestion => 'ಪ್ರಶ್ನೆ ತೆಗೆದುಹಾಕಿ';
+
+  @override
+  String get dsRaise => 'ನೀವು ಪ್ರಸ್ತಾಪಿಸಲು ಬಯಸುವ ಏನಾದರೂ';
+
+  @override
+  String get dsAddQuestion => 'ಪ್ರಶ್ನೆ ಸೇರಿಸಿ';
+
+  @override
+  String get ssSendBloom => 'ಒಂದು ಹೂವು ಕಳುಹಿಸಿ';
+
+  @override
+  String get ssWriteLetter => 'ಒಂದು ಪತ್ರ ಬರೆಯಿರಿ';
+
+  @override
+  String get ssWarmGesture => 'ಒಂದು ಬೆಚ್ಚಗಿನ ಸನ್ನೆ';
+
+  @override
+  String get ssSweetHug => 'ಸಿಹಿ ಅಪ್ಪುಗೆ ಮತ್ತು ಕಾಫಿ';
+
+  @override
+  String get ssVoiceWhisper => 'ಧ್ವನಿ ಪಿಸುಮಾತು';
+
+  @override
+  String get ssAudioNote => 'ಆಡಿಯೋ ಟಿಪ್ಪಣಿ';
+
+  @override
+  String get ssVibePulse => 'ವೈಬ್ ಪಲ್ಸ್';
+
+  @override
+  String get ssShareEnergy => 'ಶಕ್ತಿ ಹಂಚಿಕೊಳ್ಳಿ';
+
+  @override
+  String get ssLeaveNote => 'ಒಂದು ಟಿಪ್ಪಣಿ ಬಿಡಿ';
+
+  @override
+  String get ssPrivateChat => 'ಖಾಸಗಿ ಚಾಟ್';
+
+  @override
+  String get ssWouldYouRather => 'ನೀನು ಯಾವುದನ್ನು ಬಯಸುತ್ತೀಯ? ಮತ್ತು ಪಿಲ್ಲೋ ಟಾಕ್';
+
+  @override
+  String get ssPlanDate => 'ಡೇಟ್ ಯೋಜಿಸಿ ಮತ್ತು ಆಸನಗಳನ್ನು ಬುಕ್ ಮಾಡಿ';
+
+  @override
+  String get ssBloomsPostcards => 'ಹೂವುಗಳು ಮತ್ತು ಪೋಸ್ಟ್‌ಕಾರ್ಡ್‌ಗಳು';
+
+  @override
+  String get ssTimeCapsuleLetters => 'ಟೈಮ್ ಕ್ಯಾಪ್ಸೂಲ್ ಪತ್ರಗಳು';
+
+  @override
+  String get ssLivingMemoryBook => 'ಜೀವಂತ ಮೆಮೊರಿ ಬುಕ್';
+
+  @override
+  String get ssConsentFirst => 'ಒಪ್ಪಿಗೆ-ಮೊದಲ ಹಂಚಿಕೆ';
+
+  @override
   String get ceRemindScreenshot => 'ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ಕಳುಹಿಸಲು ನೆನಪಿಸಿ 📸';
 
   @override

@@ -108,6 +108,192 @@ abstract class AppLocalizations {
     Locale('te'),
   ];
 
+  /// No description provided for @vnRecordPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Please record or write a short reflection note.'**
+  String get vnRecordPrompt;
+
+  /// No description provided for @vnSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your reflection. Please try again.'**
+  String get vnSaveError;
+
+  /// No description provided for @vnSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to your journal.'**
+  String get vnSaved;
+
+  /// No description provided for @vnReRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-record'**
+  String get vnReRecord;
+
+  /// No description provided for @dsNothingToSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing left to save. Keep at least one entry.'**
+  String get dsNothingToSave;
+
+  /// No description provided for @dsSummarySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary saved.'**
+  String get dsSummarySaved;
+
+  /// No description provided for @dsNothingToShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing left to share. Keep at least one entry.'**
+  String get dsNothingToShare;
+
+  /// No description provided for @dsSummaryCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary copied.'**
+  String get dsSummaryCopied;
+
+  /// No description provided for @dsForAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'For your appointment'**
+  String get dsForAppointment;
+
+  /// No description provided for @dsCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get dsCopy;
+
+  /// No description provided for @dsChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get dsChange;
+
+  /// No description provided for @dsIncludeScores.
+  ///
+  /// In en, this message translates to:
+  /// **'Include questionnaire scores'**
+  String get dsIncludeScores;
+
+  /// No description provided for @dsRemoveQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove question'**
+  String get dsRemoveQuestion;
+
+  /// No description provided for @dsRaise.
+  ///
+  /// In en, this message translates to:
+  /// **'Something you want to raise'**
+  String get dsRaise;
+
+  /// No description provided for @dsAddQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Add question'**
+  String get dsAddQuestion;
+
+  /// No description provided for @ssSendBloom.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a Bloom'**
+  String get ssSendBloom;
+
+  /// No description provided for @ssWriteLetter.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a Letter'**
+  String get ssWriteLetter;
+
+  /// No description provided for @ssWarmGesture.
+  ///
+  /// In en, this message translates to:
+  /// **'A Warm Gesture'**
+  String get ssWarmGesture;
+
+  /// No description provided for @ssSweetHug.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweet hug & coffee'**
+  String get ssSweetHug;
+
+  /// No description provided for @ssVoiceWhisper.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Whisper'**
+  String get ssVoiceWhisper;
+
+  /// No description provided for @ssAudioNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio note'**
+  String get ssAudioNote;
+
+  /// No description provided for @ssVibePulse.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibe Pulse'**
+  String get ssVibePulse;
+
+  /// No description provided for @ssShareEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'Share energy'**
+  String get ssShareEnergy;
+
+  /// No description provided for @ssLeaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a Note'**
+  String get ssLeaveNote;
+
+  /// No description provided for @ssPrivateChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Private chat'**
+  String get ssPrivateChat;
+
+  /// No description provided for @ssWouldYouRather.
+  ///
+  /// In en, this message translates to:
+  /// **'Would You Rather? & Pillow Talk'**
+  String get ssWouldYouRather;
+
+  /// No description provided for @ssPlanDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a Date & Book Seats'**
+  String get ssPlanDate;
+
+  /// No description provided for @ssBloomsPostcards.
+  ///
+  /// In en, this message translates to:
+  /// **'Blooms & Postcards'**
+  String get ssBloomsPostcards;
+
+  /// No description provided for @ssTimeCapsuleLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Capsule Letters'**
+  String get ssTimeCapsuleLetters;
+
+  /// No description provided for @ssLivingMemoryBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Living Memory Book'**
+  String get ssLivingMemoryBook;
+
+  /// No description provided for @ssConsentFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent-First Sharing'**
+  String get ssConsentFirst;
+
   /// No description provided for @ceRemindScreenshot.
   ///
   /// In en, this message translates to:

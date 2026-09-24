@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../services/api_partner_service.dart';
 import '../../../shared/docsy_avatar.dart';
+import '../../../l10n/app_localizations.dart';
 
 // ============================================================================
 // STAGE 1 DESIGN SYSTEM TOKENS (Partner Space)
@@ -1160,7 +1161,7 @@ class MakeALittleMomentRail extends StatelessWidget {
   Widget build(BuildContext context) {
     final actions = [
       (
-        label: 'Send a Bloom',
+        label: AppLocalizations.of(context).ssSendBloom,
         sublabel: bloomsCount > 0 ? '$bloomsCount blooming' : 'Virtual petals',
         icon: Icons.local_florist_rounded,
         tint: kAmberTint,
@@ -1168,7 +1169,7 @@ class MakeALittleMomentRail extends StatelessWidget {
         onTap: onSendBloom,
       ),
       (
-        label: 'Write a Letter',
+        label: AppLocalizations.of(context).ssWriteLetter,
         sublabel: sealedLettersCount > 0
             ? '$sealedLettersCount sealed'
             : (lettersCount > 0 ? '$lettersCount written' : 'Time capsule'),
@@ -1179,8 +1180,8 @@ class MakeALittleMomentRail extends StatelessWidget {
       ),
       if (onSendWarmGesture != null)
         (
-          label: 'A Warm Gesture',
-          sublabel: 'Sweet hug & coffee',
+          label: AppLocalizations.of(context).ssWarmGesture,
+          sublabel: AppLocalizations.of(context).ssSweetHug,
           icon: Icons.coffee_rounded,
           tint: kTealTint,
           accent: kTeal,
@@ -1188,8 +1189,8 @@ class MakeALittleMomentRail extends StatelessWidget {
         ),
       if (onVoiceWhisper != null)
         (
-          label: 'Voice Whisper',
-          sublabel: 'Audio note',
+          label: AppLocalizations.of(context).ssVoiceWhisper,
+          sublabel: AppLocalizations.of(context).ssAudioNote,
           icon: Icons.mic_rounded,
           tint: kCobaltTint,
           accent: kCobalt,
@@ -1197,8 +1198,8 @@ class MakeALittleMomentRail extends StatelessWidget {
         ),
       if (onShareVibe != null)
         (
-          label: 'Vibe Pulse',
-          sublabel: 'Share energy',
+          label: AppLocalizations.of(context).ssVibePulse,
+          sublabel: AppLocalizations.of(context).ssShareEnergy,
           icon: Icons.auto_awesome_rounded,
           tint: kMagentaTint,
           accent: kMagenta,
@@ -1206,8 +1207,8 @@ class MakeALittleMomentRail extends StatelessWidget {
         ),
       if (onLeaveMessage != null)
         (
-          label: 'Leave a Note',
-          sublabel: 'Private chat',
+          label: AppLocalizations.of(context).ssLeaveNote,
+          sublabel: AppLocalizations.of(context).ssPrivateChat,
           icon: Icons.chat_bubble_rounded,
           tint: kCobaltTint,
           accent: kCobalt,
@@ -1827,7 +1828,7 @@ class CoupleExperiencesHubCard extends StatelessWidget {
           icon: Icons.casino_rounded,
           iconTint: kMagentaTint,
           iconColor: kMagenta,
-          title: 'Would You Rather? & Pillow Talk',
+          title: AppLocalizations.of(context).ssWouldYouRather,
           description: 'Shuffle fun questions, send them into Messenger, and take turns texting your answers virtually.',
           ctaLabel: 'Play Games with $pName 🎲',
           ctaColor: kMagenta,
@@ -1844,7 +1845,7 @@ class CoupleExperiencesHubCard extends StatelessWidget {
           icon: Icons.calendar_today_rounded,
           iconTint: kCobaltTint,
           iconColor: kCobalt,
-          title: 'Plan a Date & Book Seats',
+          title: AppLocalizations.of(context).ssPlanDate,
           description: 'Pick candlelight vibes, get Docsy AI venue recommendations, and send a date invite to chat.',
           ctaLabel: 'Plan a Date with $pName ✨',
           ctaColor: kCobalt,
@@ -1861,7 +1862,7 @@ class CoupleExperiencesHubCard extends StatelessWidget {
           icon: Icons.palette_rounded,
           iconTint: kTealTint,
           iconColor: kTeal,
-          title: 'Shared Drawing Canvas',
+          title: AppLocalizations.of(context).ptDrawingCanvas,
           description: 'Doodle love notes, sketch cute drawings together, and send sweet artwork into chat.',
           ctaLabel: 'Open Drawing Canvas 🎨',
           ctaColor: kTeal,
@@ -2456,28 +2457,28 @@ class UnpairedAspirationalExperience extends StatelessWidget {
         icon: Icons.local_florist_rounded,
         accent: kTeal,
         tint: kTealTint,
-        title: 'Blooms & Postcards',
+        title: AppLocalizations.of(context).ssBloomsPostcards,
         desc: 'Send digital flower blooms and sweet postcards throughout the day.',
       ),
       (
         icon: Icons.mark_email_unread_rounded,
         accent: kMagenta,
         tint: kMagentaTint,
-        title: 'Time Capsule Letters',
+        title: AppLocalizations.of(context).ssTimeCapsuleLetters,
         desc: 'Leave sealed letters for anniversaries, milestones, and quiet days.',
       ),
       (
         icon: Icons.auto_stories_rounded,
         accent: kCobalt,
         tint: kCobaltTint,
-        title: 'Living Memory Book',
+        title: AppLocalizations.of(context).ssLivingMemoryBook,
         desc: 'A living scrapbook of memories and challenges you experience together.',
       ),
       (
         icon: Icons.shield_outlined,
         accent: kPurple,
         tint: kPurpleTint,
-        title: 'Consent-First Sharing',
+        title: AppLocalizations.of(context).ssConsentFirst,
         desc: 'You have complete control over what is shared and can take private space anytime.',
       ),
     ];

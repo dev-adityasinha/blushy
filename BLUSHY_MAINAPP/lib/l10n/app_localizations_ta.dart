@@ -9,6 +9,103 @@ class AppLocalizationsTa extends AppLocalizations {
   AppLocalizationsTa([String locale = 'ta']) : super(locale);
 
   @override
+  String get vnRecordPrompt =>
+      'தயவுசெய்து ஒரு சிறிய பிரதிபலிப்பு குறிப்பைப் பதிவு செய்யவும் அல்லது எழுதவும்.';
+
+  @override
+  String get vnSaveError =>
+      'உங்கள் பிரதிபலிப்பைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get vnSaved => 'உங்கள் ஜர்னலில் சேமிக்கப்பட்டது.';
+
+  @override
+  String get vnReRecord => 'மீண்டும் பதிவு செய்';
+
+  @override
+  String get dsNothingToSave =>
+      'சேமிக்க எதுவும் இல்லை. குறைந்தது ஒரு பதிவையாவது வைத்திருங்கள்.';
+
+  @override
+  String get dsSummarySaved => 'சுருக்கம் சேமிக்கப்பட்டது.';
+
+  @override
+  String get dsNothingToShare =>
+      'பகிர எதுவும் இல்லை. குறைந்தது ஒரு பதிவையாவது வைத்திருங்கள்.';
+
+  @override
+  String get dsSummaryCopied => 'சுருக்கம் நகலெடுக்கப்பட்டது.';
+
+  @override
+  String get dsForAppointment => 'உங்கள் சந்திப்புக்காக';
+
+  @override
+  String get dsCopy => 'நகலெடு';
+
+  @override
+  String get dsChange => 'மாற்று';
+
+  @override
+  String get dsIncludeScores => 'கேள்வித்தாள் மதிப்பெண்களைச் சேர்க்கவும்';
+
+  @override
+  String get dsRemoveQuestion => 'கேள்வியை அகற்று';
+
+  @override
+  String get dsRaise => 'நீங்கள் எழுப்ப விரும்பும் ஏதாவது';
+
+  @override
+  String get dsAddQuestion => 'கேள்வியைச் சேர்';
+
+  @override
+  String get ssSendBloom => 'ஒரு மலரை அனுப்பு';
+
+  @override
+  String get ssWriteLetter => 'ஒரு கடிதம் எழுது';
+
+  @override
+  String get ssWarmGesture => 'ஒரு அன்பான சைகை';
+
+  @override
+  String get ssSweetHug => 'இனிய அணைப்பு & காபி';
+
+  @override
+  String get ssVoiceWhisper => 'குரல் மென்மொழி';
+
+  @override
+  String get ssAudioNote => 'ஆடியோ குறிப்பு';
+
+  @override
+  String get ssVibePulse => 'வைப் பல்ஸ்';
+
+  @override
+  String get ssShareEnergy => 'ஆற்றலைப் பகிர்';
+
+  @override
+  String get ssLeaveNote => 'ஒரு குறிப்பை விடு';
+
+  @override
+  String get ssPrivateChat => 'தனிப்பட்ட அரட்டை';
+
+  @override
+  String get ssWouldYouRather => 'நீ விரும்புவது? & தலையணை அரட்டை';
+
+  @override
+  String get ssPlanDate => 'டேட் திட்டமிட்டு இருக்கைகளை முன்பதிவு செய்';
+
+  @override
+  String get ssBloomsPostcards => 'மலர்கள் & அஞ்சல் அட்டைகள்';
+
+  @override
+  String get ssTimeCapsuleLetters => 'டைம் கேப்சூல் கடிதங்கள்';
+
+  @override
+  String get ssLivingMemoryBook => 'உயிரோட்டமான நினைவு புத்தகம்';
+
+  @override
+  String get ssConsentFirst => 'ஒப்புதல்-முதல் பகிர்வு';
+
+  @override
   String get ceRemindScreenshot => 'ஸ்கிரீன்ஷாட் அனுப்ப நினைவூட்டு 📸';
 
   @override
