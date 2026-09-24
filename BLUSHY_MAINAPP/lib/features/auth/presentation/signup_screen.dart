@@ -104,7 +104,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (_mode == AuthFormMode.signup && !_isTermsAccepted) {
       setState(() {
-        _errorMessage = 'Please agree to the Terms & Conditions to proceed.';
+        _errorMessage = 'Please agree to the Terms and Privacy Policy to proceed.';
       });
       return;
     }
@@ -1368,7 +1368,30 @@ class _SignupScreenState extends State<SignupScreen> {
                                   GestureDetector(
                                     onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.termsAndConditions),
                                     child: Text(
-                                      AppLocalizations.of(context).sTermsConditions,
+                                      AppLocalizations.of(context).sTerms,
+                                      style: const TextStyle(
+                                        fontFamily: 'Manrope',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.2,
+                                        color: primaryColor,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                  const Text(
+                                    ' and ',
+                                    style: TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 12,
+                                      color: textDark,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => LegalDocumentsScreen.show(context, initialTab: LegalTab.privacyPolicy),
+                                    child: Text(
+                                      AppLocalizations.of(context).sPrivacyPolicy,
                                       style: const TextStyle(
                                         fontFamily: 'Manrope',
                                         fontSize: 12,
@@ -1580,7 +1603,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         const Text(
-                          ' & ',
+                          ' and ',
                           style: TextStyle(
                             fontFamily: 'Manrope',
                             fontSize: 11,

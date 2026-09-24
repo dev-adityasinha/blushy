@@ -1598,7 +1598,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                                     fontFamily: 'Manrope',
                                     fontSize: 13,
                                     color: isDone ? const Color(0xFF2D2529) : const Color(0xFF8A7C83),
-                                    fontWeight: isDone ? FontWeight.w700 : FontWeight.w400,
+                                    fontWeight: FontWeight.w400,
                                     letterSpacing: 0.15,
                                   ),
                                 ),
@@ -3331,7 +3331,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           return _buildPremiumSelectionRow(
             title: opt,
             isSelected: isSelected,
-            isMulti: true,
             onTap: () {
               setState(() {
                 if (isSelected) {
@@ -3371,7 +3370,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           return _buildPremiumSelectionRow(
             title: opt,
             isSelected: isSelected,
-            isMulti: true,
             onTap: () {
               setState(() {
                 if (isSelected) {
@@ -3412,7 +3410,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           return _buildPremiumSelectionRow(
             title: opt,
             isSelected: isSelected,
-            isMulti: true,
             onTap: () {
               setState(() {
                 if (isSelected) {
@@ -3446,7 +3443,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     required bool isSelected,
     bool isLocked = false,
     required VoidCallback onTap,
-    bool isMulti = false,
   }) {
     return PremiumSelectionRow(
       title: title,
@@ -3455,7 +3451,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       isSelected: isSelected,
       isLocked: isLocked,
       onTap: onTap,
-      isMulti: isMulti,
     );
   }
 
@@ -3523,7 +3518,6 @@ class PremiumSelectionRow extends StatefulWidget {
   final bool isSelected;
   final bool isLocked;
   final VoidCallback onTap;
-  final bool isMulti;
 
   const PremiumSelectionRow({
     super.key,
@@ -3533,7 +3527,6 @@ class PremiumSelectionRow extends StatefulWidget {
     required this.isSelected,
     this.isLocked = false,
     required this.onTap,
-    this.isMulti = false,
   });
 
   @override
@@ -3568,9 +3561,12 @@ class _PremiumSelectionRowState extends State<PremiumSelectionRow> with SingleTi
             decoration: BoxDecoration(
               color: widget.isLocked
                   ? const Color(0xFFF7F4EF)
-                  : widget.isSelected 
-                      ? BlushyColors.primary.withValues(alpha: 0.04) 
-                      : (_isHovered ? Colors.white.withValues(alpha: 0.4) : Colors.transparent),
+                  : widget.isSelected
+                      ? BlushyColors.primary.withValues(alpha: 0.04)
+                      // No white fill on hover: only a selection should change
+                      // the row's background, so hovering never makes an
+                      // unselected stage look chosen.
+                      : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: widget.isLocked
@@ -3646,7 +3642,10 @@ class _PremiumSelectionRowState extends State<PremiumSelectionRow> with SingleTi
                     width: 18,
                     height: 18,
                     decoration: BoxDecoration(
-                      borderRadius: widget.isMulti ? BorderRadius.circular(4) : BorderRadius.circular(100),
+                      // Every selection marker is circular, single- and
+                      // multi-select alike, so the questionnaire never mixes
+                      // squares and circles.
+                      borderRadius: BorderRadius.circular(100),
                       border: Border.all(
                         color: widget.isSelected ? BlushyColors.primary : BlushyColors.border,
                         width: widget.isSelected ? 5.0 : 1.2,

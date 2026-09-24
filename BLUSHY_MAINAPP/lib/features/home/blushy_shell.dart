@@ -240,19 +240,11 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     // wordmark is identical on all five and so says nothing about where you are.
     final t = AppLocalizations.of(context);
 
-    // The first-period stages address the fourth tab as a "Companion" (a friend
-    // to talk to) rather than a "Partner". Kept in one place so the header title
-    // and the bar label cannot disagree.
-    final String stageNorm = (BlushyOSProvider.of(context)
-                .personalContext
-                .lifeStage ??
-            '')
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z]'), '');
-    final String? partnerLabel =
-        (stageNorm == 'firstperiodstarted' || stageNorm == 'firstperiodnotstarted')
-            ? 'Companion'
-            : null;
+    // The fourth tab is addressed as a "Companion" (a friend to talk to, and to
+    // connect with friends and family) rather than a "Partner", on every stage:
+    // none of its features are adult content. Kept in one place so the header
+    // title and the bar label cannot disagree.
+    const String partnerLabel = 'Companion';
 
     final scaffold = Scaffold(
       backgroundColor: BlushyColors.background,

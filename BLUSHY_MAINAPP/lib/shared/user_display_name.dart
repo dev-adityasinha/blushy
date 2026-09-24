@@ -82,6 +82,17 @@ String userFirstName(BuildContext context, {String fallback = 'there'}) {
 String? _clean(String? raw) {
   if (raw == null) return null;
   final cleaned = raw.replaceAll(RegExp(r'^[,.\s]+'), '').trim();
-  if (cleaned.isEmpty || cleaned == 'Blushy User') return null;
-  return cleaned;
+  if (cleaned.isEmpty || cleaned.toLowerCase() == 'blushy user') return null;
+  return titleCaseName(cleaned);
+}
+
+/// Capitalises the first letter of every word and lowercases the rest, so a
+/// name typed in any casing greets consistently: "nithya nagaraj" and
+/// "NITHYA NAGARAJ" both render as "Nithya Nagaraj".
+String titleCaseName(String name) {
+  return name
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .map((w) => '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+      .join(' ');
 }

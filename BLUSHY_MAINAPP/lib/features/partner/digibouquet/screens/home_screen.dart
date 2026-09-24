@@ -218,6 +218,29 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ),
+
+        // A back button when this screen was pushed onto the stack (e.g. opened
+        // from M Studio), so there is a way out. Hidden when Bouquet is the root
+        // of its own flow and nothing is behind it.
+        if (Navigator.canPop(context))
+          Positioned(
+            top: 0,
+            left: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 22,
+                    color: isDark ? Colors.white70 : const Color(0xFF5C3841),
+                  ),
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
+              ),
+            ),
+          ),
       ],
     ),
   );

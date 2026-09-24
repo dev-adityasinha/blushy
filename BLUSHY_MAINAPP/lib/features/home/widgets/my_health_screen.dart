@@ -5,9 +5,9 @@ import '../../legal/consent_status_card.dart';
 import '../../../core/state.dart';
 import '../../../services/api_auth_service.dart';
 import '../../../services/api_blushy_service.dart';
+import '../../../services/auth_storage.dart';
 import '../../../theme/colors.dart';
 import '../../../theme/spacing.dart';
-import 'life_stage_selector_card.dart';
 import '../../../shared/confirm_sign_out.dart';
 import '../../../services/sia_dashboard_service.dart';
 import '../../journal/settings/journal_settings_screen.dart';
@@ -21,7 +21,7 @@ class MyHealthScreen extends StatefulWidget {
   State<MyHealthScreen> createState() => _MyHealthScreenState();
 }
 
-class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProviderStateMixin {
+class _MyHealthScreenState extends State<MyHealthScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _cycleLengthController = TextEditingController();
   final TextEditingController _periodLengthController = TextEditingController();
@@ -39,23 +39,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
 
   bool _initialized = false;
 
-  // Autosave status tracking
-  // 'idle' | 'saving' | 'saved' | 'error'
-  String _saveStatus = 'idle';
-  Timer? _saveStatusTimer;
   Timer? _periodLengthDebounce;
-  late final AnimationController _checkAnimController;
-  late final Animation<double> _checkAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-    _checkAnim = CurvedAnimation(parent: _checkAnimController, curve: Curves.easeOutBack);
-  }
 
   @override
   void didChangeDependencies() {
@@ -72,9 +56,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
 
   @override
   void dispose() {
-    _saveStatusTimer?.cancel();
     _periodLengthDebounce?.cancel();
-    _checkAnimController.dispose();
     _nameController.dispose();
     _cycleLengthController.dispose();
     _periodLengthController.dispose();
@@ -82,31 +64,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
     _medCategoryC.dispose();
     _medNotesC.dispose();
     super.dispose();
-  }
-
-  void _markSaving() {
-    if (!mounted) return;
-    _saveStatusTimer?.cancel();
-    setState(() => _saveStatus = 'saving');
-  }
-
-  void _markSaved() {
-    if (!mounted) return;
-    _saveStatusTimer?.cancel();
-    setState(() => _saveStatus = 'saved');
-    _checkAnimController.forward(from: 0);
-    _saveStatusTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _saveStatus = 'idle');
-    });
-  }
-
-  void _markSaveError() {
-    if (!mounted) return;
-    _saveStatusTimer?.cancel();
-    setState(() => _saveStatus = 'error');
-    _saveStatusTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _saveStatus = 'idle');
-    });
   }
 
   static String _normalizeStage(String? stage) =>
@@ -131,14 +88,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
   /// A transition to the stage you are already in is refused, so this is the
   /// only way to correct a date given during onboarding.
   Future<void> _saveBranchContext(Map<String, dynamic> patch) async {
-    _markSaving();
-    final result = await LifeStageApi.saveContext(patch);
-    if (!mounted) return;
-    if (result.isError) {
-      _markSaveError();
-    } else {
-      _markSaved();
-    }
+    await LifeStageApi.saveContext(patch);
   }
 
   /// Period duration is stored with the onboarding answers rather than on
@@ -158,25 +108,8 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
       final state = BlushyOSProvider.of(ctx);
       final newContext = updateFn(state.personalContext);
       state.updatePersonalContext(newContext);
-
-      // Show saving → saved animation
-      if (mounted) {
-        setState(() => _saveStatus = 'saving');
-        _saveStatusTimer?.cancel();
-        _saveStatusTimer = Timer(const Duration(milliseconds: 350), () {
-          if (mounted) {
-            setState(() => _saveStatus = 'saved');
-            _checkAnimController.forward(from: 0);
-          }
-          // Reset to idle after 2 seconds
-          _saveStatusTimer = Timer(const Duration(seconds: 2), () {
-            if (mounted) setState(() => _saveStatus = 'idle');
-          });
-        });
-      }
     } catch (e) {
       if (mounted) {
-        setState(() => _saveStatus = 'error');
         ScaffoldMessenger.of(ctx).showSnackBar(
           SnackBar(
             content: Row(
@@ -198,10 +131,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
             duration: const Duration(seconds: 4),
           ),
         );
-        _saveStatusTimer?.cancel();
-        _saveStatusTimer = Timer(const Duration(seconds: 3), () {
-          if (mounted) setState(() => _saveStatus = 'idle');
-        });
       }
     }
   }
@@ -209,6 +138,20 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final state = BlushyOSProvider.of(context);
+    final pc = state.personalContext;
+    final email = (AuthStorage.getSession()['email'] as String?)?.trim();
+    final dobLabel = pc.dateOfBirth == null ? 'Not set' : _formatDob(pc.dateOfBirth!);
+    final cycleLenLabel = pc.cycleLength != null ? '${pc.cycleLength} days' : '—';
+    final periodText = _periodLengthController.text.trim();
+    final periodLenLabel = periodText.isNotEmpty ? '$periodText days' : '—';
+    final trackingOn = pc.trackingPreference == CycleTrackingPreference.enabled;
+    final memoryOn = pc.preferences.wantsSiaMemory;
+    // How many of the four medical categories she has filled in, for the
+    // consolidated "Health & Medical Profile" summary.
+    final medicalFilled = [pc.medicalConditions, pc.userGoals, pc.userSymptoms]
+            .where((s) => s.isNotEmpty)
+            .length +
+        (pc.medications.isNotEmpty ? 1 : 0);
 
     return Scaffold(
       backgroundColor: BlushyColors.background,
@@ -229,10 +172,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
             fontSize: 20,
           ),
         ),
-        actions: [
-          _buildSaveStatusIndicator(),
-          const SizedBox(width: 8),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -245,191 +184,126 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildHubCard(
-                    icon: Icons.person_outline_rounded,
-                    title: 'Personal Information',
-                    subtitle: 'Your name and date of birth',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Personal Information',
-                          editable: true,
-                          body: _sectionPersonalInformation,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
+                  // ── ACCOUNT & PROFILE ──
+                  _buildGroupHeader('Account & Profile'),
+                  _settingsGroup([
+                    _settingsRow(
+                      label: 'Preferred Name',
+                      value: (pc.userName?.trim().isNotEmpty ?? false)
+                          ? pc.userName!.trim()
+                          : 'Add name',
+                      onTap: () => _openSection(
+                          'Personal Information', true, _sectionPersonalInformation),
+                    ),
+                    _settingsRow(
+                      label: 'Date of Birth',
+                      value: dobLabel,
+                      onTap: () => _openSection(
+                          'Personal Information', true, _sectionPersonalInformation),
+                    ),
+                    _settingsRow(
+                      label: 'Email',
+                      value: (email != null && email.isNotEmpty) ? email : '—',
+                    ),
+                  ]),
+
+                  // ── CYCLE & BODY BASELINE ──
+                  _buildGroupHeader('Cycle & Body Baseline'),
+                  _settingsGroup([
+                    // Current life stage is display-only here: it cannot be
+                    // toggled on the settings page, only viewed.
+                    _settingsRow(
+                      label: 'Current Life Stage',
+                      value: _stageLabel(pc.lifeStage),
+                      onTap: () => _openSection(
+                          'Current Life Stage', true, _sectionCurrentLifeStage),
+                    ),
+                    _settingsToggleRow(
+                      label: 'Cycle Tracking',
+                      value: trackingOn,
+                      onChanged: (v) {
+                        _saveField(
+                          context,
+                          (c) => c.copyWith(
+                            trackingPreference: v
+                                ? CycleTrackingPreference.enabled
+                                : CycleTrackingPreference.disabled,
+                          ),
+                        );
+                        setState(() {});
+                      },
+                    ),
+                    _settingsRow(
+                      label: 'Cycle Length',
+                      value: cycleLenLabel,
+                      onTap: () => _openSection(
+                          'Cycle Configuration', true, _sectionCycleConfiguration),
+                    ),
+                    _settingsRow(
+                      label: 'Period Length',
+                      value: periodLenLabel,
+                      onTap: () => _openSection(
+                          'Cycle Configuration', true, _sectionCycleConfiguration),
+                    ),
+                    _settingsRow(
+                      label: 'Health & Medical Profile',
+                      value: medicalFilled > 0 ? 'Edit $medicalFilled items' : 'Not set',
+                      onTap: () => _openSection('Health & Medical Profile', true,
+                          _sectionHealthMedicalProfile),
+                    ),
+                  ]),
+
+                  // ── APP PREFERENCES & DOCSY AI ──
+                  _buildGroupHeader('App Preferences & Docsy AI'),
+                  _settingsGroup([
+                    _settingsToggleRow(
+                      label: 'Docsy Memory',
+                      value: memoryOn,
+                      onChanged: (v) {
+                        final p = pc.preferences;
+                        _saveField(
+                          context,
+                          (c) => c.copyWith(
+                            preferences: UserPreferences(
+                              wantsCycleTracking: p.wantsCycleTracking,
+                              wantsVoiceFeatures: p.wantsVoiceFeatures,
+                              wantsPersonalizedRecommendations:
+                                  p.wantsPersonalizedRecommendations,
+                              wantsSiaMemory: v,
+                              wantsNotifications: p.wantsNotifications,
+                            ),
+                          ),
+                        );
+                        setState(() {});
+                      },
+                    ),
+                    _settingsRow(
+                      label: 'Appearance & Theme',
+                      value: 'Journal & themes',
+                      onTap: () => _openSection(
+                          'Appearance & Theme', false, _sectionJournalPersonalisation),
+                    ),
+                  ]),
+
+                  // ── SUPPORT & ACCOUNT ──
+                  _buildGroupHeader('Support & Account'),
+                  _settingsGroup([
+                    _settingsRow(
+                      label: 'Help & FAQ',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const _AccountFaqScreen()),
                       ),
                     ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.calendar_month_rounded,
-                    title: 'Cycle Configuration',
-                    subtitle: 'Tracking, cycle and period length',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Cycle Configuration',
-                          editable: true,
-                          body: _sectionCycleConfiguration,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
-                      ),
+                    _settingsRow(
+                      label: 'Privacy & Data Reset',
+                      onTap: () => _openSection(
+                          'Privacy & Data Reset', false, _sectionManageMyData),
                     ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.timeline_rounded,
-                    title: 'Current Life Stage',
-                    subtitle: 'The dates behind your stage',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Current Life Stage',
-                          editable: true,
-                          body: _sectionCurrentLifeStage,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.medical_information_outlined,
-                    title: 'Diagnoses & Medical Conditions',
-                    subtitle: 'What you have told us you live with',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Diagnoses & Medical Conditions',
-                          editable: true,
-                          body: _sectionDiagnosesMedicalConditions,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.flag_outlined,
-                    title: 'Health & Wellness Goals',
-                    subtitle: 'What you are working towards',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Health & Wellness Goals',
-                          editable: true,
-                          body: _sectionHealthWellnessGoals,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.monitor_heart_outlined,
-                    title: 'Primary Symptom Focus',
-                    subtitle: 'The symptoms worth watching',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Primary Symptom Focus',
-                          editable: true,
-                          body: _sectionPrimarySymptomFocus,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.medication_outlined,
-                    title: 'Medications & Supplements',
-                    subtitle: 'What you take, and when',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Medications & Supplements',
-                          editable: true,
-                          body: _sectionMedicationsSupplements,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.shield_outlined,
-                    title: 'Privacy & Companion Memory',
-                    subtitle: 'What Docsy is allowed to remember',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Privacy & Companion Memory',
-                          editable: true,
-                          body: _sectionPrivacyCompanionMemory,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.palette_outlined,
-                    title: 'Journal & Personalisation',
-                    subtitle: 'Journal settings and themes',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Journal & Personalisation',
-                          editable: false,
-                          body: _sectionJournalPersonalisation,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.storage_rounded,
-                    title: 'Manage My Data',
-                    subtitle: 'Reset learning, clear history',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => _AccountSectionScreen(
-                          title: 'Manage My Data',
-                          editable: false,
-                          body: _sectionManageMyData,
-                          onSave: _commitDraft,
-                          onFlush: _flushPending,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _buildHubCard(
-                    icon: Icons.help_outline_rounded,
-                    title: 'FAQ',
-                    subtitle: 'How tracking, privacy and Docsy work',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const _AccountFaqScreen()),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Filled and centred rather than a left-aligned text button:
-                  // it is the last thing on the page and the only one that
-                  // ends the session.
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: BlushyColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () async {
+                    _settingsRow(
+                      label: 'Log Out',
+                      danger: true,
+                      showChevron: false,
+                      onTap: () async {
                         if (!await confirmSignOut(context)) return;
                         await state.logout();
                         if (context.mounted) {
@@ -437,16 +311,8 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                               .pushNamedAndRemoveUntil('/', (route) => false);
                         }
                       },
-                      child: Text(
-                        'Sign Out',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.manrope(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
                     ),
-                  ),
+                  ]),
                   const SizedBox(height: 48),
                 ],
               ),
@@ -456,6 +322,192 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
       ),
     );
   }
+
+  // Opens one of the detail editors as a pushed screen.
+  void _openSection(
+    String title,
+    bool editable,
+    Widget Function(BuildContext, _SectionEditor) body,
+  ) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _AccountSectionScreen(
+          title: title,
+          editable: editable,
+          body: body,
+          onSave: _commitDraft,
+          onFlush: _flushPending,
+        ),
+      ),
+    );
+  }
+
+  static const List<String> _monthAbbr = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  String _formatDob(DateTime d) => '${_monthAbbr[d.month - 1]} ${d.day}, ${d.year}';
+
+  // Humanises the stored life-stage key for display (read-only).
+  String _stageLabel(String? s) {
+    if (s == null || s.trim().isEmpty) return 'Not set';
+    final cleaned = s.replaceAll('_', ' ').trim();
+    return cleaned
+        .split(' ')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
+  }
+
+  Widget _buildGroupHeader(String title) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
+        child: Text(
+          title.toUpperCase(),
+          style: GoogleFonts.manrope(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+            color: BlushyColors.secondaryText,
+          ),
+        ),
+      );
+
+  Widget _settingsGroup(List<Widget> rows) {
+    final children = <Widget>[];
+    for (var i = 0; i < rows.length; i++) {
+      children.add(rows[i]);
+      if (i != rows.length - 1) {
+        children.add(Divider(
+          height: 1,
+          thickness: 1,
+          indent: 16,
+          endIndent: 16,
+          color: BlushyColors.border.withValues(alpha: 0.6),
+        ));
+      }
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: BlushyColors.border),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _settingsRow({
+    required String label,
+    String? value,
+    VoidCallback? onTap,
+    bool danger = false,
+    bool showChevron = true,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: danger ? BlushyColors.primary : BlushyColors.text,
+                ),
+              ),
+            ),
+            if (value != null)
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      color: BlushyColors.secondaryText,
+                    ),
+                  ),
+                ),
+              ),
+            if (onTap != null && showChevron)
+              const Padding(
+                padding: EdgeInsets.only(left: 4),
+                child: Icon(Icons.chevron_right_rounded,
+                    size: 18, color: BlushyColors.secondaryText),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _settingsToggleRow({
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: BlushyColors.text,
+              ),
+            ),
+          ),
+          Switch(
+            value: value,
+            activeThumbColor: BlushyColors.primary,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Merge #21: the four medical cards (diagnoses, goals, symptom focus,
+  // medications) are consolidated into one "Health & Medical Profile" editor.
+  Widget _sectionHealthMedicalProfile(BuildContext context, _SectionEditor e) {
+    Widget label(String t) => Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+          child: Text(
+            t.toUpperCase(),
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+              color: BlushyColors.secondaryText,
+            ),
+          ),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        label('Diagnoses & Medical Conditions'),
+        _sectionDiagnosesMedicalConditions(context, e),
+        const SizedBox(height: 20),
+        label('Health & Wellness Goals'),
+        _sectionHealthWellnessGoals(context, e),
+        const SizedBox(height: 20),
+        label('Primary Symptom Focus'),
+        _sectionPrimarySymptomFocus(context, e),
+        const SizedBox(height: 20),
+        label('Medications & Supplements'),
+        _sectionMedicationsSupplements(context, e),
+      ],
+    );
+  }
+
 
 
   /// Writes a finished draft through to state. Called by Save, never by a
@@ -475,14 +527,10 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
   Future<void> _flushPending(Map<String, Object?> pending) async {
     final days = pending['period_duration_days'];
     if (days is int) {
-      _markSaving();
       try {
         await ApiAuthService()
             .saveOnboardingAnswers({'period_duration_days': days});
-        _markSaved();
-      } catch (_) {
-        _markSaveError();
-      }
+      } catch (_) {}
     }
 
     final branch = <String, dynamic>{
@@ -491,60 +539,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
           entry.key.substring('branch:'.length): entry.value,
     };
     if (branch.isNotEmpty) await _saveBranchContext(branch);
-  }
-
-  Widget _buildHubCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: BlushyColors.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFDF2F2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 16, color: BlushyColors.primary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: GoogleFonts.manrope(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: BlushyColors.text)),
-                    const SizedBox(height: 3),
-                    Text(subtitle,
-                        style: GoogleFonts.manrope(
-                            fontSize: 10, color: BlushyColors.secondaryText)),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded,
-                  size: 18, color: BlushyColors.secondaryText),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _sectionPersonalInformation(BuildContext context, _SectionEditor e) {
@@ -655,7 +649,34 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-                  const LifeStageSelectorCard(showHeader: false),
+                  // Life stage is read-only here: it cannot be toggled from the
+                  // settings page, only viewed. The dates behind it (below) stay
+                  // correctable.
+                  _buildCard([
+                    Row(
+                      children: [
+                        const Icon(Icons.timeline_rounded, color: BlushyColors.primary, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Current Life Stage',
+                                  style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.secondaryText)),
+                              const SizedBox(height: 4),
+                              Text(_stageLabel(pc.lifeStage),
+                                  style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Your life stage is set from onboarding and your cycle history — it can’t be switched here. Reach out in Help & FAQ if it looks wrong.',
+                      style: GoogleFonts.manrope(fontSize: 12, height: 1.4, color: BlushyColors.secondaryText),
+                    ),
+                  ]),
 
                   // Only the branch the user is actually in gets its date, and
                   // it writes to the life stage engine rather than the profile.
@@ -835,37 +856,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
                       ),
                     )
                   ]),
-      ],
-    );
-  }
-
-  Widget _sectionPrivacyCompanionMemory(BuildContext context, _SectionEditor e) {
-    final pc = e.pc;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-                  _buildCard([
-                    SwitchListTile(
-                      activeThumbColor: BlushyColors.primary,
-                      title: Text('Docsy Memory Enabled', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
-                      subtitle: Text('Allow Docsy to learn from your interactions over time.', style: GoogleFonts.manrope(fontSize: 12)),
-                      value: pc.preferences.wantsSiaMemory,
-                      onChanged: (val) {
-                        final newPrefs = UserPreferences(
-                          wantsCycleTracking: pc.preferences.wantsCycleTracking,
-                          wantsVoiceFeatures: pc.preferences.wantsVoiceFeatures,
-                          wantsPersonalizedRecommendations: pc.preferences.wantsPersonalizedRecommendations,
-                          wantsSiaMemory: val,
-                          wantsNotifications: pc.preferences.wantsNotifications,
-                        );
-                        e.set((c) => c.copyWith(preferences: newPrefs));
-                      },
-                    )
-                  ]),
-
-                  // Moved out of the journal's new-entry sheet: both are
-                  // account-level settings, and neither had anything to do
-                  // with starting an entry.
       ],
     );
   }
@@ -1054,118 +1044,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> with SingleTickerProvid
           ],
         );
       },
-    );
-  }
-
-  Widget _buildSaveStatusIndicator() {
-    Widget child;
-    switch (_saveStatus) {
-      case 'saving':
-        child = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: BlushyColors.primary.withValues(alpha: 0.7),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Saving...',
-              style: GoogleFonts.manrope(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: BlushyColors.secondaryText,
-              ),
-            ),
-          ],
-        );
-        break;
-      case 'saved':
-        child = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ScaleTransition(
-              scale: _checkAnim,
-              child: const Icon(Icons.check_circle_rounded, color: Color(0xFF43A047), size: 18),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Saved',
-              style: GoogleFonts.manrope(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF43A047),
-              ),
-            ),
-          ],
-        );
-        break;
-      case 'error':
-        child = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline_rounded, color: Color(0xFFD32F2F), size: 18),
-            const SizedBox(width: 6),
-            Text(
-              'Error',
-              style: GoogleFonts.manrope(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFFD32F2F),
-              ),
-            ),
-          ],
-        );
-        break;
-      default: // 'idle'
-        child = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.cloud_done_outlined, color: BlushyColors.secondaryText.withValues(alpha: 0.5), size: 16),
-            const SizedBox(width: 5),
-            Text(
-              'Autosaved',
-              style: GoogleFonts.manrope(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: BlushyColors.secondaryText.withValues(alpha: 0.5),
-              ),
-            ),
-          ],
-        );
-    }
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      transitionBuilder: (child, animation) =>
-          FadeTransition(opacity: animation, child: SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(animation),
-            child: child,
-          )),
-      child: Container(
-        key: ValueKey(_saveStatus),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: _saveStatus == 'saved'
-              ? const Color(0xFFE8F5E9)
-              : _saveStatus == 'error'
-                  ? const Color(0xFFFFEBEE)
-                  : BlushyColors.background.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _saveStatus == 'saved'
-                ? const Color(0xFF43A047).withValues(alpha: 0.3)
-                : _saveStatus == 'error'
-                    ? const Color(0xFFD32F2F).withValues(alpha: 0.3)
-                    : BlushyColors.border.withValues(alpha: 0.3),
-          ),
-        ),
-        child: child,
-      ),
     );
   }
 

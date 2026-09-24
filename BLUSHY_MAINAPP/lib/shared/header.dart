@@ -23,9 +23,10 @@ const double _headerLeadingSize = 22;
 
 /// The size a tab's own name is set at.
 ///
-/// A quarter smaller than the wordmark it sits in place of: BLUSHY. is the
-/// product, and a tab name printed at the same size competes with it.
-const double _tabTitleSize = _headerLeadingSize * 0.75;
+/// The same size as the BLUSHY. wordmark, so every header leading mark --
+/// BLUSHY., DOCSY., M STUDIO., the Companion/Partner tab -- reads at one
+/// consistent size rather than the tab names sitting a step smaller.
+const double _tabTitleSize = _headerLeadingSize;
 
 /// A tab name, in the same upright face as the BLUSHY. wordmark, with the accent
 /// full stop.
