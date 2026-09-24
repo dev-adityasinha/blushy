@@ -335,8 +335,14 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
         ? 'Good morning,'
         : (hour < 17 ? 'Good afternoon,' : 'Good evening,');
 
+    // No phase prediction until a period is logged. Otherwise the day count
+    // defaults to mid-cycle and this claimed an ovulatory "peak energy" for an
+    // account with no data (the "ghost cycle" bug).
     String dynamicSentiment;
-    if (_currentCycleDay <= _periodLength) {
+    if (!_hasLoggedPeriod) {
+      dynamicSentiment =
+          'Log your last period to unlock your personalised cycle insights.';
+    } else if (_currentCycleDay <= _periodLength) {
       dynamicSentiment =
           'Menstrual phase • estrogen and progesterone are at their lowest, so energy may dip today.';
     } else if (_currentCycleDay <= _periodLength + 7) {
@@ -1361,6 +1367,61 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   // DAILY CYCLE SYNC (Focus/Nourish/Move primary + Connect/Reset expandable)
   // ════════════════════════════════════════════════════════════════
   Widget _buildDailyCycleSyncHub(BuildContext context) {
+    // No phase-based recommendations until a period is logged: the cycle day
+    // defaults to mid-cycle, which would otherwise show ovulatory-phase advice
+    // to an account with no data (the "ghost cycle" bug).
+    if (!_hasLoggedPeriod) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildEyebrow('Daily Cycle Sync'),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Log your last period to unlock today's Focus, Nourish and "
+                  'Move recommendations, tuned to your current phase.',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12.5,
+                    height: 1.5,
+                    color: const Color(0xFF7A6B72),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => _openLogPeriodDialog(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: blushyPrimary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Log my period',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: blushyPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     final destinations = [
       {
         'id': 'work',
@@ -1923,6 +1984,9 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   /// correlation above its floor, and renders the insufficient-data case as
   /// such instead of filling it in (spec sections 7 and 8).
   Widget _buildPatternIntelligenceSection(BuildContext context) {
+    // Nothing to claim about patterns before a period is logged; hide the
+    // section entirely rather than imply cycles were "detected".
+    if (!_hasLoggedPeriod) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
