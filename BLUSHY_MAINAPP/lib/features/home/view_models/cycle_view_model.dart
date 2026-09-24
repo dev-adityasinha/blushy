@@ -49,6 +49,14 @@ class CycleViewModel extends BlushyViewModel {
   /// "personalised rhythm" note: below 2, the baseline is still an estimate.
   int completedCyclesCount = 0;
 
+  /// Forward-looking predictions (ISO date strings), for a forecast bar. Null
+  /// until a prediction with these has loaded (and null on hormonal
+  /// contraception, where the server withholds ovulation/fertile dates).
+  String? nextPeriodStartDate;
+  String? estimatedOvulationDate;
+  String? fertileWindowStart;
+  String? fertileWindowEnd;
+
   /// True once a load has succeeded or failed at least once.
   bool get isResolved => state != ApiState.loading;
 
@@ -82,6 +90,10 @@ class CycleViewModel extends BlushyViewModel {
         if (prediction.cycleLengthDays > 0) cycleLength = prediction.cycleLengthDays;
         if (prediction.periodLengthDays > 0) periodLength = prediction.periodLengthDays;
         completedCyclesCount = prediction.completedCyclesCount;
+        nextPeriodStartDate = prediction.nextPeriodStartDate;
+        estimatedOvulationDate = prediction.estimatedOvulationDate;
+        fertileWindowStart = prediction.fertileWindowStart;
+        fertileWindowEnd = prediction.fertileWindowEnd;
         if (start != null) {
           lastPeriodStart = start;
           hasLoggedPeriod = true;
