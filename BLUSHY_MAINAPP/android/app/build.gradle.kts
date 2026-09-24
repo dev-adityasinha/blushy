@@ -65,6 +65,19 @@ android {
                 // Debug-signed: runnable, but Play Store will reject it.
                 signingConfigs.getByName("debug")
             }
+            // Turn on R8: it shrinks unused code, optimizes what's left, and
+            // (with shrinkResources) drops unreferenced resources -- the
+            // "improve performance with R8 optimization" advice from Play
+            // Console. proguard-rules.pro keeps the reflection/JNI classes
+            // Flutter and the plugins reach so shrinking stays safe. Because
+            // R8 stripping only shows up at runtime, the release APK must be
+            // smoke-tested on a device before publishing.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
