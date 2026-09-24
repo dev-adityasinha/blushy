@@ -45,6 +45,10 @@ class CycleViewModel extends BlushyViewModel {
   int periodLength = 5;
   int currentCycleDay = 14;
 
+  /// How many complete cycles the backend has learned from. Drives the
+  /// "personalised rhythm" note: below 2, the baseline is still an estimate.
+  int completedCyclesCount = 0;
+
   /// True once a load has succeeded or failed at least once.
   bool get isResolved => state != ApiState.loading;
 
@@ -77,6 +81,7 @@ class CycleViewModel extends BlushyViewModel {
       if (prediction != null && (prediction.hasData || start != null)) {
         if (prediction.cycleLengthDays > 0) cycleLength = prediction.cycleLengthDays;
         if (prediction.periodLengthDays > 0) periodLength = prediction.periodLengthDays;
+        completedCyclesCount = prediction.completedCyclesCount;
         if (start != null) {
           lastPeriodStart = start;
           hasLoggedPeriod = true;

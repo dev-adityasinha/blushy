@@ -33,15 +33,10 @@ const List<ArticleEntry> _periodArticles = [
   ),
 ];
 
+// HPV and endometriosis were removed: adult gynaecological topics are not
+// age-appropriate for a first-year teen. See _goodToKnowTopics for the teen
+// replacements added to the Health Library.
 const List<ArticleEntry> _periodSymptomsArticles = [
-  ArticleEntry(
-    title: 'Could You Have HPV? Your Questions Answered',
-    image: 'assets/period_symptoms/hpv.png',
-  ),
-  ArticleEntry(
-    title: 'Does Endometriosis Cause Ovulation Pain?',
-    image: 'assets/period_symptoms/endometriosis_ovulation_pain.png',
-  ),
   ArticleEntry(
     title: 'No Discharge, Just Itchy: Causes of Vaginal & Vulval Itching',
     image: 'assets/period_symptoms/itchy.png',
@@ -65,6 +60,16 @@ const List<ArticleEntry> _periodCrampArticles = [
     title: 'Cramps After Period: What It Could Mean',
     image: 'assets/period_cramp/cramps_after_period.png',
   ),
+];
+
+// Age-appropriate teen topics that replaced the removed adult content. Text-only
+// for now (no artwork yet), rendered via TextArticleSubsection.
+const List<String> _goodToKnowTopics = [
+  'Why is my period blood dark brown sometimes?',
+  'How to use and change pads comfortably at school',
+  "Why your period won't be on time for the first 2 years",
+  'What are breast buds and why are they sore?',
+  'Dealing with mood swings without feeling overwhelmed',
 ];
 
 /// "Health" -- a subsection shown under the first-period-started Health Library.
@@ -102,6 +107,20 @@ class FirstPeriodCrampSection extends StatelessWidget {
     return const ArticleSubsection(
       title: 'Cramp',
       articles: _periodCrampArticles,
+    );
+  }
+}
+
+/// "Good to Know" -- age-appropriate teen topics (text-only for now) that
+/// replaced the removed adult gynaecological content.
+class FirstPeriodGoodToKnowSection extends StatelessWidget {
+  const FirstPeriodGoodToKnowSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const TextArticleSubsection(
+      title: 'Good to Know',
+      titles: _goodToKnowTopics,
     );
   }
 }

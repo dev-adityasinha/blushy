@@ -142,12 +142,14 @@ class ArticleDetailPage extends StatelessWidget {
   const ArticleDetailPage({
     super.key,
     required this.title,
-    required this.image,
+    this.image,
     required this.sectionLabel,
   });
 
   final String title;
-  final String image;
+
+  /// The illustration, or null for a text-only article (no photo shown).
+  final String? image;
   final String sectionLabel;
 
   @override
@@ -185,16 +187,18 @@ class ArticleDetailPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // Photo below the title.
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
-                  image,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+              // Photo below the title (omitted for text-only articles).
+              if (image != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    image!,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
+              ],
               // Content -- not written yet.
               Text(
                 'Content not added',
@@ -207,6 +211,123 @@ class ArticleDetailPage extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A titled subsection of text-only reads (no illustrations yet).
+///
+/// Each title is a simple tappable card in a vertical list; tapping one opens
+/// [ArticleDetailPage] with no photo (title + "Content not added"). Used for
+/// age-appropriate topics that do not have artwork yet.
+class TextArticleSubsection extends StatelessWidget {
+  const TextArticleSubsection({
+    super.key,
+    required this.title,
+    required this.titles,
+  });
+
+  final String title;
+  final List<String> titles;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 16,
+              decoration: BoxDecoration(
+                color: BlushyColors.primary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: GoogleFonts.manrope(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: BlushyColors.text,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        for (var i = 0; i < titles.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          _TextArticleCard(articleTitle: titles[i], sectionLabel: title),
+        ],
+      ],
+    );
+  }
+}
+
+class _TextArticleCard extends StatelessWidget {
+  const _TextArticleCard({
+    required this.articleTitle,
+    required this.sectionLabel,
+  });
+
+  final String articleTitle;
+  final String sectionLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ArticleDetailPage(
+              title: articleTitle,
+              sectionLabel: sectionLabel,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFEFE8E0)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: BlushyColors.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.menu_book_rounded,
+                  size: 17, color: BlushyColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                articleTitle,
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: BlushyColors.text,
+                  height: 1.3,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 20, color: Color(0xFF9E9296)),
+          ],
         ),
       ),
     );

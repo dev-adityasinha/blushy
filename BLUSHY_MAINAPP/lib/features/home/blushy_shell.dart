@@ -57,6 +57,10 @@ class _BlushyOSShellState extends State<BlushyOSShell>
   /// One anchor per destination, for the first-run tour.
   final List<GlobalKey> _navKeys = List.generate(4, (_) => GlobalKey());
 
+  /// Header anchors for the tour: the language selector and the account button.
+  final GlobalKey _tourLanguageKey = GlobalKey();
+  final GlobalKey _tourProfileKey = GlobalKey();
+
   bool _showTour = false;
 
   /// Fades the incoming tab in, so switching is a transition rather than a
@@ -121,8 +125,9 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     );
   }
 
-  /// The five stops, in the order the tabs appear.
-  List<TourStep> _tourSteps(AppLocalizations t) {
+  /// The stops of the tour, in the order they appear: the four tabs, then the
+  /// header's language and account controls.
+  List<TourStep> _tourSteps(AppLocalizations t, String? partnerLabel) {
     return [
       TourStep(
         targetKey: _navKeys[0],
@@ -141,8 +146,20 @@ class _BlushyOSShellState extends State<BlushyOSShell>
       ),
       TourStep(
         targetKey: _navKeys[3],
-        title: t.navPartner,
+        title: partnerLabel ?? t.navPartner,
         body: t.tourPartnerBody,
+      ),
+      TourStep(
+        targetKey: _tourLanguageKey,
+        title: 'Language',
+        body: 'Tap here any time to change the language Docsy and the whole '
+            'app speak in.',
+      ),
+      TourStep(
+        targetKey: _tourProfileKey,
+        title: 'Your account',
+        body: 'Your profile, health details and settings live here — tap to '
+            'open them whenever you need.',
       ),
     ];
   }
@@ -222,12 +239,29 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     // Home keeps the wordmark; every other tab names itself instead, since the
     // wordmark is identical on all five and so says nothing about where you are.
     final t = AppLocalizations.of(context);
+
+    // The first-period stages address the fourth tab as a "Companion" (a friend
+    // to talk to) rather than a "Partner". Kept in one place so the header title
+    // and the bar label cannot disagree.
+    final String stageNorm = (BlushyOSProvider.of(context)
+                .personalContext
+                .lifeStage ??
+            '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z]'), '');
+    final String? partnerLabel =
+        (stageNorm == 'firstperiodstarted' || stageNorm == 'firstperiodnotstarted')
+            ? 'Companion'
+            : null;
+
     final scaffold = Scaffold(
       backgroundColor: BlushyColors.background,
       appBar: BlushyHeader(
         title: _currentIndex == 0
             ? null
-            : BlushyBottomNavigation.labelsFor(t)[_currentIndex],
+            : BlushyBottomNavigation.labelsFor(t, partnerLabel: partnerLabel)[_currentIndex],
+        languageKey: _tourLanguageKey,
+        profileKey: _tourProfileKey,
       ),
       body: FadeTransition(
         opacity: CurvedAnimation(parent: _tabFade, curve: Curves.easeOut),
@@ -240,6 +274,7 @@ class _BlushyOSShellState extends State<BlushyOSShell>
         itemKeys: _navKeys,
         currentIndex: _currentIndex,
         onTap: _selectTab,
+        partnerLabel: partnerLabel,
       ),
     );
 
@@ -266,7 +301,7 @@ class _BlushyOSShellState extends State<BlushyOSShell>
       children: [
         scaffold,
         ProductTour(
-          steps: _tourSteps(t),
+          steps: _tourSteps(t, partnerLabel),
           skipLabel: t.tourSkip,
           nextLabel: t.tourNext,
           doneLabel: t.tourDone,

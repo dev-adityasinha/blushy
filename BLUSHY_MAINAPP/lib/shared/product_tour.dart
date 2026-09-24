@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/storage.dart';
 import '../theme/colors.dart';
+import 'docsy_avatar.dart';
 
 /// A first-run tour that points at each tab and says what it is for.
 ///
@@ -250,101 +251,108 @@ class _TourCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const cardHeight = 190.0;
-    const margin = 20.0;
+    const margin = 24.0;
 
-    // Above the target when it sits low on the screen — which the tab bar
-    // always does — and below it otherwise.
-    final placeAbove = target.top > screen.height / 2;
-    final top = placeAbove
-        ? (target.top - cardHeight - 16).clamp(margin, screen.height - cardHeight)
-        : (target.bottom + 16).clamp(margin, screen.height - cardHeight);
+    // Anchored to the target's own edge, not an estimated card height: the
+    // explanation grows away from the spotlight, so however long the text runs
+    // it can never overlap the highlighted control. It sits on whichever side
+    // of the target has more room.
+    final spaceAbove = target.top;
+    final spaceBelow = screen.height - target.bottom;
+    final placeAbove = spaceAbove >= spaceBelow;
+
+    // Plain text narrated by Docsy over the dimmed scrim -- no card.
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const DocsyIcon(size: 30, color: Colors.white),
+            const SizedBox(width: 10),
+            Text(
+              'Docsy',
+              style: GoogleFonts.manrope(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '$position / $total',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Text(
+          step.title,
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 25,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            height: 1.15,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          step.body,
+          style: GoogleFonts.manrope(
+            fontSize: 14,
+            height: 1.55,
+            color: Colors.white.withValues(alpha: 0.88),
+          ),
+        ),
+        const SizedBox(height: 22),
+        Row(
+          children: [
+            TextButton(
+              onPressed: onSkip,
+              child: Text(
+                skipLabel,
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  color: Colors.white70,
+                ),
+              ),
+            ),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: onAction,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BlushyColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              child: Text(
+                actionLabel,
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
 
     return Positioned(
       left: margin,
       right: margin,
-      top: top,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: BlushyColors.dark.withValues(alpha: 0.18),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              step.title,
-              style: GoogleFonts.manrope(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: BlushyColors.text,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              step.body,
-              style: GoogleFonts.manrope(
-                fontSize: 13,
-                height: 1.5,
-                color: BlushyColors.secondaryText,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Text(
-                  '$position / $total',
-                  style: GoogleFonts.manrope(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: BlushyColors.secondaryText,
-                  ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: onSkip,
-                  child: Text(
-                    skipLabel,
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
-                      color: BlushyColors.secondaryText,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                ElevatedButton(
-                  onPressed: onAction,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BlushyColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    actionLabel,
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+      top: placeAbove ? null : target.bottom + 24,
+      bottom: placeAbove ? (screen.height - target.top + 24) : null,
+      child: content,
     );
   }
 }

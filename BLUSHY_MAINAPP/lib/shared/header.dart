@@ -42,7 +42,7 @@ TextStyle _tabTitleStyle() => GoogleFonts.manrope(
     );
 
 class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
-  const BlushyHeader({super.key, this.title});
+  const BlushyHeader({super.key, this.title, this.languageKey, this.profileKey});
 
   /// The tab name to show in place of the wordmark.
   ///
@@ -51,6 +51,11 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
   /// are -- the tab name does, and the account and language controls stay put
   /// either way.
   final String? title;
+
+  /// Optional anchors for the first-run tour to point at the language selector
+  /// and the account/profile button. Null everywhere the tour is not running.
+  final GlobalKey? languageKey;
+  final GlobalKey? profileKey;
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +117,7 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
                   ValueListenableBuilder<String>(
                     valueListenable: LanguagePreference.current,
                     builder: (context, code, _) => GestureDetector(
+                      key: languageKey,
                       onTap: () => _showLanguagePicker(context),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -142,6 +148,7 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
 
                   // Profile Button without round card container
                   GestureDetector(
+                    key: profileKey,
                     onTap: () {
                       final role = AuthStorage.getRole();
                       if (role == 'partner' || role == 'man') {

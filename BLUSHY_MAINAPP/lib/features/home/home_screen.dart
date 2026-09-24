@@ -201,6 +201,12 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
           : null,
     );
 
+    // The Period Started stage opted out of the "Updating your dashboard…"
+    // sync banner: its home stays quiet while data fills in behind the scenes.
+    final bool hideSyncBanner =
+        activeStage.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '') ==
+            'firstperiodstarted';
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       // The wash sits behind the whole page rather than inside the scrollable,
@@ -222,7 +228,7 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
           // returning user already sees their own last-known dashboard from the
           // launch restore, so the background refresh stays silent instead of
           // flashing this banner on every open.
-          if (osState.isInitialSync) const _DashboardSyncBanner(),
+          if (osState.isInitialSync && !hideSyncBanner) const _DashboardSyncBanner(),
           Expanded(child: body),
         ],
       ),
