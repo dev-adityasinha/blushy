@@ -222,11 +222,12 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
     if (!_validateEmail(email)) return;
 
     final messenger = ScaffoldMessenger.of(context);
+    final loc = AppLocalizations.of(context);
     setState(() => _isLoading = true);
     try {
       await _authService.requestPasswordResetCode(email);
       messenger.showSnackBar(
-        const SnackBar(content: Text('If an account exists for that email, a code is on its way.')),
+        SnackBar(content: Text(loc.authCodeSentIfExists)),
       );
       for (final controller in _codeControllers) {
         controller.clear();
@@ -266,6 +267,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
     }
 
     final messenger = ScaffoldMessenger.of(context);
+    final loc = AppLocalizations.of(context);
     setState(() => _isLoading = true);
     try {
       await _authService.resetPassword(
@@ -275,7 +277,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         confirmPassword: confirm,
       );
       messenger.showSnackBar(
-        const SnackBar(content: Text('Password updated. Please sign in.')),
+        SnackBar(content: Text(loc.authPasswordUpdated)),
       );
       _passwordController.clear();
       _confirmPasswordController.clear();
@@ -293,6 +295,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
 
   Future<void> _resendCode() async {
     final messenger = ScaffoldMessenger.of(context);
+    final loc = AppLocalizations.of(context);
     setState(() => _codeResending = true);
     try {
       final email = _emailController.text.trim();
@@ -302,7 +305,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
       // into the boxes and printed in the snackbar, which makes the check
       // ceremonial: a code is proof only because it reaches the address.
       messenger.showSnackBar(
-        const SnackBar(content: Text('A new verification code has been sent.')),
+        SnackBar(content: Text(loc.authNewCodeSent)),
       );
     } catch (e) {
       messenger.showSnackBar(
@@ -474,7 +477,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         const SizedBox(height: 32),
         _buildTextField(
           controller: _emailController,
-          labelText: 'Email Address',
+          labelText: AppLocalizations.of(context).authEmailAddress,
           keyboardType: TextInputType.emailAddress,
           errorText: _emailError,
         ),
@@ -496,7 +499,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Sign in instead?'),
+                  child: Text(AppLocalizations.of(context).authSignInInstead),
                 ),
               ),
               const SizedBox(width: 12),
@@ -510,7 +513,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
                     foregroundColor: BlushyColors.secondaryText,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: const Text('Use another email'),
+                  child: Text(AppLocalizations.of(context).authUseAnotherEmail),
                 ),
               ),
             ],
@@ -518,7 +521,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         ],
         const SizedBox(height: 40),
         _buildButton(
-          label: 'Continue',
+          label: AppLocalizations.of(context).onbContinue,
           onPressed: _handleEmailSubmit,
           isLoading: _isLoading,
         ),
@@ -549,7 +552,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         const SizedBox(height: 32),
         _buildTextField(
           controller: _passwordController,
-          labelText: 'Password',
+          labelText: AppLocalizations.of(context).authPassword,
           obscureText: !_isPasswordVisible,
           errorText: _passwordError,
           suffixIcon: IconButton(
@@ -563,7 +566,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         const SizedBox(height: 16),
         _buildTextField(
           controller: _confirmPasswordController,
-          labelText: 'Confirm Password',
+          labelText: AppLocalizations.of(context).authConfirmPassword,
           obscureText: !_isConfirmPasswordVisible,
           errorText: _confirmPasswordError,
           suffixIcon: IconButton(
@@ -576,7 +579,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         ),
         const SizedBox(height: 40),
         _buildButton(
-          label: 'Continue',
+          label: AppLocalizations.of(context).onbContinue,
           onPressed: _handlePasswordSubmit,
           isLoading: _isLoading,
         ),
@@ -626,7 +629,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         ],
         const SizedBox(height: 32),
         _buildButton(
-          label: 'Verify',
+          label: AppLocalizations.of(context).authVerify,
           onPressed: _handleVerifySubmit,
           isLoading: _isLoading,
         ),
@@ -688,14 +691,14 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         const SizedBox(height: 32),
         _buildTextField(
           controller: _emailController,
-          labelText: 'Email Address',
+          labelText: AppLocalizations.of(context).authEmailAddress,
           keyboardType: TextInputType.emailAddress,
           errorText: _emailError,
         ),
         const SizedBox(height: 16),
         _buildTextField(
           controller: _passwordController,
-          labelText: 'Password',
+          labelText: AppLocalizations.of(context).authPassword,
           obscureText: !_isPasswordVisible,
           errorText: _passwordError,
           suffixIcon: IconButton(
@@ -724,7 +727,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         ),
         const SizedBox(height: 32),
         _buildButton(
-          label: 'Sign in',
+          label: AppLocalizations.of(context).authSignIn,
           onPressed: _handleLoginSubmit,
           isLoading: _isLoading,
         ),
@@ -755,13 +758,13 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         const SizedBox(height: 32),
         _buildTextField(
           controller: _emailController,
-          labelText: 'Email Address',
+          labelText: AppLocalizations.of(context).authEmailAddress,
           keyboardType: TextInputType.emailAddress,
           errorText: _emailError,
         ),
         const SizedBox(height: 40),
         _buildButton(
-          label: 'Send Recovery Code',
+          label: AppLocalizations.of(context).authSendRecoveryCode,
           onPressed: _handleForgotPasswordSubmit,
           isLoading: _isLoading,
         ),
@@ -842,7 +845,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         const SizedBox(height: 24),
         _buildTextField(
           controller: _passwordController,
-          labelText: 'New Password',
+          labelText: AppLocalizations.of(context).authNewPassword,
           obscureText: !_isPasswordVisible,
           errorText: _passwordError,
           suffixIcon: IconButton(
@@ -856,7 +859,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         const SizedBox(height: 16),
         _buildTextField(
           controller: _confirmPasswordController,
-          labelText: 'Confirm New Password',
+          labelText: AppLocalizations.of(context).authConfirmNewPassword,
           obscureText: !_isConfirmPasswordVisible,
           errorText: _confirmPasswordError,
           suffixIcon: IconButton(
@@ -870,7 +873,7 @@ class _EmailAuthFlowState extends State<EmailAuthFlow> {
         ),
         const SizedBox(height: 32),
         _buildButton(
-          label: 'Update Password',
+          label: AppLocalizations.of(context).authUpdatePassword,
           onPressed: _handleResetPasswordSubmit,
           isLoading: _isLoading,
         ),

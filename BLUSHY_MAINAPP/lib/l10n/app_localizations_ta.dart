@@ -9,6 +9,393 @@ class AppLocalizationsTa extends AppLocalizations {
   AppLocalizationsTa([String locale = 'ta']) : super(locale);
 
   @override
+  String get jrSelfReflection => 'சுய பிரதிபலிப்பு';
+
+  @override
+  String get jrReflection => 'பிரதிபலிப்பு';
+
+  @override
+  String get jrScrapbook => 'ஸ்கிராப்புக்';
+
+  @override
+  String get jrAccessibilityMotion => 'அணுகல் & இயக்க அமைப்புகள்';
+
+  @override
+  String get jrAmbientSounds => 'சூழல் ஒலிகள்';
+
+  @override
+  String get jrPlayBackgroundSounds => 'பின்னணி சூழல் ஒலிகளை இயக்கவும்.';
+
+  @override
+  String get jrLongAnimations => 'நீண்ட அனிமேஷன்கள் & மாற்றங்கள்';
+
+  @override
+  String get jrEnable3D =>
+      '3D அட்டை புரட்டல் மற்றும் திறக்கும் இயக்கத்தை இயக்கவும்.';
+
+  @override
+  String get jrDecorativeEffects => 'அலங்கார விளைவுகள்';
+
+  @override
+  String get jrCoffeeSteam =>
+      'காபி நீராவி வளைவுகள், தாவர அசைவு & பிரதிபலிப்புகள்.';
+
+  @override
+  String get jrMyScrapbook => 'என் ஸ்கிராப்புக்';
+
+  @override
+  String get jrDreamBig => 'பெரிதாக கனவு காணுங்கள். அழகாக எழுதுங்கள்.';
+
+  @override
+  String get jrCover => 'அட்டை: ';
+
+  @override
+  String get jrRibbon => 'ரிப்பன்: ';
+
+  @override
+  String get jrDesk => 'மேசை: ';
+
+  @override
+  String get jrDeskDiaryCover => 'மேசை & நாட்குறிப்பு அட்டை';
+
+  @override
+  String get jrAmbientSoundEnv => 'சூழல் ஒலி சூழல்';
+
+  @override
+  String get jrAccessibilitySettings => 'அணுகல் அமைப்புகள்';
+
+  @override
+  String get jrSearchMemories =>
+      'நினைவுகள், ஸ்டிக்கர்கள் & வார்ப்புருக்களைத் தேடுங்கள்...';
+
+  @override
+  String get jrSmartMemoryTimeline => 'ஸ்மார்ட் நினைவு காலவரிசை';
+
+  @override
+  String get jrTapNewMemory =>
+      '\"புதிய நினைவு\" தட்டவும் அல்லது குரல் பிரதிபலிப்பைப் பதிவு செய்யவும்.';
+
+  @override
+  String get jrDailyAmbientSounds => 'தினசரி சூழல் ஒலிகள்';
+
+  @override
+  String get jrScrapbookMemory => 'ஸ்கிராப்புக் நினைவு';
+
+  @override
+  String get jrWriteReflection => 'பிரதிபலிப்பை எழுதுங்கள்';
+
+  @override
+  String get jrFreshCanvas => 'புதிய ஸ்கிராப்புக் கேன்வாஸில் தொடங்குங்கள்';
+
+  @override
+  String get jrRecordTranscribe => 'பதிவு & படியெடுத்தல்';
+
+  @override
+  String get jrSpeakDocsyTranscribe =>
+      'பேசுங்கள், Docsy உங்கள் ஜர்னலில் படியெடுக்கட்டும்';
+
+  @override
+  String get jrStartFromTemplate => 'வார்ப்புருவிலிருந்து தொடங்கு';
+
+  @override
+  String get jrChooseTemplate =>
+      'வழிகாட்டப்பட்ட ஜர்னலிங் வார்ப்புருவைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get jrSmartAiSearch => 'ஸ்மார்ட் AI தேடல்';
+
+  @override
+  String get jrSemanticSearch => 'நினைவுகளில் சூழல் சார்ந்த சொற்பொருள் தேடல்';
+
+  @override
+  String get jrMemoryVault => 'நினைவு பெட்டகம்';
+
+  @override
+  String get jrStarredMemories =>
+      'நட்சத்திரமிட்ட நினைவுகள் & தனிப்பயன் தொகுப்புகள்';
+
+  @override
+  String get jrSmartCalendarMap => 'ஸ்மார்ட் நாட்காட்டி & வரைபடம்';
+
+  @override
+  String get jrVisualMoodGrid => 'காட்சி மனநிலை கட்டம் & இருப்பிட பின்கள்';
+
+  @override
+  String get jrContentGarden => 'பிரதிபலிப்பு உள்ளடக்க தோட்டம்';
+
+  @override
+  String get jrGardenGrowth =>
+      'பிரதிபலிப்பு ஆழத்துடன் இணைந்த இயற்கை தோட்ட வளர்ச்சி';
+
+  @override
+  String get jrInsightsDashboard => 'ஜர்னல் நுண்ணறிவு டாஷ்போர்டு';
+
+  @override
+  String get jrWritingStats =>
+      'எழுத்து புள்ளிவிவரங்கள், சொல் எண்ணிக்கை & செயலில் உள்ள மணிநேரங்கள்';
+
+  @override
+  String get jrYearInReview => 'ஆண்டு மதிப்பாய்வு ஸ்கிராப்புக்';
+
+  @override
+  String get jrGuidedRecap => 'வழிகாட்டப்பட்ட பல பக்க வருடாந்திர சுருக்கம்';
+
+  @override
+  String get jrMemoryTimeCapsule => 'நினைவு நேர கேப்சூல்';
+
+  @override
+  String get jrEncryptedFuture =>
+      'சம்பிரதாய திறப்புடன் மறையாக்கப்பட்ட எதிர்கால நினைவுகள்';
+
+  @override
+  String get jrExportStudio => 'ஏற்றுமதி ஸ்டுடியோ (6 தளவமைப்புகள்)';
+
+  @override
+  String get jrExportFormats => 'PDF, Markdown, JSON, HTML ஏற்றுமதி செய்யவும்';
+
+  @override
+  String get jrExportStudioPreview => 'ஏற்றுமதி ஸ்டுடியோ முன்னோட்டம்';
+
+  @override
+  String get jrEntryTitle => 'பதிவு தலைப்பு...';
+
+  @override
+  String get jrAiTitleSuggestions => 'AI தலைப்பு பரிந்துரைகள்';
+
+  @override
+  String get jrWeeklyMemoryBook => 'வாராந்திர நினைவு புத்தகம்';
+
+  @override
+  String get jrAiPrivacySettings => 'AI & தனியுரிமை அமைப்புகள்';
+
+  @override
+  String get jrSaveClose => 'சேமித்து மூடு';
+
+  @override
+  String get jrDocsyInsights => 'DOCSY நுண்ணறிவுகள்';
+
+  @override
+  String get jrBringToFront => 'முன்னால் கொண்டு வா';
+
+  @override
+  String get jrSendToBack => 'பின்னால் அனுப்பு';
+
+  @override
+  String get jrZoomIn => 'பெரிதாக்கு';
+
+  @override
+  String get jrZoomOut => 'சிறிதாக்கு';
+
+  @override
+  String get jrRotate15 => '15° சுழற்று';
+
+  @override
+  String get jrObjectColor => 'பொருள் நிறம்';
+
+  @override
+  String get jrDuplicate => 'நகல்';
+
+  @override
+  String get jrDeselect => 'தேர்வு நீக்கு';
+
+  @override
+  String get jrAddPolaroid => 'போலராய்டு சட்டம் சேர்க்கவும்';
+
+  @override
+  String get jrPinkRoseFrame => 'இளஞ்சிவப்பு ரோஜா சட்டம்';
+
+  @override
+  String get jrDictateToText => 'உரையாக சொல்லுங்கள் (STT)';
+
+  @override
+  String get jrAddReflectionSummary => 'பிரதிபலிப்பு சுருக்கத்தைச் சேர்க்கவும்';
+
+  @override
+  String get jrDocsyTitleSuggestions => 'Docsy தலைப்பு பரிந்துரைகள்';
+
+  @override
+  String get jrPickTitleMood =>
+      'உங்கள் பிரதிபலிப்பு மனநிலைக்கு பொருந்தும் தலைப்பைத் தேர்ந்தெடுக்கவும்:';
+
+  @override
+  String get jrSuggestTitles =>
+      'சிந்தனைமிக்க பதிவு தலைப்புகளைப் பரிந்துரைக்கவும்';
+
+  @override
+  String get jrMemoryLinks => 'நினைவு இணைப்புகள்';
+
+  @override
+  String get jrDiscoverLinks =>
+      'நினைவுகளுக்கு இடையே விளக்கக்கூடிய இணைப்புகளைக் கண்டறியவும்';
+
+  @override
+  String get jrSmartContextSearch => 'ஸ்மார்ட் சூழல் தேடல்';
+
+  @override
+  String get jrSearchExamples =>
+      'தேடு (எ.கா. கடற்கரை, மகிழ்ச்சி, தேர்வுகள்)...';
+
+  @override
+  String get jrHexCode => 'ஹெக்ஸ் குறியீடு';
+
+  @override
+  String get jrRed => 'சிவப்பு';
+
+  @override
+  String get jrGreen => 'பச்சை';
+
+  @override
+  String get jrBlue => 'நீலம்';
+
+  @override
+  String get jrBasicColors => 'அடிப்படை நிறங்கள்';
+
+  @override
+  String get msRecovery => 'மீட்பு';
+
+  @override
+  String get msTimeCapsules => 'டைம் கேப்சூல்கள்';
+
+  @override
+  String get msStartSession => 'அமர்வைத் தொடங்கு';
+
+  @override
+  String get msNoSessions => 'இதுவரை அமர்வுகள் இல்லை.';
+
+  @override
+  String get msCreateNewCapsule => 'புதிய கேப்சூலை உருவாக்கு';
+
+  @override
+  String get msNameIt => 'அதற்குப் பெயரிடு';
+
+  @override
+  String get msWhatToSay => 'நீங்கள் என்ன சொல்ல விரும்புகிறீர்கள்?';
+
+  @override
+  String get msOpenItIn => 'அதைத் திற';
+
+  @override
+  String get msSeal => 'முத்திரையிடு';
+
+  @override
+  String get msKeepsakeSaved => 'ஜர்னல் நினைவுப்பொருள் சேமிக்கப்பட்டது!';
+
+  @override
+  String get msStartWriting =>
+      'எழுதத் தொடங்குங்கள் அல்லது உங்கள் எண்ணங்களைப் பேசுங்கள்...';
+
+  @override
+  String get authEmailAddress => 'மின்னஞ்சல் முகவரி';
+
+  @override
+  String get authPassword => 'கடவுச்சொல்';
+
+  @override
+  String get authConfirmPassword => 'கடவுச்சொல்லை உறுதிப்படுத்தவும்';
+
+  @override
+  String get authNewPassword => 'புதிய கடவுச்சொல்';
+
+  @override
+  String get authConfirmNewPassword => 'புதிய கடவுச்சொல்லை உறுதிப்படுத்தவும்';
+
+  @override
+  String get authUpdatePassword => 'கடவுச்சொல்லைப் புதுப்பிக்கவும்';
+
+  @override
+  String get authSignIn => 'உள்நுழையவும்';
+
+  @override
+  String get authSignInInstead => 'அதற்குப் பதிலாக உள்நுழையவா?';
+
+  @override
+  String get authUseAnotherEmail => 'வேறு மின்னஞ்சலைப் பயன்படுத்தவும்';
+
+  @override
+  String get authVerify => 'சரிபார்க்கவும்';
+
+  @override
+  String get authSendRecoveryCode => 'மீட்பு குறியீட்டை அனுப்பவும்';
+
+  @override
+  String get authCodeSentIfExists =>
+      'அந்த மின்னஞ்சலுக்கு கணக்கு இருந்தால், ஒரு குறியீடு அனுப்பப்படுகிறது.';
+
+  @override
+  String get authPasswordUpdated =>
+      'கடவுச்சொல் புதுப்பிக்கப்பட்டது. உள்நுழையவும்.';
+
+  @override
+  String get authNewCodeSent => 'புதிய சரிபார்ப்பு குறியீடு அனுப்பப்பட்டது.';
+
+  @override
+  String get setAccountSettings => 'கணக்கு அமைப்புகள்';
+
+  @override
+  String get setAccountProfile => 'கணக்கு & சுயவிவரம்';
+
+  @override
+  String get setPreferredName => 'விருப்பமான பெயர்';
+
+  @override
+  String get setAddName => 'பெயரைச் சேர்க்கவும்';
+
+  @override
+  String get setDateOfBirth => 'பிறந்த தேதி';
+
+  @override
+  String get setEmail => 'மின்னஞ்சல்';
+
+  @override
+  String get setCycleBodyBaseline => 'சுழற்சி & உடல் அடிப்படை';
+
+  @override
+  String get setCurrentLifeStage => 'தற்போதைய வாழ்க்கை நிலை';
+
+  @override
+  String get setCycleTracking => 'சுழற்சி கண்காணிப்பு';
+
+  @override
+  String get setCycleLength => 'சுழற்சி நீளம்';
+
+  @override
+  String get setPeriodLength => 'மாதவிடாய் நீளம்';
+
+  @override
+  String get setHealthMedicalProfile => 'சுகாதார & மருத்துவ சுயவிவரம்';
+
+  @override
+  String get setNotSet => 'அமைக்கப்படவில்லை';
+
+  @override
+  String get setAppPreferencesDocsy => 'ஆப் விருப்பங்கள் & Docsy AI';
+
+  @override
+  String get setDocsyMemory => 'Docsy நினைவகம்';
+
+  @override
+  String get setSupportAccount => 'ஆதரவு & கணக்கு';
+
+  @override
+  String get setHelpFaq => 'உதவி & கேள்விகள்';
+
+  @override
+  String get setPrivacyDataReset => 'தனியுரிமை & தரவு மீட்டமைப்பு';
+
+  @override
+  String get setLogOut => 'வெளியேறு';
+
+  @override
+  String setDaysValue(num count) {
+    return '$count நாட்கள்';
+  }
+
+  @override
+  String setEditItems(num count) {
+    return '$count உருப்படிகளைத் திருத்து';
+  }
+
+  @override
   String get navHome => 'முகப்பு';
 
   @override

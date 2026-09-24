@@ -10,6 +10,7 @@ import '../../../theme/colors.dart';
 import '../../../theme/spacing.dart';
 import '../../../shared/confirm_sign_out.dart';
 import '../../../services/sia_dashboard_service.dart';
+import '../../../l10n/app_localizations.dart';
 import '../settings_draft.dart';
 
 class MyHealthScreen extends StatefulWidget {
@@ -136,12 +137,15 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
   @override
   Widget build(BuildContext context) {
     final state = BlushyOSProvider.of(context);
+    final t = AppLocalizations.of(context);
     final pc = state.personalContext;
     final email = (AuthStorage.getSession()['email'] as String?)?.trim();
-    final dobLabel = pc.dateOfBirth == null ? 'Not set' : _formatDob(pc.dateOfBirth!);
-    final cycleLenLabel = pc.cycleLength != null ? '${pc.cycleLength} days' : '—';
+    final dobLabel = pc.dateOfBirth == null ? t.setNotSet : _formatDob(pc.dateOfBirth!);
+    final cycleLenLabel = pc.cycleLength != null ? t.setDaysValue(pc.cycleLength!) : '—';
     final periodText = _periodLengthController.text.trim();
-    final periodLenLabel = periodText.isNotEmpty ? '$periodText days' : '—';
+    final periodLenLabel = periodText.isNotEmpty
+        ? t.setDaysValue(int.tryParse(periodText) ?? 0)
+        : '—';
     final trackingOn = pc.trackingPreference == CycleTrackingPreference.enabled;
     final memoryOn = pc.preferences.wantsSiaMemory;
     // How many of the four medical categories she has filled in, for the
@@ -161,7 +165,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Account Settings',
+          t.setAccountSettings,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.manrope(
@@ -183,41 +187,41 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // ── ACCOUNT & PROFILE ──
-                  _buildGroupHeader('Account & Profile'),
+                  _buildGroupHeader(t.setAccountProfile),
                   _settingsGroup([
                     _settingsRow(
-                      label: 'Preferred Name',
+                      label: t.setPreferredName,
                       value: (pc.userName?.trim().isNotEmpty ?? false)
                           ? pc.userName!.trim()
-                          : 'Add name',
+                          : t.setAddName,
                       onTap: () => _openSection(
-                          'Preferred Name', true, _sectionPreferredName),
+                          t.setPreferredName, true, _sectionPreferredName),
                     ),
                     _settingsRow(
-                      label: 'Date of Birth',
+                      label: t.setDateOfBirth,
                       value: dobLabel,
                       onTap: () => _openSection(
-                          'Date of Birth', true, _sectionDateOfBirth),
+                          t.setDateOfBirth, true, _sectionDateOfBirth),
                     ),
                     _settingsRow(
-                      label: 'Email',
+                      label: t.setEmail,
                       value: (email != null && email.isNotEmpty) ? email : '—',
                     ),
                   ]),
 
                   // ── CYCLE & BODY BASELINE ──
-                  _buildGroupHeader('Cycle & Body Baseline'),
+                  _buildGroupHeader(t.setCycleBodyBaseline),
                   _settingsGroup([
                     // Current life stage is display-only here: it cannot be
                     // toggled on the settings page, only viewed.
                     _settingsRow(
-                      label: 'Current Life Stage',
+                      label: t.setCurrentLifeStage,
                       value: _stageLabel(pc.lifeStage),
                       onTap: () => _openSection(
-                          'Current Life Stage', true, _sectionCurrentLifeStage),
+                          t.setCurrentLifeStage, true, _sectionCurrentLifeStage),
                     ),
                     _settingsToggleRow(
-                      label: 'Cycle Tracking',
+                      label: t.setCycleTracking,
                       value: trackingOn,
                       onChanged: (v) {
                         _saveField(
@@ -232,30 +236,30 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
                       },
                     ),
                     _settingsRow(
-                      label: 'Cycle Length',
+                      label: t.setCycleLength,
                       value: cycleLenLabel,
                       onTap: () => _openSection(
                           'Cycle Configuration', true, _sectionCycleConfiguration),
                     ),
                     _settingsRow(
-                      label: 'Period Length',
+                      label: t.setPeriodLength,
                       value: periodLenLabel,
                       onTap: () => _openSection(
                           'Cycle Configuration', true, _sectionCycleConfiguration),
                     ),
                     _settingsRow(
-                      label: 'Health & Medical Profile',
-                      value: medicalFilled > 0 ? 'Edit $medicalFilled items' : 'Not set',
-                      onTap: () => _openSection('Health & Medical Profile', true,
+                      label: t.setHealthMedicalProfile,
+                      value: medicalFilled > 0 ? t.setEditItems(medicalFilled) : t.setNotSet,
+                      onTap: () => _openSection(t.setHealthMedicalProfile, true,
                           _sectionHealthMedicalProfile),
                     ),
                   ]),
 
                   // ── APP PREFERENCES & DOCSY AI ──
-                  _buildGroupHeader('App Preferences & Docsy AI'),
+                  _buildGroupHeader(t.setAppPreferencesDocsy),
                   _settingsGroup([
                     _settingsToggleRow(
-                      label: 'Docsy Memory',
+                      label: t.setDocsyMemory,
                       value: memoryOn,
                       onChanged: (v) {
                         final p = pc.preferences;
@@ -278,21 +282,21 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
                   ]),
 
                   // ── SUPPORT & ACCOUNT ──
-                  _buildGroupHeader('Support & Account'),
+                  _buildGroupHeader(t.setSupportAccount),
                   _settingsGroup([
                     _settingsRow(
-                      label: 'Help & FAQ',
+                      label: t.setHelpFaq,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const _AccountFaqScreen()),
                       ),
                     ),
                     _settingsRow(
-                      label: 'Privacy & Data Reset',
+                      label: t.setPrivacyDataReset,
                       onTap: () => _openSection(
-                          'Privacy & Data Reset', false, _sectionManageMyData),
+                          t.setPrivacyDataReset, false, _sectionManageMyData),
                     ),
                     _settingsRow(
-                      label: 'Log Out',
+                      label: t.setLogOut,
                       danger: true,
                       showChevron: false,
                       onTap: () async {

@@ -5,7 +5,6 @@ import '../../theme/colors.dart';
 import '../../services/api_blushy_service.dart';
 import 'recovery_session_player.dart';
 import '../../core/theme.dart' hide BlushyColors;
-import '../../core/storage.dart';
 import '../journal/journal_screen.dart';
 import '../journal/notes/notes_journal_screen.dart';
 import 'view_models/m_studio_view_model.dart';
@@ -188,7 +187,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
           child: Text(opened.data!['body']?.toString() ?? ''),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context).actionClose)),
         ],
       ),
     );
@@ -649,12 +648,12 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
         await push(const NotesJournalScreen());
       case 'Recovery':
         await push(_StudioSectionScreen(
-          title: 'Recovery',
+          title: AppLocalizations.of(context).msRecovery,
           builder: () => _buildRecoveryTab(),
         ));
       case 'Time Capsules':
         await push(_StudioSectionScreen(
-          title: 'Time Capsules',
+          title: AppLocalizations.of(context).msTimeCapsules,
           builder: () => _buildTimeCapsulesTab(),
           onRegister: (refresh) => _refreshOpenSection = refresh,
         ));
@@ -698,7 +697,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
         // Starting a session used to be the floating button, which was tied to
         // the tab strip. It is a card here so it survives that going away.
         _buildWorkspaceActionCard(
-          title: 'Start a Session',
+          title: AppLocalizations.of(context).msStartSession,
           sub: 'Begin a guided relaxation now',
           icon: Icons.spa_rounded,
           onTap: _startRecoveryFlow,
@@ -840,7 +839,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
       if (!mounted) return;
       if (_sessions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No sessions available yet.')),
+          SnackBar(content: Text(AppLocalizations.of(context).msNoSessions)),
         );
         return;
       }
@@ -872,7 +871,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildWorkspaceActionCard(
-          title: 'Create New Capsule',
+          title: AppLocalizations.of(context).msCreateNewCapsule,
           sub: 'Seal letters, voice recordings, or photos for the future.',
           icon: Icons.hourglass_top_rounded,
           onTap: _showCreateCapsuleDialog,
@@ -1049,7 +1048,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                 children: [
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Name it'),
+                    decoration: InputDecoration(labelText: AppLocalizations.of(context).msNameIt),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -1057,14 +1056,14 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                     minLines: 4,
                     maxLines: 8,
                     maxLength: 5000,
-                    decoration: const InputDecoration(
-                      labelText: 'What do you want to say?',
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).msWhatToSay,
                       alignLabelWithHint: true,
                     ),
                   ),
                   DropdownButtonFormField<String>(
                     initialValue: window,
-                    decoration: const InputDecoration(labelText: 'Open it in'),
+                    decoration: InputDecoration(labelText: AppLocalizations.of(context).msOpenItIn),
                     items: windows.keys
                         .map((w) => DropdownMenuItem(value: w, child: Text(w)))
                         .toList(),
@@ -1091,7 +1090,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
             actions: [
               TextButton(
                 onPressed: saving ? null : () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
+                child: Text(AppLocalizations.of(context).actionCancel),
               ),
               TextButton(
                 onPressed: saving ? null : seal,
@@ -1101,7 +1100,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Seal'),
+                    : Text(AppLocalizations.of(context).msSeal),
               ),
             ],
           );
@@ -1217,7 +1216,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                 } catch (_) {}
               }
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Journal keepsake saved!')),
+                SnackBar(content: Text(AppLocalizations.of(context).msKeepsakeSaved)),
               );
               setState(() => _isEditorOpen = false);
             },
@@ -1249,9 +1248,9 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                       color: BlushyColors.text,
                       height: 1.6,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: 'Start writing or speak your thoughts...',
+                      hintText: AppLocalizations.of(context).msStartWriting,
                     ),
                   ),
                 ],

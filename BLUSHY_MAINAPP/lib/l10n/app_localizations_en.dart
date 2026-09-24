@@ -9,6 +9,382 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get jrSelfReflection => 'Self Reflection';
+
+  @override
+  String get jrReflection => 'Reflection';
+
+  @override
+  String get jrScrapbook => 'Scrapbook';
+
+  @override
+  String get jrAccessibilityMotion => 'Accessibility & Motion Settings';
+
+  @override
+  String get jrAmbientSounds => 'Ambient Sounds';
+
+  @override
+  String get jrPlayBackgroundSounds =>
+      'Play background environment soundscapes.';
+
+  @override
+  String get jrLongAnimations => 'Long Animations & Transitions';
+
+  @override
+  String get jrEnable3D => 'Enable 3D cover flipping and opening motion.';
+
+  @override
+  String get jrDecorativeEffects => 'Decorative Effects';
+
+  @override
+  String get jrCoffeeSteam => 'Coffee steam curves, plant sway, & reflections.';
+
+  @override
+  String get jrMyScrapbook => 'My Scrapbook';
+
+  @override
+  String get jrDreamBig => 'Dream Big. Write Beautifully.';
+
+  @override
+  String get jrCover => 'Cover: ';
+
+  @override
+  String get jrRibbon => 'Ribbon: ';
+
+  @override
+  String get jrDesk => 'Desk: ';
+
+  @override
+  String get jrDeskDiaryCover => 'Desk & Diary Cover';
+
+  @override
+  String get jrAmbientSoundEnv => 'Ambient Sound Environment';
+
+  @override
+  String get jrAccessibilitySettings => 'Accessibility Settings';
+
+  @override
+  String get jrSearchMemories => 'Search memories, stickers & templates...';
+
+  @override
+  String get jrSmartMemoryTimeline => 'Smart Memory Timeline';
+
+  @override
+  String get jrTapNewMemory =>
+      'Tap \"New Memory\" or record a voice reflection.';
+
+  @override
+  String get jrDailyAmbientSounds => 'Daily Ambient Environment Sounds';
+
+  @override
+  String get jrScrapbookMemory => 'Scrapbook Memory';
+
+  @override
+  String get jrWriteReflection => 'Write Reflection';
+
+  @override
+  String get jrFreshCanvas => 'Start on a fresh scrapbook canvas';
+
+  @override
+  String get jrRecordTranscribe => 'Record & Transcribe';
+
+  @override
+  String get jrSpeakDocsyTranscribe =>
+      'Speak and let Docsy transcribe into your journal';
+
+  @override
+  String get jrStartFromTemplate => 'Start from Template';
+
+  @override
+  String get jrChooseTemplate => 'Choose a guided journaling template';
+
+  @override
+  String get jrSmartAiSearch => 'Smart AI Search';
+
+  @override
+  String get jrSemanticSearch => 'Contextual semantic search across memories';
+
+  @override
+  String get jrMemoryVault => 'Memory Vault';
+
+  @override
+  String get jrStarredMemories => 'Starred memories & custom collections';
+
+  @override
+  String get jrSmartCalendarMap => 'Smart Calendar & Map';
+
+  @override
+  String get jrVisualMoodGrid => 'Visual mood grid & location pins';
+
+  @override
+  String get jrContentGarden => 'Reflective Content Garden';
+
+  @override
+  String get jrGardenGrowth => 'Organic garden growth tied to reflection depth';
+
+  @override
+  String get jrInsightsDashboard => 'Journal Insights Dashboard';
+
+  @override
+  String get jrWritingStats => 'Writing statistics, word count & active hours';
+
+  @override
+  String get jrYearInReview => 'Year in Review Scrapbook';
+
+  @override
+  String get jrGuidedRecap => 'Guided multi-page yearly recap';
+
+  @override
+  String get jrMemoryTimeCapsule => 'Memory Time Capsule';
+
+  @override
+  String get jrEncryptedFuture =>
+      'Encrypted future memories with ceremonial unlock';
+
+  @override
+  String get jrExportStudio => 'Export Studio (6 Layouts)';
+
+  @override
+  String get jrExportFormats => 'Export PDF, Markdown, JSON, HTML';
+
+  @override
+  String get jrExportStudioPreview => 'Export Studio Preview';
+
+  @override
+  String get jrEntryTitle => 'Entry Title...';
+
+  @override
+  String get jrAiTitleSuggestions => 'AI Title Suggestions';
+
+  @override
+  String get jrWeeklyMemoryBook => 'Weekly Memory Book';
+
+  @override
+  String get jrAiPrivacySettings => 'AI & Privacy Settings';
+
+  @override
+  String get jrSaveClose => 'Save & close';
+
+  @override
+  String get jrDocsyInsights => 'DOCSY INSIGHTS';
+
+  @override
+  String get jrBringToFront => 'Bring to Front';
+
+  @override
+  String get jrSendToBack => 'Send to Back';
+
+  @override
+  String get jrZoomIn => 'Zoom In';
+
+  @override
+  String get jrZoomOut => 'Zoom Out';
+
+  @override
+  String get jrRotate15 => 'Rotate 15°';
+
+  @override
+  String get jrObjectColor => 'Object Color';
+
+  @override
+  String get jrDuplicate => 'Duplicate';
+
+  @override
+  String get jrDeselect => 'Deselect';
+
+  @override
+  String get jrAddPolaroid => 'Add Polaroid Frame';
+
+  @override
+  String get jrPinkRoseFrame => 'Pink Rose Frame';
+
+  @override
+  String get jrDictateToText => 'Dictate to Text (STT)';
+
+  @override
+  String get jrAddReflectionSummary => 'Add Reflection Summary';
+
+  @override
+  String get jrDocsyTitleSuggestions => 'Docsy Title Suggestions';
+
+  @override
+  String get jrPickTitleMood =>
+      'Pick a title that matches your reflection mood:';
+
+  @override
+  String get jrSuggestTitles => 'Suggest thoughtful entry titles';
+
+  @override
+  String get jrMemoryLinks => 'Memory Links';
+
+  @override
+  String get jrDiscoverLinks => 'Discover explainable links between memories';
+
+  @override
+  String get jrSmartContextSearch => 'Smart Context Search';
+
+  @override
+  String get jrSearchExamples => 'Search (e.g. Beach, Happy, Exams)...';
+
+  @override
+  String get jrHexCode => 'Hex Code';
+
+  @override
+  String get jrRed => 'Red';
+
+  @override
+  String get jrGreen => 'Green';
+
+  @override
+  String get jrBlue => 'Blue';
+
+  @override
+  String get jrBasicColors => 'Basic Colors';
+
+  @override
+  String get msRecovery => 'Recovery';
+
+  @override
+  String get msTimeCapsules => 'Time Capsules';
+
+  @override
+  String get msStartSession => 'Start a Session';
+
+  @override
+  String get msNoSessions => 'No sessions available yet.';
+
+  @override
+  String get msCreateNewCapsule => 'Create New Capsule';
+
+  @override
+  String get msNameIt => 'Name it';
+
+  @override
+  String get msWhatToSay => 'What do you want to say?';
+
+  @override
+  String get msOpenItIn => 'Open it in';
+
+  @override
+  String get msSeal => 'Seal';
+
+  @override
+  String get msKeepsakeSaved => 'Journal keepsake saved!';
+
+  @override
+  String get msStartWriting => 'Start writing or speak your thoughts...';
+
+  @override
+  String get authEmailAddress => 'Email Address';
+
+  @override
+  String get authPassword => 'Password';
+
+  @override
+  String get authConfirmPassword => 'Confirm Password';
+
+  @override
+  String get authNewPassword => 'New Password';
+
+  @override
+  String get authConfirmNewPassword => 'Confirm New Password';
+
+  @override
+  String get authUpdatePassword => 'Update Password';
+
+  @override
+  String get authSignIn => 'Sign in';
+
+  @override
+  String get authSignInInstead => 'Sign in instead?';
+
+  @override
+  String get authUseAnotherEmail => 'Use another email';
+
+  @override
+  String get authVerify => 'Verify';
+
+  @override
+  String get authSendRecoveryCode => 'Send Recovery Code';
+
+  @override
+  String get authCodeSentIfExists =>
+      'If an account exists for that email, a code is on its way.';
+
+  @override
+  String get authPasswordUpdated => 'Password updated. Please sign in.';
+
+  @override
+  String get authNewCodeSent => 'A new verification code has been sent.';
+
+  @override
+  String get setAccountSettings => 'Account Settings';
+
+  @override
+  String get setAccountProfile => 'Account & Profile';
+
+  @override
+  String get setPreferredName => 'Preferred Name';
+
+  @override
+  String get setAddName => 'Add name';
+
+  @override
+  String get setDateOfBirth => 'Date of Birth';
+
+  @override
+  String get setEmail => 'Email';
+
+  @override
+  String get setCycleBodyBaseline => 'Cycle & Body Baseline';
+
+  @override
+  String get setCurrentLifeStage => 'Current Life Stage';
+
+  @override
+  String get setCycleTracking => 'Cycle Tracking';
+
+  @override
+  String get setCycleLength => 'Cycle Length';
+
+  @override
+  String get setPeriodLength => 'Period Length';
+
+  @override
+  String get setHealthMedicalProfile => 'Health & Medical Profile';
+
+  @override
+  String get setNotSet => 'Not set';
+
+  @override
+  String get setAppPreferencesDocsy => 'App Preferences & Docsy AI';
+
+  @override
+  String get setDocsyMemory => 'Docsy Memory';
+
+  @override
+  String get setSupportAccount => 'Support & Account';
+
+  @override
+  String get setHelpFaq => 'Help & FAQ';
+
+  @override
+  String get setPrivacyDataReset => 'Privacy & Data Reset';
+
+  @override
+  String get setLogOut => 'Log Out';
+
+  @override
+  String setDaysValue(num count) {
+    return '$count days';
+  }
+
+  @override
+  String setEditItems(num count) {
+    return 'Edit $count items';
+  }
+
+  @override
   String get navHome => 'Home';
 
   @override
