@@ -95,6 +95,12 @@ flutter:
     - assets/perimenopause_more/
     - assets/menopause_changes/
     - assets/menopause_more/
+    - assets/ttc_fertility/
+    - assets/ttc_ovulation/
+    - assets/ttc_sex/
+    - assets/postpartum_motherhood/
+    - assets/postpartum_baby/
+    - assets/postpartum_recovery/
 
   # The layouts asked for Georgia and Courier and shipped neither, so on Android
   # both fell back to Roboto and the editorial serif was lost. Neither is
