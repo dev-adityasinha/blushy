@@ -9,6 +9,260 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get ceRemindScreenshot => 'Remind to send screenshot 📸';
+
+  @override
+  String get ceRemindMsg =>
+      '“Hey, gentle reminder to send that screenshot! 😉”';
+
+  @override
+  String get cePlayfulPing => 'Playful Ping 👋';
+
+  @override
+  String get cePlayfulMsg => '“Hey you! Still waiting on your reply 😉”';
+
+  @override
+  String get ceGentleThought => 'Gentle Thought ☕';
+
+  @override
+  String get ceGentleMsg => '“Take your time, just thinking of you! 💕”';
+
+  @override
+  String get ceWhisperFollowUp => 'Or whisper a quick follow-up...';
+
+  @override
+  String get ceMyTreat => 'My treat! Dress up cute ❤️';
+
+  @override
+  String get ceAddCuteNote => 'Add a cute note...';
+
+  @override
+  String get ceUndo => 'Undo';
+
+  @override
+  String get ceClear => 'Clear';
+
+  @override
+  String get ceHotCoffee => 'Hot Coffee & Cozy Hug ☕';
+
+  @override
+  String get ceHotCoffeeMsg =>
+      'Sending a warm cup of coffee and a tight embrace.';
+
+  @override
+  String get ceBigEmbrace => 'Big Tight Embrace 🫂';
+
+  @override
+  String get ceBigEmbraceMsg =>
+      'Wrapping you in the biggest, warmest hug today.';
+
+  @override
+  String get ceForeheadKiss => 'Sweet Forehead Kiss 💋';
+
+  @override
+  String get ceForeheadKissMsg =>
+      'A gentle forehead kiss to brighten your day.';
+
+  @override
+  String get ceTreatDelivery => 'Sweet Treat Delivery 🍫';
+
+  @override
+  String get ceTreatDeliveryMsg =>
+      'Virtual sweet chocolates and all my affection.';
+
+  @override
+  String get cePauseBreathe => 'Gentle Pause & Breathe 🌿';
+
+  @override
+  String get cePauseBreatheMsg =>
+      'Take a deep breath, you are doing incredible.';
+
+  @override
+  String get ceThinkingOfYou => 'Thinking of You ✨';
+
+  @override
+  String get ceThinkingMsg => 'Daydreaming and smiling thinking about you.';
+
+  @override
+  String get ceMissingVoice => 'Missing Your Voice 🥺';
+
+  @override
+  String get ceMissingMsg =>
+      'Missing you extra and wishing you were right here.';
+
+  @override
+  String get ceCravingCuddles => 'Craving Cuddles 🧸';
+
+  @override
+  String get ceCravingMsg => 'Officially on cuddle standby right now.';
+
+  @override
+  String get ceProudOfYou => 'So Proud of You 🌟';
+
+  @override
+  String get ceProudMsg => 'A gentle reminder that you are a total rockstar.';
+
+  @override
+  String get ceRechargeNeeded => 'Recharge Needed 🔋';
+
+  @override
+  String get ceRechargeMsg =>
+      'Low battery today, need some sweet partner warmth.';
+
+  @override
+  String get noteNoPhoto => 'No photo added.';
+
+  @override
+  String get noteKeepWriting => 'Keep writing';
+
+  @override
+  String get noteRemove => 'Remove';
+
+  @override
+  String get noteSize => 'Size';
+
+  @override
+  String get noteBold => 'Bold';
+
+  @override
+  String get noteItalic => 'Italic';
+
+  @override
+  String get noteUnderline => 'Underline';
+
+  @override
+  String get noteBullet => 'Bullet';
+
+  @override
+  String get noteNumbered => 'Numbered';
+
+  @override
+  String get noteChecklist => 'Checklist';
+
+  @override
+  String get noteSmaller => 'Smaller';
+
+  @override
+  String get noteBigger => 'Bigger';
+
+  @override
+  String get noteDeleteEntry => 'Delete this entry?';
+
+  @override
+  String get noteKeep => 'Keep';
+
+  @override
+  String get noteTellMe => 'Tell me';
+
+  @override
+  String get noteWriteIt => 'Write it';
+
+  @override
+  String get noteGivePrompt => 'Give me a prompt';
+
+  @override
+  String get noteNotThisOne => 'Not this one';
+
+  @override
+  String get ptGardenGrew => 'Your garden grew. Your partner sees it too.';
+
+  @override
+  String get ptDatePlanner => 'Date Planner & AI Concierge';
+
+  @override
+  String get ptDrawingCanvas => 'Shared Drawing Canvas';
+
+  @override
+  String get ptCoupleGames => 'Couple Games & Questions';
+
+  @override
+  String get ptVirtualBouquet => 'Virtual Bouquet & Blooms';
+
+  @override
+  String get ptGratitudeChallenge => 'Daily Gratitude Challenge';
+
+  @override
+  String get ptConnectedSuccess =>
+      '🎉 Connected with your partner successfully!';
+
+  @override
+  String get ptAccept => 'ACCEPT';
+
+  @override
+  String get ptPortalLive =>
+      'Connected! Your shared partner portal is now live 🎉';
+
+  @override
+  String get ptPrivateSpaceOn =>
+      'Private space on. Your personal updates are paused.';
+
+  @override
+  String get ptSharingResumed => 'Sharing resumed, exactly as it was.';
+
+  @override
+  String get ptCycle => 'CYCLE';
+
+  @override
+  String get ptEnergy => 'ENERGY';
+
+  @override
+  String get ptMood => 'MOOD';
+
+  @override
+  String get ptPartnerSpaceLive =>
+      'Connected! Your Partner Space is now live 🎉';
+
+  @override
+  String get commonOk => 'OK';
+
+  @override
+  String get ptDisconnectPartner => 'Disconnect partner?';
+
+  @override
+  String get ptInvite => 'Invite';
+
+  @override
+  String get ptPrivacySettings => 'Privacy Settings';
+
+  @override
+  String get ptWhatYouShare => 'What you share';
+
+  @override
+  String get ptPrivacyUpdated => 'Privacy settings updated.';
+
+  @override
+  String get ptRequestAccepted => 'Partner request accepted! 🎉';
+
+  @override
+  String get ptPartnerEmail => 'Partner Email Address';
+
+  @override
+  String get commonOr => 'OR';
+
+  @override
+  String get ptInviteLinkCopied => 'Invite link copied to clipboard! 📋';
+
+  @override
+  String get ptCopyLink => 'Copy link';
+
+  @override
+  String get ptInviteCode => 'Invite code';
+
+  @override
+  String get ptSavedScrapbook => 'Saved to shared scrapbook memory!';
+
+  @override
+  String get ptLetterTitle => 'Letter Title (e.g. For our special day)';
+
+  @override
+  String get ptLetterHint =>
+      'Pour your heart out here... Your thoughts, gratitude, or memories for your partner.';
+
+  @override
+  String get ptLetterValidation =>
+      'Please enter both a title and letter message.';
+
+  @override
   String get jrSelfReflection => 'Self Reflection';
 
   @override

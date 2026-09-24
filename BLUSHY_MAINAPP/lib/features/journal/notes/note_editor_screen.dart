@@ -8,6 +8,7 @@ import 'note_stickers.dart';
 import 'note_paper.dart';
 import 'note_photo.dart';
 import 'note_style.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Writing one journal entry.
 ///
@@ -194,8 +195,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       // error dialog for a background, and the picker gives no reliable way to
       // tell them apart.
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No photo added.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).noteNoPhoto),
           duration: Duration(seconds: 2),
         ),
       );
@@ -409,7 +410,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'stay'),
-            child: const Text('Keep writing'),
+            child: Text(AppLocalizations.of(context).noteKeepWriting),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'discard'),
@@ -716,7 +717,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
               if (_style.photo != null) ...[
                 const SizedBox(width: 8),
                 _pill(
-                  label: 'Remove',
+                  label: AppLocalizations.of(context).noteRemove,
                   selected: false,
                   onTap: () => setState(() => _style = _style.withoutPhoto()),
                 ),
@@ -750,7 +751,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  Text('Size',
+                  Text(AppLocalizations.of(context).noteSize,
                       style: GoogleFonts.manrope(height: 1.5, 
                           fontSize: 11, color: BlushyColors.secondaryText)),
                   Expanded(
@@ -785,21 +786,21 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                   // plain string, and every entry already saved is one too.
                   _formatToggle(
                     icon: Icons.format_bold_rounded,
-                    label: 'Bold',
+                    label: AppLocalizations.of(context).noteBold,
                     on: _style.bold,
                     onTap: () => setState(
                         () => _style = _style.copyWith(bold: !_style.bold)),
                   ),
                   _formatToggle(
                     icon: Icons.format_italic_rounded,
-                    label: 'Italic',
+                    label: AppLocalizations.of(context).noteItalic,
                     on: _style.italic,
                     onTap: () => setState(
                         () => _style = _style.copyWith(italic: !_style.italic)),
                   ),
                   _formatToggle(
                     icon: Icons.format_underlined_rounded,
-                    label: 'Underline',
+                    label: AppLocalizations.of(context).noteUnderline,
                     on: _style.underline,
                     onTap: () => setState(() =>
                         _style = _style.copyWith(underline: !_style.underline)),
@@ -822,19 +823,19 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                   // prefix off again.
                   _formatToggle(
                     icon: Icons.format_list_bulleted_rounded,
-                    label: 'Bullet',
+                    label: AppLocalizations.of(context).noteBullet,
                     on: false,
                     onTap: () => _toggleLinePrefix('\u2022 '),
                   ),
                   _formatToggle(
                     icon: Icons.format_list_numbered_rounded,
-                    label: 'Numbered',
+                    label: AppLocalizations.of(context).noteNumbered,
                     on: false,
                     onTap: () => _toggleLinePrefix('1. '),
                   ),
                   _formatToggle(
                     icon: Icons.check_box_outline_blank_rounded,
-                    label: 'Checklist',
+                    label: AppLocalizations.of(context).noteChecklist,
                     on: false,
                     onTap: () => _toggleLinePrefix('\u2610 '),
                   ),
@@ -1124,7 +1125,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             Text(sticker.emoji, style: const TextStyle(fontSize: 18)),
           const SizedBox(width: 10),
           Text(
-            'Size',
+            AppLocalizations.of(context).noteSize,
             style: GoogleFonts.manrope(
                 fontSize: 11, color: BlushyColors.secondaryText),
           ),
@@ -1132,7 +1133,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             onPressed: () => _resizeSticker(index, -0.25),
             icon: const Icon(Icons.remove_circle_outline_rounded, size: 22),
             color: BlushyColors.text,
-            tooltip: 'Smaller',
+            tooltip: AppLocalizations.of(context).noteSmaller,
           ),
           Text(
             '${(sticker.scale * 100).round()}%',
@@ -1143,18 +1144,18 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             onPressed: () => _resizeSticker(index, 0.25),
             icon: const Icon(Icons.add_circle_outline_rounded, size: 22),
             color: BlushyColors.text,
-            tooltip: 'Bigger',
+            tooltip: AppLocalizations.of(context).noteBigger,
           ),
           const Spacer(),
           TextButton.icon(
             onPressed: () => _removeSticker(index),
             icon: const Icon(Icons.delete_outline_rounded, size: 18),
-            label: const Text('Delete'),
+            label: Text(AppLocalizations.of(context).actionDelete),
             style: TextButton.styleFrom(foregroundColor: BlushyColors.danger),
           ),
           TextButton(
             onPressed: () => setState(() => _selectedSticker = null),
-            child: const Text('Done'),
+            child: Text(AppLocalizations.of(context).actionDone),
           ),
         ],
       ),

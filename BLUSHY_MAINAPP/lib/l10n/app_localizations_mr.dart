@@ -9,6 +9,256 @@ class AppLocalizationsMr extends AppLocalizations {
   AppLocalizationsMr([String locale = 'mr']) : super(locale);
 
   @override
+  String get ceRemindScreenshot => 'स्क्रीनशॉट पाठवण्याची आठवण करा 📸';
+
+  @override
+  String get ceRemindMsg => '“अरे, तो स्क्रीनशॉट पाठवण्याची हळुवार आठवण! 😉”';
+
+  @override
+  String get cePlayfulPing => 'खेळकर पिंग 👋';
+
+  @override
+  String get cePlayfulMsg => '“अरे तू! अजूनही तुझ्या उत्तराची वाट पाहतोय 😉”';
+
+  @override
+  String get ceGentleThought => 'हळुवार विचार ☕';
+
+  @override
+  String get ceGentleMsg => '“तुझा वेळ घे, फक्त तुझाच विचार करतोय! 💕”';
+
+  @override
+  String get ceWhisperFollowUp => 'किंवा एक झटपट फॉलो-अप हळूच सांगा...';
+
+  @override
+  String get ceMyTreat => 'माझ्याकडून! छान तयार हो ❤️';
+
+  @override
+  String get ceAddCuteNote => 'एक छान टीप जोडा...';
+
+  @override
+  String get ceUndo => 'पूर्ववत करा';
+
+  @override
+  String get ceClear => 'साफ करा';
+
+  @override
+  String get ceHotCoffee => 'गरम कॉफी आणि उबदार मिठी ☕';
+
+  @override
+  String get ceHotCoffeeMsg => 'एक उबदार कप कॉफी आणि घट्ट मिठी पाठवत आहे.';
+
+  @override
+  String get ceBigEmbrace => 'मोठी घट्ट मिठी 🫂';
+
+  @override
+  String get ceBigEmbraceMsg =>
+      'आज तुला सर्वात मोठ्या, उबदार मिठीत गुंडाळत आहे.';
+
+  @override
+  String get ceForeheadKiss => 'गोड कपाळावर पापी 💋';
+
+  @override
+  String get ceForeheadKissMsg =>
+      'तुझा दिवस उजळण्यासाठी एक हळुवार कपाळावर पापी.';
+
+  @override
+  String get ceTreatDelivery => 'गोड ट्रीट डिलिव्हरी 🍫';
+
+  @override
+  String get ceTreatDeliveryMsg =>
+      'व्हर्च्युअल गोड चॉकलेट्स आणि माझं सगळं प्रेम.';
+
+  @override
+  String get cePauseBreathe => 'हळुवार विराम आणि श्वास घे 🌿';
+
+  @override
+  String get cePauseBreatheMsg => 'एक दीर्घ श्वास घे, तू कमाल करत आहेस.';
+
+  @override
+  String get ceThinkingOfYou => 'तुझा विचार करतोय ✨';
+
+  @override
+  String get ceThinkingMsg => 'तुझा विचार करत दिवास्वप्न पाहतोय आणि हसतोय.';
+
+  @override
+  String get ceMissingVoice => 'तुझ्या आवाजाची आठवण येतेय 🥺';
+
+  @override
+  String get ceMissingMsg =>
+      'तुझी खूप आठवण येतेय आणि तू इथेच असावंस असं वाटतंय.';
+
+  @override
+  String get ceCravingCuddles => 'मिठ्यांची ओढ 🧸';
+
+  @override
+  String get ceCravingMsg => 'आत्ता अधिकृतपणे मिठीसाठी तयार आहे.';
+
+  @override
+  String get ceProudOfYou => 'तुझा खूप अभिमान आहे 🌟';
+
+  @override
+  String get ceProudMsg => 'तू पूर्ण रॉकस्टार आहेस याची एक हळुवार आठवण.';
+
+  @override
+  String get ceRechargeNeeded => 'रिचार्ज हवाय 🔋';
+
+  @override
+  String get ceRechargeMsg => 'आज बॅटरी कमी आहे, थोडी गोड जोडीदाराची ऊब हवीय.';
+
+  @override
+  String get noteNoPhoto => 'कोणताही फोटो जोडलेला नाही.';
+
+  @override
+  String get noteKeepWriting => 'लिहित राहा';
+
+  @override
+  String get noteRemove => 'काढा';
+
+  @override
+  String get noteSize => 'आकार';
+
+  @override
+  String get noteBold => 'ठळक';
+
+  @override
+  String get noteItalic => 'तिरपे';
+
+  @override
+  String get noteUnderline => 'अधोरेखित';
+
+  @override
+  String get noteBullet => 'बुलेट';
+
+  @override
+  String get noteNumbered => 'क्रमांकित';
+
+  @override
+  String get noteChecklist => 'चेकलिस्ट';
+
+  @override
+  String get noteSmaller => 'लहान';
+
+  @override
+  String get noteBigger => 'मोठे';
+
+  @override
+  String get noteDeleteEntry => 'ही नोंद हटवायची?';
+
+  @override
+  String get noteKeep => 'ठेवा';
+
+  @override
+  String get noteTellMe => 'मला सांगा';
+
+  @override
+  String get noteWriteIt => 'ते लिहा';
+
+  @override
+  String get noteGivePrompt => 'मला एक सूचना द्या';
+
+  @override
+  String get noteNotThisOne => 'हे नाही';
+
+  @override
+  String get ptGardenGrew => 'तुमची बाग वाढली. तुमचा जोडीदारही ती पाहतो.';
+
+  @override
+  String get ptDatePlanner => 'डेट प्लॅनर आणि AI कंसिअर्ज';
+
+  @override
+  String get ptDrawingCanvas => 'सामायिक ड्रॉइंग कॅनव्हास';
+
+  @override
+  String get ptCoupleGames => 'जोडपे गेम्स आणि प्रश्न';
+
+  @override
+  String get ptVirtualBouquet => 'व्हर्च्युअल पुष्पगुच्छ आणि फुले';
+
+  @override
+  String get ptGratitudeChallenge => 'दैनिक कृतज्ञता आव्हान';
+
+  @override
+  String get ptConnectedSuccess =>
+      '🎉 तुमच्या जोडीदाराशी यशस्वीरित्या जोडले गेले!';
+
+  @override
+  String get ptAccept => 'स्वीकारा';
+
+  @override
+  String get ptPortalLive =>
+      'जोडले गेले! तुमचे सामायिक जोडीदार पोर्टल आता लाइव्ह आहे 🎉';
+
+  @override
+  String get ptPrivateSpaceOn =>
+      'खाजगी जागा चालू. तुमची वैयक्तिक अपडेट थांबवली आहेत.';
+
+  @override
+  String get ptSharingResumed => 'शेअरिंग पुन्हा सुरू, अगदी पूर्वीसारखे.';
+
+  @override
+  String get ptCycle => 'चक्र';
+
+  @override
+  String get ptEnergy => 'ऊर्जा';
+
+  @override
+  String get ptMood => 'मूड';
+
+  @override
+  String get ptPartnerSpaceLive =>
+      'जोडले गेले! तुमचे पार्टनर स्पेस आता लाइव्ह आहे 🎉';
+
+  @override
+  String get commonOk => 'ठीक आहे';
+
+  @override
+  String get ptDisconnectPartner => 'जोडीदाराला डिस्कनेक्ट करायचे?';
+
+  @override
+  String get ptInvite => 'आमंत्रित करा';
+
+  @override
+  String get ptPrivacySettings => 'गोपनीयता सेटिंग्ज';
+
+  @override
+  String get ptWhatYouShare => 'तुम्ही काय शेअर करता';
+
+  @override
+  String get ptPrivacyUpdated => 'गोपनीयता सेटिंग्ज अपडेट झाल्या.';
+
+  @override
+  String get ptRequestAccepted => 'जोडीदार विनंती स्वीकारली! 🎉';
+
+  @override
+  String get ptPartnerEmail => 'जोडीदाराचा ईमेल पत्ता';
+
+  @override
+  String get commonOr => 'किंवा';
+
+  @override
+  String get ptInviteLinkCopied => 'आमंत्रण दुवा क्लिपबोर्डवर कॉपी केला! 📋';
+
+  @override
+  String get ptCopyLink => 'दुवा कॉपी करा';
+
+  @override
+  String get ptInviteCode => 'आमंत्रण कोड';
+
+  @override
+  String get ptSavedScrapbook => 'सामायिक स्क्रॅपबुक मेमरीमध्ये जतन केले!';
+
+  @override
+  String get ptLetterTitle => 'पत्र शीर्षक (उदा. आमच्या खास दिवसासाठी)';
+
+  @override
+  String get ptLetterHint =>
+      'तुमच्या मनातील भावना इथे लिहा... तुमच्या जोडीदारासाठी विचार, कृतज्ञता किंवा आठवणी.';
+
+  @override
+  String get ptLetterValidation =>
+      'कृपया शीर्षक आणि पत्र संदेश दोन्ही प्रविष्ट करा.';
+
+  @override
   String get jrSelfReflection => 'आत्मचिंतन';
 
   @override

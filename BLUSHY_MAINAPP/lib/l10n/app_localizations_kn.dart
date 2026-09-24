@@ -9,6 +9,264 @@ class AppLocalizationsKn extends AppLocalizations {
   AppLocalizationsKn([String locale = 'kn']) : super(locale);
 
   @override
+  String get ceRemindScreenshot => 'ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ಕಳುಹಿಸಲು ನೆನಪಿಸಿ 📸';
+
+  @override
+  String get ceRemindMsg => '“ಹೇ, ಆ ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ಕಳುಹಿಸಲು ಮೃದುವಾದ ನೆನಪು! 😉”';
+
+  @override
+  String get cePlayfulPing => 'ತಮಾಷೆಯ ಪಿಂಗ್ 👋';
+
+  @override
+  String get cePlayfulMsg =>
+      '“ಹೇ ನೀನು! ಇನ್ನೂ ನಿನ್ನ ಉತ್ತರಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದ್ದೇನೆ 😉”';
+
+  @override
+  String get ceGentleThought => 'ಮೃದುವಾದ ಚಿಂತನೆ ☕';
+
+  @override
+  String get ceGentleMsg => '“ನಿಧಾನವಾಗಿರು, ನಿನ್ನ ಬಗ್ಗೆಯೇ ಯೋಚಿಸುತ್ತಿದ್ದೇನೆ! 💕”';
+
+  @override
+  String get ceWhisperFollowUp => 'ಅಥವಾ ಒಂದು ತ್ವರಿತ ಫಾಲೋ-ಅಪ್ ಪಿಸುಗುಟ್ಟಿ...';
+
+  @override
+  String get ceMyTreat => 'ನನ್ನ ಟ್ರೀಟ್! ಮುದ್ದಾಗಿ ಸಿದ್ಧವಾಗು ❤️';
+
+  @override
+  String get ceAddCuteNote => 'ಒಂದು ಮುದ್ದಾದ ಟಿಪ್ಪಣಿ ಸೇರಿಸಿ...';
+
+  @override
+  String get ceUndo => 'ರದ್ದುಗೊಳಿಸಿ';
+
+  @override
+  String get ceClear => 'ತೆರವುಗೊಳಿಸಿ';
+
+  @override
+  String get ceHotCoffee => 'ಬಿಸಿ ಕಾಫಿ ಮತ್ತು ಆರಾಮದಾಯಕ ಅಪ್ಪುಗೆ ☕';
+
+  @override
+  String get ceHotCoffeeMsg =>
+      'ಒಂದು ಬೆಚ್ಚಗಿನ ಕಪ್ ಕಾಫಿ ಮತ್ತು ಬಿಗಿಯಾದ ಅಪ್ಪುಗೆ ಕಳುಹಿಸುತ್ತಿದ್ದೇನೆ.';
+
+  @override
+  String get ceBigEmbrace => 'ದೊಡ್ಡ ಬಿಗಿಯಾದ ಅಪ್ಪುಗೆ 🫂';
+
+  @override
+  String get ceBigEmbraceMsg =>
+      'ಇಂದು ನಿನ್ನನ್ನು ಅತಿ ದೊಡ್ಡ, ಬೆಚ್ಚಗಿನ ಅಪ್ಪುಗೆಯಲ್ಲಿ ಸುತ್ತುತ್ತಿದ್ದೇನೆ.';
+
+  @override
+  String get ceForeheadKiss => 'ಸಿಹಿ ಹಣೆಯ ಮುತ್ತು 💋';
+
+  @override
+  String get ceForeheadKissMsg =>
+      'ನಿನ್ನ ದಿನವನ್ನು ಬೆಳಗಿಸಲು ಒಂದು ಮೃದುವಾದ ಹಣೆಯ ಮುತ್ತು.';
+
+  @override
+  String get ceTreatDelivery => 'ಸಿಹಿ ಟ್ರೀಟ್ ಡೆಲಿವರಿ 🍫';
+
+  @override
+  String get ceTreatDeliveryMsg =>
+      'ವರ್ಚುವಲ್ ಸಿಹಿ ಚಾಕೊಲೇಟ್‌ಗಳು ಮತ್ತು ನನ್ನ ಎಲ್ಲಾ ಪ್ರೀತಿ.';
+
+  @override
+  String get cePauseBreathe => 'ಮೃದುವಾದ ವಿರಾಮ ಮತ್ತು ಉಸಿರಾಡು 🌿';
+
+  @override
+  String get cePauseBreatheMsg =>
+      'ಒಂದು ಆಳವಾದ ಉಸಿರು ತೆಗೆದುಕೋ, ನೀನು ಅದ್ಭುತವಾಗಿ ಮಾಡುತ್ತಿದ್ದೀಯ.';
+
+  @override
+  String get ceThinkingOfYou => 'ನಿನ್ನ ಬಗ್ಗೆ ಯೋಚಿಸುತ್ತಿದ್ದೇನೆ ✨';
+
+  @override
+  String get ceThinkingMsg =>
+      'ನಿನ್ನ ಬಗ್ಗೆ ಯೋಚಿಸುತ್ತಾ ಹಗಲುಗನಸು ಕಾಣುತ್ತಾ ನಗುತ್ತಿದ್ದೇನೆ.';
+
+  @override
+  String get ceMissingVoice => 'ನಿನ್ನ ಧ್ವನಿಯನ್ನು ಮಿಸ್ ಮಾಡುತ್ತಿದ್ದೇನೆ 🥺';
+
+  @override
+  String get ceMissingMsg =>
+      'ನಿನ್ನನ್ನು ತುಂಬಾ ಮಿಸ್ ಮಾಡುತ್ತಿದ್ದೇನೆ, ನೀನು ಇಲ್ಲೇ ಇದ್ದಿದ್ದರೆ ಎಂದು ಬಯಸುತ್ತೇನೆ.';
+
+  @override
+  String get ceCravingCuddles => 'ಅಪ್ಪುಗೆಗಳ ತವಕ 🧸';
+
+  @override
+  String get ceCravingMsg => 'ಈಗ ಅಧಿಕೃತವಾಗಿ ಅಪ್ಪುಗೆಗೆ ಸಿದ್ಧನಾಗಿದ್ದೇನೆ.';
+
+  @override
+  String get ceProudOfYou => 'ನಿನ್ನ ಬಗ್ಗೆ ತುಂಬಾ ಹೆಮ್ಮೆ 🌟';
+
+  @override
+  String get ceProudMsg => 'ನೀನು ಪೂರ್ಣ ರಾಕ್‌ಸ್ಟಾರ್ ಎಂಬ ಒಂದು ಮೃದುವಾದ ನೆನಪು.';
+
+  @override
+  String get ceRechargeNeeded => 'ರೀಚಾರ್ಜ್ ಬೇಕು 🔋';
+
+  @override
+  String get ceRechargeMsg =>
+      'ಇಂದು ಬ್ಯಾಟರಿ ಕಡಿಮೆ, ಸ್ವಲ್ಪ ಸಿಹಿ ಸಂಗಾತಿಯ ಬೆಚ್ಚನೆ ಬೇಕು.';
+
+  @override
+  String get noteNoPhoto => 'ಯಾವುದೇ ಫೋಟೋ ಸೇರಿಸಲಾಗಿಲ್ಲ.';
+
+  @override
+  String get noteKeepWriting => 'ಬರೆಯುತ್ತಿರಿ';
+
+  @override
+  String get noteRemove => 'ತೆಗೆದುಹಾಕಿ';
+
+  @override
+  String get noteSize => 'ಗಾತ್ರ';
+
+  @override
+  String get noteBold => 'ದಪ್ಪ';
+
+  @override
+  String get noteItalic => 'ಇಟಾಲಿಕ್';
+
+  @override
+  String get noteUnderline => 'ಅಂಡರ್‌ಲೈನ್';
+
+  @override
+  String get noteBullet => 'ಬುಲೆಟ್';
+
+  @override
+  String get noteNumbered => 'ಸಂಖ್ಯೆಯ';
+
+  @override
+  String get noteChecklist => 'ಪರಿಶೀಲನಾ ಪಟ್ಟಿ';
+
+  @override
+  String get noteSmaller => 'ಚಿಕ್ಕದು';
+
+  @override
+  String get noteBigger => 'ದೊಡ್ಡದು';
+
+  @override
+  String get noteDeleteEntry => 'ಈ ನಮೂದನ್ನು ಅಳಿಸುವುದೇ?';
+
+  @override
+  String get noteKeep => 'ಇರಿಸಿ';
+
+  @override
+  String get noteTellMe => 'ನನಗೆ ಹೇಳಿ';
+
+  @override
+  String get noteWriteIt => 'ಅದನ್ನು ಬರೆಯಿರಿ';
+
+  @override
+  String get noteGivePrompt => 'ನನಗೆ ಒಂದು ಪ್ರಾಂಪ್ಟ್ ನೀಡಿ';
+
+  @override
+  String get noteNotThisOne => 'ಇದಲ್ಲ';
+
+  @override
+  String get ptGardenGrew =>
+      'ನಿಮ್ಮ ಉದ್ಯಾನ ಬೆಳೆಯಿತು. ನಿಮ್ಮ ಸಂಗಾತಿಯೂ ಅದನ್ನು ನೋಡುತ್ತಾರೆ.';
+
+  @override
+  String get ptDatePlanner => 'ಡೇಟ್ ಪ್ಲಾನರ್ ಮತ್ತು AI ಕನ್ಸಿಯರ್ಜ್';
+
+  @override
+  String get ptDrawingCanvas => 'ಹಂಚಿದ ಡ್ರಾಯಿಂಗ್ ಕ್ಯಾನ್ವಾಸ್';
+
+  @override
+  String get ptCoupleGames => 'ಜೋಡಿ ಆಟಗಳು ಮತ್ತು ಪ್ರಶ್ನೆಗಳು';
+
+  @override
+  String get ptVirtualBouquet => 'ವರ್ಚುವಲ್ ಹೂಗುಚ್ಛ ಮತ್ತು ಹೂವುಗಳು';
+
+  @override
+  String get ptGratitudeChallenge => 'ದೈನಂದಿನ ಕೃತಜ್ಞತೆ ಸವಾಲು';
+
+  @override
+  String get ptConnectedSuccess =>
+      '🎉 ನಿಮ್ಮ ಸಂಗಾತಿಯೊಂದಿಗೆ ಯಶಸ್ವಿಯಾಗಿ ಸಂಪರ್ಕಗೊಂಡಿದೆ!';
+
+  @override
+  String get ptAccept => 'ಸ್ವೀಕರಿಸಿ';
+
+  @override
+  String get ptPortalLive =>
+      'ಸಂಪರ್ಕಗೊಂಡಿದೆ! ನಿಮ್ಮ ಹಂಚಿದ ಸಂಗಾತಿ ಪೋರ್ಟಲ್ ಈಗ ಲೈವ್ 🎉';
+
+  @override
+  String get ptPrivateSpaceOn =>
+      'ಖಾಸಗಿ ಸ್ಥಳ ಆನ್. ನಿಮ್ಮ ವೈಯಕ್ತಿಕ ಅಪ್‌ಡೇಟ್‌ಗಳು ವಿರಾಮಗೊಂಡಿವೆ.';
+
+  @override
+  String get ptSharingResumed => 'ಹಂಚಿಕೆ ಪುನಃ ಪ್ರಾರಂಭವಾಗಿದೆ, ಮೊದಲಿನಂತೆಯೇ.';
+
+  @override
+  String get ptCycle => 'ಚಕ್ರ';
+
+  @override
+  String get ptEnergy => 'ಶಕ್ತಿ';
+
+  @override
+  String get ptMood => 'ಮನಸ್ಥಿತಿ';
+
+  @override
+  String get ptPartnerSpaceLive =>
+      'ಸಂಪರ್ಕಗೊಂಡಿದೆ! ನಿಮ್ಮ ಪಾರ್ಟನರ್ ಸ್ಪೇಸ್ ಈಗ ಲೈವ್ 🎉';
+
+  @override
+  String get commonOk => 'ಸರಿ';
+
+  @override
+  String get ptDisconnectPartner => 'ಸಂಗಾತಿಯನ್ನು ಸಂಪರ್ಕ ಕಡಿತಗೊಳಿಸುವುದೇ?';
+
+  @override
+  String get ptInvite => 'ಆಹ್ವಾನಿಸಿ';
+
+  @override
+  String get ptPrivacySettings => 'ಗೌಪ್ಯತೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು';
+
+  @override
+  String get ptWhatYouShare => 'ನೀವು ಏನು ಹಂಚಿಕೊಳ್ಳುತ್ತೀರಿ';
+
+  @override
+  String get ptPrivacyUpdated => 'ಗೌಪ್ಯತೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು ನವೀಕರಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get ptRequestAccepted => 'ಸಂಗಾತಿ ವಿನಂತಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ! 🎉';
+
+  @override
+  String get ptPartnerEmail => 'ಸಂಗಾತಿಯ ಇಮೇಲ್ ವಿಳಾಸ';
+
+  @override
+  String get commonOr => 'ಅಥವಾ';
+
+  @override
+  String get ptInviteLinkCopied =>
+      'ಆಹ್ವಾನ ಲಿಂಕ್ ಕ್ಲಿಪ್‌ಬೋರ್ಡ್‌ಗೆ ನಕಲಿಸಲಾಗಿದೆ! 📋';
+
+  @override
+  String get ptCopyLink => 'ಲಿಂಕ್ ನಕಲಿಸಿ';
+
+  @override
+  String get ptInviteCode => 'ಆಹ್ವಾನ ಕೋಡ್';
+
+  @override
+  String get ptSavedScrapbook =>
+      'ಹಂಚಿದ ಸ್ಕ್ರ್ಯಾಪ್‌ಬುಕ್ ಮೆಮೊರಿಯಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ!';
+
+  @override
+  String get ptLetterTitle => 'ಪತ್ರ ಶೀರ್ಷಿಕೆ (ಉದಾ. ನಮ್ಮ ವಿಶೇಷ ದಿನಕ್ಕಾಗಿ)';
+
+  @override
+  String get ptLetterHint =>
+      'ನಿಮ್ಮ ಹೃದಯವನ್ನು ಇಲ್ಲಿ ಸುರಿಯಿರಿ... ನಿಮ್ಮ ಸಂಗಾತಿಗಾಗಿ ಆಲೋಚನೆಗಳು, ಕೃತಜ್ಞತೆ ಅಥವಾ ನೆನಪುಗಳು.';
+
+  @override
+  String get ptLetterValidation =>
+      'ದಯವಿಟ್ಟು ಶೀರ್ಷಿಕೆ ಮತ್ತು ಪತ್ರ ಸಂದೇಶ ಎರಡನ್ನೂ ನಮೂದಿಸಿ.';
+
+  @override
   String get jrSelfReflection => 'ಸ್ವಯಂ ಚಿಂತನೆ';
 
   @override

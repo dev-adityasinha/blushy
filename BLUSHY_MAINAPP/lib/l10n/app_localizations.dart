@@ -108,6 +108,486 @@ abstract class AppLocalizations {
     Locale('te'),
   ];
 
+  /// No description provided for @ceRemindScreenshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind to send screenshot 📸'**
+  String get ceRemindScreenshot;
+
+  /// No description provided for @ceRemindMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'“Hey, gentle reminder to send that screenshot! 😉”'**
+  String get ceRemindMsg;
+
+  /// No description provided for @cePlayfulPing.
+  ///
+  /// In en, this message translates to:
+  /// **'Playful Ping 👋'**
+  String get cePlayfulPing;
+
+  /// No description provided for @cePlayfulMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'“Hey you! Still waiting on your reply 😉”'**
+  String get cePlayfulMsg;
+
+  /// No description provided for @ceGentleThought.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle Thought ☕'**
+  String get ceGentleThought;
+
+  /// No description provided for @ceGentleMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'“Take your time, just thinking of you! 💕”'**
+  String get ceGentleMsg;
+
+  /// No description provided for @ceWhisperFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Or whisper a quick follow-up...'**
+  String get ceWhisperFollowUp;
+
+  /// No description provided for @ceMyTreat.
+  ///
+  /// In en, this message translates to:
+  /// **'My treat! Dress up cute ❤️'**
+  String get ceMyTreat;
+
+  /// No description provided for @ceAddCuteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cute note...'**
+  String get ceAddCuteNote;
+
+  /// No description provided for @ceUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get ceUndo;
+
+  /// No description provided for @ceClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get ceClear;
+
+  /// No description provided for @ceHotCoffee.
+  ///
+  /// In en, this message translates to:
+  /// **'Hot Coffee & Cozy Hug ☕'**
+  String get ceHotCoffee;
+
+  /// No description provided for @ceHotCoffeeMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending a warm cup of coffee and a tight embrace.'**
+  String get ceHotCoffeeMsg;
+
+  /// No description provided for @ceBigEmbrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Big Tight Embrace 🫂'**
+  String get ceBigEmbrace;
+
+  /// No description provided for @ceBigEmbraceMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrapping you in the biggest, warmest hug today.'**
+  String get ceBigEmbraceMsg;
+
+  /// No description provided for @ceForeheadKiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweet Forehead Kiss 💋'**
+  String get ceForeheadKiss;
+
+  /// No description provided for @ceForeheadKissMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'A gentle forehead kiss to brighten your day.'**
+  String get ceForeheadKissMsg;
+
+  /// No description provided for @ceTreatDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweet Treat Delivery 🍫'**
+  String get ceTreatDelivery;
+
+  /// No description provided for @ceTreatDeliveryMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtual sweet chocolates and all my affection.'**
+  String get ceTreatDeliveryMsg;
+
+  /// No description provided for @cePauseBreathe.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle Pause & Breathe 🌿'**
+  String get cePauseBreathe;
+
+  /// No description provided for @cePauseBreatheMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a deep breath, you are doing incredible.'**
+  String get cePauseBreatheMsg;
+
+  /// No description provided for @ceThinkingOfYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking of You ✨'**
+  String get ceThinkingOfYou;
+
+  /// No description provided for @ceThinkingMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Daydreaming and smiling thinking about you.'**
+  String get ceThinkingMsg;
+
+  /// No description provided for @ceMissingVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing Your Voice 🥺'**
+  String get ceMissingVoice;
+
+  /// No description provided for @ceMissingMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing you extra and wishing you were right here.'**
+  String get ceMissingMsg;
+
+  /// No description provided for @ceCravingCuddles.
+  ///
+  /// In en, this message translates to:
+  /// **'Craving Cuddles 🧸'**
+  String get ceCravingCuddles;
+
+  /// No description provided for @ceCravingMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Officially on cuddle standby right now.'**
+  String get ceCravingMsg;
+
+  /// No description provided for @ceProudOfYou.
+  ///
+  /// In en, this message translates to:
+  /// **'So Proud of You 🌟'**
+  String get ceProudOfYou;
+
+  /// No description provided for @ceProudMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'A gentle reminder that you are a total rockstar.'**
+  String get ceProudMsg;
+
+  /// No description provided for @ceRechargeNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recharge Needed 🔋'**
+  String get ceRechargeNeeded;
+
+  /// No description provided for @ceRechargeMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Low battery today, need some sweet partner warmth.'**
+  String get ceRechargeMsg;
+
+  /// No description provided for @noteNoPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'No photo added.'**
+  String get noteNoPhoto;
+
+  /// No description provided for @noteKeepWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep writing'**
+  String get noteKeepWriting;
+
+  /// No description provided for @noteRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get noteRemove;
+
+  /// No description provided for @noteSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get noteSize;
+
+  /// No description provided for @noteBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get noteBold;
+
+  /// No description provided for @noteItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get noteItalic;
+
+  /// No description provided for @noteUnderline.
+  ///
+  /// In en, this message translates to:
+  /// **'Underline'**
+  String get noteUnderline;
+
+  /// No description provided for @noteBullet.
+  ///
+  /// In en, this message translates to:
+  /// **'Bullet'**
+  String get noteBullet;
+
+  /// No description provided for @noteNumbered.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered'**
+  String get noteNumbered;
+
+  /// No description provided for @noteChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get noteChecklist;
+
+  /// No description provided for @noteSmaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller'**
+  String get noteSmaller;
+
+  /// No description provided for @noteBigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Bigger'**
+  String get noteBigger;
+
+  /// No description provided for @noteDeleteEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this entry?'**
+  String get noteDeleteEntry;
+
+  /// No description provided for @noteKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get noteKeep;
+
+  /// No description provided for @noteTellMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me'**
+  String get noteTellMe;
+
+  /// No description provided for @noteWriteIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Write it'**
+  String get noteWriteIt;
+
+  /// No description provided for @noteGivePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Give me a prompt'**
+  String get noteGivePrompt;
+
+  /// No description provided for @noteNotThisOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Not this one'**
+  String get noteNotThisOne;
+
+  /// No description provided for @ptGardenGrew.
+  ///
+  /// In en, this message translates to:
+  /// **'Your garden grew. Your partner sees it too.'**
+  String get ptGardenGrew;
+
+  /// No description provided for @ptDatePlanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Date Planner & AI Concierge'**
+  String get ptDatePlanner;
+
+  /// No description provided for @ptDrawingCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared Drawing Canvas'**
+  String get ptDrawingCanvas;
+
+  /// No description provided for @ptCoupleGames.
+  ///
+  /// In en, this message translates to:
+  /// **'Couple Games & Questions'**
+  String get ptCoupleGames;
+
+  /// No description provided for @ptVirtualBouquet.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtual Bouquet & Blooms'**
+  String get ptVirtualBouquet;
+
+  /// No description provided for @ptGratitudeChallenge.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Gratitude Challenge'**
+  String get ptGratitudeChallenge;
+
+  /// No description provided for @ptConnectedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'🎉 Connected with your partner successfully!'**
+  String get ptConnectedSuccess;
+
+  /// No description provided for @ptAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'ACCEPT'**
+  String get ptAccept;
+
+  /// No description provided for @ptPortalLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected! Your shared partner portal is now live 🎉'**
+  String get ptPortalLive;
+
+  /// No description provided for @ptPrivateSpaceOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Private space on. Your personal updates are paused.'**
+  String get ptPrivateSpaceOn;
+
+  /// No description provided for @ptSharingResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing resumed, exactly as it was.'**
+  String get ptSharingResumed;
+
+  /// No description provided for @ptCycle.
+  ///
+  /// In en, this message translates to:
+  /// **'CYCLE'**
+  String get ptCycle;
+
+  /// No description provided for @ptEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'ENERGY'**
+  String get ptEnergy;
+
+  /// No description provided for @ptMood.
+  ///
+  /// In en, this message translates to:
+  /// **'MOOD'**
+  String get ptMood;
+
+  /// No description provided for @ptPartnerSpaceLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected! Your Partner Space is now live 🎉'**
+  String get ptPartnerSpaceLive;
+
+  /// No description provided for @commonOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get commonOk;
+
+  /// No description provided for @ptDisconnectPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect partner?'**
+  String get ptDisconnectPartner;
+
+  /// No description provided for @ptInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get ptInvite;
+
+  /// No description provided for @ptPrivacySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Settings'**
+  String get ptPrivacySettings;
+
+  /// No description provided for @ptWhatYouShare.
+  ///
+  /// In en, this message translates to:
+  /// **'What you share'**
+  String get ptWhatYouShare;
+
+  /// No description provided for @ptPrivacyUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy settings updated.'**
+  String get ptPrivacyUpdated;
+
+  /// No description provided for @ptRequestAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner request accepted! 🎉'**
+  String get ptRequestAccepted;
+
+  /// No description provided for @ptPartnerEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner Email Address'**
+  String get ptPartnerEmail;
+
+  /// No description provided for @commonOr.
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get commonOr;
+
+  /// No description provided for @ptInviteLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite link copied to clipboard! 📋'**
+  String get ptInviteLinkCopied;
+
+  /// No description provided for @ptCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get ptCopyLink;
+
+  /// No description provided for @ptInviteCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite code'**
+  String get ptInviteCode;
+
+  /// No description provided for @ptSavedScrapbook.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to shared scrapbook memory!'**
+  String get ptSavedScrapbook;
+
+  /// No description provided for @ptLetterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Letter Title (e.g. For our special day)'**
+  String get ptLetterTitle;
+
+  /// No description provided for @ptLetterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pour your heart out here... Your thoughts, gratitude, or memories for your partner.'**
+  String get ptLetterHint;
+
+  /// No description provided for @ptLetterValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter both a title and letter message.'**
+  String get ptLetterValidation;
+
   /// No description provided for @jrSelfReflection.
   ///
   /// In en, this message translates to:

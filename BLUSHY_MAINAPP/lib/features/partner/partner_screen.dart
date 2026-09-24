@@ -118,7 +118,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       _hasPond = result.data!['hasPond'] == true;
     });
     messenger.showSnackBar(
-      const SnackBar(content: Text('Your garden grew. Your partner sees it too.')),
+      SnackBar(content: Text(AppLocalizations.of(context).ptGardenGrew)),
     );
   }
 
@@ -701,8 +701,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       } else {
         PendingInviteCode.clear();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎉 Connected with your partner successfully!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).ptConnectedSuccess),
             backgroundColor: BlushyColors.success,
           ),
         );
@@ -768,7 +768,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               backgroundColor: BlushyColors.primary,
               duration: const Duration(seconds: 6),
               action: SnackBarAction(
-                label: 'ACCEPT',
+                label: AppLocalizations.of(context).ptAccept,
                 textColor: Colors.white,
                 onPressed: () async {
                   final ok = await _partnerService.respondToInvitation(invId, 'accept');
@@ -776,8 +776,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     await _fetchPartnerData();
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Connected! Your shared partner portal is now live 🎉'),
+                        SnackBar(
+                          content: Text(AppLocalizations.of(context).ptPortalLive),
                           backgroundColor: BlushyColors.success,
                         ),
                       );
@@ -1182,7 +1182,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
     if (!ok) {
       messenger.showSnackBar(
-        const SnackBar(
+        SnackBar(
           // Not "could not reach the server": the server may well have been
           // reached and have refused. Saying which it was would need the
           // error itself; what matters to her is that nothing changed.
@@ -1200,8 +1200,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     if (!mounted) return;
     setState(() {});
     messenger.showSnackBar(
-      const SnackBar(
-        content: Text('Private space on. Your personal updates are paused.'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context).ptPrivateSpaceOn),
       ),
     );
   }
@@ -1216,7 +1216,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       if (!mounted) return;
       if (!ok) {
         messenger.showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
               'Could not reach the server. Your sharing is still paused.',
             ),
@@ -1231,7 +1231,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     if (!mounted) return;
     setState(() {});
     messenger.showSnackBar(
-      const SnackBar(content: Text('Sharing resumed, exactly as it was.')),
+      SnackBar(content: Text(AppLocalizations.of(context).ptSharingResumed)),
     );
   }
 
@@ -1491,7 +1491,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           icon: Icons.water_drop_rounded,
           colour: kCobalt,
           tint: kCobaltTint,
-          label: 'CYCLE',
+          label: AppLocalizations.of(context).ptCycle,
           value: 'Day $cDay',
           onTap: _openSharingPanel,
         ));
@@ -1505,7 +1505,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         icon: Icons.bolt_rounded,
         colour: kAmber,
         tint: kAmberTint,
-        label: 'ENERGY',
+        label: AppLocalizations.of(context).ptEnergy,
         value: energyVal,
         onTap: _openSharingPanel,
       ));
@@ -1518,7 +1518,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         icon: Icons.favorite_rounded,
         colour: kMagenta,
         tint: kMagentaTint,
-        label: 'MOOD',
+        label: AppLocalizations.of(context).ptMood,
         value: moodVal.substring(0, 1).toUpperCase() + moodVal.substring(1).toLowerCase(),
         onTap: _openSharingPanel,
       ));
@@ -1781,8 +1781,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         await _fetchPartnerData();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Connected! Your Partner Space is now live 🎉'),
+                            SnackBar(
+                              content: Text(AppLocalizations.of(context).ptPartnerSpaceLive),
                               backgroundColor: Color(0xFF0D9488),
                             ),
                           );
@@ -1937,7 +1937,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
+            child: Text(AppLocalizations.of(context).commonOk),
           ),
         ],
       ),
@@ -1978,7 +1978,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Disconnect partner?'),
+        title: Text(AppLocalizations.of(context).ptDisconnectPartner),
         content: Text(
           'Are you sure you want to disconnect from $partnerLabel? This ends '
           'the connection for both of you and stops all sharing immediately.',
@@ -1986,7 +1986,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).actionCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -2576,7 +2576,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       // partner far more often than by someone managing one,
                       // and it used to open on an empty Connections list.
                       tabs: [
-                        const Tab(text: 'Invite'),
+                        Tab(text: AppLocalizations.of(context).ptInvite),
                         Tab(
                           text: _incomingInvitations.isNotEmpty
                               ? 'Pending (${_incomingInvitations.length})'
@@ -2672,7 +2672,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.shield_outlined, color: BlushyColors.primary, size: 20),
-                tooltip: 'Privacy Settings',
+                tooltip: AppLocalizations.of(context).ptPrivacySettings,
                 onPressed: () => _showGranularPermissionsModal(context, conn),
               ),
               // Full server-enforced permission matrix (spec section 10).
@@ -2680,7 +2680,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               // person sharing can always see exactly what is shared.
               IconButton(
                 icon: const Icon(Icons.visibility_outlined, color: BlushyColors.primary, size: 20),
-                tooltip: 'What you share',
+                tooltip: AppLocalizations.of(context).ptWhatYouShare,
                 onPressed: connectionId.isEmpty
                     ? null
                     : () => Navigator.of(context).push(
@@ -2836,6 +2836,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         ),
                         onPressed: () async {
                           final messenger = ScaffoldMessenger.of(context);
+                          final loc = AppLocalizations.of(context);
                           final nav = Navigator.of(ctx);
                           final ok = await _partnerService
                               .updatePermissions(connectionId, changeableBy(perms));
@@ -2843,7 +2844,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           if (ok && mounted) {
                             await _fetchPartnerData();
                             messenger.showSnackBar(
-                              const SnackBar(content: Text('Privacy settings updated.')),
+                              SnackBar(content: Text(loc.ptPrivacyUpdated)),
                             );
                           }
                         },
@@ -2958,7 +2959,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             setModalState(() {});
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Partner request accepted! 🎉')),
+                                SnackBar(content: Text(AppLocalizations.of(context).ptRequestAccepted)),
                               );
                             }
                           }
@@ -3050,7 +3051,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               hintText: 'partner@example.com',
-              labelText: 'Partner Email Address',
+              labelText: AppLocalizations.of(context).ptPartnerEmail,
               prefixIcon: const Icon(Icons.email_outlined, color: BlushyColors.primary),
               filled: true,
               fillColor: Colors.white,
@@ -3157,7 +3158,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const Expanded(child: Divider()),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('OR', style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText)),
+                child: Text(AppLocalizations.of(context).commonOr, style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText)),
               ),
               const Expanded(child: Divider()),
             ],
@@ -3226,8 +3227,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       // if they cannot open the link.
                       _showInviteLinkSheet(url, linkData['inviteCode']?.toString());
                       messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Invite link copied to clipboard! 📋'),
+                        SnackBar(
+                          content: Text(AppLocalizations.of(context).ptInviteLinkCopied),
                           backgroundColor: BlushyColors.success,
                         ),
                       );
@@ -3333,7 +3334,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   if (sheetContext.mounted) Navigator.of(sheetContext).pop();
                 },
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                label: Text('Copy link', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
+                label: Text(AppLocalizations.of(context).ptCopyLink, style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -3372,8 +3373,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             Navigator.of(sheetContext).pop();
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('🎉 Connected with your partner successfully!'),
+              SnackBar(
+                content: Text(AppLocalizations.of(context).ptConnectedSuccess),
                 backgroundColor: BlushyColors.success,
               ),
             );
@@ -3406,7 +3407,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   autofocus: true,
                   style: GoogleFonts.robotoMono(fontSize: 12),
                   decoration: InputDecoration(
-                    labelText: 'Invite code',
+                    labelText: AppLocalizations.of(context).ptInviteCode,
                     errorText: error,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -4252,7 +4253,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   _selectedMessageIndexForActions = -1;
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Saved to shared scrapbook memory!')),
+                  SnackBar(content: Text(AppLocalizations.of(context).ptSavedScrapbook)),
                 );
               }),
               _buildOverlayActionItem('Close', Icons.close_rounded, () {
@@ -4868,8 +4869,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     child: TextField(
                       controller: titleController,
                       style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold),
-                      decoration: const InputDecoration(
-                        hintText: "Letter Title (e.g. For our special day)",
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context).ptLetterTitle,
                         border: InputBorder.none,
                       ),
                     ),
@@ -4890,8 +4891,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         maxLines: null,
                         expands: true,
                         style: GoogleFonts.manrope(fontSize: 13, height: 1.6),
-                        decoration: const InputDecoration(
-                          hintText: "Pour your heart out here... Your thoughts, gratitude, or memories for your partner.",
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context).ptLetterHint,
                           border: InputBorder.none,
                         ),
                       ),
@@ -4935,7 +4936,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         final body = bodyController.text.trim();
                         if (title.isEmpty || body.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter both a title and letter message.')),
+                            SnackBar(content: Text(AppLocalizations.of(context).ptLetterValidation)),
                           );
                           return;
                         }

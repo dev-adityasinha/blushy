@@ -9,6 +9,265 @@ class AppLocalizationsTe extends AppLocalizations {
   AppLocalizationsTe([String locale = 'te']) : super(locale);
 
   @override
+  String get ceRemindScreenshot => 'స్క్రీన్‌షాట్ పంపమని గుర్తు చేయండి 📸';
+
+  @override
+  String get ceRemindMsg =>
+      '“హే, ఆ స్క్రీన్‌షాట్ పంపమని సున్నితమైన గుర్తు! 😉”';
+
+  @override
+  String get cePlayfulPing => 'సరదా పింగ్ 👋';
+
+  @override
+  String get cePlayfulMsg => '“హే నువ్వు! ఇంకా నీ సమాధానం కోసం వేచి ఉన్నా 😉”';
+
+  @override
+  String get ceGentleThought => 'సున్నితమైన ఆలోచన ☕';
+
+  @override
+  String get ceGentleMsg => '“నీ సమయం తీసుకో, నీ గురించే ఆలోచిస్తున్నా! 💕”';
+
+  @override
+  String get ceWhisperFollowUp => 'లేదా ఒక త్వరిత ఫాలో-అప్ గుసగుసలాడండి...';
+
+  @override
+  String get ceMyTreat => 'నా ట్రీట్! ముద్దుగా తయారవ్వు ❤️';
+
+  @override
+  String get ceAddCuteNote => 'ఒక ముద్దైన నోట్ జోడించండి...';
+
+  @override
+  String get ceUndo => 'రద్దు చేయి';
+
+  @override
+  String get ceClear => 'క్లియర్';
+
+  @override
+  String get ceHotCoffee => 'వేడి కాఫీ & హాయైన కౌగిలి ☕';
+
+  @override
+  String get ceHotCoffeeMsg =>
+      'వెచ్చని కాఫీ కప్పు మరియు గట్టి కౌగిలి పంపుతున్నా.';
+
+  @override
+  String get ceBigEmbrace => 'పెద్ద గట్టి కౌగిలి 🫂';
+
+  @override
+  String get ceBigEmbraceMsg =>
+      'ఈరోజు నిన్ను అతిపెద్ద, అత్యంత వెచ్చని కౌగిలిలో చుడుతున్నా.';
+
+  @override
+  String get ceForeheadKiss => 'తీపి నుదుటి ముద్దు 💋';
+
+  @override
+  String get ceForeheadKissMsg =>
+      'నీ రోజును ప్రకాశవంతం చేయడానికి ఒక సున్నితమైన నుదుటి ముద్దు.';
+
+  @override
+  String get ceTreatDelivery => 'తీపి ట్రీట్ డెలివరీ 🍫';
+
+  @override
+  String get ceTreatDeliveryMsg =>
+      'వర్చువల్ తీపి చాక్లెట్లు మరియు నా అనురాగమంతా.';
+
+  @override
+  String get cePauseBreathe => 'సున్నితమైన విరామం & శ్వాస తీసుకో 🌿';
+
+  @override
+  String get cePauseBreatheMsg =>
+      'ఒక లోతైన శ్వాస తీసుకో, నువ్వు అద్భుతంగా చేస్తున్నావు.';
+
+  @override
+  String get ceThinkingOfYou => 'నీ గురించి ఆలోచిస్తున్నా ✨';
+
+  @override
+  String get ceThinkingMsg => 'నీ గురించి ఆలోచిస్తూ కలలు కంటూ నవ్వుతున్నా.';
+
+  @override
+  String get ceMissingVoice => 'నీ స్వరాన్ని మిస్ అవుతున్నా 🥺';
+
+  @override
+  String get ceMissingMsg =>
+      'నిన్ను చాలా మిస్ అవుతున్నా, నువ్వు ఇక్కడే ఉంటే బాగుండేది.';
+
+  @override
+  String get ceCravingCuddles => 'కౌగిలింతల కోసం ఆరాటం 🧸';
+
+  @override
+  String get ceCravingMsg =>
+      'ఇప్పుడు అధికారికంగా కౌగిలింత కోసం సిద్ధంగా ఉన్నా.';
+
+  @override
+  String get ceProudOfYou => 'నీ గురించి చాలా గర్వంగా ఉంది 🌟';
+
+  @override
+  String get ceProudMsg =>
+      'నువ్వు పూర్తి రాక్‌స్టార్ అని ఒక సున్నితమైన గుర్తు.';
+
+  @override
+  String get ceRechargeNeeded => 'రీఛార్జ్ కావాలి 🔋';
+
+  @override
+  String get ceRechargeMsg =>
+      'ఈరోజు బ్యాటరీ తక్కువ, కొంచెం తీపి భాగస్వామి వెచ్చదనం కావాలి.';
+
+  @override
+  String get noteNoPhoto => 'ఫోటో జోడించలేదు.';
+
+  @override
+  String get noteKeepWriting => 'రాస్తూ ఉండండి';
+
+  @override
+  String get noteRemove => 'తీసివేయండి';
+
+  @override
+  String get noteSize => 'పరిమాణం';
+
+  @override
+  String get noteBold => 'బోల్డ్';
+
+  @override
+  String get noteItalic => 'ఇటాలిక్';
+
+  @override
+  String get noteUnderline => 'అండర్‌లైన్';
+
+  @override
+  String get noteBullet => 'బుల్లెట్';
+
+  @override
+  String get noteNumbered => 'సంఖ్యల';
+
+  @override
+  String get noteChecklist => 'చెక్‌లిస్ట్';
+
+  @override
+  String get noteSmaller => 'చిన్నది';
+
+  @override
+  String get noteBigger => 'పెద్దది';
+
+  @override
+  String get noteDeleteEntry => 'ఈ ఎంట్రీని తొలగించాలా?';
+
+  @override
+  String get noteKeep => 'ఉంచండి';
+
+  @override
+  String get noteTellMe => 'నాకు చెప్పండి';
+
+  @override
+  String get noteWriteIt => 'దాన్ని రాయండి';
+
+  @override
+  String get noteGivePrompt => 'నాకు ఒక ప్రాంప్ట్ ఇవ్వండి';
+
+  @override
+  String get noteNotThisOne => 'ఇది కాదు';
+
+  @override
+  String get ptGardenGrew =>
+      'మీ ఉద్యానం పెరిగింది. మీ భాగస్వామి కూడా దీన్ని చూస్తారు.';
+
+  @override
+  String get ptDatePlanner => 'డేట్ ప్లానర్ & AI కన్సియర్జ్';
+
+  @override
+  String get ptDrawingCanvas => 'షేర్డ్ డ్రాయింగ్ కాన్వాస్';
+
+  @override
+  String get ptCoupleGames => 'జంట గేమ్స్ & ప్రశ్నలు';
+
+  @override
+  String get ptVirtualBouquet => 'వర్చువల్ బొకే & పూలు';
+
+  @override
+  String get ptGratitudeChallenge => 'రోజువారీ కృతజ్ఞతా సవాలు';
+
+  @override
+  String get ptConnectedSuccess =>
+      '🎉 మీ భాగస్వామితో విజయవంతంగా కనెక్ట్ అయ్యారు!';
+
+  @override
+  String get ptAccept => 'అంగీకరించండి';
+
+  @override
+  String get ptPortalLive =>
+      'కనెక్ట్ అయ్యారు! మీ షేర్డ్ పార్టనర్ పోర్టల్ ఇప్పుడు లైవ్ 🎉';
+
+  @override
+  String get ptPrivateSpaceOn =>
+      'ప్రైవేట్ స్పేస్ ఆన్. మీ వ్యక్తిగత అప్‌డేట్‌లు నిలిపివేయబడ్డాయి.';
+
+  @override
+  String get ptSharingResumed =>
+      'షేరింగ్ మళ్లీ ప్రారంభమైంది, సరిగ్గా ఇంతకుముందు ఉన్నట్లే.';
+
+  @override
+  String get ptCycle => 'సైకిల్';
+
+  @override
+  String get ptEnergy => 'శక్తి';
+
+  @override
+  String get ptMood => 'మూడ్';
+
+  @override
+  String get ptPartnerSpaceLive =>
+      'కనెక్ట్ అయ్యారు! మీ పార్టనర్ స్పేస్ ఇప్పుడు లైవ్ 🎉';
+
+  @override
+  String get commonOk => 'సరే';
+
+  @override
+  String get ptDisconnectPartner => 'భాగస్వామిని డిస్‌కనెక్ట్ చేయాలా?';
+
+  @override
+  String get ptInvite => 'ఆహ్వానించండి';
+
+  @override
+  String get ptPrivacySettings => 'గోప్యత సెట్టింగ్‌లు';
+
+  @override
+  String get ptWhatYouShare => 'మీరు ఏమి షేర్ చేస్తారు';
+
+  @override
+  String get ptPrivacyUpdated => 'గోప్యత సెట్టింగ్‌లు నవీకరించబడ్డాయి.';
+
+  @override
+  String get ptRequestAccepted => 'భాగస్వామి అభ్యర్థన ఆమోదించబడింది! 🎉';
+
+  @override
+  String get ptPartnerEmail => 'భాగస్వామి ఇమెయిల్ చిరునామా';
+
+  @override
+  String get commonOr => 'లేదా';
+
+  @override
+  String get ptInviteLinkCopied =>
+      'ఆహ్వాన లింక్ క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది! 📋';
+
+  @override
+  String get ptCopyLink => 'లింక్‌ను కాపీ చేయండి';
+
+  @override
+  String get ptInviteCode => 'ఆహ్వాన కోడ్';
+
+  @override
+  String get ptSavedScrapbook => 'షేర్డ్ స్క్రాప్‌బుక్ మెమరీలో సేవ్ చేయబడింది!';
+
+  @override
+  String get ptLetterTitle => 'లేఖ శీర్షిక (ఉదా. మన ప్రత్యేక రోజు కోసం)';
+
+  @override
+  String get ptLetterHint =>
+      'మీ హృదయాన్ని ఇక్కడ కుమ్మరించండి... మీ భాగస్వామి కోసం ఆలోచనలు, కృతజ్ఞత లేదా జ్ఞాపకాలు.';
+
+  @override
+  String get ptLetterValidation =>
+      'దయచేసి శీర్షిక మరియు లేఖ సందేశం రెండింటినీ నమోదు చేయండి.';
+
+  @override
   String get jrSelfReflection => 'ఆత్మ పరిశీలన';
 
   @override
