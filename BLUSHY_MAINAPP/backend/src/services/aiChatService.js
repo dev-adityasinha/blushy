@@ -241,6 +241,11 @@ ${messagesText}`,
     mood = null,
     user = null,
     languageCode = 'en',
+    // Recent themes from her Docsy conversations, so the daily note reflects
+    // what is actually on her mind rather than a generic stage line.
+    recentTopics = [],
+    // Today's date, so the note is fresh each day rather than the same text.
+    dateStamp = null,
   }) {
     const stageName = String(lifeStage).replace(/_/g, ' ');
 
@@ -252,6 +257,8 @@ ${messagesText}`,
 Generate a dynamic daily health reflection for a user in the "${stageName}" life stage${cycleDay ? `, Cycle Day ${cycleDay} (${phaseName || 'Active Phase'})` : ''}.
 ${symptoms.length > 0 ? `Recently logged signals: ${symptoms.join(', ')}.` : ''}
 ${mood ? `Current mood: ${mood}.` : ''}
+${recentTopics.length > 0 ? `In her recent chats with you she has been thinking about: ${recentTopics.join('; ')}. Gently connect today's reflection to what is on her mind, without repeating her words back verbatim.` : ''}
+${dateStamp ? `Today is ${dateStamp}. Make today's reflection feel fresh and specific to today, and do not reuse a generic line she may have seen before.` : ''}
 
 ${isTtc ? `CRITICAL CLINICAL & SCIENTIFIC TTC RULES:
 1. STRICTLY NO CONCEPTION PROBABILITIES: Never predict percentage chances of pregnancy or make definitive claims.
