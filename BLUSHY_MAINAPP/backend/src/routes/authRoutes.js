@@ -10,6 +10,7 @@ import {
 	getMySleepHistory,
 	loginWithEmail,
 	loginWithGoogle,
+	loginWithApple,
 	resetPasswordWithEmail,
 	sendPasswordResetCode,
 	saveMyDailyMood,
@@ -64,6 +65,7 @@ router.post('/login-email', loginRateLimiter, loginWithEmail);
 router.post('/refresh', refreshAuthToken);
 router.post('/logout', optionalAuth, logout);
 router.post('/google', loginWithGoogle);
+router.post('/apple', loginWithApple);
 router.post('/send-password-reset-code', otpRequestRateLimiter, sendPasswordResetCode);
 router.post('/reset-password', passwordResetRateLimiter, resetPasswordWithEmail);
 router.get('/confirm-email', confirmEmailSignup);

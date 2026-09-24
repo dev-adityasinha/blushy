@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../core/state.dart';
 import '../../../models/auth_models.dart';
 import '../../../services/api_auth_service.dart';
@@ -228,6 +229,64 @@ class _SignupScreenState extends State<SignupScreen> {
                   ? 'Google sign-in failed: $raw'
                   : cleaned);
         });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  /// Signs in (or creates an account) with Apple. iOS-only in the UI, so this
+  /// only runs where the native sheet exists. Mirrors [_handleGoogleSignIn].
+  ///
+  /// Apple returns the name only on the very first authorization, so it is
+  /// forwarded to the backend, which uses it just to fill a blank display name.
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final identityToken = credential.identityToken;
+      if (identityToken == null || identityToken.isEmpty) {
+        throw Exception('Failed to obtain Apple identity token.');
+      }
+
+      final success = await _apiAuthService.loginWithApple(
+        identityToken,
+        role: _selectedRole.value,
+        givenName: credential.givenName,
+        familyName: credential.familyName,
+        email: credential.email,
+      );
+      if (success && mounted) {
+        final state = BlushyOSProvider.of(context);
+        final onboardingCompleted = AuthStorage.isOnboardingCompleted();
+        state.setAuthenticated(true, onboardingCompleted: onboardingCompleted);
+      }
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Backing out of the native sheet is a cancel, not a failure.
+      if (e.code == AuthorizationErrorCode.canceled) {
+        if (mounted) setState(() => _isSubmitting = false);
+        return;
+      }
+      if (mounted) {
+        setState(() => _errorMessage = 'Apple sign-in failed: ${e.message}');
+      }
+    } catch (e) {
+      if (mounted) {
+        final raw = e.toString().replaceFirst(RegExp(r'^Exception: '), '');
+        debugPrint('[apple-signin] $raw');
+        setState(() => _errorMessage = ApiAuthService.cleanErrorMessage(e));
       }
     } finally {
       if (mounted) {
@@ -1450,6 +1509,48 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+
+                    // Sign in / Sign up with Apple -- iOS only. Native Sign in
+                    // with Apple exists only on Apple platforms; on web/Android
+                    // the button stays hidden (kIsWeb guards the web build,
+                    // which would otherwise report iOS here).
+                    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: _isSubmitting ? null : _handleAppleSignIn,
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            side: const BorderSide(color: Colors.black, width: 1.2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.apple, size: 20, color: Colors.white),
+                              const SizedBox(width: 8),
+                              Text(
+                                _mode == AuthFormMode.login
+                                    ? 'Sign in with Apple'
+                                    : 'Sign up with Apple',
+                                style: const TextStyle(
+                                  fontFamily: 'Manrope',
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Footers
                     Row(

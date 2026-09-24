@@ -167,6 +167,58 @@ class ApiAuthService implements AuthService {
     }
   }
 
+  /// Signs in (or creates an account) with an Apple identity token.
+  ///
+  /// Mirrors [loginWithGoogle]. Apple only returns the user's name on the very
+  /// first authorization, so [givenName]/[familyName] are sent along with the
+  /// token; the backend uses them only to fill a blank display name on first
+  /// sign-in. Email lives in the token, so it need not be sent.
+  Future<bool> loginWithApple(
+    String identityToken, {
+    String role = 'woman',
+    String? givenName,
+    String? familyName,
+    String? email,
+  }) async {
+    try {
+      final response = await _dio.post('/auth/apple', data: {
+        'identityToken': identityToken,
+        'role': role,
+        if (givenName != null || familyName != null)
+          'fullName': {
+            'givenName': ?givenName,
+            'familyName': ?familyName,
+          },
+        'email': ?email,
+      });
+
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final token = data['token'] as String?;
+        final userId = data['userId'] as String?;
+        final userEmail = data['email'] as String?;
+        final userRole = data['role'] as String? ?? role;
+        final isOnboardingCompleted = data['onboardingCompleted'] == true;
+
+        if (token != null) {
+          AuthStorage.saveSession(
+            token: token,
+            userId: userId,
+            email: userEmail,
+            role: userRole,
+            onboardingCompleted: isOnboardingCompleted,
+          );
+        }
+      }
+      return true;
+    } on DioException catch (e) {
+      final errorMsg = _extractErrorMessage(e);
+      throw Exception(errorMsg);
+    } catch (e) {
+      throw Exception('Apple login failed: ${e.toString()}');
+    }
+  }
+
   /// Marks one day's journal as shared with a partner, or takes it back.
   ///
   /// The partner `journal` permission decides whether a partner may receive
