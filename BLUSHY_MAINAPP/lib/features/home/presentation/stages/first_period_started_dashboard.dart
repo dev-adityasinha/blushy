@@ -25,6 +25,7 @@ import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import 'health_library_section.dart';
 import 'first_period_sections.dart';
+import '../../widgets/log_symptoms_section.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
 
@@ -2409,6 +2410,10 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                   // 5. Daily check-in (flow + cramps + body & mood).
                   _buildDailyCheckInCard(context),
                   const SizedBox(height: 18),
+                  // 5b. Fuller symptom log (water/sleep/mood, backed by events
+                  // and shared into Docsy's context).
+                  const LogSymptomsSection(stageKey: 'firstperiodstarted'),
+                  const SizedBox(height: 18),
                   // 6. "Is this normal?"
                   _buildIsThisNormalCard(context),
                   const SizedBox(height: 18),
@@ -2462,6 +2467,8 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                                 _buildThingsYouMightNeed(context),
                                 const SizedBox(height: 18),
                                 _buildDailyCheckInCard(context),
+                                const SizedBox(height: 18),
+                                const LogSymptomsSection(stageKey: 'firstperiodstarted'),
                                 const SizedBox(height: 18),
                                 _buildIsThisNormalCard(context),
                                 const SizedBox(height: 18),
