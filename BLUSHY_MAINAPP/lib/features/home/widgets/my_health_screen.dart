@@ -10,8 +10,6 @@ import '../../../theme/colors.dart';
 import '../../../theme/spacing.dart';
 import '../../../shared/confirm_sign_out.dart';
 import '../../../services/sia_dashboard_service.dart';
-import '../../journal/settings/journal_settings_screen.dart';
-import '../../journal/themes/theme_marketplace.dart';
 import '../settings_draft.dart';
 
 class MyHealthScreen extends StatefulWidget {
@@ -193,13 +191,13 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
                           ? pc.userName!.trim()
                           : 'Add name',
                       onTap: () => _openSection(
-                          'Personal Information', true, _sectionPersonalInformation),
+                          'Preferred Name', true, _sectionPreferredName),
                     ),
                     _settingsRow(
                       label: 'Date of Birth',
                       value: dobLabel,
                       onTap: () => _openSection(
-                          'Personal Information', true, _sectionPersonalInformation),
+                          'Date of Birth', true, _sectionDateOfBirth),
                     ),
                     _settingsRow(
                       label: 'Email',
@@ -276,12 +274,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
                         );
                         setState(() {});
                       },
-                    ),
-                    _settingsRow(
-                      label: 'Appearance & Theme',
-                      value: 'Journal & themes',
-                      onTap: () => _openSection(
-                          'Appearance & Theme', false, _sectionJournalPersonalisation),
                     ),
                   ]),
 
@@ -541,8 +533,7 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
     if (branch.isNotEmpty) await _saveBranchContext(branch);
   }
 
-  Widget _sectionPersonalInformation(BuildContext context, _SectionEditor e) {
-    final pc = e.pc;
+  Widget _sectionPreferredName(BuildContext context, _SectionEditor e) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -556,7 +547,17 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
                         ));
                       },
                     ),
-                    const SizedBox(height: 16),
+                  ]),
+      ],
+    );
+  }
+
+  Widget _sectionDateOfBirth(BuildContext context, _SectionEditor e) {
+    final pc = e.pc;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+                  _buildCard([
                     _buildDatePickerRow(
                       label: 'Date of Birth',
                       value: pc.dateOfBirth,
@@ -855,43 +856,6 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     )
-                  ]),
-      ],
-    );
-  }
-
-  Widget _sectionJournalPersonalisation(BuildContext context, _SectionEditor e) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-                  _buildCard([
-                    ListTile(
-                      leading: const Icon(Icons.settings_rounded, color: BlushyColors.primary),
-                      title: Text('Settings & Privacy Center',
-                          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
-                      subtitle: Text('Subsystem flags, diagnostics & accessibility',
-                          style: GoogleFonts.manrope(fontSize: 12)),
-                      trailing: const Icon(Icons.chevron_right_rounded, color: BlushyColors.secondaryText),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const JournalSettingsScreen()),
-                      ),
-                    ),
-                    const Divider(color: BlushyColors.border),
-                    ListTile(
-                      leading: const Icon(Icons.palette_rounded, color: BlushyColors.primary),
-                      title: Text('Modular Theme Marketplace',
-                          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14, color: BlushyColors.text)),
-                      subtitle: Text('Mix & match covers, paper, fonts & audio',
-                          style: GoogleFonts.manrope(fontSize: 12)),
-                      trailing: const Icon(Icons.chevron_right_rounded, color: BlushyColors.secondaryText),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ThemeMarketplaceWidget(onApplyTheme: (pack) {}),
-                        ),
-                      ),
-                    ),
                   ]),
       ],
     );
