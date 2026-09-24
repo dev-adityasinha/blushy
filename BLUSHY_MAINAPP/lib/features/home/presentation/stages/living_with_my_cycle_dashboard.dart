@@ -103,6 +103,16 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     return 'Luteal Phase';
   }
 
+  /// The tracker's colour for the current phase, so the "Day N" number matches
+  /// the arc and legend (Menstrual red, Follicular orange, Ovulatory yellow,
+  /// Luteal purple).
+  Color get _currentPhaseColor {
+    if (_currentCycleDay <= _periodLength) return const Color(0xFFEF4444);
+    if (_currentCycleDay <= _periodLength + 7) return const Color(0xFFF97316);
+    if (_currentCycleDay <= _periodLength + 11) return const Color(0xFFFACC15);
+    return const Color(0xFF7C3AED);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -779,7 +789,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                     style: GoogleFonts.manrope(
                       fontSize: 44,
                       fontWeight: FontWeight.w800,
-                      color: blushyPrimary,
+                      color: _currentPhaseColor,
                       letterSpacing: -0.5,
                     ),
                   ),

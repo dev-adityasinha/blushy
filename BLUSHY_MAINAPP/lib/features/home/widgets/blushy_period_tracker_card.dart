@@ -25,6 +25,17 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
   static const Color blushyPrimary = Color(0xFFDD0D22);
   static const Color cardBorderColor = Color(0xFFEFE8E0);
 
+  /// The current phase's colour, matched to the tracker arc and the legend
+  /// (Menstrual red, Follicular orange, Ovulation yellow, Luteal purple) using
+  /// the same day thresholds the painter draws with, so the "Day N" number
+  /// reads in the phase colour.
+  Color get _phaseColor {
+    if (currentCycleDay <= periodLength) return const Color(0xFFEF4444);
+    if (currentCycleDay <= periodLength + 9) return const Color(0xFFF97316);
+    if (currentCycleDay <= periodLength + 11) return const Color(0xFFFACC15);
+    return const Color(0xFF7C3AED);
+  }
+
   const BlushyPeriodTrackerCard({
     super.key,
     required this.currentCycleDay,
@@ -121,7 +132,7 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
                     style: GoogleFonts.manrope(
                       fontSize: 44,
                       fontWeight: FontWeight.w800,
-                      color: blushyPrimary,
+                      color: _phaseColor,
                       letterSpacing: -0.5,
                     ),
                   ),
