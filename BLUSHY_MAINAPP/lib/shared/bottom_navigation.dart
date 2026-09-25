@@ -159,8 +159,8 @@ class BlushyBottomNavigation extends StatelessWidget {
 
     switch (index) {
       case 0: // Home
-        activeColor = const Color(0xFFDD0D22);
-        activeBg = const Color(0xFFFFEAEA);
+        activeColor = const Color(0xFF0D9488);
+        activeBg = const Color(0xFFE6F7F5);
         break;
       case 2: // M Studio
         activeColor = const Color(0xFFFF4A00);
