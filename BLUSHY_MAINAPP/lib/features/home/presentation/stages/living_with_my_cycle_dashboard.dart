@@ -2556,7 +2556,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                 const SizedBox(height: 14),
                 _buildCycleTrackerCard(context),
                 const SizedBox(height: 22),
-                _buildEyebrow("Today's Log & Impact"),
+                _buildEyebrow("LOG SYMPTOMS"),
                 const LogSymptomsSection(
                   stageKey: 'livingwithmycycle',
                   showHeading: false,
@@ -2587,7 +2587,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                     const SizedBox(height: 16),
                     _buildCycleTrackerCard(context),
                     const SizedBox(height: 24),
-                    _buildEyebrow("Today's Log & Impact"),
+                    _buildEyebrow("LOG SYMPTOMS"),
                     const LogSymptomsSection(
                       stageKey: 'livingwithmycycle',
                       showHeading: false,
