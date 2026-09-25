@@ -41,6 +41,7 @@ class LogSymptomsSection extends StatefulWidget {
   const LogSymptomsSection({
     super.key,
     required this.stageKey,
+    this.showHeading = true,
     this.onMetricsEdited,
     this.onSaved,
     this.onSafety,
@@ -48,6 +49,9 @@ class LogSymptomsSection extends StatefulWidget {
 
   /// Decides which groups the sheet offers. See [SymptomCategories.forStage].
   final String stageKey;
+
+  /// Whether to render the uppercase "LOG SYMPTOMS" section heading.
+  final bool showHeading;
 
   /// Told which `daily_*` keys the user has just edited by hand, so a host that
   /// merges server answers can avoid overwriting them.
@@ -566,11 +570,13 @@ class LogSymptomsSectionState extends State<LogSymptomsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SectionHeading("LOG SYMPTOMS"),
-        ),
-        const SizedBox(height: BlushySpace.xs),
+        if (widget.showHeading) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: SectionHeading("LOG SYMPTOMS"),
+          ),
+          const SizedBox(height: BlushySpace.xs),
+        ],
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Column(
