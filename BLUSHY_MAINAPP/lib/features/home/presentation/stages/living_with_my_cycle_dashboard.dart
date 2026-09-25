@@ -79,6 +79,10 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   // Functional work/life impact for today (feeds the doctor summary).
   String? _workImpact;
 
+  // Interactive Pillar in Daily Cycle Sync (Focus / Nourish / Move / Recharge)
+  String? _activePillar;
+  bool _isAiNarrativeExpanded = false;
+
   // Colors
   static const Color blushyPrimary = Color(0xFFDD0D22);
   static const Color blushySoftPink = Color(0xFFFFECEB);
@@ -767,33 +771,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   // 03 — TODAY'S LOG & FUNCTIONAL WORK IMPACT
   // ════════════════════════════════════════════════════════════════
   Widget _buildTellDocsyRow(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: InkWell(
-        onTap: () => _openTellDocsyNaturalSheet(context),
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.chat_bubble_outline_rounded, size: 13, color: blushyPrimary),
-              const SizedBox(width: 5),
-              Text(
-                'Tell Docsy in your own words',
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: blushyPrimary,
-                ),
-              ),
-              const SizedBox(width: 2),
-              const Icon(Icons.chevron_right_rounded, size: 14, color: blushyPrimary),
-            ],
-          ),
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildWorkImpactLog(BuildContext context) {
@@ -937,6 +915,32 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                   ),
                 );
               }).toList(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Divider(height: 1, thickness: 0.8, color: Color(0xFFF3EEE9)),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: () => _openTellDocsyNaturalSheet(context),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+              child: Row(
+                children: [
+                  const Icon(Icons.chat_bubble_outline_rounded, size: 13, color: blushyPrimary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Tell Docsy in your own words',
+                    style: GoogleFonts.manrope(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: blushyPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.chevron_right_rounded, size: 14, color: blushyPrimary),
+                ],
+              ),
             ),
           ),
         ],
@@ -1140,8 +1144,9 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
       {
         'id': 'work',
         'title': 'FOCUS',
-        'subtitle': 'Work & mental stamina',
-        'icon': Icons.lightbulb_outline_rounded,
+        'label': 'Focus',
+        'subtitle': 'Work pacing & mental stamina',
+        'icon': Icons.lightbulb_rounded,
         'color': const Color(0xFFFF4A00),
         'bg': const Color(0xFFFFEBE0),
         'hormoneTag': _currentCycleDay <= 5
@@ -1151,41 +1156,109 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                 : (_currentCycleDay <= 16
                     ? 'Estrogen & Testosterone Peak'
                     : 'Progesterone Dominant')),
-        'suggestion': _currentCycleDay <= 5
-            ? 'Quiet big-picture planning and low meeting density. Protect deep thinking hours.'
+        'quickCue': _currentCycleDay <= 5
+            ? 'Quiet planning'
             : (_currentCycleDay <= 12
-                ? 'High cognitive stamina. Optimal for launching initiatives and team brainstorming.'
+                ? 'Creative momentum'
                 : (_currentCycleDay <= 16
-                    ? 'Peak verbal confidence and pitch clarity. Schedule negotiations and major presentations.'
-                    : 'Methodical error-checking and closing deliverables. Detail-oriented focus is naturally sharp.')),
+                    ? 'Peak pitch clarity'
+                    : 'Methodical review')),
+        'highlights': [
+          {
+            'icon': Icons.track_changes_rounded,
+            'label': 'Priority',
+            'val': _currentCycleDay <= 5
+                ? 'Big-picture strategic planning'
+                : (_currentCycleDay <= 12
+                    ? 'Launching projects & team brainstorming'
+                    : (_currentCycleDay <= 16
+                        ? 'High-stakes pitches & presentations'
+                        : 'Error-checking & wrapping deliverables')),
+          },
+          {
+            'icon': Icons.timer_outlined,
+            'label': 'Pacing',
+            'val': _currentCycleDay <= 5
+                ? 'Low meeting density · protect deep hours'
+                : (_currentCycleDay <= 12
+                    ? 'High cognitive stamina for collaboration'
+                    : (_currentCycleDay <= 16
+                        ? 'Peak verbal clarity & social ease'
+                        : 'Quiet, methodical work blocks')),
+          },
+          {
+            'icon': Icons.psychology_outlined,
+            'label': 'Mindset',
+            'val': _currentCycleDay <= 5
+                ? 'Reflective & inward vision'
+                : (_currentCycleDay <= 12
+                    ? 'Curious, creative & fast-moving'
+                    : (_currentCycleDay <= 16
+                        ? 'Magnetic, outward & decisive'
+                        : 'Pragmatic & detail-sharp')),
+          },
+        ],
         'prompt': 'Docsy, help me optimize my work tasks around my Day $_currentCycleDay ($_currentPhaseName) hormones.',
       },
       {
         'id': 'eat',
         'title': 'NOURISH',
+        'label': 'Nourish',
         'subtitle': 'Metabolic fuel & cravings',
         'icon': Icons.restaurant_rounded,
         'color': const Color(0xFF0D9488),
         'bg': const Color(0xFFCCFBF1),
         'hormoneTag': _currentCycleDay <= 5
-            ? 'Iron & Red Blood Cells'
+            ? 'Iron & Blood Recovery'
             : (_currentCycleDay <= 12
                 ? 'Follicular Development'
                 : (_currentCycleDay <= 16
                     ? 'Liver Estrogen Clearance'
                     : '+200 kcal Metabolic Burn')),
-        'suggestion': _currentCycleDay <= 5
-            ? 'Iron-rich lentils, dark leafy greens, bone broth, and magnesium to support cellular recovery.'
+        'quickCue': _currentCycleDay <= 5
+            ? 'Iron & greens'
             : (_currentCycleDay <= 12
-                ? 'Fermented foods, sprouted grains, and avocado fats to support healthy estrogen production.'
+                ? 'Plant fats & oats'
                 : (_currentCycleDay <= 16
-                    ? 'Cruciferous vegetables, fresh berries, and light hydrating fiber to ease hormone clearance.'
-                    : 'Slow-burning complex carbs (sweet potatoes, oats) and dark chocolate for serotonin support.')),
+                    ? 'Light fiber & berries'
+                    : 'Protein & sweet potato')),
+        'highlights': [
+          {
+            'icon': Icons.eco_rounded,
+            'label': 'Plate',
+            'val': _currentCycleDay <= 5
+                ? 'Iron-rich lentils, dark leafy greens & bone broth'
+                : (_currentCycleDay <= 12
+                    ? 'Sprouted grains, fermented foods & avocado fats'
+                    : (_currentCycleDay <= 16
+                        ? 'Cruciferous greens, berries & light fiber'
+                        : 'Sweet potatoes, oats & dark chocolate')),
+          },
+          {
+            'icon': Icons.medication_liquid_rounded,
+            'label': 'Key Nutrient',
+            'val': _currentCycleDay <= 5
+                ? 'Iron & magnesium for cellular recovery'
+                : (_currentCycleDay <= 12
+                    ? 'B-vitamins & healthy plant fats'
+                    : (_currentCycleDay <= 16
+                        ? 'Antioxidants & liver support'
+                        : 'Magnesium & complex carbohydrates')),
+          },
+          {
+            'icon': Icons.local_fire_department_outlined,
+            'label': 'Metabolism',
+            'val': _currentCycleDay <= 16
+                ? 'Steady basal insulin sensitivity'
+                : '+150 to 250 kcal metabolic increase · prioritize protein',
+          },
+        ],
         'prompt': 'Docsy, what should I eat today on Day $_currentCycleDay ($_currentPhaseName) to balance my hormones?',
       },
       {
         'id': 'move',
         'title': 'MOVE',
+        'label': 'Move',
         'subtitle': 'Workout & physical recovery',
         'icon': Icons.directions_run_rounded,
         'color': const Color(0xFF2563EB),
@@ -1197,47 +1270,91 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                 : (_currentCycleDay <= 16
                     ? 'Peak Power Output'
                     : 'Higher Core Temperature')),
-        'suggestion': _currentCycleDay <= 5
-            ? 'Restorative yin yoga, gentle walks, and low-back stretches. Avoid strenuous high-cortisol sets.'
+        'quickCue': _currentCycleDay <= 5
+            ? 'Yin yoga'
             : (_currentCycleDay <= 12
-                ? 'Strength training and progressive weights. Muscles adapt and recover rapidly this week.'
+                ? 'Strength training'
                 : (_currentCycleDay <= 16
-                    ? 'High explosive output: HIIT, sprint intervals, or personal-record lifting.'
-                    : 'Steady-state Pilates, incline walks, and moderate sculpt. Focus on breath and steady pacing.')),
+                    ? 'HIIT & personal bests'
+                    : 'Pilates & incline walks')),
+        'highlights': [
+          {
+            'icon': Icons.self_improvement_rounded,
+            'label': 'Movement',
+            'val': _currentCycleDay <= 5
+                ? 'Restorative yin yoga & gentle walks'
+                : (_currentCycleDay <= 12
+                    ? 'Progressive weights & strength sets'
+                    : (_currentCycleDay <= 16
+                        ? 'High explosive HIIT, sprints & PR lifting'
+                        : 'Pilates, steady-state incline walks & sculpt')),
+          },
+          {
+            'icon': Icons.speed_rounded,
+            'label': 'Intensity',
+            'val': _currentCycleDay <= 5
+                ? 'Low (20–40%) · protect pelvic floor'
+                : (_currentCycleDay <= 12
+                    ? 'Moderate-High (70–85%) · rapid adaptation'
+                    : (_currentCycleDay <= 16
+                        ? 'Peak Output (90–100%) · personal bests'
+                        : 'Moderate (50–65%) · rhythm & breath')),
+          },
+          {
+            'icon': Icons.healing_rounded,
+            'label': 'Recovery',
+            'val': _currentCycleDay <= 5
+                ? 'Gentle low-back decompression'
+                : (_currentCycleDay <= 12
+                    ? 'Rapid muscle rebuilding'
+                    : (_currentCycleDay <= 16
+                        ? 'Adequate joint warmup & hydration'
+                        : 'Magnesium foam rolling & active rest')),
+          },
+        ],
         'prompt': 'Docsy, suggest a workout tailored to Day $_currentCycleDay ($_currentPhaseName).',
       },
       {
-        'id': 'connect',
-        'title': 'CONNECT',
-        'subtitle': 'Social energy & empathy',
-        'icon': Icons.favorite_border_rounded,
-        'color': const Color(0xFFF72585),
-        'bg': const Color(0xFFFFE5F0),
-        'hormoneTag': _currentCycleDay <= 16 ? 'High Empathy' : 'Protective Boundaries',
-        'suggestion': _currentCycleDay <= 5
-            ? 'Cozy low-stimulation evenings with trusted people. Keep external social obligations light.'
-            : (_currentCycleDay <= 12
-                ? 'High curiosity and openness. Great timing for networking and catching up with friends.'
-                : (_currentCycleDay <= 16
-                    ? 'Magnetic social presence and ease. Optimal for dates, hosting, and key discussions.'
-                    : 'Selective 1-on-1 time. Protect your boundaries from people-pleasing guilt-free.')),
-        'prompt': 'Docsy, how should I navigate relationships and communication on Day $_currentCycleDay?',
-      },
-      {
-        'id': 'reset',
-        'title': 'RESET',
-        'subtitle': 'Circadian rhythm & sleep',
-        'icon': Icons.spa_outlined,
+        'id': 'recharge',
+        'title': 'RECHARGE',
+        'label': 'Recharge',
+        'subtitle': 'Social battery & evening reset',
+        'icon': Icons.spa_rounded,
         'color': const Color(0xFF7209B7),
         'bg': const Color(0xFFF3E8FF),
-        'hormoneTag': _currentCycleDay <= 16 ? 'Morning Sunlight' : 'Magnesium & REM',
-        'suggestion': _currentCycleDay <= 5
-            ? 'Warm Epsom foot soak + 5 deep diaphragmatic breaths in bed to relax the pelvic floor.'
-            : (_currentCycleDay <= 12
-                ? '10 minutes of direct morning sunlight to anchor your circadian rhythm and nighttime melatonin.'
-                : (_currentCycleDay <= 16
-                    ? 'Cold face splash + short morning breathwork for grounded focus.'
-                    : 'Dim amber lighting after 8 PM with chamomile-magnesium tea to safeguard deep sleep.')),
+        'hormoneTag': _currentCycleDay <= 16 ? 'Social Ease & Energy' : 'Magnesium & REM Ease',
+        'quickCue': _currentCycleDay <= 16 ? 'Cozy evenings' : 'Epsom soak & tea',
+        'highlights': [
+          {
+            'icon': Icons.favorite_border_rounded,
+            'label': 'Social Battery',
+            'val': _currentCycleDay <= 5
+                ? 'Cozy low-stimulation with inner circle'
+                : (_currentCycleDay <= 12
+                    ? 'Curious, open & social networking'
+                    : (_currentCycleDay <= 16
+                        ? 'Magnetic presence, hosting & key dates'
+                        : 'Selective 1-on-1s · protect boundaries')),
+          },
+          {
+            'icon': Icons.nightlight_round,
+            'label': 'Night Ritual',
+            'val': _currentCycleDay <= 5
+                ? 'Warm Epsom foot soak + 5 belly breaths'
+                : (_currentCycleDay <= 12
+                    ? '10 mins morning sun for circadian anchor'
+                    : (_currentCycleDay <= 16
+                        ? 'Cold face splash + short breathwork'
+                        : 'Dim amber lighting after 8 PM + chamomile')),
+          },
+          {
+            'icon': Icons.spa_outlined,
+            'label': 'Rest & Recovery',
+            'val': _currentCycleDay <= 16
+                ? 'Energized, outward-facing presence'
+                : 'Deep restoration & early lights-out',
+          },
+        ],
         'prompt': 'Docsy, give me a 1-minute wind-down ritual for Day $_currentCycleDay.',
       },
     ];
@@ -1246,181 +1363,19 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
       for (final d in destinations) d['id'] as String: d,
     };
 
-    Widget docsyLink(String display, String prompt, Color color) => InkWell(
-          onTap: () => _openDocsyWithPrompt(context, prompt),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Build $display plan with Docsy',
-                style: GoogleFonts.manrope(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(Icons.arrow_forward_rounded, size: 12, color: color),
-            ],
-          ),
-        );
+    // Determine current active pillar
+    final primaryOrder = _primaryOrderForFocus();
+    final firstId = primaryOrder.isNotEmpty ? primaryOrder.first[0] : 'work';
+    final activeId = _activePillar ?? firstId;
+    final activeDest = byId[activeId] ?? byId['work']!;
 
-    Widget primaryCard(String id, String display) {
-      final dest = byId[id]!;
-      final subtitle = dest['subtitle'] as String;
-      final icon = dest['icon'] as IconData;
-      final color = dest['color'] as Color;
-      final bg = dest['bg'] as Color;
-      final hormoneTag = dest['hormoneTag'] as String;
-      final suggestion = dest['suggestion'] as String;
-      final prompt = dest['prompt'] as String;
-
-      return Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: cardBorderColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-                  child: Icon(icon, size: 15, color: color),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            display.toUpperCase(),
-                            style: GoogleFonts.manrope(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF221510),
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: bg,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              hormoneTag,
-                              style: GoogleFonts.manrope(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                color: color,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF7A6B72),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              suggestion,
-              style: GoogleFonts.manrope(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF221510),
-                height: 1.45,
-              ),
-            ),
-            const SizedBox(height: 8),
-            docsyLink(display, prompt, color),
-          ],
-        ),
-      );
-    }
-
-    Widget secondaryBlock(String id, String display) {
-      final dest = byId[id]!;
-      final icon = dest['icon'] as IconData;
-      final color = dest['color'] as Color;
-      final bg = dest['bg'] as Color;
-      final hormoneTag = dest['hormoneTag'] as String;
-      final suggestion = dest['suggestion'] as String;
-      final prompt = dest['prompt'] as String;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-                  child: Icon(icon, size: 13, color: color),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  display.toUpperCase(),
-                  style: GoogleFonts.manrope(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: bg,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    hormoneTag,
-                    style: GoogleFonts.manrope(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              suggestion,
-              style: GoogleFonts.manrope(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF221510),
-                height: 1.45,
-              ),
-            ),
-            const SizedBox(height: 6),
-            docsyLink(display, prompt, color),
-          ],
-        ),
-      );
-    }
+    final activeColor = activeDest['color'] as Color;
+    final activeBg = activeDest['bg'] as Color;
+    final activeTitle = activeDest['title'] as String;
+    final activeSubtitle = activeDest['subtitle'] as String;
+    final activeHormoneTag = activeDest['hormoneTag'] as String;
+    final activePrompt = activeDest['prompt'] as String;
+    final activeHighlights = activeDest['highlights'] as List<Map<String, Object>>;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1439,77 +1394,410 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
         ),
         _buildFocusModeSelector(),
         const SizedBox(height: 12),
+
+        // 1. Docsy's Hormone Cue Card (Clean, Editorial & Expandable)
         if (_dynamicDocsyNarrative != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF0F5),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFFFD5E2), width: 0.8),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome, size: 15, color: blushyPrimary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _dynamicDocsyNarrative!,
-                    style: GoogleFonts.manrope(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF221510),
+          _buildDocsyHormoneCueCard(context),
+          const SizedBox(height: 12),
+        ],
+
+        // 2. Interactive Segmented Pillar Tab Selector
+        SizedBox(
+          height: 38,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            children: destinations.map((d) {
+              final id = d['id'] as String;
+              final label = d['label'] as String;
+              final icon = d['icon'] as IconData;
+              final color = d['color'] as Color;
+              final bg = d['bg'] as Color;
+              final isSelected = id == activeId;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: () => setState(() => _activePillar = id),
+                  borderRadius: BorderRadius.circular(20),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: isSelected ? bg : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? color : cardBorderColor,
+                        width: isSelected ? 1.4 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.white : const Color(0xFFFAF7F2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(icon, size: 12, color: isSelected ? color : const Color(0xFF7A6B72)),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          label,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11.5,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: isSelected ? color : const Color(0xFF4A3E39),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              );
+            }).toList(),
           ),
-        ],
-        for (final p in _primaryOrderForFocus()) primaryCard(p[0], p[1]),
+        ),
+        const SizedBox(height: 10),
+
+        // 3. The Active Pillar Card (Structured, Scannable & Icon-Driven)
         Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: cardBorderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF3E8FF),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.more_horiz_rounded, size: 16, color: Color(0xFF7209B7)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Pillar Header Row
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: activeBg, shape: BoxShape.circle),
+                    child: Icon(activeDest['icon'] as IconData, size: 16, color: activeColor),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$activeTitle FOR TODAY',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF221510),
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                        Text(
+                          activeSubtitle,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF7A6B72),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: activeBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      activeHormoneTag,
+                      style: GoogleFonts.manrope(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: activeColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              title: Text(
-                'More for today',
-                style: GoogleFonts.manrope(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF221510),
-                  letterSpacing: 0.5,
+              const SizedBox(height: 12),
+              const Divider(height: 1, thickness: 0.8, color: Color(0xFFF3EEE9)),
+              const SizedBox(height: 10),
+
+              // Highlights List (Clean key-value items with icons)
+              ...activeHighlights.map((hl) {
+                final hlIcon = hl['icon'] as IconData;
+                final hlLabel = hl['label'] as String;
+                final hlVal = hl['val'] as String;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 2),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: activeBg,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(hlIcon, size: 11, color: activeColor),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '$hlLabel: ',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF221510),
+                                ),
+                              ),
+                              TextSpan(
+                                text: hlVal,
+                                style: GoogleFonts.manrope(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF5A4D53),
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 0.8, color: Color(0xFFF3EEE9)),
+              const SizedBox(height: 8),
+
+              // Bottom Action Row
+              InkWell(
+                onTap: () => _openDocsyWithPrompt(context, activePrompt),
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.auto_awesome, size: 13, color: activeColor),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Build Day $_currentCycleDay ${activeDest['label']} plan with Docsy',
+                        style: GoogleFonts.manrope(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: activeColor,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(Icons.arrow_forward_rounded, size: 13, color: activeColor),
+                    ],
+                  ),
                 ),
               ),
-              subtitle: Text(
-                'Connect & reset rituals',
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF7A6B72),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // 4. Quick-Glance Pillar Chips (See what else is available at a tap)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: destinations.where((d) => d['id'] != activeId).map((d) {
+              final id = d['id'] as String;
+              final label = d['label'] as String;
+              final icon = d['icon'] as IconData;
+              final color = d['color'] as Color;
+              final tint = d['bg'] as Color;
+              final quickCue = d['quickCue'] as String;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: () => setState(() => _activePillar = id),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: cardBorderColor),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(color: tint, shape: BoxShape.circle),
+                          child: Icon(icon, size: 10, color: color),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$label · $quickCue',
+                          style: GoogleFonts.manrope(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF4A3E39),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              children: [
-                secondaryBlock('connect', 'Connect'),
-                secondaryBlock('reset', 'Reset'),
-              ],
-            ),
+              );
+            }).toList(),
           ),
         ),
       ],
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 04B — DOCSY HORMONE CUE CARD (Editorial & Expandable)
+  // ════════════════════════════════════════════════════════════════
+  Widget _buildDocsyHormoneCueCard(BuildContext context) {
+    if (_dynamicDocsyNarrative == null) return const SizedBox.shrink();
+
+    final fullText = _dynamicDocsyNarrative!.trim();
+    final periodIndex = fullText.indexOf('.');
+    final bool hasMore = periodIndex > 0 && periodIndex < fullText.length - 2;
+    final String firstSentence = hasMore ? fullText.substring(0, periodIndex + 1).trim() : fullText;
+    final String remainingText = hasMore ? fullText.substring(periodIndex + 1).trim() : '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6F7),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFDDE4), width: 0.9),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: blushyPrimary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.auto_awesome, size: 14, color: blushyPrimary),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'DOCSY HORMONE CUE · DAY $_currentCycleDay',
+                  style: GoogleFonts.manrope(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: blushyPrimary,
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: () => _openDocsyWithPrompt(
+                  context,
+                  'Explain what my hormones are doing today on Day $_currentCycleDay and give me personalized cycle syncing advice.',
+                ),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFDDE4), width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.chat_bubble_outline_rounded, size: 11, color: blushyPrimary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Ask Docsy',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: blushyPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            firstSentence,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF221510),
+              height: 1.4,
+            ),
+          ),
+          if (hasMore) ...[
+            if (_isAiNarrativeExpanded) ...[
+              const SizedBox(height: 6),
+              Text(
+                remainingText,
+                style: GoogleFonts.manrope(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF5A4D53),
+                  height: 1.45,
+                ),
+              ),
+            ],
+            const SizedBox(height: 4),
+            InkWell(
+              onTap: () => setState(() => _isAiNarrativeExpanded = !_isAiNarrativeExpanded),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isAiNarrativeExpanded ? 'Show less' : 'Read why this happens',
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: blushyPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Icon(
+                    _isAiNarrativeExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    size: 14,
+                    color: blushyPrimary,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
