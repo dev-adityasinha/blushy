@@ -107,7 +107,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
 
     if (sections.isEmpty) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Nothing left to save. Keep at least one entry.')),
+        SnackBar(content: Text(AppLocalizations.of(context).dsNothingToSave)),
       );
       return;
     }
@@ -123,7 +123,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
     setState(() => _saving = false);
 
     if (result.isReady) {
-      messenger.showSnackBar(const SnackBar(content: Text('Summary saved.')));
+      messenger.showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).dsSummarySaved)));
       navigator.pop(true);
     } else {
       messenger.showSnackBar(
@@ -137,7 +137,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
     final composer = _composer(rawSections, disclaimer);
     if (composer.isEmpty) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Nothing left to share. Keep at least one entry.')),
+        SnackBar(content: Text(AppLocalizations.of(context).dsNothingToShare)),
       );
       return;
     }
@@ -154,7 +154,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
     final messenger = ScaffoldMessenger.of(context);
     await Clipboard.setData(ClipboardData(text: _composer(rawSections, disclaimer).toPlainText()));
     if (!mounted) return;
-    messenger.showSnackBar(const SnackBar(content: Text('Summary copied.')));
+    messenger.showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).dsSummaryCopied)));
   }
 
   static String _dateLabel(DateTime d) {
@@ -167,7 +167,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('For your appointment')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).dsForAppointment)),
       body: ApiStateCard<Map<String, dynamic>>(
         result: _preview,
         onRetry: _loadPreview,
@@ -207,7 +207,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => _share(sections, data['disclaimer']?.toString()),
                     icon: const Icon(Icons.ios_share, size: 18),
-                    label: const Text('Share'),
+                    label: Text(AppLocalizations.of(context).actionShare),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -215,7 +215,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => _copy(sections, data['disclaimer']?.toString()),
                     icon: const Icon(Icons.copy_all_outlined, size: 18),
-                    label: const Text('Copy'),
+                    label: Text(AppLocalizations.of(context).dsCopy),
                   ),
                 ),
               ],
@@ -259,7 +259,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
             TextButton.icon(
               onPressed: _pickRange,
               icon: const Icon(Icons.date_range, size: 18),
-              label: const Text('Change'),
+              label: Text(AppLocalizations.of(context).dsChange),
             ),
           ],
         ),
@@ -269,7 +269,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
             setState(() => _includeScreenings = value);
             _loadPreview();
           },
-          title: const Text('Include questionnaire scores'),
+          title: Text(AppLocalizations.of(context).dsIncludeScores),
           subtitle: Text(
             'Off by default. These are screening results, not diagnoses.',
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -362,7 +362,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
                 title: Text(entry.value, style: theme.textTheme.bodyMedium),
                 trailing: IconButton(
                   icon: const Icon(Icons.close, size: 18),
-                  tooltip: 'Remove question',
+                  tooltip: AppLocalizations.of(context).dsRemoveQuestion,
                   onPressed: () => setState(() => _questions.removeAt(entry.key)),
                 ),
               ),
@@ -372,8 +372,8 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
             Expanded(
               child: TextField(
                 controller: _questionController,
-                decoration: const InputDecoration(
-                  hintText: 'Something you want to raise',
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context).dsRaise,
                   isDense: true,
                 ),
                 onSubmitted: (_) => _addQuestion(),
@@ -381,7 +381,7 @@ class _DoctorSummaryScreenState extends State<DoctorSummaryScreen> {
             ),
             IconButton(
               icon: const Icon(Icons.add),
-              tooltip: 'Add question',
+              tooltip: AppLocalizations.of(context).dsAddQuestion,
               onPressed: _addQuestion,
             ),
           ],

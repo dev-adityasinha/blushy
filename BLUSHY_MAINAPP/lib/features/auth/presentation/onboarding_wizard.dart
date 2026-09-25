@@ -1003,7 +1003,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                               children: [
                                 _buildPrivacyPillar(
                                   icon: Icons.lock_outline_rounded,
-                                  title: "On-Device Encryption",
+                                  title: AppLocalizations.of(context).onbOnDeviceEncryption,
                                   subtitle: "Sensitive health logs encrypted locally before storing.",
                                 ),
                                 const Padding(
@@ -1012,7 +1012,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                                 ),
                                 _buildPrivacyPillar(
                                   icon: Icons.phonelink_erase_rounded,
-                                  title: "Zero Data Selling",
+                                  title: AppLocalizations.of(context).onbZeroDataSelling,
                                   subtitle: "We never monetize, broker, or share your health records.",
                                 ),
                                 const Padding(
@@ -1021,7 +1021,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                                 ),
                                 _buildPrivacyPillar(
                                   icon: Icons.admin_panel_settings_outlined,
-                                  title: "Complete Sovereignty",
+                                  title: AppLocalizations.of(context).onbCompleteSovereignty,
                                   subtitle: "Export or permanently erase your data whenever you choose.",
                                 ),
                               ],
@@ -1146,7 +1146,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Please update Blushy'),
+          title: Text(AppLocalizations.of(context).onbPleaseUpdate),
           content: Text(
             result.message ??
                 'Our privacy policy and terms have been updated since this version of the app was '
@@ -1155,7 +1155,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('OK'),
+              child: Text(AppLocalizations.of(context).commonOk),
             ),
           ],
         ),
@@ -1742,20 +1742,20 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                           children: [
                             _buildWelcomePromiseRow(
                               icon: Icons.psychology_outlined,
-                              title: "Adapts To You",
+                              title: AppLocalizations.of(context).onbAdaptsToYou,
                               subtitle: "Learns alongside your logs and adapts as your body's rhythm changes.",
                             ),
                             const SizedBox(height: 14),
                             _buildWelcomePromiseRow(
                               icon: Icons.favorite_border_rounded,
-                              title: "Daily Wellness Care",
+                              title: AppLocalizations.of(context).onbDailyWellnessCare,
                               subtitle: "Helps you understand your body, symptoms, and self-care daily.",
                             ),
                             const SizedBox(height: 14),
                             _buildWelcomePromiseRow(
                               icon: Icons.sanitizer_outlined,
-                              title: "Private & Confidential",
-                              subtitle: "A safe space to reflect without judgment.",
+                              title: AppLocalizations.of(context).onbPrivateConfidential,
+                              subtitle: AppLocalizations.of(context).onbSafeSpace,
                             ),
                           ],
                         ),
@@ -2473,7 +2473,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "None yet / Not sure"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "What changes have you noticed?",
+      title: AppLocalizations.of(context).onbWhatChanges,
       subtitle: "It's normal for changes to occur in any order. Pick all that you notice.",
       options: options,
     );
@@ -2488,7 +2488,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Feel confident and calm at school"
     ];
     return _buildMultiSelectGoalsStep(
-      title: "What would help you feel most confident?",
+      title: AppLocalizations.of(context).onbFeelConfident,
       subtitle: "Select everything you'd like Docsy to guide you through.",
       options: options,
     );
@@ -2517,7 +2517,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "I haven't been tracking yet"
     ];
     return _buildSingleSelectBranchStep(
-      title: "How predictable are your periods?",
+      title: AppLocalizations.of(context).onbHowPredictable,
       subtitle: "Early cycles naturally vary. We adjust predictions to match your rhythm.",
       options: options,
       storageKey: "first_period_regularity",
@@ -2539,7 +2539,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "No notable symptoms"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "Which of these do you notice?",
+      title: AppLocalizations.of(context).onbWhichNotice,
       subtitle: "Pick as many as you like. Your home page shows what you track.",
       options: options,
     );
@@ -2555,7 +2555,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatWouldYouLike2,
-      subtitle: "Select all goals that apply to your journey.",
+      subtitle: AppLocalizations.of(context).onbSelectAllGoals,
       options: options,
     );
   }
@@ -2706,7 +2706,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
                   }
                 },
                 icon: const Icon(Icons.add, size: 16, color: BlushyColors.primary),
-                label: Text("+ Add earlier period date", style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.primary)),
+                label: Text(AppLocalizations.of(context).onbAddEarlierPeriod, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: BlushyColors.primary)),
               ),
             ),
         ],
@@ -2743,7 +2743,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatWouldYouLike3,
-      subtitle: "Docsy prioritizes these on your home dashboard.",
+      subtitle: AppLocalizations.of(context).onbDocsyPrioritizes,
       options: options,
     );
   }
@@ -2767,7 +2767,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "No notable symptoms"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "Which of these do you notice?",
+      title: AppLocalizations.of(context).onbWhichNotice,
       subtitle: "Pick as many as you like. Your home page shows what you track.",
       options: options,
     );
@@ -2786,7 +2786,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectConditionsStep(
       title: AppLocalizations.of(context).oWhichConditionBestMatches,
-      subtitle: "Helps tailor condition-specific tracking modules.",
+      subtitle: AppLocalizations.of(context).onbConditionModules,
       options: options,
     );
   }
@@ -2810,7 +2810,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectSymptomsStep(
       title: AppLocalizations.of(context).oWhichSymptomsAffectYou,
-      subtitle: "Docsy adapts tracking cards to prioritize these.",
+      subtitle: AppLocalizations.of(context).onbDocsyAdaptsCards,
       options: options,
     );
   }
@@ -2841,8 +2841,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Doctor visit logs & symptom summaries"
     ];
     return _buildMultiSelectGoalsStep(
-      title: "What support would help most?",
-      subtitle: "Tailor your hormonal health tracking workspace.",
+      title: AppLocalizations.of(context).onbWhatSupport,
+      subtitle: AppLocalizations.of(context).onbTailorHormonal,
       options: options,
     );
   }
@@ -2873,7 +2873,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildSingleSelectBranchStep(
       title: AppLocalizations.of(context).oHowAreYouTracking,
-      subtitle: "Select the primary biomarker you observe.",
+      subtitle: AppLocalizations.of(context).onbSelectBiomarker,
       options: options,
       storageKey: "ttc_tracking_method",
     );
@@ -2910,7 +2910,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "No notable symptoms"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "Which bodily signs do you notice?",
+      title: AppLocalizations.of(context).onbWhichSigns,
       subtitle: "Tracks ovulation biomarkers and hormonal sensations.",
       options: options,
     );
@@ -2926,7 +2926,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Partner sync & fertile timing notifications"
     ];
     return _buildMultiSelectGoalsStep(
-      title: "What are your conception priorities?",
+      title: AppLocalizations.of(context).onbConceptionPriorities,
       subtitle: "We'll optimize your daily fertility window analysis.",
       options: options,
     );
@@ -3014,7 +3014,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "No notable symptoms"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "What symptoms are you experiencing?",
+      title: AppLocalizations.of(context).onbWhatSymptoms,
       subtitle: "Your dashboard prioritizes trimester-specific relief cards.",
       options: options,
     );
@@ -3032,7 +3032,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatSupportWouldYou,
-      subtitle: "Customize your pregnancy journey preferences.",
+      subtitle: AppLocalizations.of(context).onbCustomizePregnancy,
       options: options,
     );
   }
@@ -3121,7 +3121,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatWouldYouLike2,
-      subtitle: "Tailor your postpartum recovery workspace.",
+      subtitle: AppLocalizations.of(context).onbTailorPostpartum,
       options: options,
     );
   }
@@ -3142,7 +3142,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "No notable symptoms"
     ];
     return _buildMultiSelectSymptomsStep(
-      title: "How is your body healing?",
+      title: AppLocalizations.of(context).onbHowHealing,
       subtitle: "Pick as many as you notice. Your home page supports what you track.",
       options: options,
     );
@@ -3181,7 +3181,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectSymptomsStep(
       title: AppLocalizations.of(context).oWhichSymptomsAffectYou,
-      subtitle: "Docsy adapts tracking cards to prioritize these.",
+      subtitle: AppLocalizations.of(context).onbDocsyAdaptsCards,
       options: options,
     );
   }
@@ -3195,7 +3195,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
       "Exploring options with my doctor"
     ];
     return _buildSingleSelectBranchStep(
-      title: "Are you using any therapy or support?",
+      title: AppLocalizations.of(context).onbUsingTherapy,
       subtitle: "Helps tailor recommendations around medical or lifestyle regimens.",
       options: options,
       storageKey: "perimenopause_therapy",
@@ -3213,7 +3213,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectGoalsStep(
       title: AppLocalizations.of(context).oWhatWouldYouMost,
-      subtitle: "Saves priorities for home insights and tracking.",
+      subtitle: AppLocalizations.of(context).onbSavesPriorities,
       options: options,
     );
   }
@@ -3250,7 +3250,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
     ];
     return _buildMultiSelectSymptomsStep(
       title: AppLocalizations.of(context).oWhichSymptomsAffectYour,
-      subtitle: "Select all that affect your daily comfort.",
+      subtitle: AppLocalizations.of(context).onbSelectAllComfort,
       options: options,
     );
   }

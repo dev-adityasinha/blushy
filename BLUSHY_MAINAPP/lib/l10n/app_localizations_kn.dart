@@ -9,6 +9,313 @@ class AppLocalizationsKn extends AppLocalizations {
   AppLocalizationsKn([String locale = 'kn']) : super(locale);
 
   @override
+  String get sqTailorGuidance =>
+      'ನಿಮ್ಮನ್ನು ಆತ್ಮವಿಶ್ವಾಸದಿಂದ ಸಿದ್ಧಗೊಳಿಸಲು ಸಹಾಯಕ ಮಾರ್ಗದರ್ಶನವನ್ನು ರೂಪಿಸುತ್ತೇವೆ.';
+
+  @override
+  String get sqBaselinePredictions =>
+      'ಇದು ಬೇಸ್‌ಲೈನ್ ಮುನ್ಸೂಚನೆಗಳು ಮತ್ತು ಚಕ್ರ ಆರೋಗ್ಯ ಒಳನೋಟಗಳನ್ನು ಹೊಂದಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqSelectAllPersonalize =>
+      'ನಿಮ್ಮ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ವೈಯಕ್ತೀಕರಿಸಲು ಅನ್ವಯಿಸುವ ಎಲ್ಲವನ್ನೂ ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get sqPredictOvulation =>
+      'ಅಂಡೋತ್ಪತ್ತಿ ಮತ್ತು ಫಲವತ್ತಾದ ಹಂತಗಳನ್ನು ನಿಖರವಾಗಿ ಊಹಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqForecastCycle =>
+      'ನಿಮ್ಮ ಚಕ್ರ ಹಂತ ಮತ್ತು ಮುಂಬರುವ ಪೀರಿಯಡ್ ಅನ್ನು ಊಹಿಸಲು ಬಳಸಲಾಗುತ್ತದೆ.';
+
+  @override
+  String get sqCustomizeFeed =>
+      'ನಿಮ್ಮ ಟ್ರ್ಯಾಕಿಂಗ್ ಫೀಡ್ ಮತ್ತು ದೈನಂದಿನ ಶಿಫಾರಸುಗಳನ್ನು ಕಸ್ಟಮೈಸ್ ಮಾಡಿ.';
+
+  @override
+  String get sqContraceptionInfluences =>
+      'ಗರ್ಭನಿರೋಧಕವು ಚಕ್ರ ಲಕ್ಷಣಗಳು ಮತ್ತು ರಕ್ತಸ್ರಾವ ಮಾದರಿಗಳ ಮೇಲೆ ಪ್ರಭಾವ ಬೀರುತ್ತದೆ.';
+
+  @override
+  String get sqHomeShowsCards =>
+      'ನೀವು ಟ್ರ್ಯಾಕ್ ಮಾಡುವುದಕ್ಕೆ ಕಾರ್ಡ್‌ಗಳನ್ನು ನಿಮ್ಮ ಹೋಮ್ ಪೇಜ್ ತೋರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqSpecializedTrackers =>
+      'ವಿಶೇಷ ಟ್ರ್ಯಾಕರ್‌ಗಳು ಮತ್ತು ಕ್ಲಿನಿಕಲ್ ಒಳನೋಟಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqMedicationLogs =>
+      'ಔಷಧಿ ಮತ್ತು ಪ್ರೋಟೋಕಾಲ್ ಲಾಗ್‌ಗಳನ್ನು ರೂಪಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqWhatHelpWith => 'ನಿಮಗೆ ಯಾವುದರಲ್ಲಿ ಸಹಾಯ ಬೇಕು?';
+
+  @override
+  String get sqHomeShowsPick =>
+      'ನೀವು ಆಯ್ಕೆ ಮಾಡುವುದಕ್ಕೆ ಕಾರ್ಡ್‌ಗಳನ್ನು ನಿಮ್ಮ ಹೋಮ್ ಪೇಜ್ ತೋರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqFertilityTimelines =>
+      'ಫಲವತ್ತತೆ ಕಾಲಾವಧಿಗಳು ಮತ್ತು ಪೂರ್ವಭಾವಿ ಮಾರ್ಗದರ್ಶನವನ್ನು ಹೊಂದಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqSelectBiomarkerTrack =>
+      'ನೀವು ಟ್ರ್ಯಾಕ್ ಮಾಡುವ ಪ್ರಾಥಮಿಕ ಬಯೋಮಾರ್ಕರ್ ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get sqHormoneSupport =>
+      'ಪ್ರೋಟೋಕಾಲ್‌ಗಳು ಮತ್ತು ಹಾರ್ಮೋನ್ ಬೆಂಬಲ ಟ್ರ್ಯಾಕಿಂಗ್ ಅನ್ನು ವೈಯಕ್ತೀಕರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqGestationalAge =>
+      'ಸಾಪ್ತಾಹಿಕ ಗರ್ಭಾವಸ್ಥೆಯ ವಯಸ್ಸು ಮತ್ತು ಮಗುವಿನ ಮೈಲಿಗಲ್ಲುಗಳನ್ನು ಲೆಕ್ಕಾಚಾರ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqEducationalPacing =>
+      'ಶೈಕ್ಷಣಿಕ ವೇಗ ಮತ್ತು ಮೈಲಿಗಲ್ಲು ಒಳನೋಟಗಳನ್ನು ಕಸ್ಟಮೈಸ್ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqBabyDevelopment =>
+      'ಮಗುವಿನ ಬೆಳವಣಿಗೆ, ಪೋಷಣೆ ಮತ್ತು ಸ್ವಾಸ್ಥ್ಯಕ್ಕೆ ಆದ್ಯತೆ ನೀಡಿ.';
+
+  @override
+  String get sqMaternalHealing =>
+      'ಮಾತೃ ಗುಣಪಡಿಸುವ ಚೇತರಿಕೆ ಮತ್ತು ಶಿಶು ಮೈಲಿಗಲ್ಲುಗಳನ್ನು ಚಾಲನೆ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqHydrationFeeding =>
+      'ಜಲಸಂಚಯನ ಗುರಿಗಳು ಮತ್ತು ಆಹಾರ ಲಾಗ್‌ಗಳನ್ನು ಹೊಂದಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqPostpartumSupport =>
+      'ಮಾತೃ ಹೆರಿಗೆಯ ನಂತರದ ಚೇತರಿಕೆ ಬೆಂಬಲವನ್ನು ಕಸ್ಟಮೈಸ್ ಮಾಡಿ.';
+
+  @override
+  String get sqRecoveryIncluded =>
+      'ಚೇತರಿಕೆ ಸೇರಿಸಲಾಗಿದೆ. ನೀವು ಟ್ರ್ಯಾಕ್ ಮಾಡುವುದನ್ನು ನಿಮ್ಮ ಹೋಮ್ ಪೇಜ್ ತೋರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqMenstrualRhythms =>
+      'ಋತು ಲಯಗಳಲ್ಲಿನ ಏರಿಳಿತಗಳನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqProactiveInsights =>
+      'ಪೂರ್ವಭಾವಿ ದೈನಂದಿನ ಒಳನೋಟಗಳಿಗಾಗಿ ಆದ್ಯತೆಗಳನ್ನು ಉಳಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqPostmenopausalFocus =>
+      'ಋತುಬಂಧದ ನಂತರದ ಆರೋಗ್ಯ ಗಮನ ಕ್ಷೇತ್ರಗಳನ್ನು ನಿರ್ಧರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqSelectAllCare =>
+      'ನಿಮ್ಮ ಆರೈಕೆಯನ್ನು ವೈಯಕ್ತೀಕರಿಸಲು ಅನ್ವಯಿಸುವ ಎಲ್ಲವನ್ನೂ ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get sqHealthyAgeing =>
+      'ನಿಮ್ಮ ಆರೋಗ್ಯಕರ ವಯಸ್ಸಾಗುವಿಕೆ ಸಂಗಾತಿ ಫೀಡ್ ಹೊಂದಿಸಿ.';
+
+  @override
+  String get sqCompanionCards =>
+      'ದೈನಂದಿನ ಸಂಗಾತಿ ಕಾರ್ಡ್‌ಗಳನ್ನು ವೈಯಕ್ತೀಕರಿಸುತ್ತದೆ.';
+
+  @override
+  String get onbOnDeviceEncryption => 'ಸಾಧನದಲ್ಲಿ ಎನ್‌ಕ್ರಿಪ್ಷನ್';
+
+  @override
+  String get onbZeroDataSelling => 'ಶೂನ್ಯ ಡೇಟಾ ಮಾರಾಟ';
+
+  @override
+  String get onbCompleteSovereignty => 'ಸಂಪೂರ್ಣ ಸಾರ್ವಭೌಮತ್ವ';
+
+  @override
+  String get onbPleaseUpdate => 'ದಯವಿಟ್ಟು Blushy ನವೀಕರಿಸಿ';
+
+  @override
+  String get onbAdaptsToYou => 'ನಿಮಗೆ ಹೊಂದಿಕೊಳ್ಳುತ್ತದೆ';
+
+  @override
+  String get onbDailyWellnessCare => 'ದೈನಂದಿನ ಸ್ವಾಸ್ಥ್ಯ ಆರೈಕೆ';
+
+  @override
+  String get onbPrivateConfidential => 'ಖಾಸಗಿ ಮತ್ತು ಗೌಪ್ಯ';
+
+  @override
+  String get onbSafeSpace => 'ತೀರ್ಪು ಇಲ್ಲದೆ ಚಿಂತಿಸಲು ಒಂದು ಸುರಕ್ಷಿತ ಸ್ಥಳ.';
+
+  @override
+  String get onbWhatChanges => 'ನೀವು ಯಾವ ಬದಲಾವಣೆಗಳನ್ನು ಗಮನಿಸಿದ್ದೀರಿ?';
+
+  @override
+  String get onbFeelConfident =>
+      'ನಿಮಗೆ ಹೆಚ್ಚು ಆತ್ಮವಿಶ್ವಾಸ ಮೂಡಿಸಲು ಏನು ಸಹಾಯ ಮಾಡುತ್ತದೆ?';
+
+  @override
+  String get onbHowPredictable => 'ನಿಮ್ಮ ಪೀರಿಯಡ್‌ಗಳು ಎಷ್ಟು ಊಹಿಸಬಹುದಾದವು?';
+
+  @override
+  String get onbWhichNotice => 'ಇವುಗಳಲ್ಲಿ ನೀವು ಯಾವುದನ್ನು ಗಮನಿಸುತ್ತೀರಿ?';
+
+  @override
+  String get onbSelectAllGoals =>
+      'ನಿಮ್ಮ ಪ್ರಯಾಣಕ್ಕೆ ಅನ್ವಯಿಸುವ ಎಲ್ಲಾ ಗುರಿಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get onbAddEarlierPeriod => '+ ಹಿಂದಿನ ಪೀರಿಯಡ್ ದಿನಾಂಕ ಸೇರಿಸಿ';
+
+  @override
+  String get onbDocsyPrioritizes =>
+      'Docsy ಇವುಗಳನ್ನು ನಿಮ್ಮ ಹೋಮ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ಆದ್ಯತೆ ನೀಡುತ್ತದೆ.';
+
+  @override
+  String get onbConditionModules =>
+      'ಸ್ಥಿತಿ-ನಿರ್ದಿಷ್ಟ ಟ್ರ್ಯಾಕಿಂಗ್ ಮಾಡ್ಯೂಲ್‌ಗಳನ್ನು ರೂಪಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get onbDocsyAdaptsCards =>
+      'Docsy ಇವುಗಳಿಗೆ ಆದ್ಯತೆ ನೀಡಲು ಟ್ರ್ಯಾಕಿಂಗ್ ಕಾರ್ಡ್‌ಗಳನ್ನು ಹೊಂದಿಸುತ್ತದೆ.';
+
+  @override
+  String get onbWhatSupport => 'ಯಾವ ಬೆಂಬಲ ಹೆಚ್ಚು ಸಹಾಯ ಮಾಡುತ್ತದೆ?';
+
+  @override
+  String get onbTailorHormonal =>
+      'ನಿಮ್ಮ ಹಾರ್ಮೋನಲ್ ಆರೋಗ್ಯ ಟ್ರ್ಯಾಕಿಂಗ್ ವರ್ಕ್‌ಸ್ಪೇಸ್ ಹೊಂದಿಸಿ.';
+
+  @override
+  String get onbSelectBiomarker =>
+      'ನೀವು ಗಮನಿಸುವ ಪ್ರಾಥಮಿಕ ಬಯೋಮಾರ್ಕರ್ ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get onbWhichSigns => 'ನೀವು ದೇಹದ ಯಾವ ಚಿಹ್ನೆಗಳನ್ನು ಗಮನಿಸುತ್ತೀರಿ?';
+
+  @override
+  String get onbConceptionPriorities => 'ನಿಮ್ಮ ಗರ್ಭಧಾರಣೆ ಆದ್ಯತೆಗಳು ಯಾವುವು?';
+
+  @override
+  String get onbWhatSymptoms => 'ನೀವು ಯಾವ ಲಕ್ಷಣಗಳನ್ನು ಅನುಭವಿಸುತ್ತಿದ್ದೀರಿ?';
+
+  @override
+  String get onbCustomizePregnancy =>
+      'ನಿಮ್ಮ ಗರ್ಭಧಾರಣೆ ಪ್ರಯಾಣದ ಆದ್ಯತೆಗಳನ್ನು ಕಸ್ಟಮೈಸ್ ಮಾಡಿ.';
+
+  @override
+  String get onbTailorPostpartum =>
+      'ನಿಮ್ಮ ಹೆರಿಗೆಯ ನಂತರದ ಚೇತರಿಕೆ ವರ್ಕ್‌ಸ್ಪೇಸ್ ಹೊಂದಿಸಿ.';
+
+  @override
+  String get onbHowHealing => 'ನಿಮ್ಮ ದೇಹ ಹೇಗೆ ಗುಣಮುಖವಾಗುತ್ತಿದೆ?';
+
+  @override
+  String get onbUsingTherapy =>
+      'ನೀವು ಯಾವುದೇ ಚಿಕಿತ್ಸೆ ಅಥವಾ ಬೆಂಬಲ ಬಳಸುತ್ತಿದ್ದೀರಾ?';
+
+  @override
+  String get onbSavesPriorities =>
+      'ಹೋಮ್ ಒಳನೋಟಗಳು ಮತ್ತು ಟ್ರ್ಯಾಕಿಂಗ್‌ಗಾಗಿ ಆದ್ಯತೆಗಳನ್ನು ಉಳಿಸುತ್ತದೆ.';
+
+  @override
+  String get onbSelectAllComfort =>
+      'ನಿಮ್ಮ ದೈನಂದಿನ ಆರಾಮಕ್ಕೆ ಪರಿಣಾಮ ಬೀರುವ ಎಲ್ಲವನ್ನೂ ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get vnRecordPrompt =>
+      'ದಯವಿಟ್ಟು ಒಂದು ಚಿಕ್ಕ ಚಿಂತನೆ ಟಿಪ್ಪಣಿ ರೆಕಾರ್ಡ್ ಮಾಡಿ ಅಥವಾ ಬರೆಯಿರಿ.';
+
+  @override
+  String get vnSaveError =>
+      'ನಿಮ್ಮ ಚಿಂತನೆಯನ್ನು ಉಳಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get vnSaved => 'ನಿಮ್ಮ ಜರ್ನಲ್‌ನಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get vnReRecord => 'ಮತ್ತೆ ರೆಕಾರ್ಡ್ ಮಾಡಿ';
+
+  @override
+  String get dsNothingToSave =>
+      'ಉಳಿಸಲು ಏನೂ ಉಳಿದಿಲ್ಲ. ಕನಿಷ್ಠ ಒಂದು ನಮೂದನ್ನು ಇರಿಸಿ.';
+
+  @override
+  String get dsSummarySaved => 'ಸಾರಾಂಶ ಉಳಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get dsNothingToShare =>
+      'ಹಂಚಿಕೊಳ್ಳಲು ಏನೂ ಉಳಿದಿಲ್ಲ. ಕನಿಷ್ಠ ಒಂದು ನಮೂದನ್ನು ಇರಿಸಿ.';
+
+  @override
+  String get dsSummaryCopied => 'ಸಾರಾಂಶ ನಕಲಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get dsForAppointment => 'ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಾಗಿ';
+
+  @override
+  String get dsCopy => 'ನಕಲಿಸಿ';
+
+  @override
+  String get dsChange => 'ಬದಲಾಯಿಸಿ';
+
+  @override
+  String get dsIncludeScores => 'ಪ್ರಶ್ನಾವಳಿ ಸ್ಕೋರ್‌ಗಳನ್ನು ಸೇರಿಸಿ';
+
+  @override
+  String get dsRemoveQuestion => 'ಪ್ರಶ್ನೆ ತೆಗೆದುಹಾಕಿ';
+
+  @override
+  String get dsRaise => 'ನೀವು ಪ್ರಸ್ತಾಪಿಸಲು ಬಯಸುವ ಏನಾದರೂ';
+
+  @override
+  String get dsAddQuestion => 'ಪ್ರಶ್ನೆ ಸೇರಿಸಿ';
+
+  @override
+  String get ssSendBloom => 'ಒಂದು ಹೂವು ಕಳುಹಿಸಿ';
+
+  @override
+  String get ssWriteLetter => 'ಒಂದು ಪತ್ರ ಬರೆಯಿರಿ';
+
+  @override
+  String get ssWarmGesture => 'ಒಂದು ಬೆಚ್ಚಗಿನ ಸನ್ನೆ';
+
+  @override
+  String get ssSweetHug => 'ಸಿಹಿ ಅಪ್ಪುಗೆ ಮತ್ತು ಕಾಫಿ';
+
+  @override
+  String get ssVoiceWhisper => 'ಧ್ವನಿ ಪಿಸುಮಾತು';
+
+  @override
+  String get ssAudioNote => 'ಆಡಿಯೋ ಟಿಪ್ಪಣಿ';
+
+  @override
+  String get ssVibePulse => 'ವೈಬ್ ಪಲ್ಸ್';
+
+  @override
+  String get ssShareEnergy => 'ಶಕ್ತಿ ಹಂಚಿಕೊಳ್ಳಿ';
+
+  @override
+  String get ssLeaveNote => 'ಒಂದು ಟಿಪ್ಪಣಿ ಬಿಡಿ';
+
+  @override
+  String get ssPrivateChat => 'ಖಾಸಗಿ ಚಾಟ್';
+
+  @override
+  String get ssWouldYouRather => 'ನೀನು ಯಾವುದನ್ನು ಬಯಸುತ್ತೀಯ? ಮತ್ತು ಪಿಲ್ಲೋ ಟಾಕ್';
+
+  @override
+  String get ssPlanDate => 'ಡೇಟ್ ಯೋಜಿಸಿ ಮತ್ತು ಆಸನಗಳನ್ನು ಬುಕ್ ಮಾಡಿ';
+
+  @override
+  String get ssBloomsPostcards => 'ಹೂವುಗಳು ಮತ್ತು ಪೋಸ್ಟ್‌ಕಾರ್ಡ್‌ಗಳು';
+
+  @override
+  String get ssTimeCapsuleLetters => 'ಟೈಮ್ ಕ್ಯಾಪ್ಸೂಲ್ ಪತ್ರಗಳು';
+
+  @override
+  String get ssLivingMemoryBook => 'ಜೀವಂತ ಮೆಮೊರಿ ಬುಕ್';
+
+  @override
+  String get ssConsentFirst => 'ಒಪ್ಪಿಗೆ-ಮೊದಲ ಹಂಚಿಕೆ';
+
+  @override
   String get ceRemindScreenshot => 'ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ಕಳುಹಿಸಲು ನೆನಪಿಸಿ 📸';
 
   @override

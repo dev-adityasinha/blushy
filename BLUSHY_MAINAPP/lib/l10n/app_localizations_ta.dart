@@ -9,6 +9,313 @@ class AppLocalizationsTa extends AppLocalizations {
   AppLocalizationsTa([String locale = 'ta']) : super(locale);
 
   @override
+  String get sqTailorGuidance =>
+      'உங்களை நம்பிக்கையுடன் தயார்படுத்த உதவிகரமான வழிகாட்டுதலை வடிவமைப்போம்.';
+
+  @override
+  String get sqBaselinePredictions =>
+      'இது அடிப்படை கணிப்புகள் மற்றும் சுழற்சி சுகாதார நுண்ணறிவுகளை அமைக்கிறது.';
+
+  @override
+  String get sqSelectAllPersonalize =>
+      'உங்கள் டாஷ்போர்டைத் தனிப்பயனாக்க பொருந்தும் அனைத்தையும் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get sqPredictOvulation =>
+      'கருமுட்டை வெளியீடு மற்றும் கருவுறும் கட்டங்களைத் துல்லியமாகக் கணிக்க உதவுகிறது.';
+
+  @override
+  String get sqForecastCycle =>
+      'உங்கள் சுழற்சி கட்டம் மற்றும் வரவிருக்கும் மாதவிடாயை முன்னறிவிக்கப் பயன்படுகிறது.';
+
+  @override
+  String get sqCustomizeFeed =>
+      'உங்கள் கண்காணிப்பு ஊட்டம் மற்றும் தினசரி பரிந்துரைகளைத் தனிப்பயனாக்குங்கள்.';
+
+  @override
+  String get sqContraceptionInfluences =>
+      'கருத்தடை சுழற்சி அறிகுறிகள் மற்றும் இரத்தப்போக்கு முறைகளை பாதிக்கிறது.';
+
+  @override
+  String get sqHomeShowsCards =>
+      'நீங்கள் கண்காணிப்பதற்கான அட்டைகளை உங்கள் முகப்புப் பக்கம் காட்டுகிறது.';
+
+  @override
+  String get sqSpecializedTrackers =>
+      'சிறப்பு கண்காணிப்பான்கள் மற்றும் மருத்துவ நுண்ணறிவுகளை இயக்குகிறது.';
+
+  @override
+  String get sqMedicationLogs =>
+      'மருந்து மற்றும் நெறிமுறை பதிவுகளை வடிவமைக்க உதவுகிறது.';
+
+  @override
+  String get sqWhatHelpWith => 'எதில் உங்களுக்கு உதவி வேண்டும்?';
+
+  @override
+  String get sqHomeShowsPick =>
+      'நீங்கள் தேர்ந்தெடுப்பதற்கான அட்டைகளை உங்கள் முகப்புப் பக்கம் காட்டுகிறது.';
+
+  @override
+  String get sqFertilityTimelines =>
+      'கருவுறுதல் காலவரிசைகள் மற்றும் முன்முயற்சி வழிகாட்டுதலை மாற்றுகிறது.';
+
+  @override
+  String get sqSelectBiomarkerTrack =>
+      'நீங்கள் கண்காணிக்கும் முதன்மை உயிரியல் குறியீட்டைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get sqHormoneSupport =>
+      'நெறிமுறைகள் மற்றும் ஹார்மோன் ஆதரவு கண்காணிப்பைத் தனிப்பயனாக்குகிறது.';
+
+  @override
+  String get sqGestationalAge =>
+      'வாராந்திர கர்ப்பகால வயது மற்றும் குழந்தை மைல்கற்களைக் கணக்கிடுகிறது.';
+
+  @override
+  String get sqEducationalPacing =>
+      'கல்வி வேகம் மற்றும் மைல்கல் நுண்ணறிவுகளைத் தனிப்பயனாக்குகிறது.';
+
+  @override
+  String get sqBabyDevelopment =>
+      'குழந்தை வளர்ச்சி, ஊட்டச்சத்து மற்றும் நல்வாழ்வுக்கு முன்னுரிமை அளியுங்கள்.';
+
+  @override
+  String get sqMaternalHealing =>
+      'தாய்வழி குணமடைதல் மீட்பு மற்றும் குழந்தை மைல்கற்களை இயக்குகிறது.';
+
+  @override
+  String get sqHydrationFeeding =>
+      'நீரேற்ற இலக்குகள் மற்றும் உணவளிக்கும் பதிவுகளை மாற்றுகிறது.';
+
+  @override
+  String get sqPostpartumSupport =>
+      'தாய்வழி பிரசவத்திற்குப் பிந்தைய மீட்பு ஆதரவைத் தனிப்பயனாக்குங்கள்.';
+
+  @override
+  String get sqRecoveryIncluded =>
+      'மீட்பு சேர்க்கப்பட்டுள்ளது. நீங்கள் கண்காணிப்பதை உங்கள் முகப்புப் பக்கம் காட்டுகிறது.';
+
+  @override
+  String get sqMenstrualRhythms =>
+      'மாதவிடாய் தாளங்களில் ஏற்ற இறக்கங்களைக் கண்காணிக்கிறது.';
+
+  @override
+  String get sqProactiveInsights =>
+      'முன்முயற்சி தினசரி நுண்ணறிவுகளுக்கான முன்னுரிமைகளைச் சேமிக்கிறது.';
+
+  @override
+  String get sqPostmenopausalFocus =>
+      'மாதவிடாய் நிறுத்தத்திற்குப் பிந்தைய சுகாதார கவன பகுதிகளைத் தீர்மானிக்கிறது.';
+
+  @override
+  String get sqSelectAllCare =>
+      'உங்கள் பராமரிப்பைத் தனிப்பயனாக்க பொருந்தும் அனைத்தையும் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get sqHealthyAgeing =>
+      'உங்கள் ஆரோக்கியமான வயதான துணை ஊட்டத்தை வடிவமைக்கவும்.';
+
+  @override
+  String get sqCompanionCards => 'தினசரி துணை அட்டைகளைத் தனிப்பயனாக்குகிறது.';
+
+  @override
+  String get onbOnDeviceEncryption => 'சாதனத்தில் குறியாக்கம்';
+
+  @override
+  String get onbZeroDataSelling => 'தரவு விற்பனை இல்லை';
+
+  @override
+  String get onbCompleteSovereignty => 'முழு உரிமை';
+
+  @override
+  String get onbPleaseUpdate => 'தயவுசெய்து Blushy-ஐ புதுப்பிக்கவும்';
+
+  @override
+  String get onbAdaptsToYou => 'உங்களுக்கு ஏற்ப மாறுகிறது';
+
+  @override
+  String get onbDailyWellnessCare => 'தினசரி நல்வாழ்வு பராமரிப்பு';
+
+  @override
+  String get onbPrivateConfidential => 'தனிப்பட்ட & ரகசியம்';
+
+  @override
+  String get onbSafeSpace =>
+      'தீர்ப்பு இல்லாமல் சிந்திக்க ஒரு பாதுகாப்பான இடம்.';
+
+  @override
+  String get onbWhatChanges => 'நீங்கள் என்ன மாற்றங்களைக் கவனித்தீர்கள்?';
+
+  @override
+  String get onbFeelConfident => 'நீங்கள் மிகவும் நம்பிக்கையாக உணர எது உதவும்?';
+
+  @override
+  String get onbHowPredictable => 'உங்கள் மாதவிடாய் எவ்வளவு கணிக்கக்கூடியது?';
+
+  @override
+  String get onbWhichNotice => 'இவற்றில் எதை நீங்கள் கவனிக்கிறீர்கள்?';
+
+  @override
+  String get onbSelectAllGoals =>
+      'உங்கள் பயணத்திற்குப் பொருந்தும் அனைத்து இலக்குகளையும் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get onbAddEarlierPeriod => '+ முந்தைய மாதவிடாய் தேதியைச் சேர்க்கவும்';
+
+  @override
+  String get onbDocsyPrioritizes =>
+      'Docsy இவற்றை உங்கள் முகப்பு டாஷ்போர்டில் முன்னுரிமைப்படுத்துகிறது.';
+
+  @override
+  String get onbConditionModules =>
+      'நிலை சார்ந்த கண்காணிப்பு தொகுதிகளை வடிவமைக்க உதவுகிறது.';
+
+  @override
+  String get onbDocsyAdaptsCards =>
+      'Docsy இவற்றுக்கு முன்னுரிமை அளிக்க கண்காணிப்பு அட்டைகளை மாற்றுகிறது.';
+
+  @override
+  String get onbWhatSupport => 'எந்த ஆதரவு அதிகம் உதவும்?';
+
+  @override
+  String get onbTailorHormonal =>
+      'உங்கள் ஹார்மோன் சுகாதார கண்காணிப்பு பணியிடத்தை வடிவமைக்கவும்.';
+
+  @override
+  String get onbSelectBiomarker =>
+      'நீங்கள் கவனிக்கும் முதன்மை உயிரியல் குறியீட்டைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get onbWhichSigns => 'உடலின் எந்த அறிகுறிகளை நீங்கள் கவனிக்கிறீர்கள்?';
+
+  @override
+  String get onbConceptionPriorities =>
+      'உங்கள் கருத்தரிப்பு முன்னுரிமைகள் என்ன?';
+
+  @override
+  String get onbWhatSymptoms => 'நீங்கள் என்ன அறிகுறிகளை அனுபவிக்கிறீர்கள்?';
+
+  @override
+  String get onbCustomizePregnancy =>
+      'உங்கள் கர்ப்பகால பயண விருப்பங்களைத் தனிப்பயனாக்குங்கள்.';
+
+  @override
+  String get onbTailorPostpartum =>
+      'உங்கள் பிரசவத்திற்குப் பிந்தைய மீட்பு பணியிடத்தை வடிவமைக்கவும்.';
+
+  @override
+  String get onbHowHealing => 'உங்கள் உடல் எப்படி குணமடைகிறது?';
+
+  @override
+  String get onbUsingTherapy =>
+      'நீங்கள் ஏதேனும் சிகிச்சை அல்லது ஆதரவைப் பயன்படுத்துகிறீர்களா?';
+
+  @override
+  String get onbSavesPriorities =>
+      'முகப்பு நுண்ணறிவு மற்றும் கண்காணிப்புக்கான முன்னுரிமைகளைச் சேமிக்கிறது.';
+
+  @override
+  String get onbSelectAllComfort =>
+      'உங்கள் அன்றாட வசதியைப் பாதிக்கும் அனைத்தையும் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get vnRecordPrompt =>
+      'தயவுசெய்து ஒரு சிறிய பிரதிபலிப்பு குறிப்பைப் பதிவு செய்யவும் அல்லது எழுதவும்.';
+
+  @override
+  String get vnSaveError =>
+      'உங்கள் பிரதிபலிப்பைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get vnSaved => 'உங்கள் ஜர்னலில் சேமிக்கப்பட்டது.';
+
+  @override
+  String get vnReRecord => 'மீண்டும் பதிவு செய்';
+
+  @override
+  String get dsNothingToSave =>
+      'சேமிக்க எதுவும் இல்லை. குறைந்தது ஒரு பதிவையாவது வைத்திருங்கள்.';
+
+  @override
+  String get dsSummarySaved => 'சுருக்கம் சேமிக்கப்பட்டது.';
+
+  @override
+  String get dsNothingToShare =>
+      'பகிர எதுவும் இல்லை. குறைந்தது ஒரு பதிவையாவது வைத்திருங்கள்.';
+
+  @override
+  String get dsSummaryCopied => 'சுருக்கம் நகலெடுக்கப்பட்டது.';
+
+  @override
+  String get dsForAppointment => 'உங்கள் சந்திப்புக்காக';
+
+  @override
+  String get dsCopy => 'நகலெடு';
+
+  @override
+  String get dsChange => 'மாற்று';
+
+  @override
+  String get dsIncludeScores => 'கேள்வித்தாள் மதிப்பெண்களைச் சேர்க்கவும்';
+
+  @override
+  String get dsRemoveQuestion => 'கேள்வியை அகற்று';
+
+  @override
+  String get dsRaise => 'நீங்கள் எழுப்ப விரும்பும் ஏதாவது';
+
+  @override
+  String get dsAddQuestion => 'கேள்வியைச் சேர்';
+
+  @override
+  String get ssSendBloom => 'ஒரு மலரை அனுப்பு';
+
+  @override
+  String get ssWriteLetter => 'ஒரு கடிதம் எழுது';
+
+  @override
+  String get ssWarmGesture => 'ஒரு அன்பான சைகை';
+
+  @override
+  String get ssSweetHug => 'இனிய அணைப்பு & காபி';
+
+  @override
+  String get ssVoiceWhisper => 'குரல் மென்மொழி';
+
+  @override
+  String get ssAudioNote => 'ஆடியோ குறிப்பு';
+
+  @override
+  String get ssVibePulse => 'வைப் பல்ஸ்';
+
+  @override
+  String get ssShareEnergy => 'ஆற்றலைப் பகிர்';
+
+  @override
+  String get ssLeaveNote => 'ஒரு குறிப்பை விடு';
+
+  @override
+  String get ssPrivateChat => 'தனிப்பட்ட அரட்டை';
+
+  @override
+  String get ssWouldYouRather => 'நீ விரும்புவது? & தலையணை அரட்டை';
+
+  @override
+  String get ssPlanDate => 'டேட் திட்டமிட்டு இருக்கைகளை முன்பதிவு செய்';
+
+  @override
+  String get ssBloomsPostcards => 'மலர்கள் & அஞ்சல் அட்டைகள்';
+
+  @override
+  String get ssTimeCapsuleLetters => 'டைம் கேப்சூல் கடிதங்கள்';
+
+  @override
+  String get ssLivingMemoryBook => 'உயிரோட்டமான நினைவு புத்தகம்';
+
+  @override
+  String get ssConsentFirst => 'ஒப்புதல்-முதல் பகிர்வு';
+
+  @override
   String get ceRemindScreenshot => 'ஸ்கிரீன்ஷாட் அனுப்ப நினைவூட்டு 📸';
 
   @override

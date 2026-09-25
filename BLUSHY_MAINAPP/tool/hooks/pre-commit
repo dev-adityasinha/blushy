@@ -1,0 +1,13 @@
+#!/bin/sh
+# Blushy i18n guard — blocks newly hardcoded user-facing strings.
+# Enable once (from the repo root):
+#   git config core.hooksPath BLUSHY_MAINAPP/tool/hooks
+root="$(git rev-parse --show-toplevel)"
+python "$root/BLUSHY_MAINAPP/tool/i18n_guard.py" --staged
+status=$?
+if [ $status -ne 0 ]; then
+  echo ""
+  echo "Commit blocked by the i18n guard (see above)."
+  echo "Fix the strings, or append  // i18n-ignore  to intentional-English lines."
+fi
+exit $status

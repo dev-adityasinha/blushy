@@ -9,6 +9,304 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get sqTailorGuidance =>
+      'We\'ll tailor helpful guidance to prepare you with confidence.';
+
+  @override
+  String get sqBaselinePredictions =>
+      'This sets baseline predictions and cycle health insights.';
+
+  @override
+  String get sqSelectAllPersonalize =>
+      'Select all that apply to personalize your dashboard.';
+
+  @override
+  String get sqPredictOvulation =>
+      'Helps predict ovulation and fertile phases accurately.';
+
+  @override
+  String get sqForecastCycle =>
+      'Used to forecast your cycle phase and upcoming period.';
+
+  @override
+  String get sqCustomizeFeed =>
+      'Customize your tracking feed and daily recommendations.';
+
+  @override
+  String get sqContraceptionInfluences =>
+      'Contraception influences cycle symptoms and bleeding patterns.';
+
+  @override
+  String get sqHomeShowsCards =>
+      'Your home page shows the cards for what you track.';
+
+  @override
+  String get sqSpecializedTrackers =>
+      'Enables specialized trackers and clinical insights.';
+
+  @override
+  String get sqMedicationLogs => 'Helps tailor medication and protocol logs.';
+
+  @override
+  String get sqWhatHelpWith => 'What would you like help with?';
+
+  @override
+  String get sqHomeShowsPick =>
+      'Your home page shows the cards for what you pick.';
+
+  @override
+  String get sqFertilityTimelines =>
+      'Adapts fertility timelines and proactive guidance.';
+
+  @override
+  String get sqSelectBiomarkerTrack =>
+      'Select the primary biomarker you track.';
+
+  @override
+  String get sqHormoneSupport =>
+      'Personalizes protocols and hormone support tracking.';
+
+  @override
+  String get sqGestationalAge =>
+      'Calculates weekly gestational age and baby milestones.';
+
+  @override
+  String get sqEducationalPacing =>
+      'Customizes educational pacing and milestone insights.';
+
+  @override
+  String get sqBabyDevelopment =>
+      'Prioritize baby development, nutrition, and wellness.';
+
+  @override
+  String get sqMaternalHealing =>
+      'Drives maternal healing recovery and infant milestones.';
+
+  @override
+  String get sqHydrationFeeding => 'Adapts hydration targets and feeding logs.';
+
+  @override
+  String get sqPostpartumSupport =>
+      'Customize maternal postpartum recovery support.';
+
+  @override
+  String get sqRecoveryIncluded =>
+      'Recovery included. Your home page shows what you track.';
+
+  @override
+  String get sqMenstrualRhythms => 'Tracks fluctuations in menstrual rhythms.';
+
+  @override
+  String get sqProactiveInsights =>
+      'Saves priorities for proactive daily insights.';
+
+  @override
+  String get sqPostmenopausalFocus =>
+      'Determines postmenopausal health focus areas.';
+
+  @override
+  String get sqSelectAllCare =>
+      'Select all that apply to personalize your care.';
+
+  @override
+  String get sqHealthyAgeing => 'Tailor your healthy ageing companion feed.';
+
+  @override
+  String get sqCompanionCards => 'Personalizes daily companion cards.';
+
+  @override
+  String get onbOnDeviceEncryption => 'On-Device Encryption';
+
+  @override
+  String get onbZeroDataSelling => 'Zero Data Selling';
+
+  @override
+  String get onbCompleteSovereignty => 'Complete Sovereignty';
+
+  @override
+  String get onbPleaseUpdate => 'Please update Blushy';
+
+  @override
+  String get onbAdaptsToYou => 'Adapts To You';
+
+  @override
+  String get onbDailyWellnessCare => 'Daily Wellness Care';
+
+  @override
+  String get onbPrivateConfidential => 'Private & Confidential';
+
+  @override
+  String get onbSafeSpace => 'A safe space to reflect without judgment.';
+
+  @override
+  String get onbWhatChanges => 'What changes have you noticed?';
+
+  @override
+  String get onbFeelConfident => 'What would help you feel most confident?';
+
+  @override
+  String get onbHowPredictable => 'How predictable are your periods?';
+
+  @override
+  String get onbWhichNotice => 'Which of these do you notice?';
+
+  @override
+  String get onbSelectAllGoals =>
+      'Select all goals that apply to your journey.';
+
+  @override
+  String get onbAddEarlierPeriod => '+ Add earlier period date';
+
+  @override
+  String get onbDocsyPrioritizes =>
+      'Docsy prioritizes these on your home dashboard.';
+
+  @override
+  String get onbConditionModules =>
+      'Helps tailor condition-specific tracking modules.';
+
+  @override
+  String get onbDocsyAdaptsCards =>
+      'Docsy adapts tracking cards to prioritize these.';
+
+  @override
+  String get onbWhatSupport => 'What support would help most?';
+
+  @override
+  String get onbTailorHormonal =>
+      'Tailor your hormonal health tracking workspace.';
+
+  @override
+  String get onbSelectBiomarker => 'Select the primary biomarker you observe.';
+
+  @override
+  String get onbWhichSigns => 'Which bodily signs do you notice?';
+
+  @override
+  String get onbConceptionPriorities => 'What are your conception priorities?';
+
+  @override
+  String get onbWhatSymptoms => 'What symptoms are you experiencing?';
+
+  @override
+  String get onbCustomizePregnancy =>
+      'Customize your pregnancy journey preferences.';
+
+  @override
+  String get onbTailorPostpartum =>
+      'Tailor your postpartum recovery workspace.';
+
+  @override
+  String get onbHowHealing => 'How is your body healing?';
+
+  @override
+  String get onbUsingTherapy => 'Are you using any therapy or support?';
+
+  @override
+  String get onbSavesPriorities =>
+      'Saves priorities for home insights and tracking.';
+
+  @override
+  String get onbSelectAllComfort =>
+      'Select all that affect your daily comfort.';
+
+  @override
+  String get vnRecordPrompt =>
+      'Please record or write a short reflection note.';
+
+  @override
+  String get vnSaveError => 'Could not save your reflection. Please try again.';
+
+  @override
+  String get vnSaved => 'Saved to your journal.';
+
+  @override
+  String get vnReRecord => 'Re-record';
+
+  @override
+  String get dsNothingToSave =>
+      'Nothing left to save. Keep at least one entry.';
+
+  @override
+  String get dsSummarySaved => 'Summary saved.';
+
+  @override
+  String get dsNothingToShare =>
+      'Nothing left to share. Keep at least one entry.';
+
+  @override
+  String get dsSummaryCopied => 'Summary copied.';
+
+  @override
+  String get dsForAppointment => 'For your appointment';
+
+  @override
+  String get dsCopy => 'Copy';
+
+  @override
+  String get dsChange => 'Change';
+
+  @override
+  String get dsIncludeScores => 'Include questionnaire scores';
+
+  @override
+  String get dsRemoveQuestion => 'Remove question';
+
+  @override
+  String get dsRaise => 'Something you want to raise';
+
+  @override
+  String get dsAddQuestion => 'Add question';
+
+  @override
+  String get ssSendBloom => 'Send a Bloom';
+
+  @override
+  String get ssWriteLetter => 'Write a Letter';
+
+  @override
+  String get ssWarmGesture => 'A Warm Gesture';
+
+  @override
+  String get ssSweetHug => 'Sweet hug & coffee';
+
+  @override
+  String get ssVoiceWhisper => 'Voice Whisper';
+
+  @override
+  String get ssAudioNote => 'Audio note';
+
+  @override
+  String get ssVibePulse => 'Vibe Pulse';
+
+  @override
+  String get ssShareEnergy => 'Share energy';
+
+  @override
+  String get ssLeaveNote => 'Leave a Note';
+
+  @override
+  String get ssPrivateChat => 'Private chat';
+
+  @override
+  String get ssWouldYouRather => 'Would You Rather? & Pillow Talk';
+
+  @override
+  String get ssPlanDate => 'Plan a Date & Book Seats';
+
+  @override
+  String get ssBloomsPostcards => 'Blooms & Postcards';
+
+  @override
+  String get ssTimeCapsuleLetters => 'Time Capsule Letters';
+
+  @override
+  String get ssLivingMemoryBook => 'Living Memory Book';
+
+  @override
+  String get ssConsentFirst => 'Consent-First Sharing';
+
+  @override
   String get ceRemindScreenshot => 'Remind to send screenshot 📸';
 
   @override

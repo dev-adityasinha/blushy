@@ -108,6 +108,534 @@ abstract class AppLocalizations {
     Locale('te'),
   ];
 
+  /// No description provided for @sqTailorGuidance.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll tailor helpful guidance to prepare you with confidence.'**
+  String get sqTailorGuidance;
+
+  /// No description provided for @sqBaselinePredictions.
+  ///
+  /// In en, this message translates to:
+  /// **'This sets baseline predictions and cycle health insights.'**
+  String get sqBaselinePredictions;
+
+  /// No description provided for @sqSelectAllPersonalize.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all that apply to personalize your dashboard.'**
+  String get sqSelectAllPersonalize;
+
+  /// No description provided for @sqPredictOvulation.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps predict ovulation and fertile phases accurately.'**
+  String get sqPredictOvulation;
+
+  /// No description provided for @sqForecastCycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Used to forecast your cycle phase and upcoming period.'**
+  String get sqForecastCycle;
+
+  /// No description provided for @sqCustomizeFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize your tracking feed and daily recommendations.'**
+  String get sqCustomizeFeed;
+
+  /// No description provided for @sqContraceptionInfluences.
+  ///
+  /// In en, this message translates to:
+  /// **'Contraception influences cycle symptoms and bleeding patterns.'**
+  String get sqContraceptionInfluences;
+
+  /// No description provided for @sqHomeShowsCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Your home page shows the cards for what you track.'**
+  String get sqHomeShowsCards;
+
+  /// No description provided for @sqSpecializedTrackers.
+  ///
+  /// In en, this message translates to:
+  /// **'Enables specialized trackers and clinical insights.'**
+  String get sqSpecializedTrackers;
+
+  /// No description provided for @sqMedicationLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps tailor medication and protocol logs.'**
+  String get sqMedicationLogs;
+
+  /// No description provided for @sqWhatHelpWith.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like help with?'**
+  String get sqWhatHelpWith;
+
+  /// No description provided for @sqHomeShowsPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Your home page shows the cards for what you pick.'**
+  String get sqHomeShowsPick;
+
+  /// No description provided for @sqFertilityTimelines.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapts fertility timelines and proactive guidance.'**
+  String get sqFertilityTimelines;
+
+  /// No description provided for @sqSelectBiomarkerTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the primary biomarker you track.'**
+  String get sqSelectBiomarkerTrack;
+
+  /// No description provided for @sqHormoneSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalizes protocols and hormone support tracking.'**
+  String get sqHormoneSupport;
+
+  /// No description provided for @sqGestationalAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculates weekly gestational age and baby milestones.'**
+  String get sqGestationalAge;
+
+  /// No description provided for @sqEducationalPacing.
+  ///
+  /// In en, this message translates to:
+  /// **'Customizes educational pacing and milestone insights.'**
+  String get sqEducationalPacing;
+
+  /// No description provided for @sqBabyDevelopment.
+  ///
+  /// In en, this message translates to:
+  /// **'Prioritize baby development, nutrition, and wellness.'**
+  String get sqBabyDevelopment;
+
+  /// No description provided for @sqMaternalHealing.
+  ///
+  /// In en, this message translates to:
+  /// **'Drives maternal healing recovery and infant milestones.'**
+  String get sqMaternalHealing;
+
+  /// No description provided for @sqHydrationFeeding.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapts hydration targets and feeding logs.'**
+  String get sqHydrationFeeding;
+
+  /// No description provided for @sqPostpartumSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize maternal postpartum recovery support.'**
+  String get sqPostpartumSupport;
+
+  /// No description provided for @sqRecoveryIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery included. Your home page shows what you track.'**
+  String get sqRecoveryIncluded;
+
+  /// No description provided for @sqMenstrualRhythms.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracks fluctuations in menstrual rhythms.'**
+  String get sqMenstrualRhythms;
+
+  /// No description provided for @sqProactiveInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves priorities for proactive daily insights.'**
+  String get sqProactiveInsights;
+
+  /// No description provided for @sqPostmenopausalFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'Determines postmenopausal health focus areas.'**
+  String get sqPostmenopausalFocus;
+
+  /// No description provided for @sqSelectAllCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all that apply to personalize your care.'**
+  String get sqSelectAllCare;
+
+  /// No description provided for @sqHealthyAgeing.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailor your healthy ageing companion feed.'**
+  String get sqHealthyAgeing;
+
+  /// No description provided for @sqCompanionCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalizes daily companion cards.'**
+  String get sqCompanionCards;
+
+  /// No description provided for @onbOnDeviceEncryption.
+  ///
+  /// In en, this message translates to:
+  /// **'On-Device Encryption'**
+  String get onbOnDeviceEncryption;
+
+  /// No description provided for @onbZeroDataSelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero Data Selling'**
+  String get onbZeroDataSelling;
+
+  /// No description provided for @onbCompleteSovereignty.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Sovereignty'**
+  String get onbCompleteSovereignty;
+
+  /// No description provided for @onbPleaseUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Please update Blushy'**
+  String get onbPleaseUpdate;
+
+  /// No description provided for @onbAdaptsToYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapts To You'**
+  String get onbAdaptsToYou;
+
+  /// No description provided for @onbDailyWellnessCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Wellness Care'**
+  String get onbDailyWellnessCare;
+
+  /// No description provided for @onbPrivateConfidential.
+  ///
+  /// In en, this message translates to:
+  /// **'Private & Confidential'**
+  String get onbPrivateConfidential;
+
+  /// No description provided for @onbSafeSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'A safe space to reflect without judgment.'**
+  String get onbSafeSpace;
+
+  /// No description provided for @onbWhatChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'What changes have you noticed?'**
+  String get onbWhatChanges;
+
+  /// No description provided for @onbFeelConfident.
+  ///
+  /// In en, this message translates to:
+  /// **'What would help you feel most confident?'**
+  String get onbFeelConfident;
+
+  /// No description provided for @onbHowPredictable.
+  ///
+  /// In en, this message translates to:
+  /// **'How predictable are your periods?'**
+  String get onbHowPredictable;
+
+  /// No description provided for @onbWhichNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Which of these do you notice?'**
+  String get onbWhichNotice;
+
+  /// No description provided for @onbSelectAllGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all goals that apply to your journey.'**
+  String get onbSelectAllGoals;
+
+  /// No description provided for @onbAddEarlierPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'+ Add earlier period date'**
+  String get onbAddEarlierPeriod;
+
+  /// No description provided for @onbDocsyPrioritizes.
+  ///
+  /// In en, this message translates to:
+  /// **'Docsy prioritizes these on your home dashboard.'**
+  String get onbDocsyPrioritizes;
+
+  /// No description provided for @onbConditionModules.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps tailor condition-specific tracking modules.'**
+  String get onbConditionModules;
+
+  /// No description provided for @onbDocsyAdaptsCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Docsy adapts tracking cards to prioritize these.'**
+  String get onbDocsyAdaptsCards;
+
+  /// No description provided for @onbWhatSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'What support would help most?'**
+  String get onbWhatSupport;
+
+  /// No description provided for @onbTailorHormonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailor your hormonal health tracking workspace.'**
+  String get onbTailorHormonal;
+
+  /// No description provided for @onbSelectBiomarker.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the primary biomarker you observe.'**
+  String get onbSelectBiomarker;
+
+  /// No description provided for @onbWhichSigns.
+  ///
+  /// In en, this message translates to:
+  /// **'Which bodily signs do you notice?'**
+  String get onbWhichSigns;
+
+  /// No description provided for @onbConceptionPriorities.
+  ///
+  /// In en, this message translates to:
+  /// **'What are your conception priorities?'**
+  String get onbConceptionPriorities;
+
+  /// No description provided for @onbWhatSymptoms.
+  ///
+  /// In en, this message translates to:
+  /// **'What symptoms are you experiencing?'**
+  String get onbWhatSymptoms;
+
+  /// No description provided for @onbCustomizePregnancy.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize your pregnancy journey preferences.'**
+  String get onbCustomizePregnancy;
+
+  /// No description provided for @onbTailorPostpartum.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailor your postpartum recovery workspace.'**
+  String get onbTailorPostpartum;
+
+  /// No description provided for @onbHowHealing.
+  ///
+  /// In en, this message translates to:
+  /// **'How is your body healing?'**
+  String get onbHowHealing;
+
+  /// No description provided for @onbUsingTherapy.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you using any therapy or support?'**
+  String get onbUsingTherapy;
+
+  /// No description provided for @onbSavesPriorities.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves priorities for home insights and tracking.'**
+  String get onbSavesPriorities;
+
+  /// No description provided for @onbSelectAllComfort.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all that affect your daily comfort.'**
+  String get onbSelectAllComfort;
+
+  /// No description provided for @vnRecordPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Please record or write a short reflection note.'**
+  String get vnRecordPrompt;
+
+  /// No description provided for @vnSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your reflection. Please try again.'**
+  String get vnSaveError;
+
+  /// No description provided for @vnSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to your journal.'**
+  String get vnSaved;
+
+  /// No description provided for @vnReRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-record'**
+  String get vnReRecord;
+
+  /// No description provided for @dsNothingToSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing left to save. Keep at least one entry.'**
+  String get dsNothingToSave;
+
+  /// No description provided for @dsSummarySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary saved.'**
+  String get dsSummarySaved;
+
+  /// No description provided for @dsNothingToShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing left to share. Keep at least one entry.'**
+  String get dsNothingToShare;
+
+  /// No description provided for @dsSummaryCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary copied.'**
+  String get dsSummaryCopied;
+
+  /// No description provided for @dsForAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'For your appointment'**
+  String get dsForAppointment;
+
+  /// No description provided for @dsCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get dsCopy;
+
+  /// No description provided for @dsChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get dsChange;
+
+  /// No description provided for @dsIncludeScores.
+  ///
+  /// In en, this message translates to:
+  /// **'Include questionnaire scores'**
+  String get dsIncludeScores;
+
+  /// No description provided for @dsRemoveQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove question'**
+  String get dsRemoveQuestion;
+
+  /// No description provided for @dsRaise.
+  ///
+  /// In en, this message translates to:
+  /// **'Something you want to raise'**
+  String get dsRaise;
+
+  /// No description provided for @dsAddQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Add question'**
+  String get dsAddQuestion;
+
+  /// No description provided for @ssSendBloom.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a Bloom'**
+  String get ssSendBloom;
+
+  /// No description provided for @ssWriteLetter.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a Letter'**
+  String get ssWriteLetter;
+
+  /// No description provided for @ssWarmGesture.
+  ///
+  /// In en, this message translates to:
+  /// **'A Warm Gesture'**
+  String get ssWarmGesture;
+
+  /// No description provided for @ssSweetHug.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweet hug & coffee'**
+  String get ssSweetHug;
+
+  /// No description provided for @ssVoiceWhisper.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Whisper'**
+  String get ssVoiceWhisper;
+
+  /// No description provided for @ssAudioNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio note'**
+  String get ssAudioNote;
+
+  /// No description provided for @ssVibePulse.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibe Pulse'**
+  String get ssVibePulse;
+
+  /// No description provided for @ssShareEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'Share energy'**
+  String get ssShareEnergy;
+
+  /// No description provided for @ssLeaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a Note'**
+  String get ssLeaveNote;
+
+  /// No description provided for @ssPrivateChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Private chat'**
+  String get ssPrivateChat;
+
+  /// No description provided for @ssWouldYouRather.
+  ///
+  /// In en, this message translates to:
+  /// **'Would You Rather? & Pillow Talk'**
+  String get ssWouldYouRather;
+
+  /// No description provided for @ssPlanDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a Date & Book Seats'**
+  String get ssPlanDate;
+
+  /// No description provided for @ssBloomsPostcards.
+  ///
+  /// In en, this message translates to:
+  /// **'Blooms & Postcards'**
+  String get ssBloomsPostcards;
+
+  /// No description provided for @ssTimeCapsuleLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Capsule Letters'**
+  String get ssTimeCapsuleLetters;
+
+  /// No description provided for @ssLivingMemoryBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Living Memory Book'**
+  String get ssLivingMemoryBook;
+
+  /// No description provided for @ssConsentFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent-First Sharing'**
+  String get ssConsentFirst;
+
   /// No description provided for @ceRemindScreenshot.
   ///
   /// In en, this message translates to:
