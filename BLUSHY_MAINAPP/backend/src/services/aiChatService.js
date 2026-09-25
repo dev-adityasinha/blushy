@@ -252,9 +252,22 @@ ${messagesText}`,
     if (env.aiChatApiKey) {
       try {
         const isTtc = stageName.toLowerCase().includes('ttc') || stageName.toLowerCase().includes('conceive') || stageName.toLowerCase().includes('fertility');
+        const answers = user?.onboardingAnswers || user?.onboarding_answers || {};
+        const preferredName = answers.preferred_name || user?.displayName || null;
+        const userGoals = Array.isArray(answers.goals) ? answers.goals.join(', ') : (typeof answers.goals === 'string' && answers.goals.trim().length > 0 ? answers.goals : null);
+        const userConditions = Array.isArray(answers.conditions) ? answers.conditions.join(', ') : (typeof answers.conditions === 'string' && answers.conditions.trim().length > 0 ? answers.conditions : null);
+        const userTrackedSymptoms = Array.isArray(answers.symptoms) ? answers.symptoms.join(', ') : (typeof answers.symptoms === 'string' && answers.symptoms.trim().length > 0 ? answers.symptoms : null);
+        const dueDate = answers.due_date || null;
+        const babyBirthDate = answers.baby_birth_date || null;
 
         const prompt = `You are Docsy, an empathetic, evidence-informed, human-first women's health and wellness AI companion in the Blushy app.
-Generate a dynamic daily health reflection for a user in the "${stageName}" life stage${cycleDay ? `, Cycle Day ${cycleDay} (${phaseName || 'Active Phase'})` : ''}.
+Generate a dynamic, scientifically grounded daily health reflection for a user in the "${stageName}" life stage${cycleDay ? `, Cycle Day ${cycleDay} (${phaseName || 'Active Phase'})` : ''}.
+${preferredName ? `User preferred name: ${preferredName}.` : ''}
+${userGoals ? `Primary wellbeing goals: ${userGoals}.` : ''}
+${userConditions ? `Diagnosed / reported conditions: ${userConditions}.` : ''}
+${userTrackedSymptoms ? `Key symptoms she tracks: ${userTrackedSymptoms}.` : ''}
+${dueDate ? `Pregnancy due date: ${dueDate}.` : ''}
+${babyBirthDate ? `Postpartum baby birth date: ${babyBirthDate}.` : ''}
 ${symptoms.length > 0 ? `Recently logged signals: ${symptoms.join(', ')}.` : ''}
 ${mood ? `Current mood: ${mood}.` : ''}
 ${recentTopics.length > 0 ? `In her recent chats with you she has been thinking about: ${recentTopics.join('; ')}. Gently connect today's reflection to what is on her mind, without repeating her words back verbatim.` : ''}

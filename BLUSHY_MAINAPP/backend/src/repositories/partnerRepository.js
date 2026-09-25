@@ -1764,13 +1764,13 @@ async function checkDistributedRateLimit({ key, limit, windowSeconds }) {
   return true;
 }
 
-async function createShareableInvite({ senderUserId, tokenHash, expiresAt }) {
+async function createShareableInvite({ senderUserId, tokenHash, expiresAt, receiverEmail = null }) {
   const invitationId = randomUUID();
   const doc = {
     invitation_id: invitationId,
     sender_user_id: senderUserId,
     receiver_user_id: null,
-    receiver_email: null,
+    receiver_email: receiverEmail,
     invite_token: randomUUID(),
     invite_token_hash: tokenHash,
     status: 'pending',

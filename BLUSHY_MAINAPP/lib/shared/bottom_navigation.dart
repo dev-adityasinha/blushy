@@ -129,7 +129,7 @@ class BlushyBottomNavigation extends StatelessWidget {
             children: [
               DocsyIcon(
                 size: 22,
-                color: isActive ? activeColor : const Color(0xFF645A60),
+                color: const Color(0xFFDD0D22),
               ),
               const SizedBox(height: 3),
               DocsyWordmark(

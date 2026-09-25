@@ -64,40 +64,75 @@ function buildOnboardingSummary(answers) {
     return '';
   }
 
+  function formatValue(value) {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+    if (Array.isArray(value) && value.length > 0) {
+      const formattedItems = value
+        .map((item) => (typeof item === 'string' ? item.trim() : String(item ?? '')))
+        .filter((item) => item.length > 0);
+      return formattedItems.join(', ');
+    }
+    return null;
+  }
+
   const priorityKeys = [
     'preferred_name',
     'date_of_birth',
+    'life_stage',
+    'active_life_stages',
+    'goals',
+    'symptoms',
+    'conditions',
+    'due_date',
+    'baby_birth_date',
+    'last_period',
+    'cycle_length',
+    'period_duration_days',
+    'contraception_choice',
+    'reproductive_cycle_type',
+    'hormonal_treatment',
+    'ttc_duration',
+    'ttc_tracking_method',
+    'ttc_treatment',
+    'postpartum_feeding',
+    'perimenopause_cycle_change',
+    'menopause_duration',
+    'not_started_learn',
+    'first_period_start_time',
     'medication_currently_taking',
     'taking_any_medication',
     'medication_type',
-    'taking_any_medication_type',
-    'medication_consistency',
-    'medication_cycle_impact',
   ];
   const seenKeys = new Set();
   const orderedEntries = [];
 
   for (const key of priorityKeys) {
-    const value = answers[key];
-    if (typeof value === 'string' && value.trim().length > 0) {
-      orderedEntries.push([key, value]);
-      seenKeys.add(key);
+    if (answers[key] !== undefined && answers[key] !== null) {
+      const formatted = formatValue(answers[key]);
+      if (formatted && formatted.length > 0) {
+        orderedEntries.push([key, formatted]);
+        seenKeys.add(key);
+      }
     }
   }
 
-  for (const entry of Object.entries(answers)) {
-    const [key, value] = entry;
+  for (const [key, rawValue] of Object.entries(answers)) {
     if (seenKeys.has(key)) {
       continue;
     }
-    if (typeof key === 'string' && key.trim().length > 0 && typeof value === 'string' && value.trim().length > 0) {
-      orderedEntries.push(entry);
+    const formatted = formatValue(rawValue);
+    if (formatted && formatted.length > 0) {
+      orderedEntries.push([key, formatted]);
     }
   }
 
   const parts = orderedEntries
-    .filter(([key, value]) => typeof key === 'string' && key.trim().length > 0 && typeof value === 'string' && value.trim().length > 0)
-    .slice(0, 12)
+    .slice(0, 25)
     .map(([key, value]) => `${key.trim()}: ${value.trim()}`);
 
   return parts.join(' | ');

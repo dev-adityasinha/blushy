@@ -1,26 +1,19 @@
 import 'dart:async';
-import 'dart:math' show min;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../theme/colors.dart';
-import '../../../../core/state.dart';
 import '../../../../core/storage.dart';
 import '../../services/home_event_bus.dart';
 import '../../../sia/open_docsy.dart';
-import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
 import '../../view_models/cycle_view_model.dart';
 import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_sia_service.dart';
-import '../../home_screen.dart';
 import '../../widgets/cycle_tracker_image.dart';
 import '../../widgets/real_insights_list.dart';
-import '../../../../shared/docsy_avatar.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
-import 'health_library_section.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
 
@@ -74,15 +67,9 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
 
   // Real-time AI Companion (Docsy) State
   String? _dynamicDocsyNarrative;
-  String? _dynamicDocsyNote;
-  String? _dynamicDocsyHeadline;
-  bool _isLoadingAi = false;
 
-  // Interactive "What Are You Noticing?" & Body State
+  // Interactive Signals & Body State
   final Set<String> _selectedNoticings = <String>{};
-
-  // Life Mode (Dynamic Personalization)
-  String? _activeLifeMode;
 
   // Primary life focus: reorders the Daily Cycle Sync recommendations toward
   // what she cares about most. Persisted to UserStateStore.
@@ -90,6 +77,10 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
 
   // Functional work/life impact for today (feeds the doctor summary).
   String? _workImpact;
+
+  // Interactive Pillar in Daily Cycle Sync (Focus / Nourish / Move / Recharge)
+  String? _activePillar;
+  bool _isAiNarrativeExpanded = false;
 
   // Colors
   static const Color blushyPrimary = Color(0xFFDD0D22);
@@ -102,6 +93,13 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     if (_currentCycleDay <= _periodLength + 11) return 'Ovulatory Phase';
     return 'Luteal Phase';
   }
+
+  bool get _isMenstrualPhase => _currentCycleDay <= _periodLength;
+  bool get _isFollicularPhase =>
+      _currentCycleDay > _periodLength && _currentCycleDay <= _periodLength + 7;
+  bool get _isOvulatoryPhase =>
+      _currentCycleDay > _periodLength + 7 && _currentCycleDay <= _periodLength + 11;
+  bool get _isLutealPhase => _currentCycleDay > _periodLength + 11;
 
   /// The tracker's colour for the current phase, so the "Day N" number matches
   /// the arc and legend (Menstrual red, Follicular orange, Ovulatory yellow,
@@ -153,24 +151,20 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     try {
       // 1. Noticings
       final savedNoticings = UserStateStore.read('stage3_noticings');
-      if (savedNoticings is Map && savedNoticings['selected'] is List) {
+      if (savedNoticings['selected'] is List) {
         _selectedNoticings.clear();
-        _selectedNoticings.addAll((savedNoticings['selected'] as List).map((e) => e.toString()));
+        _selectedNoticings.addAll(
+          (savedNoticings['selected'] as List).map((e) => e.toString()),
+        );
       }
 
-      // 2. Life Mode
-      final savedMode = UserStateStore.read('stage3_life_mode');
-      if (savedMode is Map && savedMode['mode'] != null) {
-        _activeLifeMode = savedMode['mode'].toString();
-      }
-
-      // 3. Primary life focus.
+      // 2. Primary life focus.
       final savedFocus = UserStateStore.read('stage3_focus_mode');
       if (savedFocus['focus'] != null) {
         _focusMode = savedFocus['focus'].toString();
       }
 
-      // 4. Today's functional work/life impact.
+      // 3. Today's functional work/life impact.
       final today = DateTime.now().toIso8601String().split('T').first;
       final savedImpact = UserStateStore.read('stage3_work_impact_$today');
       if (savedImpact['impact'] != null) {
@@ -198,8 +192,6 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
 
   Future<void> _fetchDynamicAiInsights() async {
     if (!mounted) return;
-    setState(() => _isLoadingAi = true);
-
     try {
       final insights = await ApiSiaService().getHealthInsights(
         stage: 'living_with_my_cycle',
@@ -207,29 +199,20 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
         phase: _hasLoggedPeriod ? _currentPhaseName : null,
       );
       if (mounted && insights.isNotEmpty) {
-        final thought = insights['thought'] ?? insights['narrative'] ?? insights['summary'] ?? (insights['insights'] is List && (insights['insights'] as List).isNotEmpty ? (insights['insights'] as List).first.toString() : null);
-        final headline = insights['headline'];
-        final note = insights['note'] ?? insights['oneThingToKeepInMind'];
+        final thought = insights['thought'] ??
+            insights['narrative'] ??
+            insights['summary'] ??
+            (insights['insights'] is List && (insights['insights'] as List).isNotEmpty
+                ? (insights['insights'] as List).first.toString()
+                : null);
         if (thought is String && thought.trim().isNotEmpty) {
           setState(() {
             _dynamicDocsyNarrative = thought.trim();
           });
         }
-        if (headline is String && headline.trim().isNotEmpty) {
-          setState(() {
-            _dynamicDocsyHeadline = headline.trim();
-          });
-        }
-        if (note is String && note.trim().isNotEmpty) {
-          setState(() {
-            _dynamicDocsyNote = note.trim();
-          });
-        }
       }
     } catch (_) {
       // Graceful fallback
-    } finally {
-      if (mounted) setState(() => _isLoadingAi = false);
     }
   }
 
@@ -273,7 +256,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
           'periodStartDate': picked.toIso8601String().split('T').first,
           'loggedAt': now.toIso8601String(),
         });
-        final profile = Map<String, dynamic>.from(BlushyStorage.read('user_profile.json') ?? {});
+        final profile = Map<String, dynamic>.from(BlushyStorage.read('user_profile.json'));
         profile['lastPeriodStartDate'] = picked.toIso8601String().split('T').first;
         BlushyStorage.write('user_profile.json', profile);
       } catch (_) {}
@@ -293,22 +276,6 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
       );
       _fetchDynamicAiInsights();
     }
-  }
-
-  void _toggleNoticing(String signal) {
-    setState(() {
-      if (_selectedNoticings.contains(signal)) {
-        _selectedNoticings.remove(signal);
-      } else {
-        _selectedNoticings.add(signal);
-      }
-    });
-    try {
-      UserStateStore.write('stage3_noticings', {
-        'date': DateTime.now().toIso8601String().split('T').first,
-        'selected': _selectedNoticings.toList(),
-      });
-    } catch (_) {}
   }
 
   void _openDocsyWithPrompt(BuildContext context, String prompt) {
@@ -367,7 +334,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     }
 
     return Padding(
-      padding: const EdgeInsets.only(left: 4, right: 4, bottom: 18),
+      padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -414,298 +381,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   }
 
   // ════════════════════════════════════════════════════════════════
-  // 02 — THE HERO: "TODAY WITH DOCSY" ⭐ (Human-First AI Intelligence)
-  // ════════════════════════════════════════════════════════════════
-  Widget _buildTodayWithDocsyHero(BuildContext context) {
-    String phaseHeadline;
-    String phaseNarrative;
-    String oneThingToKeepInMind;
-
-    if (!_hasLoggedPeriod) {
-      phaseHeadline = 'Living with your cycle.';
-      phaseNarrative = 'Docsy is ready to tune into your rhythm. Log your latest period date to unlock tailored daily focus, nutrition, energy forecasts, and movement advice.';
-      oneThingToKeepInMind = 'Cycle tracking helps Blushy understand your baseline energy and mood patterns.';
-    } else if (_currentCycleDay <= _periodLength) {
-      phaseHeadline = 'Menstrual phase • hormones at baseline.';
-      phaseNarrative = 'Estrogen and progesterone are at their lowest point of the cycle, so stamina and mood can dip. This is a valid low-energy window, not an off day.';
-      oneThingToKeepInMind = 'Warm fluids and slower breathing ease uterine contractions directly; genuine rest restores.';
-    } else if (_currentCycleDay <= _periodLength + 7) {
-      phaseHeadline = 'Follicular phase • estrogen rising.';
-      phaseNarrative = 'Rising estrogen enhances verbal memory and cognitive endurance. A strong window for high-stakes meetings, learning, and creative problem-solving.';
-      oneThingToKeepInMind = 'Front-load your hardest thinking and new projects while focus is climbing.';
-    } else if (_currentCycleDay <= _periodLength + 11) {
-      phaseHeadline = 'Ovulatory phase • estrogen & testosterone peak.';
-      phaseNarrative = 'Peak estrogen and a testosterone bump lift verbal fluency, confidence and social ease. Presentations, negotiations and connecting tend to land well now.';
-      oneThingToKeepInMind = 'Feeling capable is not a reason to over-commit — protect your priorities.';
-    } else {
-      phaseHeadline = 'Luteal phase • progesterone rising.';
-      phaseNarrative = 'Rising progesterone sharpens attention to detail while gently dialing back outward energy. Good for reviewing, refining and finishing work.';
-      oneThingToKeepInMind = 'Steady blood sugar with protein and complex carbs, and protect your evening wind-down.';
-    }
-
-    if (_dynamicDocsyHeadline != null && _dynamicDocsyHeadline!.isNotEmpty) {
-      phaseHeadline = _dynamicDocsyHeadline!;
-    }
-
-    if (_dynamicDocsyNarrative != null && _dynamicDocsyNarrative!.isNotEmpty) {
-      phaseNarrative = _dynamicDocsyNarrative!;
-    }
-
-    if (_dynamicDocsyNote != null && _dynamicDocsyNote!.isNotEmpty) {
-      oneThingToKeepInMind = _dynamicDocsyNote!;
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: cardBorderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top identity badge - responsive Wrap prevents any right overflow
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const DocsyAvatar(
-                    size: 22,
-                    color: blushyPrimary,
-                    hasBackground: true,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(AppLocalizations.of(context).lwmcTodayWithDocsy,
-                    style: GoogleFonts.manrope(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      color: blushyPrimary,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
-              ),
-              InkWell(
-                onTap: () => _openSomethingFeelsDifferentSheet(context),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7F2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFFDFC2)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.help_outline_rounded, size: 12, color: Color(0xFFD97706)),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Something feels off?',
-                        style: GoogleFonts.manrope(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFFD97706),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Dynamic Phase Headline
-          Text(
-            phaseHeadline,
-            style: GoogleFonts.cormorantGaramond(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF221510),
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Human narrative
-          Text(
-            phaseNarrative,
-            style: GoogleFonts.manrope(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF4A3E45),
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // One Thing to Keep in Mind
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF7F2),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFEDE4DC)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('💡', style: TextStyle(fontSize: 14)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        color: const Color(0xFF221510),
-                        height: 1.4,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'One thing I’d keep in mind: ',
-                          style: GoogleFonts.manrope(
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF221510),
-                          ),
-                        ),
-                        TextSpan(
-                          text: oneThingToKeepInMind,
-                          style: GoogleFonts.manrope(
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF5E5057),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Primary Action: Ask Docsy
-          InkWell(
-            onTap: () {
-              _openDocsyWithPrompt(
-                context,
-                'Docsy, I’m on Day $_currentCycleDay ($_currentPhaseName). Can you help me navigate my energy, nutrition, and work today?',
-              );
-            },
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-              decoration: BoxDecoration(
-                color: blushyPrimary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.chat_bubble_outline_rounded, size: 14, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text(AppLocalizations.of(context).lwmcAskDocsy,
-                    style: GoogleFonts.manrope(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // 3 Quick Contextual AI Prompts Underneath
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                _buildQuickDocsyChip(
-                  label: 'Why am I feeling this way?',
-                  onTap: () => _openDocsyWithPrompt(
-                    context,
-                    'Why am I feeling this way on Day $_currentCycleDay ($_currentPhaseName)? Connect this with my hormones and sleep.',
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _buildQuickDocsyChip(
-                  label: 'Plan my day',
-                  onTap: () => _openDocsyWithPrompt(
-                    context,
-                    'Docsy, help me plan my work and workout for today around my Day $_currentCycleDay ($_currentPhaseName) energy.',
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _buildQuickDocsyChip(
-                  label: 'What should I eat today?',
-                  onTap: () => _openDocsyWithPrompt(
-                    context,
-                    'What are the best foods and meals to nourish my body during the $_currentPhaseName?',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickDocsyChip({
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFAF7F2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFEDE4DC)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.auto_awesome, size: 11, color: blushyPrimary),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: GoogleFonts.manrope(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF221510),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // 03 — YOUR CYCLE (Bézier Track Context)
+  // 02 — THE HERO: CYCLE TRACKER & INTEGRATED FORECAST TIMELINE
   // ════════════════════════════════════════════════════════════════
   Widget _buildCycleTrackerCard(BuildContext context) {
     final int daysLeft = (_cycleLength - _currentCycleDay).clamp(0, _cycleLength);
@@ -728,7 +404,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Top Row: Log Period Action Button aligned right
+          // Top Row: Aligned Action Button
           Align(
             alignment: Alignment.topRight,
             child: InkWell(
@@ -751,7 +427,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      _hasLoggedPeriod ? 'Log your period' : '+ Log your period',
+                      _hasLoggedPeriod ? 'Update period' : '+ Log last period',
                       style: GoogleFonts.manrope(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -770,7 +446,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
             ),
           ),
 
-          // Day Count & Phase Title (Large, catchy Day in Cormorant & clean modern digit)
+          // Day Count & Phase Title
           if (_hasLoggedPeriod) ...[
             RichText(
               text: TextSpan(
@@ -857,7 +533,8 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
               ),
             ),
             const SizedBox(height: 2),
-            Text(AppLocalizations.of(context).lwmcNoPeriodLoggedYet,
+            Text(
+              AppLocalizations.of(context).lwmcNoPeriodLoggedYet,
               style: GoogleFonts.cormorantGaramond(
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
@@ -866,17 +543,37 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                 letterSpacing: -0.2,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
             InkWell(
               onTap: () => _openLogPeriodDialog(context),
-              child: Text(
-                'Log your period to track your cycle & fertile phases',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.manrope(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                decoration: BoxDecoration(
                   color: blushyPrimary,
-                  decoration: TextDecoration.underline,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: blushyPrimary.withValues(alpha: 0.22),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, size: 14, color: Colors.white),
+                    const SizedBox(width: 7),
+                    Text(
+                      'Log Your Period',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -889,12 +586,11 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
             cycleLength: _cycleLength,
             periodLength: _periodLength,
             isLogged: _hasLoggedPeriod,
-            // Tapping the tracker explains where she is, rather than
-            // reopening the date picker she just used. With nothing
-            // logged there is no phase to explain, so the tap still
-            // offers to log -- which is the only useful thing then.
             onTap: () => _hasLoggedPeriod
-                ? _openDocsyWithPrompt(context, 'I am on Day $_currentCycleDay ($_currentPhaseName). What is happening in my body in this phase?')
+                ? _openDocsyWithPrompt(
+                    context,
+                    'I am on Day $_currentCycleDay ($_currentPhaseName). What is happening in my body in this phase?',
+                  )
                 : _openLogPeriodDialog(context),
           ),
           const SizedBox(height: 12),
@@ -912,7 +608,6 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
               color: const Color(0xFF7A6B72),
             ),
           ),
-          const SizedBox(height: 10),
 
           if (_hasLoggedPeriod) ...[
             const SizedBox(height: 10),
@@ -932,13 +627,84 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                 ],
               ),
             ),
+
+            // Integrated 2-Week Forecast Bar inside Hero
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF7F2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cardBorderColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.timeline_rounded, size: 14, color: Color(0xFF7A6B72)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'UPCOMING HORMONAL SHIFTS',
+                            style: GoogleFonts.manrope(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              color: const Color(0xFF7A6B72),
+                            ),
+                          ),
+                        ],
+                      ),
+                      InkWell(
+                        onTap: () => _checkMyDates(context),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: blushyPrimary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.flight_takeoff_rounded, size: 12, color: blushyPrimary),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Check Dates',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: blushyPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: _buildForecastChipsList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
           const SizedBox(height: 12),
 
           const Divider(height: 1, thickness: 0.8, color: Color(0xFFECE4DC)),
           const SizedBox(height: 10),
 
-          // Insights Row
+          // Quick Phase Insights Tap Row
           InkWell(
             onTap: () {
               if (_hasLoggedPeriod) {
@@ -1008,38 +774,214 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   }
 
   // ════════════════════════════════════════════════════════════════
-  // CYCLE FOCUS MODE (primary life focus → reorders the Daily Cycle Sync)
+  // 03 — TODAY'S LOG & FUNCTIONAL WORK IMPACT
+  // ════════════════════════════════════════════════════════════════
+  Widget _buildWorkImpactLog(BuildContext context) {
+    const levels = [
+      {
+        'id': 'normal',
+        'label': 'Normal Focus',
+        'icon': Icons.bolt_rounded,
+        'color': Color(0xFF0D9488),
+        'tint': Color(0xFFCCFBF1),
+      },
+      {
+        'id': 'breaks',
+        'label': 'Needed Breaks',
+        'icon': Icons.coffee_rounded,
+        'color': Color(0xFFD97706),
+        'tint': Color(0xFFFEF3C7),
+      },
+      {
+        'id': 'fog',
+        'label': 'Brain Fog',
+        'icon': Icons.cloud_rounded,
+        'color': Color(0xFF7209B7),
+        'tint': Color(0xFFF3E8FF),
+      },
+      {
+        'id': 'bedrest',
+        'label': 'Rest Needed',
+        'icon': Icons.bed_rounded,
+        'color': Color(0xFFDD0D22),
+        'tint': Color(0xFFFFECEB),
+      },
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cardBorderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF3E8FF),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.psychology_outlined, size: 14, color: Color(0xFF7209B7)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'DAILY WORK & ENERGY IMPACT',
+                      style: GoogleFonts.manrope(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: const Color(0xFF221510),
+                      ),
+                    ),
+                    Text(
+                      'Single tap to log today’s functional capacity',
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        color: const Color(0xFF7A6B72),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: levels.map((lvl) {
+                final id = lvl['id'] as String;
+                final label = lvl['label'] as String;
+                final icon = lvl['icon'] as IconData;
+                final color = lvl['color'] as Color;
+                final tint = lvl['tint'] as Color;
+                final selected = _workImpact == id;
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() => _workImpact = id);
+                      final today = DateTime.now().toIso8601String().split('T').first;
+                      UserStateStore.write(
+                        'stage3_work_impact_$today',
+                        {'impact': id, 'label': label},
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(14),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: selected ? blushySoftPink : const Color(0xFFFAF7F2),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: selected ? blushyPrimary : cardBorderColor,
+                          width: selected ? 1.4 : 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: selected ? Colors.white : tint,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(icon, size: 12, color: selected ? blushyPrimary : color),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            label,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                              color: selected ? blushyPrimary : const Color(0xFF221510),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Divider(height: 1, thickness: 0.8, color: Color(0xFFF3EEE9)),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: () => _openTellDocsyNaturalSheet(context),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+              child: Row(
+                children: [
+                  const Icon(Icons.chat_bubble_outline_rounded, size: 13, color: blushyPrimary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Tell Docsy in your own words',
+                    style: GoogleFonts.manrope(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: blushyPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.chevron_right_rounded, size: 14, color: blushyPrimary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 04 — DAILY CYCLE SYNC (FOCUS / NOURISH / MOVE + CONNECT / RESET)
   // ════════════════════════════════════════════════════════════════
   static const List<Map<String, String>> _focusOptions = [
-    {'id': 'career', 'label': 'Career & Energy', 'emoji': '💼'},
-    {'id': 'fitness', 'label': 'Fitness & Metabolism', 'emoji': '💪'},
-    {'id': 'pms', 'label': 'PMS & Symptom Relief', 'emoji': '🌡️'},
-    {'id': 'fertility', 'label': 'Fertility Awareness', 'emoji': '🌱'},
+    {'id': 'career', 'label': 'Career & Focus', 'emoji': '💼'},
+    {'id': 'fitness', 'label': 'Fitness & Body', 'emoji': '💪'},
+    {'id': 'pms', 'label': 'PMS & Relief', 'emoji': '🌡️'},
+    {'id': 'fertility', 'label': 'Natural Fertility', 'emoji': '🌱'},
   ];
 
   String _focusLabel() {
     for (final f in _focusOptions) {
       if (f['id'] == _focusMode) return f['label']!;
     }
-    return 'Career & Energy';
+    return 'Career & Focus';
   }
 
   String _workImpactLabel() {
     switch (_workImpact) {
       case 'normal':
-        return 'Normal productivity';
+        return 'Normal focus';
       case 'breaks':
         return 'Needed breaks';
       case 'fog':
         return 'Brain fog';
       case 'bedrest':
-        return 'Bed rest';
+        return 'Rest needed';
       default:
         return 'not logged';
     }
   }
 
-  /// The three primary cards (id + display name), ordered by her chosen focus.
   List<List<String>> _primaryOrderForFocus() {
     switch (_focusMode) {
       case 'fitness':
@@ -1053,7 +995,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     }
   }
 
-  Widget _buildFocusModeBar(BuildContext context) {
+  Widget _buildFocusModeSelector() {
     return SizedBox(
       height: 34,
       child: ListView(
@@ -1066,11 +1008,15 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
             padding: const EdgeInsets.only(right: 8),
             child: InkWell(
               onTap: () {
-                setState(() => _focusMode = id);
+                setState(() {
+                  _focusMode = id;
+                  _activePillar = _primaryOrderForFocus().first[0];
+                });
                 UserStateStore.write('stage3_focus_mode', {'focus': id});
               },
               borderRadius: BorderRadius.circular(20),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   color: selected ? blushySoftPink : Colors.white,
@@ -1088,8 +1034,8 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                     Text(
                       f['label']!,
                       style: GoogleFonts.manrope(
-                        fontSize: 11.5,
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 11,
+                        fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                         color: selected ? blushyPrimary : const Color(0xFF4A3E39),
                       ),
                     ),
@@ -1103,78 +1049,627 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     );
   }
 
-  // ════════════════════════════════════════════════════════════════
-  // FUNCTIONAL WORK/LIFE IMPACT LOG (feeds the doctor summary)
-  // ════════════════════════════════════════════════════════════════
-  Widget _buildWorkImpactLog(BuildContext context) {
-    const levels = [
-      {'id': 'normal', 'label': 'Normal Productivity'},
-      {'id': 'breaks', 'label': 'Needed Breaks'},
-      {'id': 'fog', 'label': 'Brain Fog'},
-      {'id': 'bedrest', 'label': 'Bed Rest'},
+  Widget _buildDailyCycleSyncHub(BuildContext context) {
+    if (!_hasLoggedPeriod) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildEyebrow('Daily Cycle Sync'),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFAF7F2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.sync_rounded, size: 16, color: blushyPrimary),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Cycle Syncing Unlocks With Your Period',
+                            style: GoogleFonts.cormorantGaramond(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF221510),
+                            ),
+                          ),
+                          Text(
+                            'Personalized Focus, Nourish and Move routines',
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              color: const Color(0xFF7A6B72),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Log your last period to unlock today's Focus, Nourish and "
+                  'Move recommendations, tuned to your hormonal rhythm.',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: const Color(0xFF7A6B72),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                InkWell(
+                  onTap: () => _openLogPeriodDialog(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: blushyPrimary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.water_drop_rounded, size: 13, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Log My Period',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    final destinations = [
+      {
+        'id': 'work',
+        'title': 'FOCUS',
+        'label': 'Focus',
+        'subtitle': 'Work pacing & mental stamina',
+        'icon': Icons.lightbulb_rounded,
+        'color': const Color(0xFFFF4A00),
+        'bg': const Color(0xFFFFEBE0),
+        'hormoneTag': _isMenstrualPhase
+            ? 'Baseline Hormones'
+            : (_isFollicularPhase
+                ? 'Estrogen Rising'
+                : (_isOvulatoryPhase
+                    ? 'Estrogen & Testosterone Peak'
+                    : 'Progesterone Dominant')),
+        'quickCue': _isMenstrualPhase
+            ? 'Quiet planning'
+            : (_isFollicularPhase
+                ? 'Creative momentum'
+                : (_isOvulatoryPhase
+                    ? 'Peak pitch clarity'
+                    : 'Methodical review')),
+        'highlights': [
+          {
+            'icon': Icons.track_changes_rounded,
+            'label': 'Priority',
+            'val': _isMenstrualPhase
+                ? 'Big-picture strategic planning'
+                : (_isFollicularPhase
+                    ? 'Launching projects & team brainstorming'
+                    : (_isOvulatoryPhase
+                        ? 'High-stakes pitches & presentations'
+                        : 'Error-checking & wrapping deliverables')),
+          },
+          {
+            'icon': Icons.timer_outlined,
+            'label': 'Pacing',
+            'val': _isMenstrualPhase
+                ? 'Low meeting density · protect deep hours'
+                : (_isFollicularPhase
+                    ? 'High cognitive stamina for collaboration'
+                    : (_isOvulatoryPhase
+                        ? 'Peak verbal clarity & social ease'
+                        : 'Quiet, methodical work blocks')),
+          },
+          {
+            'icon': Icons.psychology_outlined,
+            'label': 'Mindset',
+            'val': _isMenstrualPhase
+                ? 'Reflective & inward vision'
+                : (_isFollicularPhase
+                    ? 'Curious, creative & fast-moving'
+                    : (_isOvulatoryPhase
+                        ? 'Magnetic, outward & decisive'
+                        : 'Pragmatic & detail-sharp')),
+          },
+        ],
+        'prompt': 'Docsy, help me optimize my work tasks around my Day $_currentCycleDay ($_currentPhaseName) hormones.',
+      },
+      {
+        'id': 'eat',
+        'title': 'NOURISH',
+        'label': 'Nourish',
+        'subtitle': 'Metabolic fuel & cravings',
+        'icon': Icons.restaurant_rounded,
+        'color': const Color(0xFF0D9488),
+        'bg': const Color(0xFFCCFBF1),
+        'hormoneTag': _isMenstrualPhase
+            ? 'Iron & Blood Recovery'
+            : (_isFollicularPhase
+                ? 'Follicular Development'
+                : (_isOvulatoryPhase
+                    ? 'Liver Estrogen Clearance'
+                    : '+200 kcal Metabolic Burn')),
+        'quickCue': _isMenstrualPhase
+            ? 'Iron & greens'
+            : (_isFollicularPhase
+                ? 'Plant fats & oats'
+                : (_isOvulatoryPhase
+                    ? 'Light fiber & berries'
+                    : 'Protein & sweet potato')),
+        'highlights': [
+          {
+            'icon': Icons.eco_rounded,
+            'label': 'Plate',
+            'val': _isMenstrualPhase
+                ? 'Iron-rich lentils, dark leafy greens & bone broth'
+                : (_isFollicularPhase
+                    ? 'Sprouted grains, fermented foods & avocado fats'
+                    : (_isOvulatoryPhase
+                        ? 'Cruciferous greens, berries & light fiber'
+                        : 'Sweet potatoes, oats & dark chocolate')),
+          },
+          {
+            'icon': Icons.medication_liquid_rounded,
+            'label': 'Key Nutrient',
+            'val': _isMenstrualPhase
+                ? 'Iron & magnesium for cellular recovery'
+                : (_isFollicularPhase
+                    ? 'B-vitamins & healthy plant fats'
+                    : (_isOvulatoryPhase
+                        ? 'Antioxidants & liver support'
+                        : 'Magnesium & complex carbohydrates')),
+          },
+          {
+            'icon': Icons.local_fire_department_outlined,
+            'label': 'Metabolism',
+            'val': !_isLutealPhase
+                ? 'Steady basal insulin sensitivity'
+                : '+150 to 250 kcal metabolic increase · prioritize protein',
+          },
+        ],
+        'prompt': 'Docsy, what should I eat today on Day $_currentCycleDay ($_currentPhaseName) to balance my hormones?',
+      },
+      {
+        'id': 'move',
+        'title': 'MOVE',
+        'label': 'Move',
+        'subtitle': 'Workout & physical recovery',
+        'icon': Icons.directions_run_rounded,
+        'color': const Color(0xFF2563EB),
+        'bg': const Color(0xFFDBEAFE),
+        'hormoneTag': _isMenstrualPhase
+            ? 'Pelvic Floor Ease'
+            : (_isFollicularPhase
+                ? 'High Insulin Sensitivity'
+                : (_isOvulatoryPhase
+                    ? 'Peak Power Output'
+                    : 'Higher Core Temperature')),
+        'quickCue': _isMenstrualPhase
+            ? 'Yin yoga'
+            : (_isFollicularPhase
+                ? 'Strength training'
+                : (_isOvulatoryPhase
+                    ? 'HIIT & personal bests'
+                    : 'Pilates & incline walks')),
+        'highlights': [
+          {
+            'icon': Icons.self_improvement_rounded,
+            'label': 'Movement',
+            'val': _isMenstrualPhase
+                ? 'Restorative yin yoga & gentle walks'
+                : (_isFollicularPhase
+                    ? 'Progressive weights & strength sets'
+                    : (_isOvulatoryPhase
+                        ? 'High explosive HIIT, sprints & PR lifting'
+                        : 'Pilates, steady-state incline walks & sculpt')),
+          },
+          {
+            'icon': Icons.speed_rounded,
+            'label': 'Intensity',
+            'val': _isMenstrualPhase
+                ? 'Low (20–40%) · protect pelvic floor'
+                : (_isFollicularPhase
+                    ? 'Moderate-High (70–85%) · rapid adaptation'
+                    : (_isOvulatoryPhase
+                        ? 'Peak Output (90–100%) · personal bests'
+                        : 'Moderate (50–65%) · rhythm & breath')),
+          },
+          {
+            'icon': Icons.healing_rounded,
+            'label': 'Recovery',
+            'val': _isMenstrualPhase
+                ? 'Gentle low-back decompression'
+                : (_isFollicularPhase
+                    ? 'Rapid muscle rebuilding'
+                    : (_isOvulatoryPhase
+                        ? 'Adequate joint warmup & hydration'
+                        : 'Magnesium foam rolling & active rest')),
+          },
+        ],
+        'prompt': 'Docsy, suggest a workout tailored to Day $_currentCycleDay ($_currentPhaseName).',
+      },
+      {
+        'id': 'recharge',
+        'title': 'RECHARGE',
+        'label': 'Recharge',
+        'subtitle': 'Social battery & evening reset',
+        'icon': Icons.spa_rounded,
+        'color': const Color(0xFF7209B7),
+        'bg': const Color(0xFFF3E8FF),
+        'hormoneTag': !_isLutealPhase ? 'Social Ease & Energy' : 'Magnesium & REM Ease',
+        'quickCue': !_isLutealPhase ? 'Cozy evenings' : 'Epsom soak & tea',
+        'highlights': [
+          {
+            'icon': Icons.favorite_border_rounded,
+            'label': 'Social Battery',
+            'val': _isMenstrualPhase
+                ? 'Cozy low-stimulation with inner circle'
+                : (_isFollicularPhase
+                    ? 'Curious, open & social networking'
+                    : (_isOvulatoryPhase
+                        ? 'Magnetic presence, hosting & key dates'
+                        : 'Selective 1-on-1s · protect boundaries')),
+          },
+          {
+            'icon': Icons.nightlight_round,
+            'label': 'Night Ritual',
+            'val': _isMenstrualPhase
+                ? 'Warm Epsom foot soak + 5 belly breaths'
+                : (_isFollicularPhase
+                    ? '10 mins morning sun for circadian anchor'
+                    : (_isOvulatoryPhase
+                        ? 'Cold face splash + short breathwork'
+                        : 'Dim amber lighting after 8 PM + chamomile')),
+          },
+          {
+            'icon': Icons.spa_outlined,
+            'label': 'Rest & Recovery',
+            'val': !_isLutealPhase
+                ? 'Energized, outward-facing presence'
+                : 'Deep restoration & early lights-out',
+          },
+        ],
+        'prompt': 'Docsy, give me a 1-minute wind-down ritual for Day $_currentCycleDay.',
+      },
     ];
+
+    final byId = <String, Map<String, Object>>{
+      for (final d in destinations) d['id'] as String: d,
+    };
+
+    // Determine current active pillar
+    final primaryOrder = _primaryOrderForFocus();
+    final firstId = primaryOrder.isNotEmpty ? primaryOrder.first[0] : 'work';
+    final activeId = _activePillar ?? firstId;
+    final activeDest = byId[activeId] ?? byId['work']!;
+
+    final activeColor = activeDest['color'] as Color;
+    final activeBg = activeDest['bg'] as Color;
+    final activeTitle = activeDest['title'] as String;
+    final activeSubtitle = activeDest['subtitle'] as String;
+    final activeHormoneTag = activeDest['hormoneTag'] as String;
+    final activePrompt = activeDest['prompt'] as String;
+    final activeHighlights = activeDest['highlights'] as List<Map<String, Object>>;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildEyebrow('Impact on Work & Daily Life'),
+        _buildEyebrow('Daily Cycle Sync'),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Syncing for ${_focusLabel()}',
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF7A6B72),
+            ),
+          ),
+        ),
+        _buildFocusModeSelector(),
+        const SizedBox(height: 12),
+
+        // 1. Docsy's Hormone Cue Card (Clean, Editorial & Expandable)
+        if (_dynamicDocsyNarrative != null) ...[
+          _buildDocsyHormoneCueCard(context),
+          const SizedBox(height: 12),
+        ],
+
+        // 2. Interactive Segmented Pillar Tab Selector
+        SizedBox(
+          height: 38,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            children: destinations.map((d) {
+              final id = d['id'] as String;
+              final label = d['label'] as String;
+              final icon = d['icon'] as IconData;
+              final color = d['color'] as Color;
+              final bg = d['bg'] as Color;
+              final isSelected = id == activeId;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: () => setState(() => _activePillar = id),
+                  borderRadius: BorderRadius.circular(20),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: isSelected ? bg : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? color : cardBorderColor,
+                        width: isSelected ? 1.4 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.white : const Color(0xFFFAF7F2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(icon, size: 12, color: isSelected ? color : const Color(0xFF7A6B72)),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          label,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11.5,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: isSelected ? color : const Color(0xFF4A3E39),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // 3. The Active Pillar Card (Structured, Scannable & Icon-Driven)
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: cardBorderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'How did today go? This helps show a doctor whether symptoms affect daily life.',
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  color: const Color(0xFF7A6B72),
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: levels.map((lvl) {
-                  final id = lvl['id']!;
-                  final selected = _workImpact == id;
-                  return InkWell(
-                    onTap: () {
-                      setState(() => _workImpact = id);
-                      final today =
-                          DateTime.now().toIso8601String().split('T').first;
-                      UserStateStore.write(
-                          'stage3_work_impact_$today', {'impact': id, 'label': lvl['label']});
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected ? blushySoftPink : const Color(0xFFFAF7F2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected ? blushyPrimary : cardBorderColor,
-                          width: selected ? 1.4 : 1.0,
+              // Pillar Header Row
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: activeBg, shape: BoxShape.circle),
+                    child: Icon(activeDest['icon'] as IconData, size: 16, color: activeColor),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$activeTitle FOR TODAY',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF221510),
+                            letterSpacing: 0.6,
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        lvl['label']!,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11.5,
-                          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                          color: selected ? blushyPrimary : const Color(0xFF4A3E39),
+                        Text(
+                          activeSubtitle,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF7A6B72),
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: activeBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      activeHormoneTag,
+                      style: GoogleFonts.manrope(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: activeColor,
                       ),
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1, thickness: 0.8, color: Color(0xFFF3EEE9)),
+              const SizedBox(height: 10),
+
+              // Highlights List (Clean key-value items with icons)
+              ...activeHighlights.map((hl) {
+                final hlIcon = hl['icon'] as IconData;
+                final hlLabel = hl['label'] as String;
+                final hlVal = hl['val'] as String;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 2),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: activeBg,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(hlIcon, size: 11, color: activeColor),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '$hlLabel: ',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF221510),
+                                ),
+                              ),
+                              TextSpan(
+                                text: hlVal,
+                                style: GoogleFonts.manrope(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF5A4D53),
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 0.8, color: Color(0xFFF3EEE9)),
+              const SizedBox(height: 8),
+
+              // Bottom Action Row
+              InkWell(
+                onTap: () => _openDocsyWithPrompt(context, activePrompt),
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.auto_awesome, size: 13, color: activeColor),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Build Day $_currentCycleDay ${activeDest['label']} plan with Docsy',
+                        style: GoogleFonts.manrope(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: activeColor,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(Icons.arrow_forward_rounded, size: 13, color: activeColor),
+                    ],
+                  ),
+                ),
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // 4. Quick-Glance Pillar Chips (See what else is available at a tap)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: destinations.where((d) => d['id'] != activeId).map((d) {
+              final id = d['id'] as String;
+              final label = d['label'] as String;
+              final icon = d['icon'] as IconData;
+              final color = d['color'] as Color;
+              final tint = d['bg'] as Color;
+              final quickCue = d['quickCue'] as String;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: () => setState(() => _activePillar = id),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: cardBorderColor),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(color: tint, shape: BoxShape.circle),
+                          child: Icon(icon, size: 10, color: color),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$label · $quickCue',
+                          style: GoogleFonts.manrope(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF4A3E39),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ),
       ],
@@ -1182,7 +1677,151 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   }
 
   // ════════════════════════════════════════════════════════════════
-  // FORWARD-PLANNING FORECAST BAR (next ~2 weeks + "Check My Dates")
+  // 04B — DOCSY HORMONE CUE CARD (Editorial & Expandable)
+  // ════════════════════════════════════════════════════════════════
+  Widget _buildDocsyHormoneCueCard(BuildContext context) {
+    if (_dynamicDocsyNarrative == null) return const SizedBox.shrink();
+
+    final fullText = _dynamicDocsyNarrative!.trim();
+    final periodIndex = fullText.indexOf('.');
+    final bool hasMore = periodIndex > 0 && periodIndex < fullText.length - 2;
+    final String firstSentence = hasMore ? fullText.substring(0, periodIndex + 1).trim() : fullText;
+    final String remainingText = hasMore ? fullText.substring(periodIndex + 1).trim() : '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6F7),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFDDE4), width: 0.9),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: blushyPrimary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.auto_awesome, size: 14, color: blushyPrimary),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'DOCSY HORMONE CUE · DAY $_currentCycleDay',
+                  style: GoogleFonts.manrope(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: blushyPrimary,
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: () => _openDocsyWithPrompt(
+                  context,
+                  'Explain what my hormones are doing today on Day $_currentCycleDay and give me personalized cycle syncing advice.',
+                ),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFDDE4), width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.chat_bubble_outline_rounded, size: 11, color: blushyPrimary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Ask Docsy',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: blushyPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            firstSentence,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF221510),
+              height: 1.4,
+            ),
+          ),
+          if (hasMore) ...[
+            if (_isAiNarrativeExpanded) ...[
+              const SizedBox(height: 6),
+              Text(
+                remainingText,
+                style: GoogleFonts.manrope(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF5A4D53),
+                  height: 1.45,
+                ),
+              ),
+            ],
+            const SizedBox(height: 4),
+            InkWell(
+              onTap: () => setState(() => _isAiNarrativeExpanded = !_isAiNarrativeExpanded),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isAiNarrativeExpanded ? 'Show less' : 'Read why this happens',
+                    style: GoogleFonts.manrope(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: blushyPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Icon(
+                    _isAiNarrativeExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    size: 14,
+                    color: blushyPrimary,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 05 — PATTERN INTELLIGENCE (Real User Data Only)
+  // ════════════════════════════════════════════════════════════════
+  Widget _buildPatternIntelligenceSection(BuildContext context) {
+    if (!_hasLoggedPeriod) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildEyebrow('A Pattern I Noticed'),
+        const RealInsightsList(title: 'What your logs show'),
+      ],
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // FORECAST & DATE HELPERS
   // ════════════════════════════════════════════════════════════════
   String _fmtShortDate(String? iso) {
     if (iso == null || iso.isEmpty) return '';
@@ -1200,6 +1839,84 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     if (day <= _periodLength + 7) return 'follicular phase';
     if (day <= _periodLength + 11) return 'ovulatory phase';
     return 'luteal phase';
+  }
+
+  List<Widget> _buildForecastChipsList() {
+    final chips = <Widget>[];
+    final fertileStart = _cycleVM.fertileWindowStart;
+    final fertileEnd = _cycleVM.fertileWindowEnd;
+    final next = _cycleVM.nextPeriodStartDate;
+
+    if (fertileStart != null && fertileEnd != null) {
+      chips.add(_buildForecastChip(
+        icon: Icons.spa_rounded,
+        color: const Color(0xFF0D9488),
+        tint: const Color(0xFFCCFBF1),
+        label: 'Fertile · ${_fmtShortDate(fertileStart)}–${_fmtShortDate(fertileEnd)}',
+      ));
+    } else if (_cycleVM.estimatedOvulationDate != null) {
+      chips.add(_buildForecastChip(
+        icon: Icons.bolt_rounded,
+        color: const Color(0xFFD97706),
+        tint: const Color(0xFFFEF3C7),
+        label: 'Ovulation · ${_fmtShortDate(_cycleVM.estimatedOvulationDate)}',
+      ));
+    }
+    if (next != null) {
+      final nextDate = DateTime.tryParse(next);
+      if (nextDate != null) {
+        final pms = nextDate.subtract(const Duration(days: 5));
+        chips.add(_buildForecastChip(
+          icon: Icons.cloud_rounded,
+          color: const Color(0xFF7209B7),
+          tint: const Color(0xFFF3E8FF),
+          label: 'PMS · from ${_fmtShortDate(pms.toIso8601String())}',
+        ));
+      }
+      chips.add(_buildForecastChip(
+        icon: Icons.water_drop_rounded,
+        color: const Color(0xFFDD0D22),
+        tint: const Color(0xFFFFECEB),
+        label: 'Next period · ${_fmtShortDate(next)}',
+      ));
+    }
+    return chips;
+  }
+
+  Widget _buildForecastChip({
+    required IconData icon,
+    required Color color,
+    required Color tint,
+    required String label,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cardBorderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(color: tint, shape: BoxShape.circle),
+            child: Icon(icon, size: 11, color: color),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF221510),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _checkMyDates(BuildContext context) async {
@@ -1226,8 +1943,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     );
     if (picked == null || !context.mounted) return;
     final len = _cycleLength > 0 ? _cycleLength : 28;
-    final days =
-        picked.difference(DateTime(start.year, start.month, start.day)).inDays;
+    final days = picked.difference(DateTime(start.year, start.month, start.day)).inDays;
     final dayInCycle = (days % len) + 1;
     final phase = _phaseNameForCycleDay(dayInCycle);
     showDialog(
@@ -1255,35 +1971,9 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Got it',
-                style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.w700, color: blushyPrimary)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _forecastChip(String emoji, String label) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF7F2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cardBorderColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 12)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF221510),
+            child: Text(
+              'Got it',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: blushyPrimary),
             ),
           ),
         ],
@@ -1291,847 +1981,24 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     );
   }
 
-  Widget _buildForecastBar(BuildContext context) {
-    if (!_cycleVM.hasLoggedPeriod) return const SizedBox.shrink();
-
-    final chips = <Widget>[];
-    final fertileStart = _cycleVM.fertileWindowStart;
-    final fertileEnd = _cycleVM.fertileWindowEnd;
-    final next = _cycleVM.nextPeriodStartDate;
-
-    if (fertileStart != null && fertileEnd != null) {
-      chips.add(_forecastChip('🌱',
-          'Fertile window · ${_fmtShortDate(fertileStart)}–${_fmtShortDate(fertileEnd)}'));
-    } else if (_cycleVM.estimatedOvulationDate != null) {
-      chips.add(_forecastChip(
-          '🌱', 'Ovulation · ${_fmtShortDate(_cycleVM.estimatedOvulationDate)}'));
-    }
-    if (next != null) {
-      final nextDate = DateTime.tryParse(next);
-      if (nextDate != null) {
-        final pms = nextDate.subtract(const Duration(days: 5));
-        chips.add(_forecastChip(
-            '☁️', 'PMS window · from ${_fmtShortDate(pms.toIso8601String())}'));
+  List<String> _getLoggedSymptomSummary() {
+    try {
+      final today = DateTime.now().toIso8601String().split('T').first;
+      final checkin = UserStateStore.read('daily_checkin_$today');
+      if (checkin['symptoms'] is List) {
+        final list = (checkin['symptoms'] as List).map((e) => e.toString()).toList();
+        if (list.isNotEmpty) return list;
       }
-      chips.add(_forecastChip('🗓️', 'Next period · ${_fmtShortDate(next)}'));
-    }
-
-    if (chips.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 16),
-        _buildEyebrow('Your Next 2 Weeks'),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: cardBorderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(children: chips),
-              ),
-              const SizedBox(height: 12),
-              InkWell(
-                onTap: () => _checkMyDates(context),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: blushyPrimary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('✈️', style: TextStyle(fontSize: 13)),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Check my dates',
-                        style: GoogleFonts.manrope(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: blushyPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // DAILY CYCLE SYNC (Focus/Nourish/Move primary + Connect/Reset expandable)
-  // ════════════════════════════════════════════════════════════════
-  Widget _buildDailyCycleSyncHub(BuildContext context) {
-    // No phase-based recommendations until a period is logged: the cycle day
-    // defaults to mid-cycle, which would otherwise show ovulatory-phase advice
-    // to an account with no data (the "ghost cycle" bug).
-    if (!_hasLoggedPeriod) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildEyebrow('Daily Cycle Sync'),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: cardBorderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Log your last period to unlock today's Focus, Nourish and "
-                  'Move recommendations, tuned to your current phase.',
-                  style: GoogleFonts.manrope(
-                    fontSize: 12.5,
-                    height: 1.5,
-                    color: const Color(0xFF7A6B72),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: () => _openLogPeriodDialog(context),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: blushyPrimary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Log my period',
-                      style: GoogleFonts.manrope(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: blushyPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    final destinations = [
-      {
-        'id': 'work',
-        'title': 'WORK',
-        'subtitle': 'Focus, meetings & energy',
-        'icon': Icons.work_outline_rounded,
-        'color': const Color(0xFFFF7D00),
-        'bg': const Color(0xFFFFF7ED),
-        'suggestion': _currentCycleDay <= 5
-            ? 'Big-picture planning & contract review. Keep meetings light while estrogen is low.'
-            : (_currentCycleDay <= 12
-                ? 'High creative stamina. Great for launching new tasks and collaborative brainstorming.'
-                : (_currentCycleDay <= 16
-                    ? 'Put your hardest thinking task before lunch. High verbal confidence for presentations.'
-                    : 'Deep methodical focus. Great for spot-checking errors and wrapping deliverables.')),
-        'prompt': 'Docsy, help me organize my workday around my Day $_currentCycleDay ($_currentPhaseName) energy levels.',
-      },
-      {
-        'id': 'move',
-        'title': 'MOVE',
-        'subtitle': 'Workout & recovery',
-        'icon': Icons.directions_run_rounded,
-        'color': const Color(0xFFFF006D),
-        'bg': const Color(0xFFFFF0F5),
-        'suggestion': _currentCycleDay <= 5
-            ? 'Restorative yin yoga, gentle walks, and low-back stretches.'
-            : (_currentCycleDay <= 12
-                ? 'Building strength: progressive weight training and tempo cardio.'
-                : (_currentCycleDay <= 16
-                    ? 'Peak explosive power: HIIT, heavy lifts, or high-energy workouts.'
-                    : 'Steady Pilates, incline walks, and moderate sculpting.')),
-        'prompt': 'Docsy, give me a quick 20-min workout routine suitable for Day $_currentCycleDay ($_currentPhaseName).',
-      },
-      {
-        'id': 'eat',
-        'title': 'EAT',
-        'subtitle': 'Food, cravings & nourishment',
-        'icon': Icons.restaurant_rounded,
-        'color': const Color(0xFF01BEFE),
-        'bg': const Color(0xFFF0F9FF),
-        'suggestion': _currentCycleDay <= 5
-            ? 'Iron-rich foods, bone broth, spinach, and dark chocolate to replenish red blood cells.'
-            : (_currentCycleDay <= 12
-                ? 'Fermented foods, sprouted grains, and healthy avocado fats for follicle development.'
-                : (_currentCycleDay <= 16
-                    ? 'Antioxidant greens, fresh berries, and light hydrating salads.'
-                    : 'Metabolic fuel (+200 kcal need): roasted sweet potatoes, quinoa, and warm soups.')),
-        'prompt': 'Docsy, what are the best meals and nutrients for me to eat today during $_currentPhaseName?',
-      },
-      {
-        'id': 'connect',
-        'title': 'CONNECT',
-        'subtitle': 'Social, relationships & mood',
-        'icon': Icons.favorite_border_rounded,
-        'color': const Color(0xFFFF006D),
-        'bg': const Color(0xFFFFF0F5),
-        'suggestion': _currentCycleDay <= 5
-            ? 'Cozy low-stimulation evenings and quiet conversations with trusted people.'
-            : (_currentCycleDay <= 12
-                ? 'High social curiosity. Perfect for group dinners and catching up with friends.'
-                : (_currentCycleDay <= 16
-                    ? 'Peak charisma and magnetic presence for hosting or date nights.'
-                    : 'Meaningful 1-on-1s. Protect your boundaries from people-pleasing guilt-free.')),
-        'prompt': 'Docsy, how can I communicate my energy and social needs to my partner and friends on Day $_currentCycleDay?',
-      },
-      {
-        'id': 'reset',
-        'title': 'RESET',
-        'subtitle': 'Rest & micro-rituals',
-        'icon': Icons.spa_outlined,
-        'color': const Color(0xFF7C3AED),
-        'bg': const Color(0xFFF5F3FF),
-        'suggestion': _currentCycleDay <= 5
-            ? 'Warm foot soak + 5 deep belly breaths in bed to relax the pelvic floor.'
-            : (_currentCycleDay <= 12
-                ? '10 minutes of direct morning sunlight to anchor your cortisol circadian rhythm.'
-                : (_currentCycleDay <= 16
-                    ? 'Invigorating cold face splash + morning intention setting.'
-                    : 'Evening magnesium tea with dim amber lighting to prepare for deep REM sleep.')),
-        'prompt': 'Docsy, give me 2 simple 1-minute rituals I can do today for Day $_currentCycleDay.',
-      },
-    ];
-
-    final byId = <String, Map<String, Object>>{
-      for (final d in destinations) d['id'] as String: d,
-    };
-
-    Widget docsyLink(String display, String prompt, Color color) => InkWell(
-          onTap: () => _openDocsyWithPrompt(context, prompt),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Build my $display plan with Docsy',
-                style: GoogleFonts.manrope(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(Icons.arrow_forward_rounded, size: 12, color: color),
-            ],
-          ),
-        );
-
-    // The three high-impact recommendations, always visible.
-    Widget primaryCard(String id, String display) {
-      final dest = byId[id]!;
-      final subtitle = dest['subtitle'] as String;
-      final icon = dest['icon'] as IconData;
-      final color = dest['color'] as Color;
-      final bg = dest['bg'] as Color;
-      final suggestion = dest['suggestion'] as String;
-      final prompt = dest['prompt'] as String;
-      return Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: cardBorderColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-                  child: Icon(icon, size: 16, color: color),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        display.toUpperCase(),
-                        style: GoogleFonts.manrope(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF221510),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF7A6B72),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              suggestion,
-              style: GoogleFonts.manrope(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF221510),
-                height: 1.45,
-              ),
-            ),
-            const SizedBox(height: 10),
-            docsyLink(display, prompt, color),
-          ],
-        ),
-      );
-    }
-
-    // Secondary tips, revealed only if she wants more.
-    Widget secondaryBlock(String id, String display) {
-      final dest = byId[id]!;
-      final color = dest['color'] as Color;
-      final suggestion = dest['suggestion'] as String;
-      final prompt = dest['prompt'] as String;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              display.toUpperCase(),
-              style: GoogleFonts.manrope(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: color,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              suggestion,
-              style: GoogleFonts.manrope(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF221510),
-                height: 1.45,
-              ),
-            ),
-            const SizedBox(height: 8),
-            docsyLink(display, prompt, color),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildEyebrow('Daily Cycle Sync'),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Text(
-            'Focused on ${_focusLabel()}',
-            style: GoogleFonts.manrope(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF7A6B72),
-            ),
-          ),
-        ),
-        for (final p in _primaryOrderForFocus()) primaryCard(p[0], p[1]),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: cardBorderColor),
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF5F3FF),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.more_horiz_rounded, size: 16, color: Color(0xFF7C3AED)),
-              ),
-              title: Text(
-                'More for today',
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF221510),
-                  letterSpacing: 0.5,
-                ),
-              ),
-              subtitle: Text(
-                'Connect & reset tips',
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF7A6B72),
-                ),
-              ),
-              children: [
-                secondaryBlock('connect', 'Connect'),
-                secondaryBlock('reset', 'Reset'),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // 06 — "WHAT ARE YOU NOTICING?" (Interactive Signal Logger)
-  // ════════════════════════════════════════════════════════════════
-  Widget _buildWhatAreYouNoticingSection(BuildContext context) {
-    final signals = [
-      {'emoji': '😌', 'label': 'Calm'},
-      {'emoji': '⚡', 'label': 'High energy'},
-      {'emoji': '🥱', 'label': 'Low energy'},
-      {'emoji': '😵', 'label': 'Tired'},
-      {'emoji': '😤', 'label': 'Irritable'},
-      {'emoji': '🤕', 'label': 'Cramps'},
-      {'emoji': '🫧', 'label': 'Bloated'},
-      {'emoji': '🍫', 'label': 'Cravings'},
-      {'emoji': '🌸', 'label': 'Tender breasts'},
-      {'emoji': '💧', 'label': 'Discharge'},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildEyebrow('What Are You Noticing?'),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: cardBorderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Tap what resonates with how you feel right now:',
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF7A6B72),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ...signals.map((s) {
-                    final label = s['label']!;
-                    final emoji = s['emoji']!;
-                    final isSelected = _selectedNoticings.contains(label);
-
-                    return InkWell(
-                      onTap: () => _toggleNoticing(label),
-                      borderRadius: BorderRadius.circular(20),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: isSelected ? blushySoftPink : const Color(0xFFFAF7F2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected ? blushyPrimary : const Color(0xFFEDE4DC),
-                            width: isSelected ? 1.2 : 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(emoji, style: const TextStyle(fontSize: 13)),
-                            const SizedBox(width: 5),
-                            Text(
-                              label,
-                              style: GoogleFonts.manrope(
-                                fontSize: 11.5,
-                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                color: isSelected ? blushyPrimary : const Color(0xFF221510),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                  InkWell(
-                    onTap: () => _openTellDocsyNaturalSheet(context),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: blushyPrimary.withValues(alpha: 0.4)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.add_rounded, size: 14, color: blushyPrimary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Something else?',
-                            style: GoogleFonts.manrope(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: blushyPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (_selectedNoticings.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7F2),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFFFDFC2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.auto_awesome, size: 14, color: Color(0xFFD97706)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'You’ve logged ${_selectedNoticings.join(", ")}. Want to see if this is connected to your $_currentPhaseName?',
-                          style: GoogleFonts.manrope(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF7A3E10),
-                          ),
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () {
-                          _openDocsyWithPrompt(
-                            context,
-                            'I noticed ${_selectedNoticings.join(", ")} today on Day $_currentCycleDay ($_currentPhaseName). Can you help me understand how this connects to my hormones?',
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          child: Text(AppLocalizations.of(context).lwmcAskDocsy2,
-                            style: GoogleFonts.manrope(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
-                              color: blushyPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // 08 — "LIFE MODE" (Active Contextual Adaptation)
-  // ════════════════════════════════════════════════════════════════
-  Widget _buildLifeModeSection(BuildContext context) {
-    final modes = [
-      {'id': 'travel', 'label': '✈️ Travelling'},
-      {'id': 'exams', 'label': '📚 Exams'},
-      {'id': 'big_week', 'label': '💼 Big week at work'},
-      {'id': 'event', 'label': '🎉 Wedding / Event'},
-      {'id': 'sports', 'label': '🏃‍♀️ Sports'},
-      {'id': 'surviving', 'label': '🛏️ Just surviving 😭'},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildEyebrow('Life Mode'),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            children: modes.map((m) {
-              final id = m['id']!;
-              final label = m['label']!;
-              final isSelected = _activeLifeMode == id;
-
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _activeLifeMode = isSelected ? null : id;
-                    });
-                    try {
-                      UserStateStore.write('stage3_life_mode', {'mode': _activeLifeMode});
-                    } catch (_) {}
-                  },
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF221510) : Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isSelected ? const Color(0xFF221510) : cardBorderColor,
-                      ),
-                    ),
-                    child: Text(
-                      label,
-                      style: GoogleFonts.manrope(
-                        fontSize: 11.5,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected ? Colors.white : const Color(0xFF221510),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        if (_activeLifeMode != null) ...[
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF7F2),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFEDE4DC)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome, size: 14, color: blushyPrimary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Active Mode: ${_activeLifeMode!.toUpperCase()}. Docsy is tailoring today’s focus and recovery for you.',
-                    style: GoogleFonts.manrope(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF221510),
-                    ),
-                  ),
-                ),
-                InkWell(
-                  onTap: () {
-                    _openDocsyWithPrompt(
-                      context,
-                      'I am currently in ${_activeLifeMode!} mode and on Day $_currentCycleDay of my cycle. What should I prioritize right now?',
-                    );
-                  },
-                  child: Text(AppLocalizations.of(context).lwmcViewPlan,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w800,
-                      color: blushyPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // 09 — "A PATTERN I NOTICED" (Blushy Intelligence)
-  // ════════════════════════════════════════════════════════════════
-  /// Patterns the server derived from this user's own logs.
-  ///
-  /// This card used to be a fixed literal under the heading "CYCLICAL PATTERN
-  /// DETECTED": "You tend to sleep ~40 minutes less during the 3 days before
-  /// your period starts. You've logged this pattern across 3 of your recent
-  /// cycles." Every figure in it was invented, and it was shown to everyone,
-  /// including accounts that had logged nothing at all.
-  ///
-  /// RealInsightsList exists for exactly this. It asks the pattern engine,
-  /// which will not report anything until it has six paired observations and a
-  /// correlation above its floor, and renders the insufficient-data case as
-  /// such instead of filling it in (spec sections 7 and 8).
-  Widget _buildPatternIntelligenceSection(BuildContext context) {
-    // Nothing to claim about patterns before a period is logged; hide the
-    // section entirely rather than imply cycles were "detected".
-    if (!_hasLoggedPeriod) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildEyebrow('A Pattern I Noticed'),
-        const RealInsightsList(title: 'What your logs show'),
-      ],
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // 10 — "UNDERSTAND YOUR BODY" (Dynamic Educational Content)
-  // ════════════════════════════════════════════════════════════════
-  Widget _buildUnderstandYourBodySection(BuildContext context) {
-    final articles = [
-      {
-        'title': 'Why do I feel more social & articulate around ovulation?',
-        'tag': 'HORMONES & MOOD',
-        'readTime': '3 min read',
-        'summary': 'Simultaneous estrogen and testosterone peaks enhance verbal fluency and social connectivity.',
-        'prompt': 'Tell me about the science of estrogen and testosterone during ovulation.',
-      },
-      {
-        'title': 'Why am I suddenly craving dark chocolate in the luteal phase?',
-        'tag': 'NUTRITION & METABOLISM',
-        'readTime': '4 min read',
-        'summary': 'Your resting metabolism jumps 100-300 kcal/day while your body requests magnesium for uterine ease.',
-        'prompt': 'Why do cravings happen before periods and what does dark chocolate provide?',
-      },
-      {
-        'title': 'What cervical fluid tells you about your fertile window',
-        'tag': 'BODY SIGNALS',
-        'readTime': '5 min read',
-        'summary': 'Decoding changes from creamy to stretchy egg-white fluid across your cycle.',
-        'prompt': 'How do I identify my fertile window through cervical fluid?',
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildEyebrow('Understand Your Body'),
-        Column(
-          children: articles.map((art) {
-            final title = art['title']!;
-            final tag = art['tag']!;
-            final readTime = art['readTime']!;
-            final summary = art['summary']!;
-            final prompt = art['prompt']!;
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: cardBorderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        tag,
-                        style: GoogleFonts.manrope(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          color: blushyPrimary,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      Text(
-                        readTime,
-                        style: GoogleFonts.manrope(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF7A6B72),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    title,
-                    style: GoogleFonts.manrope(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF221510),
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    summary,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF7A6B72),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      InkWell(
-                        onTap: () => showArticleDetailDialog(context, title, summary),
-                        child: Text(AppLocalizations.of(context).lwmcRead,
-                          style: GoogleFonts.manrope(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF221510),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      InkWell(
-                        onTap: () => _openDocsyWithPrompt(context, prompt),
-                        child: Text(AppLocalizations.of(context).lwmcAskDocsy2,
-                          style: GoogleFonts.manrope(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: blushyPrimary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
+      final canonical = BlushyStorage.read('daily_checkin.json');
+      if (canonical['symptoms'] is List) {
+        final list = (canonical['symptoms'] as List).map((e) => e.toString()).toList();
+        if (list.isNotEmpty) return list;
+      }
+      if (_selectedNoticings.isNotEmpty) {
+        return _selectedNoticings.toList();
+      }
+    } catch (_) {}
+    return [];
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -2190,33 +2057,67 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                 ),
               ),
               const SizedBox(height: 12),
-              InkWell(
-                onTap: () => _openDoctorSummaryModal(context),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children: [
+                  InkWell(
+                    onTap: () => _openDoctorSummaryModal(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFBFDBFE)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.description_outlined, size: 14, color: Color(0xFF2563EB)),
-                      const SizedBox(width: 6),
-                      Text(AppLocalizations.of(context).lwmcPrepareMyVisitSummary,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF2563EB),
-                        ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
                       ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward_rounded, size: 12, color: Color(0xFF2563EB)),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.description_outlined, size: 14, color: Color(0xFF2563EB)),
+                          const SizedBox(width: 6),
+                          Text(
+                            AppLocalizations.of(context).lwmcPrepareMyVisitSummary,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_forward_rounded, size: 12, color: Color(0xFF2563EB)),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  InkWell(
+                    onTap: () => _openSomethingFeelsDifferentSheet(context),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAF7F2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: cardBorderColor),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.help_outline_rounded, size: 14, color: Color(0xFF7A6B72)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Something Unusual?',
+                            style: GoogleFonts.manrope(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF221510),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -2409,48 +2310,49 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   void _openDoctorSummaryModal(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(AppLocalizations.of(context).lwmcClinicalVisitSummary,
-          style: GoogleFonts.cormorantGaramond(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF221510),
+      builder: (ctx) {
+        final loggedSymptoms = _getLoggedSymptomSummary();
+        final symptomsText = loggedSymptoms.isEmpty
+            ? 'none logged today'
+            : loggedSymptoms.join(', ');
+
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(AppLocalizations.of(context).lwmcClinicalVisitSummary,
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF221510),
+            ),
           ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _hasLoggedPeriod ? 'Cycle summary (from your logs):' : 'Cycle summary:',
-              style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF221510)),
-            ),
-            const SizedBox(height: 8),
-            // Only figures that came from logged periods are printed. This
-            // block used to print the defaults -- a 28-day cycle, a 5-day flow
-            // and Day 14 -- to someone who had logged nothing, under the
-            // heading "Patient Cycle Summary (Last 90 Days)". A clinician
-            // reading that would be reading numbers nobody measured.
-            Text(
-              _hasLoggedPeriod
-                  ? '• Cycle length: $_cycleLength days\n'
-                      '• Flow duration: $_periodLength days\n'
-                      '• Current cycle day: Day $_currentCycleDay ($_currentPhaseName)\n'
-                      '• Symptoms logged today: ${_selectedNoticings.isEmpty ? "none" : _selectedNoticings.join(", ")}\n'
-                      '• Functional impact today: ${_workImpactLabel()}'
-                  : 'No periods have been logged yet, so there is nothing to summarise. '
-                      'Log a period start date and this will fill in from your own history.',
-              style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF5E5057), height: 1.4),
-            ),
-            if (_hasLoggedPeriod) ...[
-              const SizedBox(height: 6),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                'Self-reported. Cycle day and phase are estimates calculated from your logged dates, not clinical measurements.',
-                style: GoogleFonts.manrope(fontSize: 10, color: const Color(0xFF7A6B72), height: 1.35),
+                _hasLoggedPeriod ? 'Cycle summary (from your logs):' : 'Cycle summary:',
+                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF221510)),
               ),
-            ],
+              const SizedBox(height: 8),
+              Text(
+                _hasLoggedPeriod
+                    ? '• Cycle length: $_cycleLength days\n'
+                        '• Flow duration: $_periodLength days\n'
+                        '• Current cycle day: Day $_currentCycleDay ($_currentPhaseName)\n'
+                        '• Symptoms logged today: $symptomsText\n'
+                        '• Functional impact today: ${_workImpactLabel()}'
+                    : 'No periods have been logged yet, so there is nothing to summarise. '
+                        'Log a period start date and this will fill in from your own history.',
+                style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF5E5057), height: 1.4),
+              ),
+              if (_hasLoggedPeriod) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Self-reported. Cycle day and phase are estimates calculated from your logged dates, not clinical measurements.',
+                  style: GoogleFonts.manrope(fontSize: 10, color: const Color(0xFF7A6B72), height: 1.35),
+                ),
+              ],
             const SizedBox(height: 14),
             Text(
               'Questions you might ask:',
@@ -2488,7 +2390,146 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
             child: Text(AppLocalizations.of(context).lwmcExpandWithDocsy, style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.w700)),
           ),
         ],
-      ),
+      );
+    },
+  );
+}
+
+  // ════════════════════════════════════════════════════════════════
+  // 12 — CYCLE HEALTH GUIDE (Interactive & Docsy-Powered)
+  // ════════════════════════════════════════════════════════════════
+  Widget _buildCycleHealthGuide(BuildContext context) {
+    final guides = [
+      {
+        'tag': 'HORMONES & MOOD',
+        'title': 'Why do focus & confidence surge before ovulation?',
+        'readTime': '3 min read',
+        'icon': Icons.bolt_rounded,
+        'color': const Color(0xFFF97316),
+        'bg': const Color(0xFFFFF7ED),
+        'prompt': 'Docsy, explain the biology of why estrogen and testosterone peaks enhance verbal fluency and confidence around ovulation.',
+      },
+      {
+        'tag': 'METABOLISM & CRAVINGS',
+        'title': 'Why appetite shifts +200 kcal in your luteal phase',
+        'readTime': '4 min read',
+        'icon': Icons.restaurant_rounded,
+        'color': const Color(0xFF0D9488),
+        'bg': const Color(0xFFCCFBF1),
+        'prompt': 'Docsy, explain why resting metabolic rate increases in the luteal phase and why we crave magnesium and carbs before periods.',
+      },
+      {
+        'tag': 'RECOVERY & SLEEP',
+        'title': 'How progesterone reshapes REM sleep & body temp',
+        'readTime': '3 min read',
+        'icon': Icons.nightlight_round,
+        'color': const Color(0xFF7209B7),
+        'bg': const Color(0xFFF3E8FF),
+        'prompt': 'Docsy, why does progesterone increase basal body temperature and how should I adjust my sleep routine in the luteal phase?',
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildEyebrow('Cycle Health Guide'),
+        ...guides.map((g) {
+          final tag = g['tag'] as String;
+          final title = g['title'] as String;
+          final readTime = g['readTime'] as String;
+          final icon = g['icon'] as IconData;
+          final color = g['color'] as Color;
+          final bg = g['bg'] as Color;
+          final prompt = g['prompt'] as String;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: InkWell(
+              onTap: () => _openDocsyWithPrompt(context, prompt),
+              borderRadius: BorderRadius.circular(18),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+                    child: Icon(icon, size: 16, color: color),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              tag,
+                              style: GoogleFonts.manrope(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: color,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '· $readTime',
+                              style: GoogleFonts.manrope(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF9E9296),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          title,
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF221510),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF7F2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFEFE8E0)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_awesome, size: 10, color: blushyPrimary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Ask',
+                          style: GoogleFonts.manrope(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: blushyPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 
@@ -2512,32 +2553,25 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               children: [
                 _buildEditorialGreeting(context),
-                const SizedBox(height: 12),
-                _buildFocusModeBar(context),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 _buildCycleTrackerCard(context),
-                _buildForecastBar(context),
                 const SizedBox(height: 22),
-                _buildTodayWithDocsyHero(context),
-                const SizedBox(height: 22),
-                const LogSymptomsSection(stageKey: 'livingwithmycycle'),
-                const SizedBox(height: 18),
-                const HealthLibrarySection(stageKey: 'livingwithmycycle'),
+                _buildEyebrow("Today's Log & Impact"),
+                const LogSymptomsSection(
+                  stageKey: 'livingwithmycycle',
+                  showHeading: false,
+                ),
+                const SizedBox(height: 12),
+                _buildWorkImpactLog(context),
                 const SizedBox(height: 22),
                 _buildDailyCycleSyncHub(context),
                 const SizedBox(height: 22),
-                _buildWhatAreYouNoticingSection(context),
-                const SizedBox(height: 22),
-                _buildWorkImpactLog(context),
-                const SizedBox(height: 22),
-                _buildLifeModeSection(context),
-                const SizedBox(height: 22),
                 _buildPatternIntelligenceSection(context),
                 const SizedBox(height: 22),
-                _buildUnderstandYourBodySection(context),
+                _buildCycleHealthGuide(context),
                 const SizedBox(height: 22),
                 _buildDoctorReadinessSection(context),
-                const SizedBox(height: 32),
+                const SizedBox(height: 36),
               ],
             );
           } else {
@@ -2550,32 +2584,25 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                   children: [
                     _buildEditorialGreeting(context),
-                    const SizedBox(height: 12),
-                    _buildFocusModeBar(context),
                     const SizedBox(height: 16),
                     _buildCycleTrackerCard(context),
-                    _buildForecastBar(context),
                     const SizedBox(height: 24),
-                    _buildTodayWithDocsyHero(context),
-                    const SizedBox(height: 22),
-                    const LogSymptomsSection(stageKey: 'livingwithmycycle'),
-                const SizedBox(height: 18),
-                const HealthLibrarySection(stageKey: 'livingwithmycycle'),
+                    _buildEyebrow("Today's Log & Impact"),
+                    const LogSymptomsSection(
+                      stageKey: 'livingwithmycycle',
+                      showHeading: false,
+                    ),
+                    const SizedBox(height: 14),
+                    _buildWorkImpactLog(context),
                     const SizedBox(height: 24),
                     _buildDailyCycleSyncHub(context),
                     const SizedBox(height: 24),
-                    _buildWhatAreYouNoticingSection(context),
-                    const SizedBox(height: 24),
-                    _buildWorkImpactLog(context),
-                    const SizedBox(height: 24),
-                    _buildLifeModeSection(context),
-                    const SizedBox(height: 24),
                     _buildPatternIntelligenceSection(context),
                     const SizedBox(height: 24),
-                    _buildUnderstandYourBodySection(context),
+                    _buildCycleHealthGuide(context),
                     const SizedBox(height: 24),
                     _buildDoctorReadinessSection(context),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 44),
                   ],
                 ),
               ),

@@ -113,7 +113,7 @@ class _PartnerOnboardingWizardState extends State<PartnerOnboardingWizard> {
         'relationshipType': _relationshipType,
         'supportGoals': _selectedGoals,
         'learningDepth': _learningDepth,
-        'lifeStage': 'everydayWellness', // Fallback defaults
+        'lifeStage': 'livingWithMyCycle', // Fallback defaults
       }
     };
     try {

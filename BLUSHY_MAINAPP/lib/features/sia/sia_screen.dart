@@ -223,14 +223,14 @@ class _BlushySiaScreenState extends State<BlushySiaScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final state = BlushyOSProvider.of(context);
-    String stage = 'everydayWellness';
+    String stage = 'livingWithMyCycle';
     try {
       if (state.selectedRole == 'partner') {
         stage = 'partner';
       } else {
         final profile = BlushyStorage.read('user_profile.json');
         if (profile['profile'] != null) {
-          stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
+          stage = profile['profile']['lifeStage']?.toString() ?? 'livingWithMyCycle';
         }
       }
     } catch (_) {}
@@ -539,14 +539,14 @@ class _BlushySiaScreenState extends State<BlushySiaScreen>
       savedWeight = state.personalContext.weight;
     }
 
-    String stage = 'everydayWellness';
+    String stage = 'livingWithMyCycle';
     try {
       if (state.selectedRole == 'partner') {
         stage = 'partner';
       } else {
         final profile = BlushyStorage.read('user_profile.json');
         if (profile['profile'] != null) {
-          stage = profile['profile']['lifeStage']?.toString() ?? 'everydayWellness';
+          stage = profile['profile']['lifeStage']?.toString() ?? 'livingWithMyCycle';
         }
       }
     } catch (_) {}
@@ -2697,11 +2697,11 @@ class _TodaysContextSectionState extends State<TodaysContextSection> {
                         if (moodKey.contains("irrit")) moodEmoji = "😤";
                         if (moodText == "Not Logged") moodEmoji = "📋";
 
-                        String stageStr = 'everydayWellness';
+                        String stageStr = 'livingWithMyCycle';
                         try {
                           final profileData = BlushyStorage.read('user_profile.json');
                           final answers = profileData['profile'] ?? profileData ?? {};
-                          stageStr = (pc.lifeStage ?? answers['lifeStage'] ?? answers['life_stage'] ?? 'everydayWellness')
+                          stageStr = (pc.lifeStage ?? answers['lifeStage'] ?? answers['life_stage'] ?? 'livingWithMyCycle')
                               .toString()
                               .trim()
                               .replaceAll('_', '')

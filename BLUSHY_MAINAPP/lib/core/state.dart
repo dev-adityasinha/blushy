@@ -690,9 +690,10 @@ class BlushyOSState extends ChangeNotifier {
           final answers = onboarding['onboardingAnswers'] as Map<String, dynamic>;
           if (answers.isNotEmpty && answers.length >= 2) {
             _onboardingCompleted = true;
-          } else if (profile?['onboardingCompleted'] != true) {
-            _onboardingCompleted = false;
+          } else if (profile?['onboardingCompleted'] == true) {
+            _onboardingCompleted = true;
           }
+          // Do not downgrade _onboardingCompleted to false if already completed on this device!
 
           if (answers['life_stage'] != null && answers['life_stage'].toString().isNotEmpty) {
             lifeStage = answers['life_stage'].toString();
@@ -1402,11 +1403,13 @@ class BlushyOSState extends ChangeNotifier {
 
   void setActiveLifeStages(Set<String> stages) {
     final currentStages = Set<String>.from(stages);
+    currentStages.remove('everydayWellness');
     if (currentStages.contains('firstPeriodNotStarted')) {
-      currentStages.removeWhere((s) => s != 'firstPeriodNotStarted' && s != 'everydayWellness');
+      currentStages.removeWhere((s) => s != 'firstPeriodNotStarted');
     }
     if (currentStages.isEmpty) {
-      currentStages.add(_personalContext.lifeStage ?? 'firstPeriodNotStarted');
+      final fallback = _personalContext.lifeStage;
+      currentStages.add(fallback != null && fallback != 'everydayWellness' ? fallback : 'livingWithMyCycle');
     }
 
     try {

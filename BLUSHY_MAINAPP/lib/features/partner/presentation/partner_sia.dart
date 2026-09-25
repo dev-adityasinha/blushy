@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../theme/colors.dart';
 import '../../../services/api_partner_service.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/docsy_avatar.dart';
 import '../partner_stage.dart';
 import 'partner_stage_today.dart';
 import '../../../shared/live_refresh.dart';
@@ -270,13 +271,20 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen>
                 onPressed: () => Navigator.pop(context),
               )
             : null,
-        title: Text(
-          "Ask Docsy",
-          style: GoogleFonts.manrope(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: BlushyColors.text,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const DocsyAvatar(size: 22, color: BlushyColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              "Ask Docsy",
+              style: GoogleFonts.manrope(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: BlushyColors.text,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
       ),
@@ -306,7 +314,7 @@ class _PartnerSiaScreenState extends State<PartnerSiaScreen>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.auto_awesome, color: BlushyColors.primary, size: 48),
+                          const DocsyAvatar(size: 56, color: BlushyColors.primary),
                           const SizedBox(height: 16),
                           Text(
                             "Ask Docsy about supporting her",

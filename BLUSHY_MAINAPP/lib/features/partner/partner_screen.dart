@@ -1279,7 +1279,6 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         ),
       );
     }
-
     final primaryPartner = hasConnection ? _connections.first : null;
     final partnerName = primaryPartner != null
         ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner))

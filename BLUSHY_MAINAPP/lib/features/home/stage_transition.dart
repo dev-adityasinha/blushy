@@ -83,7 +83,7 @@ String transitionRefusalMessage(String? errorCode, Map<String, dynamic>? meta, S
   switch (errorCode) {
     case 'TRANSITION_NOT_ALLOWED':
       return "Blushy can't move you from $from straight to $targetTitle. "
-          'Pick the stage that comes between, or Everyday Wellness, first.';
+          'Pick the stage that comes between, or Living with My Cycle, first.';
     case 'MISSING_BRANCH_CONTEXT':
       final missing = meta?['missingContext'];
       if (missing is List && missing.contains('baby_birth_date')) {

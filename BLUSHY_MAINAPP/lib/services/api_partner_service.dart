@@ -194,7 +194,14 @@ class ApiPartnerService {
       }
       return {'success': true};
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? 'Failed to send invite.';
+      final data = e.response?.data;
+      String? message;
+      if (data is Map) {
+        message = data['message']?.toString() ??
+            (data['error'] is Map ? data['error']['message']?.toString() : null) ??
+            (data['error'] is String ? data['error']?.toString() : null);
+      }
+      message ??= e.message ?? 'Failed to send invite.';
       return {'error': message};
     } catch (e) {
       return {'error': e.toString()};
