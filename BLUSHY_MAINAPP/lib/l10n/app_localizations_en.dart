@@ -9,6 +9,102 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get onbOnDeviceEncryption => 'On-Device Encryption';
+
+  @override
+  String get onbZeroDataSelling => 'Zero Data Selling';
+
+  @override
+  String get onbCompleteSovereignty => 'Complete Sovereignty';
+
+  @override
+  String get onbPleaseUpdate => 'Please update Blushy';
+
+  @override
+  String get onbAdaptsToYou => 'Adapts To You';
+
+  @override
+  String get onbDailyWellnessCare => 'Daily Wellness Care';
+
+  @override
+  String get onbPrivateConfidential => 'Private & Confidential';
+
+  @override
+  String get onbSafeSpace => 'A safe space to reflect without judgment.';
+
+  @override
+  String get onbWhatChanges => 'What changes have you noticed?';
+
+  @override
+  String get onbFeelConfident => 'What would help you feel most confident?';
+
+  @override
+  String get onbHowPredictable => 'How predictable are your periods?';
+
+  @override
+  String get onbWhichNotice => 'Which of these do you notice?';
+
+  @override
+  String get onbSelectAllGoals =>
+      'Select all goals that apply to your journey.';
+
+  @override
+  String get onbAddEarlierPeriod => '+ Add earlier period date';
+
+  @override
+  String get onbDocsyPrioritizes =>
+      'Docsy prioritizes these on your home dashboard.';
+
+  @override
+  String get onbConditionModules =>
+      'Helps tailor condition-specific tracking modules.';
+
+  @override
+  String get onbDocsyAdaptsCards =>
+      'Docsy adapts tracking cards to prioritize these.';
+
+  @override
+  String get onbWhatSupport => 'What support would help most?';
+
+  @override
+  String get onbTailorHormonal =>
+      'Tailor your hormonal health tracking workspace.';
+
+  @override
+  String get onbSelectBiomarker => 'Select the primary biomarker you observe.';
+
+  @override
+  String get onbWhichSigns => 'Which bodily signs do you notice?';
+
+  @override
+  String get onbConceptionPriorities => 'What are your conception priorities?';
+
+  @override
+  String get onbWhatSymptoms => 'What symptoms are you experiencing?';
+
+  @override
+  String get onbCustomizePregnancy =>
+      'Customize your pregnancy journey preferences.';
+
+  @override
+  String get onbTailorPostpartum =>
+      'Tailor your postpartum recovery workspace.';
+
+  @override
+  String get onbHowHealing => 'How is your body healing?';
+
+  @override
+  String get onbUsingTherapy => 'Are you using any therapy or support?';
+
+  @override
+  String get onbSavesPriorities =>
+      'Saves priorities for home insights and tracking.';
+
+  @override
+  String get onbSelectAllComfort =>
+      'Select all that affect your daily comfort.';
+
+  @override
   String get vnRecordPrompt =>
       'Please record or write a short reflection note.';
 

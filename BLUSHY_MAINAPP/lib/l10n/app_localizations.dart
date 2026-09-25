@@ -108,6 +108,180 @@ abstract class AppLocalizations {
     Locale('te'),
   ];
 
+  /// No description provided for @onbOnDeviceEncryption.
+  ///
+  /// In en, this message translates to:
+  /// **'On-Device Encryption'**
+  String get onbOnDeviceEncryption;
+
+  /// No description provided for @onbZeroDataSelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero Data Selling'**
+  String get onbZeroDataSelling;
+
+  /// No description provided for @onbCompleteSovereignty.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Sovereignty'**
+  String get onbCompleteSovereignty;
+
+  /// No description provided for @onbPleaseUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Please update Blushy'**
+  String get onbPleaseUpdate;
+
+  /// No description provided for @onbAdaptsToYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapts To You'**
+  String get onbAdaptsToYou;
+
+  /// No description provided for @onbDailyWellnessCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Wellness Care'**
+  String get onbDailyWellnessCare;
+
+  /// No description provided for @onbPrivateConfidential.
+  ///
+  /// In en, this message translates to:
+  /// **'Private & Confidential'**
+  String get onbPrivateConfidential;
+
+  /// No description provided for @onbSafeSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'A safe space to reflect without judgment.'**
+  String get onbSafeSpace;
+
+  /// No description provided for @onbWhatChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'What changes have you noticed?'**
+  String get onbWhatChanges;
+
+  /// No description provided for @onbFeelConfident.
+  ///
+  /// In en, this message translates to:
+  /// **'What would help you feel most confident?'**
+  String get onbFeelConfident;
+
+  /// No description provided for @onbHowPredictable.
+  ///
+  /// In en, this message translates to:
+  /// **'How predictable are your periods?'**
+  String get onbHowPredictable;
+
+  /// No description provided for @onbWhichNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Which of these do you notice?'**
+  String get onbWhichNotice;
+
+  /// No description provided for @onbSelectAllGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all goals that apply to your journey.'**
+  String get onbSelectAllGoals;
+
+  /// No description provided for @onbAddEarlierPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'+ Add earlier period date'**
+  String get onbAddEarlierPeriod;
+
+  /// No description provided for @onbDocsyPrioritizes.
+  ///
+  /// In en, this message translates to:
+  /// **'Docsy prioritizes these on your home dashboard.'**
+  String get onbDocsyPrioritizes;
+
+  /// No description provided for @onbConditionModules.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps tailor condition-specific tracking modules.'**
+  String get onbConditionModules;
+
+  /// No description provided for @onbDocsyAdaptsCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Docsy adapts tracking cards to prioritize these.'**
+  String get onbDocsyAdaptsCards;
+
+  /// No description provided for @onbWhatSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'What support would help most?'**
+  String get onbWhatSupport;
+
+  /// No description provided for @onbTailorHormonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailor your hormonal health tracking workspace.'**
+  String get onbTailorHormonal;
+
+  /// No description provided for @onbSelectBiomarker.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the primary biomarker you observe.'**
+  String get onbSelectBiomarker;
+
+  /// No description provided for @onbWhichSigns.
+  ///
+  /// In en, this message translates to:
+  /// **'Which bodily signs do you notice?'**
+  String get onbWhichSigns;
+
+  /// No description provided for @onbConceptionPriorities.
+  ///
+  /// In en, this message translates to:
+  /// **'What are your conception priorities?'**
+  String get onbConceptionPriorities;
+
+  /// No description provided for @onbWhatSymptoms.
+  ///
+  /// In en, this message translates to:
+  /// **'What symptoms are you experiencing?'**
+  String get onbWhatSymptoms;
+
+  /// No description provided for @onbCustomizePregnancy.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize your pregnancy journey preferences.'**
+  String get onbCustomizePregnancy;
+
+  /// No description provided for @onbTailorPostpartum.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailor your postpartum recovery workspace.'**
+  String get onbTailorPostpartum;
+
+  /// No description provided for @onbHowHealing.
+  ///
+  /// In en, this message translates to:
+  /// **'How is your body healing?'**
+  String get onbHowHealing;
+
+  /// No description provided for @onbUsingTherapy.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you using any therapy or support?'**
+  String get onbUsingTherapy;
+
+  /// No description provided for @onbSavesPriorities.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves priorities for home insights and tracking.'**
+  String get onbSavesPriorities;
+
+  /// No description provided for @onbSelectAllComfort.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all that affect your daily comfort.'**
+  String get onbSelectAllComfort;
+
   /// No description provided for @vnRecordPrompt.
   ///
   /// In en, this message translates to:

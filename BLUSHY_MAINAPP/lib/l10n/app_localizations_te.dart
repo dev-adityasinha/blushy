@@ -9,6 +9,105 @@ class AppLocalizationsTe extends AppLocalizations {
   AppLocalizationsTe([String locale = 'te']) : super(locale);
 
   @override
+  String get onbOnDeviceEncryption => 'పరికరంలో ఎన్‌క్రిప్షన్';
+
+  @override
+  String get onbZeroDataSelling => 'డేటా అమ్మకం లేదు';
+
+  @override
+  String get onbCompleteSovereignty => 'పూర్తి సార్వభౌమత్వం';
+
+  @override
+  String get onbPleaseUpdate => 'దయచేసి Blushy నవీకరించండి';
+
+  @override
+  String get onbAdaptsToYou => 'మీకు అనుగుణంగా మారుతుంది';
+
+  @override
+  String get onbDailyWellnessCare => 'రోజువారీ ఆరోగ్య సంరక్షణ';
+
+  @override
+  String get onbPrivateConfidential => 'ప్రైవేట్ & గోప్యం';
+
+  @override
+  String get onbSafeSpace => 'తీర్పు లేకుండా ఆలోచించడానికి ఒక సురక్షిత స్థలం.';
+
+  @override
+  String get onbWhatChanges => 'మీరు ఏ మార్పులను గమనించారు?';
+
+  @override
+  String get onbFeelConfident =>
+      'మీకు అత్యంత ఆత్మవిశ్వాసంగా అనిపించడానికి ఏది సహాయపడుతుంది?';
+
+  @override
+  String get onbHowPredictable => 'మీ పీరియడ్స్ ఎంత అంచనా వేయదగినవి?';
+
+  @override
+  String get onbWhichNotice => 'వీటిలో మీరు దేన్ని గమనిస్తారు?';
+
+  @override
+  String get onbSelectAllGoals =>
+      'మీ ప్రయాణానికి వర్తించే అన్ని లక్ష్యాలను ఎంచుకోండి.';
+
+  @override
+  String get onbAddEarlierPeriod => '+ మునుపటి పీరియడ్ తేదీని జోడించండి';
+
+  @override
+  String get onbDocsyPrioritizes =>
+      'Docsy వీటిని మీ హోమ్ డాష్‌బోర్డ్‌లో ప్రాధాన్యత ఇస్తుంది.';
+
+  @override
+  String get onbConditionModules =>
+      'పరిస్థితి-నిర్దిష్ట ట్రాకింగ్ మాడ్యూల్‌లను రూపొందించడంలో సహాయపడుతుంది.';
+
+  @override
+  String get onbDocsyAdaptsCards =>
+      'Docsy వీటికి ప్రాధాన్యత ఇవ్వడానికి ట్రాకింగ్ కార్డ్‌లను మారుస్తుంది.';
+
+  @override
+  String get onbWhatSupport => 'ఏ మద్దతు ఎక్కువగా సహాయపడుతుంది?';
+
+  @override
+  String get onbTailorHormonal =>
+      'మీ హార్మోనల్ ఆరోగ్య ట్రాకింగ్ వర్క్‌స్పేస్‌ను రూపొందించండి.';
+
+  @override
+  String get onbSelectBiomarker =>
+      'మీరు గమనించే ప్రాథమిక బయోమార్కర్‌ను ఎంచుకోండి.';
+
+  @override
+  String get onbWhichSigns => 'మీరు శరీరంలో ఏ సంకేతాలను గమనిస్తారు?';
+
+  @override
+  String get onbConceptionPriorities => 'మీ గర్భధారణ ప్రాధాన్యతలు ఏమిటి?';
+
+  @override
+  String get onbWhatSymptoms => 'మీరు ఏ లక్షణాలను అనుభవిస్తున్నారు?';
+
+  @override
+  String get onbCustomizePregnancy =>
+      'మీ గర్భధారణ ప్రయాణ ప్రాధాన్యతలను అనుకూలీకరించండి.';
+
+  @override
+  String get onbTailorPostpartum =>
+      'మీ ప్రసవానంతర కోలుకునే వర్క్‌స్పేస్‌ను రూపొందించండి.';
+
+  @override
+  String get onbHowHealing => 'మీ శరీరం ఎలా కోలుకుంటోంది?';
+
+  @override
+  String get onbUsingTherapy =>
+      'మీరు ఏదైనా థెరపీ లేదా మద్దతు ఉపయోగిస్తున్నారా?';
+
+  @override
+  String get onbSavesPriorities =>
+      'హోమ్ ఇన్‌సైట్‌లు మరియు ట్రాకింగ్ కోసం ప్రాధాన్యతలను సేవ్ చేస్తుంది.';
+
+  @override
+  String get onbSelectAllComfort =>
+      'మీ రోజువారీ సౌకర్యాన్ని ప్రభావితం చేసే అన్నింటినీ ఎంచుకోండి.';
+
+  @override
   String get vnRecordPrompt =>
       'దయచేసి ఒక చిన్న రిఫ్లెక్షన్ నోట్‌ను రికార్డ్ చేయండి లేదా రాయండి.';
 

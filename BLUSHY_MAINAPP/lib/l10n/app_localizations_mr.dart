@@ -9,6 +9,104 @@ class AppLocalizationsMr extends AppLocalizations {
   AppLocalizationsMr([String locale = 'mr']) : super(locale);
 
   @override
+  String get onbOnDeviceEncryption => 'डिव्हाइसवर एन्क्रिप्शन';
+
+  @override
+  String get onbZeroDataSelling => 'शून्य डेटा विक्री';
+
+  @override
+  String get onbCompleteSovereignty => 'संपूर्ण सार्वभौमत्व';
+
+  @override
+  String get onbPleaseUpdate => 'कृपया Blushy अपडेट करा';
+
+  @override
+  String get onbAdaptsToYou => 'तुमच्यानुसार जुळवून घेते';
+
+  @override
+  String get onbDailyWellnessCare => 'दैनिक निरोगी काळजी';
+
+  @override
+  String get onbPrivateConfidential => 'खाजगी आणि गोपनीय';
+
+  @override
+  String get onbSafeSpace =>
+      'कोणत्याही निर्णयाशिवाय चिंतन करण्यासाठी एक सुरक्षित जागा.';
+
+  @override
+  String get onbWhatChanges => 'तुम्ही कोणते बदल पाहिले?';
+
+  @override
+  String get onbFeelConfident =>
+      'तुम्हाला सर्वाधिक आत्मविश्वास वाटण्यास काय मदत करेल?';
+
+  @override
+  String get onbHowPredictable => 'तुमची मासिक पाळी किती अंदाज करण्याजोगी आहे?';
+
+  @override
+  String get onbWhichNotice => 'यापैकी तुम्ही काय पाहता?';
+
+  @override
+  String get onbSelectAllGoals =>
+      'तुमच्या प्रवासाला लागू होणारी सर्व उद्दिष्टे निवडा.';
+
+  @override
+  String get onbAddEarlierPeriod => '+ आधीची मासिक पाळी तारीख जोडा';
+
+  @override
+  String get onbDocsyPrioritizes =>
+      'Docsy हे तुमच्या होम डॅशबोर्डवर प्राधान्य देते.';
+
+  @override
+  String get onbConditionModules =>
+      'स्थिती-विशिष्ट ट्रॅकिंग मॉड्यूल तयार करण्यास मदत करते.';
+
+  @override
+  String get onbDocsyAdaptsCards =>
+      'Docsy यांना प्राधान्य देण्यासाठी ट्रॅकिंग कार्ड जुळवते.';
+
+  @override
+  String get onbWhatSupport => 'कोणती मदत सर्वाधिक उपयोगी ठरेल?';
+
+  @override
+  String get onbTailorHormonal =>
+      'तुमचे हार्मोनल आरोग्य ट्रॅकिंग वर्कस्पेस सानुकूल करा.';
+
+  @override
+  String get onbSelectBiomarker => 'तुम्ही पाहत असलेला मुख्य बायोमार्कर निवडा.';
+
+  @override
+  String get onbWhichSigns => 'तुम्ही शरीराची कोणती चिन्हे पाहता?';
+
+  @override
+  String get onbConceptionPriorities => 'तुमची गर्भधारणा प्राधान्ये काय आहेत?';
+
+  @override
+  String get onbWhatSymptoms => 'तुम्ही कोणती लक्षणे अनुभवत आहात?';
+
+  @override
+  String get onbCustomizePregnancy =>
+      'तुमच्या गर्भधारणा प्रवासाची प्राधान्ये सानुकूल करा.';
+
+  @override
+  String get onbTailorPostpartum =>
+      'तुमचे प्रसूतीनंतरचे रिकव्हरी वर्कस्पेस सानुकूल करा.';
+
+  @override
+  String get onbHowHealing => 'तुमचे शरीर कसे बरे होत आहे?';
+
+  @override
+  String get onbUsingTherapy => 'तुम्ही कोणतीही थेरपी किंवा मदत घेत आहात का?';
+
+  @override
+  String get onbSavesPriorities =>
+      'होम इनसाइट्स आणि ट्रॅकिंगसाठी प्राधान्ये जतन करते.';
+
+  @override
+  String get onbSelectAllComfort =>
+      'तुमच्या दैनंदिन आरामावर परिणाम करणारे सर्व निवडा.';
+
+  @override
   String get vnRecordPrompt =>
       'कृपया एक छोटी चिंतन टीप रेकॉर्ड करा किंवा लिहा.';
 

@@ -9,6 +9,106 @@ class AppLocalizationsTa extends AppLocalizations {
   AppLocalizationsTa([String locale = 'ta']) : super(locale);
 
   @override
+  String get onbOnDeviceEncryption => 'சாதனத்தில் குறியாக்கம்';
+
+  @override
+  String get onbZeroDataSelling => 'தரவு விற்பனை இல்லை';
+
+  @override
+  String get onbCompleteSovereignty => 'முழு உரிமை';
+
+  @override
+  String get onbPleaseUpdate => 'தயவுசெய்து Blushy-ஐ புதுப்பிக்கவும்';
+
+  @override
+  String get onbAdaptsToYou => 'உங்களுக்கு ஏற்ப மாறுகிறது';
+
+  @override
+  String get onbDailyWellnessCare => 'தினசரி நல்வாழ்வு பராமரிப்பு';
+
+  @override
+  String get onbPrivateConfidential => 'தனிப்பட்ட & ரகசியம்';
+
+  @override
+  String get onbSafeSpace =>
+      'தீர்ப்பு இல்லாமல் சிந்திக்க ஒரு பாதுகாப்பான இடம்.';
+
+  @override
+  String get onbWhatChanges => 'நீங்கள் என்ன மாற்றங்களைக் கவனித்தீர்கள்?';
+
+  @override
+  String get onbFeelConfident => 'நீங்கள் மிகவும் நம்பிக்கையாக உணர எது உதவும்?';
+
+  @override
+  String get onbHowPredictable => 'உங்கள் மாதவிடாய் எவ்வளவு கணிக்கக்கூடியது?';
+
+  @override
+  String get onbWhichNotice => 'இவற்றில் எதை நீங்கள் கவனிக்கிறீர்கள்?';
+
+  @override
+  String get onbSelectAllGoals =>
+      'உங்கள் பயணத்திற்குப் பொருந்தும் அனைத்து இலக்குகளையும் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get onbAddEarlierPeriod => '+ முந்தைய மாதவிடாய் தேதியைச் சேர்க்கவும்';
+
+  @override
+  String get onbDocsyPrioritizes =>
+      'Docsy இவற்றை உங்கள் முகப்பு டாஷ்போர்டில் முன்னுரிமைப்படுத்துகிறது.';
+
+  @override
+  String get onbConditionModules =>
+      'நிலை சார்ந்த கண்காணிப்பு தொகுதிகளை வடிவமைக்க உதவுகிறது.';
+
+  @override
+  String get onbDocsyAdaptsCards =>
+      'Docsy இவற்றுக்கு முன்னுரிமை அளிக்க கண்காணிப்பு அட்டைகளை மாற்றுகிறது.';
+
+  @override
+  String get onbWhatSupport => 'எந்த ஆதரவு அதிகம் உதவும்?';
+
+  @override
+  String get onbTailorHormonal =>
+      'உங்கள் ஹார்மோன் சுகாதார கண்காணிப்பு பணியிடத்தை வடிவமைக்கவும்.';
+
+  @override
+  String get onbSelectBiomarker =>
+      'நீங்கள் கவனிக்கும் முதன்மை உயிரியல் குறியீட்டைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get onbWhichSigns => 'உடலின் எந்த அறிகுறிகளை நீங்கள் கவனிக்கிறீர்கள்?';
+
+  @override
+  String get onbConceptionPriorities =>
+      'உங்கள் கருத்தரிப்பு முன்னுரிமைகள் என்ன?';
+
+  @override
+  String get onbWhatSymptoms => 'நீங்கள் என்ன அறிகுறிகளை அனுபவிக்கிறீர்கள்?';
+
+  @override
+  String get onbCustomizePregnancy =>
+      'உங்கள் கர்ப்பகால பயண விருப்பங்களைத் தனிப்பயனாக்குங்கள்.';
+
+  @override
+  String get onbTailorPostpartum =>
+      'உங்கள் பிரசவத்திற்குப் பிந்தைய மீட்பு பணியிடத்தை வடிவமைக்கவும்.';
+
+  @override
+  String get onbHowHealing => 'உங்கள் உடல் எப்படி குணமடைகிறது?';
+
+  @override
+  String get onbUsingTherapy =>
+      'நீங்கள் ஏதேனும் சிகிச்சை அல்லது ஆதரவைப் பயன்படுத்துகிறீர்களா?';
+
+  @override
+  String get onbSavesPriorities =>
+      'முகப்பு நுண்ணறிவு மற்றும் கண்காணிப்புக்கான முன்னுரிமைகளைச் சேமிக்கிறது.';
+
+  @override
+  String get onbSelectAllComfort =>
+      'உங்கள் அன்றாட வசதியைப் பாதிக்கும் அனைத்தையும் தேர்ந்தெடுக்கவும்.';
+
+  @override
   String get vnRecordPrompt =>
       'தயவுசெய்து ஒரு சிறிய பிரதிபலிப்பு குறிப்பைப் பதிவு செய்யவும் அல்லது எழுதவும்.';
 

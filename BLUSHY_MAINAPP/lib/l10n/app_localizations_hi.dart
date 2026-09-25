@@ -9,6 +9,105 @@ class AppLocalizationsHi extends AppLocalizations {
   AppLocalizationsHi([String locale = 'hi']) : super(locale);
 
   @override
+  String get onbOnDeviceEncryption => 'डिवाइस पर एन्क्रिप्शन';
+
+  @override
+  String get onbZeroDataSelling => 'शून्य डेटा बिक्री';
+
+  @override
+  String get onbCompleteSovereignty => 'पूर्ण स्वामित्व';
+
+  @override
+  String get onbPleaseUpdate => 'कृपया Blushy अपडेट करें';
+
+  @override
+  String get onbAdaptsToYou => 'आपके अनुसार ढलता है';
+
+  @override
+  String get onbDailyWellnessCare => 'दैनिक कल्याण देखभाल';
+
+  @override
+  String get onbPrivateConfidential => 'निजी और गोपनीय';
+
+  @override
+  String get onbSafeSpace =>
+      'बिना किसी निर्णय के चिंतन करने के लिए एक सुरक्षित स्थान।';
+
+  @override
+  String get onbWhatChanges => 'आपने क्या बदलाव देखे हैं?';
+
+  @override
+  String get onbFeelConfident =>
+      'क्या आपको सबसे अधिक आत्मविश्वास महसूस करने में मदद करेगा?';
+
+  @override
+  String get onbHowPredictable => 'आपकी माहवारी कितनी अनुमानित है?';
+
+  @override
+  String get onbWhichNotice => 'इनमें से आप क्या नोटिस करते हैं?';
+
+  @override
+  String get onbSelectAllGoals =>
+      'अपनी यात्रा पर लागू होने वाले सभी लक्ष्य चुनें।';
+
+  @override
+  String get onbAddEarlierPeriod => '+ पहले की माहवारी तिथि जोड़ें';
+
+  @override
+  String get onbDocsyPrioritizes =>
+      'Docsy इन्हें आपके होम डैशबोर्ड पर प्राथमिकता देता है।';
+
+  @override
+  String get onbConditionModules =>
+      'स्थिति-विशिष्ट ट्रैकिंग मॉड्यूल को अनुकूलित करने में मदद करता है।';
+
+  @override
+  String get onbDocsyAdaptsCards =>
+      'Docsy इन्हें प्राथमिकता देने के लिए ट्रैकिंग कार्ड ढालता है।';
+
+  @override
+  String get onbWhatSupport => 'कौन-सी सहायता सबसे अधिक मदद करेगी?';
+
+  @override
+  String get onbTailorHormonal =>
+      'अपने हार्मोनल स्वास्थ्य ट्रैकिंग वर्कस्पेस को अनुकूलित करें।';
+
+  @override
+  String get onbSelectBiomarker =>
+      'आप जिस मुख्य बायोमार्कर को देखते हैं उसे चुनें।';
+
+  @override
+  String get onbWhichSigns => 'आप शरीर के कौन-से संकेत नोटिस करते हैं?';
+
+  @override
+  String get onbConceptionPriorities => 'आपकी गर्भधारण प्राथमिकताएँ क्या हैं?';
+
+  @override
+  String get onbWhatSymptoms => 'आप कौन-से लक्षण अनुभव कर रहे हैं?';
+
+  @override
+  String get onbCustomizePregnancy =>
+      'अपनी गर्भावस्था यात्रा प्राथमिकताएँ अनुकूलित करें।';
+
+  @override
+  String get onbTailorPostpartum =>
+      'अपने प्रसवोत्तर रिकवरी वर्कस्पेस को अनुकूलित करें।';
+
+  @override
+  String get onbHowHealing => 'आपका शरीर कैसे ठीक हो रहा है?';
+
+  @override
+  String get onbUsingTherapy => 'क्या आप कोई थेरेपी या सहायता ले रहे हैं?';
+
+  @override
+  String get onbSavesPriorities =>
+      'होम इनसाइट्स और ट्रैकिंग के लिए प्राथमिकताएँ सहेजता है।';
+
+  @override
+  String get onbSelectAllComfort =>
+      'वह सब चुनें जो आपके दैनिक आराम को प्रभावित करते हैं।';
+
+  @override
   String get vnRecordPrompt => 'कृपया एक छोटा चिंतन नोट रिकॉर्ड करें या लिखें।';
 
   @override
