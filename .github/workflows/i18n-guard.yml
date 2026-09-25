@@ -1,0 +1,34 @@
+name: i18n guard
+
+# Fails when a change adds a hardcoded user-facing string in lib/ that bypasses
+# AppLocalizations. Only inspects added lines; append `// i18n-ignore` to a line
+# for deliberately-English (reviewed clinical) copy. See BLUSHY_MAINAPP/CLAUDE.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Determine diff range
+        id: range
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "range=${{ github.event.pull_request.base.sha }}..${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.before }}" ] && ! echo "${{ github.event.before }}" | grep -qE '^0+$'; then
+            echo "range=${{ github.event.before }}..${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "range=HEAD~1..HEAD" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run i18n guard
+        run: python BLUSHY_MAINAPP/tool/i18n_guard.py --range "${{ steps.range.outputs.range }}"
