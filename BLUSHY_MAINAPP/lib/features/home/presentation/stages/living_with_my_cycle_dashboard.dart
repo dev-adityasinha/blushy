@@ -14,7 +14,6 @@ import '../../widgets/real_insights_list.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
-import 'health_library_section.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
 
@@ -94,6 +93,13 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
     if (_currentCycleDay <= _periodLength + 11) return 'Ovulatory Phase';
     return 'Luteal Phase';
   }
+
+  bool get _isMenstrualPhase => _currentCycleDay <= _periodLength;
+  bool get _isFollicularPhase =>
+      _currentCycleDay > _periodLength && _currentCycleDay <= _periodLength + 7;
+  bool get _isOvulatoryPhase =>
+      _currentCycleDay > _periodLength + 7 && _currentCycleDay <= _periodLength + 11;
+  bool get _isLutealPhase => _currentCycleDay > _periodLength + 11;
 
   /// The tracker's colour for the current phase, so the "Day N" number matches
   /// the arc and legend (Menstrual red, Follicular orange, Ovulatory yellow,
@@ -770,10 +776,6 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
   // ════════════════════════════════════════════════════════════════
   // 03 — TODAY'S LOG & FUNCTIONAL WORK IMPACT
   // ════════════════════════════════════════════════════════════════
-  Widget _buildTellDocsyRow(BuildContext context) {
-    return const SizedBox.shrink();
-  }
-
   Widget _buildWorkImpactLog(BuildContext context) {
     const levels = [
       {
@@ -1006,7 +1008,10 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
             padding: const EdgeInsets.only(right: 8),
             child: InkWell(
               onTap: () {
-                setState(() => _focusMode = id);
+                setState(() {
+                  _focusMode = id;
+                  _activePillar = _primaryOrderForFocus().first[0];
+                });
                 UserStateStore.write('stage3_focus_mode', {'focus': id});
               },
               borderRadius: BorderRadius.circular(20),
@@ -1149,51 +1154,51 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
         'icon': Icons.lightbulb_rounded,
         'color': const Color(0xFFFF4A00),
         'bg': const Color(0xFFFFEBE0),
-        'hormoneTag': _currentCycleDay <= 5
+        'hormoneTag': _isMenstrualPhase
             ? 'Baseline Hormones'
-            : (_currentCycleDay <= 12
+            : (_isFollicularPhase
                 ? 'Estrogen Rising'
-                : (_currentCycleDay <= 16
+                : (_isOvulatoryPhase
                     ? 'Estrogen & Testosterone Peak'
                     : 'Progesterone Dominant')),
-        'quickCue': _currentCycleDay <= 5
+        'quickCue': _isMenstrualPhase
             ? 'Quiet planning'
-            : (_currentCycleDay <= 12
+            : (_isFollicularPhase
                 ? 'Creative momentum'
-                : (_currentCycleDay <= 16
+                : (_isOvulatoryPhase
                     ? 'Peak pitch clarity'
                     : 'Methodical review')),
         'highlights': [
           {
             'icon': Icons.track_changes_rounded,
             'label': 'Priority',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Big-picture strategic planning'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? 'Launching projects & team brainstorming'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'High-stakes pitches & presentations'
                         : 'Error-checking & wrapping deliverables')),
           },
           {
             'icon': Icons.timer_outlined,
             'label': 'Pacing',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Low meeting density · protect deep hours'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? 'High cognitive stamina for collaboration'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'Peak verbal clarity & social ease'
                         : 'Quiet, methodical work blocks')),
           },
           {
             'icon': Icons.psychology_outlined,
             'label': 'Mindset',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Reflective & inward vision'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? 'Curious, creative & fast-moving'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'Magnetic, outward & decisive'
                         : 'Pragmatic & detail-sharp')),
           },
@@ -1208,47 +1213,47 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
         'icon': Icons.restaurant_rounded,
         'color': const Color(0xFF0D9488),
         'bg': const Color(0xFFCCFBF1),
-        'hormoneTag': _currentCycleDay <= 5
+        'hormoneTag': _isMenstrualPhase
             ? 'Iron & Blood Recovery'
-            : (_currentCycleDay <= 12
+            : (_isFollicularPhase
                 ? 'Follicular Development'
-                : (_currentCycleDay <= 16
+                : (_isOvulatoryPhase
                     ? 'Liver Estrogen Clearance'
                     : '+200 kcal Metabolic Burn')),
-        'quickCue': _currentCycleDay <= 5
+        'quickCue': _isMenstrualPhase
             ? 'Iron & greens'
-            : (_currentCycleDay <= 12
+            : (_isFollicularPhase
                 ? 'Plant fats & oats'
-                : (_currentCycleDay <= 16
+                : (_isOvulatoryPhase
                     ? 'Light fiber & berries'
                     : 'Protein & sweet potato')),
         'highlights': [
           {
             'icon': Icons.eco_rounded,
             'label': 'Plate',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Iron-rich lentils, dark leafy greens & bone broth'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? 'Sprouted grains, fermented foods & avocado fats'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'Cruciferous greens, berries & light fiber'
                         : 'Sweet potatoes, oats & dark chocolate')),
           },
           {
             'icon': Icons.medication_liquid_rounded,
             'label': 'Key Nutrient',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Iron & magnesium for cellular recovery'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? 'B-vitamins & healthy plant fats'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'Antioxidants & liver support'
                         : 'Magnesium & complex carbohydrates')),
           },
           {
             'icon': Icons.local_fire_department_outlined,
             'label': 'Metabolism',
-            'val': _currentCycleDay <= 16
+            'val': !_isLutealPhase
                 ? 'Steady basal insulin sensitivity'
                 : '+150 to 250 kcal metabolic increase · prioritize protein',
           },
@@ -1263,51 +1268,51 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
         'icon': Icons.directions_run_rounded,
         'color': const Color(0xFF2563EB),
         'bg': const Color(0xFFDBEAFE),
-        'hormoneTag': _currentCycleDay <= 5
+        'hormoneTag': _isMenstrualPhase
             ? 'Pelvic Floor Ease'
-            : (_currentCycleDay <= 12
+            : (_isFollicularPhase
                 ? 'High Insulin Sensitivity'
-                : (_currentCycleDay <= 16
+                : (_isOvulatoryPhase
                     ? 'Peak Power Output'
                     : 'Higher Core Temperature')),
-        'quickCue': _currentCycleDay <= 5
+        'quickCue': _isMenstrualPhase
             ? 'Yin yoga'
-            : (_currentCycleDay <= 12
+            : (_isFollicularPhase
                 ? 'Strength training'
-                : (_currentCycleDay <= 16
+                : (_isOvulatoryPhase
                     ? 'HIIT & personal bests'
                     : 'Pilates & incline walks')),
         'highlights': [
           {
             'icon': Icons.self_improvement_rounded,
             'label': 'Movement',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Restorative yin yoga & gentle walks'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? 'Progressive weights & strength sets'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'High explosive HIIT, sprints & PR lifting'
                         : 'Pilates, steady-state incline walks & sculpt')),
           },
           {
             'icon': Icons.speed_rounded,
             'label': 'Intensity',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Low (20–40%) · protect pelvic floor'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? 'Moderate-High (70–85%) · rapid adaptation'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'Peak Output (90–100%) · personal bests'
                         : 'Moderate (50–65%) · rhythm & breath')),
           },
           {
             'icon': Icons.healing_rounded,
             'label': 'Recovery',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Gentle low-back decompression'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? 'Rapid muscle rebuilding'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'Adequate joint warmup & hydration'
                         : 'Magnesium foam rolling & active rest')),
           },
@@ -1322,35 +1327,35 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
         'icon': Icons.spa_rounded,
         'color': const Color(0xFF7209B7),
         'bg': const Color(0xFFF3E8FF),
-        'hormoneTag': _currentCycleDay <= 16 ? 'Social Ease & Energy' : 'Magnesium & REM Ease',
-        'quickCue': _currentCycleDay <= 16 ? 'Cozy evenings' : 'Epsom soak & tea',
+        'hormoneTag': !_isLutealPhase ? 'Social Ease & Energy' : 'Magnesium & REM Ease',
+        'quickCue': !_isLutealPhase ? 'Cozy evenings' : 'Epsom soak & tea',
         'highlights': [
           {
             'icon': Icons.favorite_border_rounded,
             'label': 'Social Battery',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Cozy low-stimulation with inner circle'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? 'Curious, open & social networking'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'Magnetic presence, hosting & key dates'
                         : 'Selective 1-on-1s · protect boundaries')),
           },
           {
             'icon': Icons.nightlight_round,
             'label': 'Night Ritual',
-            'val': _currentCycleDay <= 5
+            'val': _isMenstrualPhase
                 ? 'Warm Epsom foot soak + 5 belly breaths'
-                : (_currentCycleDay <= 12
+                : (_isFollicularPhase
                     ? '10 mins morning sun for circadian anchor'
-                    : (_currentCycleDay <= 16
+                    : (_isOvulatoryPhase
                         ? 'Cold face splash + short breathwork'
                         : 'Dim amber lighting after 8 PM + chamomile')),
           },
           {
             'icon': Icons.spa_outlined,
             'label': 'Rest & Recovery',
-            'val': _currentCycleDay <= 16
+            'val': !_isLutealPhase
                 ? 'Energized, outward-facing presence'
                 : 'Deep restoration & early lights-out',
           },
@@ -2391,6 +2396,144 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
 }
 
   // ════════════════════════════════════════════════════════════════
+  // 12 — CYCLE HEALTH GUIDE (Interactive & Docsy-Powered)
+  // ════════════════════════════════════════════════════════════════
+  Widget _buildCycleHealthGuide(BuildContext context) {
+    final guides = [
+      {
+        'tag': 'HORMONES & MOOD',
+        'title': 'Why do focus & confidence surge before ovulation?',
+        'readTime': '3 min read',
+        'icon': Icons.bolt_rounded,
+        'color': const Color(0xFFF97316),
+        'bg': const Color(0xFFFFF7ED),
+        'prompt': 'Docsy, explain the biology of why estrogen and testosterone peaks enhance verbal fluency and confidence around ovulation.',
+      },
+      {
+        'tag': 'METABOLISM & CRAVINGS',
+        'title': 'Why appetite shifts +200 kcal in your luteal phase',
+        'readTime': '4 min read',
+        'icon': Icons.restaurant_rounded,
+        'color': const Color(0xFF0D9488),
+        'bg': const Color(0xFFCCFBF1),
+        'prompt': 'Docsy, explain why resting metabolic rate increases in the luteal phase and why we crave magnesium and carbs before periods.',
+      },
+      {
+        'tag': 'RECOVERY & SLEEP',
+        'title': 'How progesterone reshapes REM sleep & body temp',
+        'readTime': '3 min read',
+        'icon': Icons.nightlight_round,
+        'color': const Color(0xFF7209B7),
+        'bg': const Color(0xFFF3E8FF),
+        'prompt': 'Docsy, why does progesterone increase basal body temperature and how should I adjust my sleep routine in the luteal phase?',
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildEyebrow('Cycle Health Guide'),
+        ...guides.map((g) {
+          final tag = g['tag'] as String;
+          final title = g['title'] as String;
+          final readTime = g['readTime'] as String;
+          final icon = g['icon'] as IconData;
+          final color = g['color'] as Color;
+          final bg = g['bg'] as Color;
+          final prompt = g['prompt'] as String;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: InkWell(
+              onTap: () => _openDocsyWithPrompt(context, prompt),
+              borderRadius: BorderRadius.circular(18),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+                    child: Icon(icon, size: 16, color: color),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              tag,
+                              style: GoogleFonts.manrope(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: color,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '· $readTime',
+                              style: GoogleFonts.manrope(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF9E9296),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          title,
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF221510),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF7F2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFEFE8E0)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_awesome, size: 10, color: blushyPrimary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Ask',
+                          style: GoogleFonts.manrope(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: blushyPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════
   // MASTER BUILD
   // ════════════════════════════════════════════════════════════════
   @override
@@ -2417,14 +2560,12 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                 const LogSymptomsSection(stageKey: 'livingwithmycycle'),
                 const SizedBox(height: 12),
                 _buildWorkImpactLog(context),
-                const SizedBox(height: 8),
-                _buildTellDocsyRow(context),
                 const SizedBox(height: 22),
                 _buildDailyCycleSyncHub(context),
                 const SizedBox(height: 22),
                 _buildPatternIntelligenceSection(context),
                 const SizedBox(height: 22),
-                const HealthLibrarySection(stageKey: 'livingwithmycycle'),
+                _buildCycleHealthGuide(context),
                 const SizedBox(height: 22),
                 _buildDoctorReadinessSection(context),
                 const SizedBox(height: 36),
@@ -2447,14 +2588,12 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
                     const LogSymptomsSection(stageKey: 'livingwithmycycle'),
                     const SizedBox(height: 14),
                     _buildWorkImpactLog(context),
-                    const SizedBox(height: 8),
-                    _buildTellDocsyRow(context),
                     const SizedBox(height: 24),
                     _buildDailyCycleSyncHub(context),
                     const SizedBox(height: 24),
                     _buildPatternIntelligenceSection(context),
                     const SizedBox(height: 24),
-                    const HealthLibrarySection(stageKey: 'livingwithmycycle'),
+                    _buildCycleHealthGuide(context),
                     const SizedBox(height: 24),
                     _buildDoctorReadinessSection(context),
                     const SizedBox(height: 44),
