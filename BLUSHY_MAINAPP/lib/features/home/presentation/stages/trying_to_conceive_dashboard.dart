@@ -431,24 +431,85 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   // 02 — HERO PERIOD / CYCLE RHYTHM TRACKER (Phase-Adaptive)
   // ════════════════════════════════════════════════════════════════════
   Widget _buildPeriodTrackerCard(BuildContext context) {
+    String phaseName = _estimatedCyclePhase;
+    String? customDayLabel;
+    String? customDayValue;
+    String? customSubtitle;
+    Color? customPhaseColor;
+
+    if (_hasLoggedPeriod) {
+      switch (_currentTtcPhase) {
+        case TtcPhase.menstrualReset:
+          customDayLabel = 'Day ';
+          customDayValue = '$_currentCycleDay';
+          phaseName = 'Cycle Day $_currentCycleDay • Gentle Reset';
+          customSubtitle = 'Focus on physical comfort • Zero conception pressure';
+          customPhaseColor = const Color(0xFFEF4444);
+          break;
+        case TtcPhase.fertileApproach:
+          customDayLabel = 'Day ';
+          customDayValue = '$_currentCycleDay';
+          phaseName = 'Cycle Day $_currentCycleDay • Fertile Window Open';
+          final isHigh = _ttcLoggedOPK == 'High' || _ttcLoggedCervicalFluid == 'Watery';
+          customSubtitle = isHigh
+              ? 'High Fertility • Sperm survival window active'
+              : 'Low to Moderate Fertility • Follicular approach';
+          customPhaseColor = const Color(0xFFF97316);
+          break;
+        case TtcPhase.ovulationPeak:
+          customDayLabel = 'Day ';
+          customDayValue = '$_currentCycleDay';
+          phaseName = 'Cycle Day $_currentCycleDay • Peak Fertility';
+          customSubtitle = 'LH Surge Detected! • Optimal 24–36 hr conception window';
+          customPhaseColor = const Color(0xFFDD0D22);
+          break;
+        case TtcPhase.twoWeekWait:
+          final dpo = _estimatedDpo ?? 1;
+          customDayLabel = 'DPO ';
+          customDayValue = '$dpo';
+          phaseName = '$dpo DPO • Two-Week Wait';
+          if (dpo <= 7) {
+            customSubtitle = 'Testing Shield Locked • Implantation has not occurred yet';
+          } else if (dpo <= 10) {
+            customSubtitle = 'Possible Implantation Window • 85% false-negative rate if tested now';
+          } else {
+            customSubtitle = 'Early Detection Window • Test with first-morning urine if ready';
+          }
+          customPhaseColor = const Color(0xFF7C3AED);
+          break;
+        case TtcPhase.extendedLuteal:
+          final dpo = _estimatedDpo ?? 14;
+          customDayLabel = 'DPO ';
+          customDayValue = '$dpo';
+          phaseName = '$dpo DPO • Extended Luteal Pattern';
+          customSubtitle = 'Expected period date passed • Progesterone holding steady';
+          customPhaseColor = const Color(0xFF059669);
+          break;
+      }
+    }
+
     return BlushyPeriodTrackerCard(
       currentCycleDay: _currentCycleDay,
       cycleLength: _cycleLength,
       periodLength: _periodLength,
       hasLoggedPeriod: _hasLoggedPeriod,
-      currentPhaseName: _estimatedCyclePhase,
+      currentPhaseName: phaseName,
+      customDayLabel: _hasLoggedPeriod ? customDayLabel : null,
+      customDayValue: _hasLoggedPeriod ? customDayValue : null,
+      customSubtitle: _hasLoggedPeriod ? customSubtitle : null,
+      customPhaseColor: _hasLoggedPeriod ? customPhaseColor : null,
       onTapLogPeriod: () => _openLogPeriodDialog(context),
       onTapInsights: () {
         _openDocsyPrompt(
           context,
-          'Docsy, I\'m in the $_estimatedCyclePhase of my cycle. What biological signs should I be mindful of today?',
+          'Docsy, I\'m in the $phaseName phase of my cycle. What biological signs should I be mindful of today?',
         );
       },
     );
   }
 
   // ════════════════════════════════════════════════════════════════════
-  // 03 — UNIFIED DAILY FERTILITY BIOMARKERS HUB (MERGE #1)
+  // 03 — COMPACT TODAY'S SIGNALS SUMMARY (Streamlined, Non-Cluttered)
   // ════════════════════════════════════════════════════════════════════
   Widget _buildDailyFertilitySignalsHub(BuildContext context) {
     final conf = _computeFertileConfidence();
@@ -481,7 +542,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildSectionHeaderWithIcon(
-                title: 'TODAY\'S FERTILITY SIGNALS',
+                title: 'YOUR SIGNALS TODAY',
                 icon: Icons.biotech_rounded,
                 badgeColor: const Color(0xFF7C3AED),
               ),
@@ -516,207 +577,88 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
-          // 1. LH Strip
+          // 4 Compact Signal Status Badges
           Row(
             children: [
-              const Icon(Icons.biotech_rounded, size: 16, color: Color(0xFF7C3AED)),
-              const SizedBox(width: 6),
-              Text(
-                'LH Surge Strip (OPK):',
-                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
+              _buildSignalSummaryPill(
+                icon: Icons.biotech_rounded,
+                label: 'LH Strip',
+                value: _ttcLoggedOPK ?? 'Not logged',
+                color: const Color(0xFF7C3AED),
+                onTap: () => _showBiomarkersLogSheet(context),
               ),
-              const Spacer(),
-              InkWell(
-                onTap: () => _showOpkGalleryModal(context),
-                child: Row(
-                  children: [
-                    const Icon(Icons.photo_camera_outlined, size: 13, color: Color(0xFF7C3AED)),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Strip Gallery',
-                      style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF7C3AED)),
-                    ),
-                  ],
+              const SizedBox(width: 8),
+              _buildSignalSummaryPill(
+                icon: Icons.thermostat_rounded,
+                label: 'Basal Temp',
+                value: _ttcLoggedBBT != null ? '${_ttcLoggedBBT!.toStringAsFixed(1)}°F' : 'Not logged',
+                color: const Color(0xFFEA580C),
+                onTap: () => _showBiomarkersLogSheet(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildSignalSummaryPill(
+                icon: Icons.water_drop_rounded,
+                label: 'Fluid',
+                value: _ttcLoggedCervicalFluid ?? 'Not logged',
+                color: const Color(0xFF0284C7),
+                onTap: () => _showBiomarkersLogSheet(context),
+              ),
+              const SizedBox(width: 8),
+              _buildSignalSummaryPill(
+                icon: Icons.favorite_rounded,
+                label: 'Intimacy',
+                value: _partnerDecision == 'trying_today'
+                    ? 'Trying ❤️'
+                    : (_partnerDecision == 'not_today'
+                        ? 'Not today 🌿'
+                        : (_partnerDecision == 'decide_together' ? 'Together 🤝' : 'Not logged')),
+                color: crimsonPrimary,
+                onTap: () => _showBiomarkersLogSheet(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // 3 Quick Action Rounded Pill Buttons
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionPillButton(
+                  icon: Icons.photo_camera_outlined,
+                  label: 'Scan OPK',
+                  color: const Color(0xFF7C3AED),
+                  onTap: () => _showOpkGalleryModal(context),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildActionPillButton(
+                  icon: Icons.show_chart_rounded,
+                  label: 'BBT Curve',
+                  color: const Color(0xFFEA580C),
+                  onTap: () => _showBbtCurveModal(context),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildActionPillButton(
+                  icon: Icons.edit_note_rounded,
+                  label: 'Log Sheet',
+                  color: crimsonPrimary,
+                  onTap: () => _showBiomarkersLogSheet(context),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildTtcLogChip('Low (0.2)', _ttcLoggedOPK == 'Negative / Low', const Color(0xFF7C3AED), () {
-                setState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'Negative / Low' ? null : 'Negative / Low');
-                _saveDailyTtcLog();
-              }),
-              _buildTtcLogChip('High (0.6)', _ttcLoggedOPK == 'High', const Color(0xFFEA580C), () {
-                setState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'High' ? null : 'High');
-                _saveDailyTtcLog();
-              }),
-              _buildTtcLogChip('Peak Surge (1.4+)', _ttcLoggedOPK == 'Peak (Surge)', crimsonPrimary, () {
-                setState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'Peak (Surge)' ? null : 'Peak (Surge)');
-                _saveDailyTtcLog();
-              }),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // 2. Cervical Fluid
-          Row(
-            children: [
-              const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFF0284C7)),
-              const SizedBox(width: 6),
-              Text(
-                'Cervical Fluid Texture:',
-                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _buildTtcLogChip('Dry', _ttcLoggedCervicalFluid == 'Dry', const Color(0xFF0284C7), () {
-                setState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Dry' ? null : 'Dry');
-                _saveDailyTtcLog();
-              }),
-              _buildTtcLogChip('Creamy', _ttcLoggedCervicalFluid == 'Creamy', const Color(0xFF0284C7), () {
-                setState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Creamy' ? null : 'Creamy');
-                _saveDailyTtcLog();
-              }),
-              _buildTtcLogChip('Watery', _ttcLoggedCervicalFluid == 'Watery', const Color(0xFF0284C7), () {
-                setState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Watery' ? null : 'Watery');
-                _saveDailyTtcLog();
-              }),
-              _buildTtcLogChip('Egg White (Peak)', _ttcLoggedCervicalFluid == 'Egg White (Peak)', crimsonPrimary, () {
-                setState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Egg White (Peak)' ? null : 'Egg White (Peak)');
-                _saveDailyTtcLog();
-              }),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // 3. Morning BBT
-          Row(
-            children: [
-              const Icon(Icons.thermostat_rounded, size: 16, color: Color(0xFFEA580C)),
-              const SizedBox(width: 6),
-              Text(
-                'Morning BBT (°F):',
-                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
-              ),
-              const Spacer(),
-              InkWell(
-                onTap: () => _showBbtCurveModal(context),
-                child: Row(
-                  children: [
-                    const Icon(Icons.show_chart_rounded, size: 13, color: Color(0xFFEA580C)),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Biphasic Curve',
-                      style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFFEA580C)),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [97.2, 97.4, 97.7, 98.0, 98.3, 98.6].map((temp) {
-              final isSel = _ttcLoggedBBT == temp;
-              return _buildTtcLogChip('${temp.toStringAsFixed(1)}°', isSel, const Color(0xFFEA580C), () {
-                setState(() => _ttcLoggedBBT = isSel ? null : temp);
-                _saveDailyTtcLog();
-              });
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-
-          // 4. Intimacy & Trying Today (Consolidated Single Row)
-          Row(
-            children: [
-              const Icon(Icons.favorite_rounded, size: 16, color: crimsonPrimary),
-              const SizedBox(width: 6),
-              Text(
-                'Intimacy & Timing:',
-                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildTtcLogChip('Trying today ❤️', _partnerDecision == 'trying_today', crimsonPrimary, () {
-                setState(() {
-                  _partnerDecision = _partnerDecision == 'trying_today' ? null : 'trying_today';
-                  _ttcLoggedIntercourse = _partnerDecision == 'trying_today';
-                });
-                _saveDailyTtcLog();
-              }),
-              _buildTtcLogChip('Not today 🌿', _partnerDecision == 'not_today', const Color(0xFF059669), () {
-                setState(() {
-                  _partnerDecision = _partnerDecision == 'not_today' ? null : 'not_today';
-                  _ttcLoggedIntercourse = false;
-                });
-                _saveDailyTtcLog();
-              }),
-              _buildTtcLogChip('Decide together 🤝', _partnerDecision == 'decide_together', const Color(0xFF7C3AED), () {
-                setState(() {
-                  _partnerDecision = _partnerDecision == 'decide_together' ? null : 'decide_together';
-                });
-                _saveDailyTtcLog();
-              }),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // 5. Fertility Protocols & Supplements (Feature 3 from PRD)
-          Row(
-            children: [
-              const Icon(Icons.medication_outlined, size: 16, color: Color(0xFF0D9488)),
-              const SizedBox(width: 6),
-              Text(
-                'Protocol & Supplements:',
-                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              'Prenatal + Folate',
-              'CoQ10',
-              'Inositol',
-              'Vitamin D',
-              'Letrozole / Clomid',
-            ].map((sup) {
-              final isSel = _selectedSupplements.contains(sup);
-              return _buildTtcLogChip(sup, isSel, const Color(0xFF0D9488), () {
-                setState(() {
-                  if (isSel) {
-                    _selectedSupplements.remove(sup);
-                  } else {
-                    _selectedSupplements.add(sup);
-                  }
-                });
-                _saveDailyTtcLog();
-              });
-            }).toList(),
-          ),
           const SizedBox(height: 14),
 
-          // Reactive Clinical Interpretation Banner (Auto-updates with immediate meaning)
+          // Reactive Clinical Interpretation Banner
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -787,6 +729,349 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     );
   }
 
+  Widget _buildSignalSummaryPill({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final bool isLogged = value != 'Not logged';
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isLogged ? color.withValues(alpha: 0.06) : surfaceCanvas,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isLogged ? color.withValues(alpha: 0.25) : cardBorderColor,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 15, color: isLogged ? color : textMuted),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.manrope(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: textMuted,
+                      ),
+                    ),
+                    Text(
+                      value,
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        fontWeight: isLogged ? FontWeight.w800 : FontWeight.w500,
+                        color: isLogged ? color : textMuted,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionPillButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // BIOMARKERS QUICK-LOG SHEET MODAL (Deep tool for editing all biomarkers)
+  // ════════════════════════════════════════════════════════════════════
+  void _showBiomarkersLogSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalContext, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.82,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Today\'s Biomarkers Log',
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: textMain,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Track LH, cervical mucus, BBT, and intimacy to pinpoint your fertile timing.',
+                    style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        // 1. LH Strip
+                        Row(
+                          children: [
+                            const Icon(Icons.biotech_rounded, size: 16, color: Color(0xFF7C3AED)),
+                            const SizedBox(width: 6),
+                            Text('LH Surge Strip (OPK):', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildTtcLogChip('Low (0.2)', _ttcLoggedOPK == 'Negative / Low', const Color(0xFF7C3AED), () {
+                              setModalState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'Negative / Low' ? null : 'Negative / Low');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('High (0.6)', _ttcLoggedOPK == 'High', const Color(0xFFEA580C), () {
+                              setModalState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'High' ? null : 'High');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Peak Surge (1.4+)', _ttcLoggedOPK == 'Peak (Surge)', crimsonPrimary, () {
+                              setModalState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'Peak (Surge)' ? null : 'Peak (Surge)');
+                              setState(() {});
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 2. Cervical Fluid
+                        Row(
+                          children: [
+                            const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFF0284C7)),
+                            const SizedBox(width: 6),
+                            Text('Cervical Fluid Texture:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _buildTtcLogChip('Dry', _ttcLoggedCervicalFluid == 'Dry', const Color(0xFF0284C7), () {
+                              setModalState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Dry' ? null : 'Dry');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Creamy', _ttcLoggedCervicalFluid == 'Creamy', const Color(0xFF0284C7), () {
+                              setModalState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Creamy' ? null : 'Creamy');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Watery', _ttcLoggedCervicalFluid == 'Watery', const Color(0xFF0284C7), () {
+                              setModalState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Watery' ? null : 'Watery');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Egg White (Peak)', _ttcLoggedCervicalFluid == 'Egg White (Peak)', crimsonPrimary, () {
+                              setModalState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Egg White (Peak)' ? null : 'Egg White (Peak)');
+                              setState(() {});
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 3. Morning BBT
+                        Row(
+                          children: [
+                            const Icon(Icons.thermostat_rounded, size: 16, color: Color(0xFFEA580C)),
+                            const SizedBox(width: 6),
+                            Text('Morning BBT (°F):', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [97.2, 97.4, 97.7, 98.0, 98.3, 98.6].map((temp) {
+                            final isSel = _ttcLoggedBBT == temp;
+                            return _buildTtcLogChip('${temp.toStringAsFixed(1)}°', isSel, const Color(0xFFEA580C), () {
+                              setModalState(() => _ttcLoggedBBT = isSel ? null : temp);
+                              setState(() {});
+                            });
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 4. Intimacy & Timing
+                        Row(
+                          children: [
+                            const Icon(Icons.favorite_rounded, size: 16, color: crimsonPrimary),
+                            const SizedBox(width: 6),
+                            Text('Intimacy & Timing:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildTtcLogChip('Trying today ❤️', _partnerDecision == 'trying_today', crimsonPrimary, () {
+                              setModalState(() {
+                                _partnerDecision = _partnerDecision == 'trying_today' ? null : 'trying_today';
+                                _ttcLoggedIntercourse = _partnerDecision == 'trying_today';
+                              });
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Not today 🌿', _partnerDecision == 'not_today', const Color(0xFF059669), () {
+                              setModalState(() {
+                                _partnerDecision = _partnerDecision == 'not_today' ? null : 'not_today';
+                                _ttcLoggedIntercourse = false;
+                              });
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Decide together 🤝', _partnerDecision == 'decide_together', const Color(0xFF7C3AED), () {
+                              setModalState(() {
+                                _partnerDecision = _partnerDecision == 'decide_together' ? null : 'decide_together';
+                              });
+                              setState(() {});
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 5. Supplements
+                        Row(
+                          children: [
+                            const Icon(Icons.medication_outlined, size: 16, color: Color(0xFF0D9488)),
+                            const SizedBox(width: 6),
+                            Text('Protocol & Supplements:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            'Prenatal + Folate',
+                            'CoQ10',
+                            'Inositol',
+                            'Vitamin D',
+                            'Letrozole / Clomid',
+                          ].map((sup) {
+                            final isSel = _selectedSupplements.contains(sup);
+                            return _buildTtcLogChip(sup, isSel, const Color(0xFF0D9488), () {
+                              setModalState(() {
+                                if (isSel) {
+                                  _selectedSupplements.remove(sup);
+                                } else {
+                                  _selectedSupplements.add(sup);
+                                }
+                              });
+                              setState(() {});
+                            });
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _saveDailyTtcLog();
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Today\'s fertility signals saved and synced.'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: crimsonPrimary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text(
+                        'Save Today\'s Signals',
+                        style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
   // ════════════════════════════════════════════════════════════════════
   // 04A — PHASE 1: MENSTRUAL RESET CARD (Days 1–5)
   // ════════════════════════════════════════════════════════════════════
@@ -803,29 +1088,51 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeaderWithIcon(
-            title: 'CYCLE DAY $_currentCycleDay · GENTLE RESET',
+            title: 'GENTLE RESET • DAY $_currentCycleDay',
             icon: Icons.spa_outlined,
             badgeColor: const Color(0xFF059669),
           ),
           const SizedBox(height: 10),
           Text(
-            'Zero Pressure. A Fresh Biological Opportunity.',
+            'Zero Pressure. A Fresh Biological Start.',
             style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
           ),
           const SizedBox(height: 4),
           Text(
-            'Menstruation marks the start of follicular recruitment. Your ovaries are already gently nurturing a new cohort of follicles. No ovulation testing needed right now.',
+            'Menstruation marks the start of follicular recruitment. Your ovaries are already gently nurturing a new cohort of follicles. Focus on physical comfort and iron replenishment—zero conception pressure today.',
             style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildMiniResetPill(Icons.local_cafe_outlined, 'Warming Foods', const Color(0xFFEA580C)),
+              _buildMiniResetPill(Icons.local_cafe_outlined, 'Iron-Rich Foods', const Color(0xFFEA580C)),
               const SizedBox(width: 8),
               _buildMiniResetPill(Icons.nightlight_outlined, 'Early Sleep', const Color(0xFF7C3AED)),
               const SizedBox(width: 8),
               _buildMiniResetPill(Icons.favorite_border_rounded, 'Gentle Pacing', crimsonPrimary),
             ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                _openDocsyPrompt(
+                  context,
+                  'Docsy, I\'m on Cycle Day $_currentCycleDay in my menstrual reset. What nourishing foods and self-care steps help replenish iron and balance my hormones right now?',
+                );
+              },
+              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 14, color: Color(0xFF059669)),
+              label: Text(
+                'Ask Docsy About Iron & Cycle Reset',
+                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF059669)),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF059669), width: 1.1),
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
           ),
         ],
       ),
@@ -861,6 +1168,13 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   // 04B — PHASE 2 & 3: FERTILE WINDOW & MALE FACTOR ("The Other 50%")
   // ════════════════════════════════════════════════════════════════════
   Widget _buildFertileWindowAndMaleFactorCard(BuildContext context) {
+    final isPeak = _ttcLoggedOPK == 'Peak (Surge)' || _ttcLoggedCervicalFluid == 'Egg White (Peak)';
+    final isHigh = _ttcLoggedOPK == 'High' || _ttcLoggedCervicalFluid == 'Watery';
+    final String statusLabel = isPeak
+        ? 'Peak Fertility (LH Surge Detected!)'
+        : (isHigh ? 'High Fertility Window' : 'Low to Moderate Fertility (Approaching)');
+    final Color badgeColor = isPeak ? crimsonPrimary : (isHigh ? const Color(0xFFEA580C) : const Color(0xFF7C3AED));
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -872,10 +1186,26 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeaderWithIcon(
-            title: 'FERTILE WINDOW TIMING & PARTNER SYNC',
-            icon: Icons.favorite_rounded,
-            badgeColor: crimsonPrimary,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionHeaderWithIcon(
+                title: 'BEST TIME TO TRY',
+                icon: Icons.favorite_rounded,
+                badgeColor: badgeColor,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: badgeColor),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Text(
@@ -884,12 +1214,12 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           ),
           const SizedBox(height: 4),
           Text(
-            'Sperm can survive up to 5 days in fertile cervical fluid, while the egg is viable for 12–24 hours post-ovulation. Having intercourse every 24–48 hours across this window provides optimal fertilization chances.',
+            'Sperm can survive up to 5 days in fertile cervical fluid, while the egg is viable for 12–24 hours post-ovulation. The 5 days before ovulation plus ovulation day define your true sperm survival window.',
             style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
           ),
           const SizedBox(height: 12),
 
-          // Male Factor Insights ("The Other 50%" - Feature 4 from PRD)
+          // Male Factor Insights ("The Other 50%")
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -912,8 +1242,8 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '• Scrotal Heat Warning: Avoid hot tubs, saunas, heated seats, and laptops directly on the lap (heat degrades sperm motility).\n'
-                  '• Optimal Cadence: Intercourse every 24–48 hours is clinically superior to "saving it up", which increases sperm DNA fragmentation.',
+                  '• Scrotal Heat Warning: Avoid hot tubs, saunas, heated car seats, and laptops on the lap (heat reduces sperm motility).\n'
+                  '• Optimal Cadence: Intercourse every 24–48 hours across the fertile window is clinically superior to "saving it up", which increases sperm DNA fragmentation.',
                   style: GoogleFonts.manrope(fontSize: 11, color: textMain, height: 1.35),
                 ),
               ],
@@ -947,36 +1277,31 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   }
 
   // ════════════════════════════════════════════════════════════════════
-  // 04C — PHASE 4 & 5: POST-OVULATION & TESTING GUIDE (MERGE #3: TWW + Assistant)
+  // 04C — PHASE 4: THE TWO-WEEK WAIT (1 DPO → 13 DPO)
   // ════════════════════════════════════════════════════════════════════
-  Widget _buildPostOvulationAndTestingGuide(BuildContext context) {
+  Widget _buildTwoWeekWaitCard(BuildContext context) {
     final dpo = _estimatedDpo ?? 1;
     final String shieldTitle;
     final String shieldDesc;
     final Color shieldColor;
     final IconData shieldIcon;
-    final bool isTestingUnlocked = dpo >= 12;
+    final bool isTestingUnlocked = dpo >= 11;
 
     if (dpo <= 7) {
-      shieldTitle = 'Testing Locked · Implantation Inactive (1–7 DPO)';
-      shieldDesc = 'At $dpo DPO, the blastocyst is still traveling the fallopian tube. Embryo implantation has not occurred yet. Testing now yields false negatives. Any twinges are natural luteal progesterone.';
+      shieldTitle = 'Testing Shield Locked · Implantation Inactive (1–7 DPO)';
+      shieldDesc = 'At $dpo DPO, embryo implantation has not occurred yet. Testing now yields inevitable false negatives. Twinges, cramps, or breast soreness are normal luteal progesterone, not pregnancy clues.';
       shieldColor = const Color(0xFF64748B);
       shieldIcon = Icons.lock_outline_rounded;
     } else if (dpo <= 10) {
       shieldTitle = 'Possible Implantation Window (8–10 DPO)';
-      shieldDesc = 'Blastocyst implantation typically occurs between 8–10 DPO. Early testing carries an 85% false-negative rate because hCG takes 48+ hours to reach detectable urine levels. Save your heart and wait.';
+      shieldDesc = 'Blastocyst implantation typically occurs between 8–10 DPO. Early testing carries an 85% false-negative rate because hCG takes 48+ hours to reach detectable urine levels. Be patient with your body.';
       shieldColor = const Color(0xFFEA580C);
       shieldIcon = Icons.hourglass_top_rounded;
-    } else if (dpo <= 13) {
+    } else {
       shieldTitle = 'Early Detection Window (11–13 DPO)';
-      shieldDesc = 'hCG levels begin approaching reliable detection thresholds for early-response tests. Use your first morning urine for peak clinical accuracy.';
+      shieldDesc = 'hCG levels begin rising if conception occurred. For peak clinical accuracy, test only with your first-morning urine.';
       shieldColor = const Color(0xFF0284C7);
       shieldIcon = Icons.science_outlined;
-    } else {
-      shieldTitle = 'Extended Luteal Pattern (14+ DPO)';
-      shieldDesc = 'If your period hasn\'t arrived, take a first-morning pregnancy test. If negative and BBT was sustained, menses typically arrives in 24–48 hours.';
-      shieldColor = const Color(0xFF059669);
-      shieldIcon = Icons.event_available_rounded;
     }
 
     return Container(
@@ -991,7 +1316,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeaderWithIcon(
-            title: 'TWO-WEEK WAIT & TESTING SHIELD',
+            title: 'THE TWO-WEEK WAIT',
             icon: Icons.hourglass_bottom_rounded,
             badgeColor: shieldColor,
             trailing: Container(
@@ -1089,33 +1414,289 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               );
             }).toList(),
           ),
-          const SizedBox(height: 12),
-
-          if (dpo >= 14)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  _openDocsyPrompt(
-                    context,
-                    'Docsy, I got a positive pregnancy test at $dpo DPO! How should I calculate my gestational age and what are my next clinical steps?',
-                  );
-                },
-                icon: const Icon(Icons.add_circle_outline_rounded, size: 15, color: Colors.white),
-                label: Text(
-                  '➕ Log Positive Pregnancy Test',
-                  style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF059669),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
         ],
       ),
     );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 04D — PHASE 5: EXTENDED LUTEAL PATTERN (14+ DPO)
+  // ════════════════════════════════════════════════════════════════════
+  Widget _buildExtendedLutealCard(BuildContext context) {
+    final dpo = _estimatedDpo ?? 14;
+    final bool ovulationConfirmed =
+        _ttcLoggedOPK == 'Peak (Surge)' || (_ttcLoggedBBT != null && _ttcLoggedBBT! >= 98.0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: cardRadius,
+        border: Border.all(color: cardBorderColor, width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeaderWithIcon(
+            title: 'EXTENDED LUTEAL PATTERN',
+            icon: Icons.event_available_rounded,
+            badgeColor: const Color(0xFF059669),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFCCFBF1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$dpo DPO',
+                style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF0D9488)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Gentle Clarity for $dpo DPO',
+            style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Your expected period date has passed without bleeding. There are no alarm bells or "overdue" warnings here—just supportive clinical facts:',
+            style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
+          ),
+          const SizedBox(height: 10),
+
+          // Clinical Guidance Banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: surfaceCanvas,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF0D9488)),
+                    const SizedBox(width: 6),
+                    Text(
+                      ovulationConfirmed ? 'Ovulation Confirmed' : 'Ovulation Timing',
+                      style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w800, color: const Color(0xFF0D9488)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  ovulationConfirmed
+                      ? 'Your luteal phase is running 1–2 days longer than usual. If a pregnancy test is negative, menses will likely arrive within 24–48 hours as progesterone naturally drops.'
+                      : 'Delayed ovulation automatically pushes your period back. Your cycle is pacing itself differently this month without any cause for concern.',
+                  style: GoogleFonts.manrope(fontSize: 11, color: textMain, height: 1.35),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Two Primary Action Buttons
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _handleLogPositivePregnancyTest(context),
+              icon: const Icon(Icons.favorite_rounded, size: 16, color: Colors.white),
+              label: Text(
+                '➕ Log Positive Pregnancy Test',
+                style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF059669),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _openLogPeriodDialog(context),
+              icon: const Icon(Icons.water_drop_outlined, size: 15, color: crimsonPrimary),
+              label: Text(
+                '🩸 Period Started Today (Cycle Day 1)',
+                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: crimsonPrimary),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: crimsonPrimary, width: 1.1),
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // POSITIVE PREGNANCY TEST HANDLER (Smooth Transition to Pregnancy Stage)
+  // ════════════════════════════════════════════════════════════════════
+  void _handleLogPositivePregnancyTest(BuildContext context) {
+    final lmp = _lastPeriodStartDate ?? DateTime.now().subtract(Duration(days: _currentCycleDay));
+    final gestationalDays = DateTime.now().difference(lmp).inDays;
+    final gestationalWeeks = (gestationalDays / 7).floor();
+    final remainingDays = gestationalDays % 7;
+    final edd = lmp.add(const Duration(days: 280));
+
+    // Persist to BlushyStorage
+    try {
+      BlushyStorage.write('pregnancy_onboarding.json', {
+        'lmp': lmp.toIso8601String(),
+        'dueDate': edd.toIso8601String(),
+        'gestationalWeeks': gestationalWeeks,
+        'gestationalDays': remainingDays,
+        'conceptionDate': DateTime.now().subtract(Duration(days: _estimatedDpo ?? 14)).toIso8601String(),
+      });
+      final profile = Map<String, dynamic>.from(BlushyStorage.read('user_profile.json'));
+      profile['current_stage'] = 'pregnancy';
+      BlushyStorage.write('user_profile.json', profile);
+    } catch (_) {}
+
+    // Backend sync
+    ApiAuthService().saveOnboardingAnswers({
+      'stage': 'pregnancy',
+      'current_stage': 'pregnancy',
+      'pregnancy_due_date': edd.toIso8601String(),
+      'pregnancy_lmp': lmp.toIso8601String(),
+    }).catchError((_) => <String, dynamic>{});
+
+    ApiCheckinService().submitDailyCheckin(
+      logDate: DateTime.now().toIso8601String().substring(0, 10),
+      symptoms: ['Positive Pregnancy Test', 'Transition to Stage: Pregnancy'],
+    );
+
+    // Celebratory Dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dlgContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFCCFBF1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.favorite_rounded, color: Color(0xFF0D9488), size: 28),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Warmest Congratulations ❤️',
+                  style: GoogleFonts.cormorantGaramond(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: textMain,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'A wonderful new biological chapter begins.',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF0D9488),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: surfaceCanvas,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: cardBorderColor),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Gestational Age:', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),
+                          Text(
+                            '$gestationalWeeks w, $remainingDays d',
+                            style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: textMain),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Estimated Due Date:', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),
+                          Text(
+                            _formatDate(edd),
+                            style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: crimsonPrimary),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Blushy has updated your profile to Stage: Pregnancy. We\'re with you for trimester tracking, gentle nutrition, and clinical safety.',
+                  style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dlgContext);
+                      _openDocsyPrompt(
+                        context,
+                        'Docsy, I just confirmed a positive pregnancy test at approximately $gestationalWeeks weeks and $remainingDays days! What should I keep in mind for nutrition, prenatal appointments, and early symptoms?',
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(
+                      'Ask Docsy About First Trimester',
+                      style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.pop(dlgContext),
+                  child: Text(
+                    'Close & Stay on Dashboard',
+                    style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 
   // ════════════════════════════════════════════════════════════════════
@@ -1302,7 +1883,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeaderWithIcon(
-            title: 'MINDSET & LOW-CORTISOL SPACE',
+            title: 'A BREATHER FOR TODAY',
             icon: Icons.spa_rounded,
             badgeColor: const Color(0xFF7C3AED),
             trailing: _isAnxietyModeActive
@@ -1427,7 +2008,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeaderWithIcon(
-            title: 'FOR YOUR NEXT APPOINTMENT',
+            title: 'QUESTIONS FOR YOUR DOCTOR',
             icon: Icons.assignment_ind_outlined,
             badgeColor: const Color(0xFF059669),
           ),
@@ -1954,6 +2535,39 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           return;
                         }
 
+                        // Automatically record Luteal Phase Duration into pattern memory
+                        if (_estimatedDpo != null) {
+                          try {
+                            final history = BlushyStorage.read('luteal_phase_history.json');
+                            final list = history['records'] is List ? List<dynamic>.from(history['records']) : [];
+                            list.add({
+                              'luteal_phase_days': _estimatedDpo,
+                              'ended_at': selectedDate.toIso8601String(),
+                            });
+                            BlushyStorage.write('luteal_phase_history.json', {
+                              'records': list,
+                              'last_luteal_days': _estimatedDpo,
+                            });
+                          } catch (_) {}
+                        }
+
+                        // Clear previous cycle's daily biomarker logs
+                        setState(() {
+                          _ttcLoggedOPK = null;
+                          _ttcLoggedBBT = null;
+                          _ttcLoggedCervicalFluid = null;
+                          _ttcLoggedIntercourse = false;
+                          _partnerDecision = null;
+                        });
+                        _saveDailyTtcLog();
+
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Cycle reset to Day 1. Luteal phase recorded into pattern memory.'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+
                         _fetchDynamicAiInsights();
                       },
                       style: ElevatedButton.styleFrom(
@@ -2098,20 +2712,31 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         const SizedBox(height: 16),
       ],
 
-      // 03. Unified Daily Fertility Signals Hub (MERGE #1)
+      // 03. Curated TTC Health Library (Brought directly below Period Tracker!)
+      _buildEyebrow("FERTILITY LIBRARY"),
+      const TtcFertilitySection(),
+      const SizedBox(height: 14),
+      const TtcOvulationSection(),
+      const SizedBox(height: 14),
+      const TtcSexToConceiveSection(),
+      const SizedBox(height: 18),
+
+      // 04. Unified Daily Fertility Signals Hub (Compact 1-card hub with 3 action buttons)
       _buildDailyFertilitySignalsHub(context),
       const SizedBox(height: 16),
 
-      // 04. Phase-Specific Conception Focus Card (Cards only appear when in that phase!)
+      // 05. Phase-Specific Conception Focus Card (Only ONE phase card appears at a time!)
       if (phase == TtcPhase.menstrualReset)
         _buildMenstrualResetCard(context)
       else if (phase == TtcPhase.fertileApproach || phase == TtcPhase.ovulationPeak)
         _buildFertileWindowAndMaleFactorCard(context)
-      else
-        _buildPostOvulationAndTestingGuide(context),
+      else if (phase == TtcPhase.twoWeekWait)
+        _buildTwoWeekWaitCard(context)
+      else if (phase == TtcPhase.extendedLuteal)
+        _buildExtendedLutealCard(context),
       const SizedBox(height: 16),
 
-      // 05. General Daily Symptoms Log (No double heading!)
+      // 06. General Daily Symptoms Log (No double heading!)
       _buildEyebrow('LOG SYMPTOMS'),
       const LogSymptomsSection(
         stageKey: 'tryingtoconceive',
@@ -2119,21 +2744,12 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       ),
       const SizedBox(height: 16),
 
-      // 06. Mindset & De-Stress Hub (MERGE #2)
+      // 07. Mindset & De-Stress Hub ("A breather for today")
       _buildMindsetAndDeStressCard(context),
       const SizedBox(height: 16),
 
-      // 07. Clinical Care & Doctor Preparation
+      // 08. Clinical Care & Doctor Preparation ("Questions for your doctor")
       _buildDoctorPreparationAndJourneyCard(context),
-      const SizedBox(height: 20),
-
-      // 08. Curated TTC Health Library (Moved to the bottom!)
-      _buildEyebrow("FERTILITY & CONCEPTION LIBRARY"),
-      const TtcFertilitySection(),
-      const SizedBox(height: 14),
-      const TtcOvulationSection(),
-      const SizedBox(height: 14),
-      const TtcSexToConceiveSection(),
       const SizedBox(height: 36),
     ];
   }
