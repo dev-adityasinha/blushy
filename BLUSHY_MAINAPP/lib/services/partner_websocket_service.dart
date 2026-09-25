@@ -56,6 +56,13 @@ class PartnerWebSocketService {
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
 
+  // Stop hammering a connection that keeps closing (e.g. a 404/auth/origin
+  // reject): give up after this many failed attempts instead of retrying
+  // forever and flooding the console. A fresh connect() -- which a partner
+  // surface calls when it opens -- resets this and tries again.
+  static const int _maxReconnectAttempts = 6;
+  bool _gaveUp = false;
+
   final Set<String> _seenMessageIds = {};
 
   Stream<PartnerWebSocketEvent> get events => _eventController.stream;
@@ -78,7 +85,16 @@ class PartnerWebSocketService {
     );
   }
 
+  /// Public entry, called when a partner surface opens. Resets the backoff and
+  /// the give-up flag so reopening the screen always retries fresh, even after
+  /// the client stopped retrying on its own.
   void connect() {
+    _reconnectAttempts = 0;
+    _gaveUp = false;
+    _open();
+  }
+
+  void _open() {
     if (_isDisposed || _isConnecting || _channel != null) return;
 
     final token = AuthStorage.getToken();
@@ -121,7 +137,11 @@ class PartnerWebSocketService {
           debugPrint('PartnerWS: Stream error: $error');
         },
         onDone: () {
-          debugPrint('PartnerWS: Connection closed.');
+          // The close code/reason is the key diagnostic: 1008/4401/4403 point
+          // to auth or origin rejection by the server, 1006 to an abnormal
+          // drop, 1000/1001 to a normal close.
+          debugPrint('PartnerWS: Connection closed. '
+              'code=${channel.closeCode} reason=${channel.closeReason}');
           _scheduleReconnect();
         },
         cancelOnError: true,
@@ -165,11 +185,21 @@ class PartnerWebSocketService {
     _channel = null;
     _isConnecting = false;
 
-    if (_isDisposed) return;
+    if (_isDisposed || _gaveUp) return;
 
     // A single attempt can fail on `ready` and then again on `onDone`; without
     // this the two paths would stack timers and retry twice as fast.
     if (_reconnectTimer?.isActive ?? false) return;
+
+    // Stop after the cap so a persistently-closing endpoint does not retry
+    // forever and flood the console. connect() (on the next partner-screen
+    // open) resets the counter and resumes.
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      _gaveUp = true;
+      debugPrint('PartnerWS: Giving up after $_reconnectAttempts failed attempts; '
+          'will retry when a partner screen reopens.');
+      return;
+    }
 
     _reconnectTimer?.cancel();
     _reconnectAttempts++;
@@ -180,8 +210,8 @@ class PartnerWebSocketService {
 
     debugPrint('PartnerWS: Reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)');
     _reconnectTimer = Timer(delay, () {
-      if (!_isDisposed) {
-        connect();
+      if (!_isDisposed && !_gaveUp) {
+        _open();
       }
     });
   }
