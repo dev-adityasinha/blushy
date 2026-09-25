@@ -21,6 +21,10 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
   final VoidCallback? onTapTracker;
   final VoidCallback? onTapInsights;
   final String? customDisclaimer;
+  final String? customDayLabel;
+  final String? customDayValue;
+  final String? customSubtitle;
+  final Color? customPhaseColor;
 
   static const Color blushyPrimary = Color(0xFFDD0D22);
   static const Color cardBorderColor = Color(0xFFEFE8E0);
@@ -30,6 +34,7 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
   /// the same day thresholds the painter draws with, so the "Day N" number
   /// reads in the phase colour.
   Color get _phaseColor {
+    if (customPhaseColor != null) return customPhaseColor!;
     if (currentCycleDay <= periodLength) return const Color(0xFFEF4444);
     if (currentCycleDay <= periodLength + 9) return const Color(0xFFF97316);
     if (currentCycleDay <= periodLength + 11) return const Color(0xFFFACC15);
@@ -47,6 +52,10 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
     this.onTapTracker,
     this.onTapInsights,
     this.customDisclaimer,
+    this.customDayLabel,
+    this.customDayValue,
+    this.customSubtitle,
+    this.customPhaseColor,
   });
 
   @override
@@ -119,7 +128,7 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: 'Day ',
+                    text: customDayLabel ?? 'Day ',
                     style: GoogleFonts.cormorantGaramond(
                       fontSize: 44,
                       fontWeight: FontWeight.w700,
@@ -128,7 +137,7 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text: '$currentCycleDay',
+                    text: customDayValue ?? '$currentCycleDay',
                     style: GoogleFonts.manrope(
                       fontSize: 44,
                       fontWeight: FontWeight.w800,
@@ -151,29 +160,40 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Next cycle begins in ',
-                    style: GoogleFonts.manrope(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF7A6B72),
+            if (customSubtitle != null)
+              Text(
+                customSubtitle!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF7A6B72),
+                ),
+              )
+            else
+              RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Next cycle begins in ',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF7A6B72),
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: '$daysLeft Days',
-                    style: GoogleFonts.manrope(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF221510),
+                    TextSpan(
+                      text: '$daysLeft Days',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF221510),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
           ] else ...[
             RichText(
               text: TextSpan(

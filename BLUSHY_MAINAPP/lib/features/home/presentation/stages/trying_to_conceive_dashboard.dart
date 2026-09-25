@@ -15,9 +15,17 @@ import '../../widgets/blushy_period_tracker_card.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
-import 'health_library_section.dart';
 import 'trying_to_conceive_sections.dart';
 import '../../../../l10n/app_localizations.dart';
+
+/// 5-Phase Dynamic Conception Model for TTC
+enum TtcPhase {
+  menstrualReset, // Days 1 to periodLength (usually Days 1-5)
+  fertileApproach, // Day 6 up to ovulation
+  ovulationPeak, // LH Surge or Egg White or Ovulation Day
+  twoWeekWait, // Post-ovulation: 1 DPO to 13 DPO
+  extendedLuteal, // 14+ DPO without period
+}
 
 class TryingToConceiveDashboard extends StatefulWidget {
   final bool isNested;
@@ -42,7 +50,6 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   static const Color crimsonPrimary = Color(0xFFDD0D22);
   static const Color textMain = Color(0xFF221510);
   static const Color textMuted = Color(0xFF7A6B72);
-  static const Color dividerColor = Color(0xFFF3EEE9);
   static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(18));
 
   // ─── Biometrics & Daily Logging State ──────────────────────────────
@@ -52,6 +59,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   bool _ttcLoggedIntercourse = false;
   String? _partnerDecision; // 'trying_today', 'not_today', 'decide_together'
   String? _selectedOutsideActivity;
+  final Set<String> _selectedSupplements = <String>{};
 
   // ─── Cycle & Rhythm State ──────────────────────────────────────────
   int _currentCycleDay = 14;
@@ -62,16 +70,9 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
 
   /// How the cycle read went, so "nothing logged" and "could not load" stop
   /// looking identical.
-  ///
-  /// This screen alone used `getPredictions()`, whose errors were swallowed by
-  /// a bare `.catchError((_) {})`. A slow or refused request therefore left
-  /// the card asserting "No period logged yet" about an account that had one
-  /// -- and a warm backend a minute later showed the day. Same data, two
-  /// answers, which is exactly how it looked: sometimes working, sometimes
-  /// not. The other cycle dashboards have tracked this all along.
   ApiState _cycleState = ApiState.loading;
 
-  /// The cycle-loading concern now lives in a tested view model; this widget is
+  /// The cycle-loading concern lives in a tested view model; this widget is
   /// its View. The fields above are kept as local mirrors so the rest of the
   /// screen reads unchanged, and are refreshed from the view model on change.
   final CycleViewModel _cycleVM = CycleViewModel(defaultCycleLength: 29, defaultCycleDay: 14);
@@ -81,17 +82,9 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   String _dynamicDocsyThought =
       'Your biological signals suggest the fertile window may be open. You don’t need to keep checking everything today; sperm viability spans several days in fertile fluid, so take things at an unhurried, collaborative pace.';
   String _dynamicDocsyNote = 'Low-cortisol evenings and unpressured connection support both hormonal balance and nervous system ease.';
-  List<String> _dynamicDocsyActions = [
-    'When is my fertile window?',
-    'How to read LH strips?',
-    'Explain BBT shift',
-    'Can we take a break today?',
-  ];
 
   // ─── Emotional & Journey State ─────────────────────────────────────
   bool _isAnxietyModeActive = false;
-  bool _isTtcPaused = false;
-  String? _emotionalCheckInStatus;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final ScrollController _internalScrollController = ScrollController();
@@ -157,43 +150,22 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         if (checkin['outside_activity'] != null) {
           _selectedOutsideActivity = checkin['outside_activity'].toString();
         }
-      }
-
-      final ttcState = BlushyStorage.read('ttc_state.json');
-      if (ttcState.isNotEmpty) {
-        _isTtcPaused = ttcState['is_paused'] == true;
-        _emotionalCheckInStatus = ttcState['emotional_status']?.toString();
-      }
-
-      final savedPeriod = BlushyStorage.read('last_period_entry.json');
-      if (savedPeriod.isNotEmpty && savedPeriod['periodStartDate'] != null) {
-        final parsed = DateTime.tryParse(savedPeriod['periodStartDate'].toString());
-        if (parsed != null) {
-          _lastPeriodStartDate = parsed;
-          _hasLoggedPeriod = true;
-          final diff = DateTime.now().difference(parsed).inDays;
-          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
+        if (checkin['ttc_supplements'] is List) {
+          _selectedSupplements.addAll(
+            (checkin['ttc_supplements'] as List).map((e) => e.toString()),
+          );
         }
       }
-
-      // The cycle read is the view model's job now; _onCycleChanged mirrors
-      // its result back. All the fetch/error/day logic that used to sit here
-      // lives in CycleViewModel, where it is unit-tested.
-      _cycleVM.load();
     } catch (_) {}
+
+    _cycleVM.load();
   }
 
   Future<void> _fetchDynamicAiInsights() async {
-    if (!mounted) return;
+    if (_isLoadingAi) return;
     setState(() => _isLoadingAi = true);
     try {
       final String phase = _estimatedCyclePhase;
-      final List<String> signals = [];
-      if (_ttcLoggedOPK != null) signals.add('LH ${_ttcLoggedOPK!}');
-      if (_ttcLoggedCervicalFluid != null) signals.add('Cervical fluid ${_ttcLoggedCervicalFluid!}');
-      if (_ttcLoggedBBT != null) signals.add('BBT ${_ttcLoggedBBT!.toStringAsFixed(1)}°F');
-      if (_ttcLoggedIntercourse) signals.add('Intimacy logged');
-
       final result = await ApiSiaService().getHealthInsights(
         stage: 'ttc',
         cycleDay: _currentCycleDay,
@@ -204,9 +176,6 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         setState(() {
           _dynamicDocsyThought = result['thought'] ?? result['narrative'] ?? result['summary'] ?? _dynamicDocsyThought;
           _dynamicDocsyNote = result['note'] ?? result['oneThingToKeepInMind'] ?? _dynamicDocsyNote;
-          if (result['suggestions'] is List && (result['suggestions'] as List).isNotEmpty) {
-            _dynamicDocsyActions = (result['suggestions'] as List).map((e) => e.toString()).toList();
-          }
         });
       }
     } catch (_) {
@@ -223,6 +192,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     checkin['ttc_intercourse'] = _ttcLoggedIntercourse;
     checkin['partner_decision'] = _partnerDecision;
     checkin['outside_activity'] = _selectedOutsideActivity;
+    checkin['ttc_supplements'] = _selectedSupplements.toList();
     checkin['date'] = DateTime.now().toIso8601String();
     BlushyStorage.write('daily_checkin.json', checkin);
 
@@ -243,25 +213,55 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       'ttc_intercourse': _ttcLoggedIntercourse,
       'partner_decision': _partnerDecision,
       'outside_activity': _selectedOutsideActivity,
+      'ttc_supplements': _selectedSupplements.toList(),
     }).catchError((_) => <String, dynamic>{});
   }
 
-  // ─── Scientific Fertility Confidence Calculator ────────────────────
+  // ─── 5-Phase Dynamic Model Helpers ─────────────────────────────────
   int get _estimatedOvulationDay => (_cycleLength - 14).clamp(10, _cycleLength - 10);
-
-  String get _estimatedCyclePhase {
-    if (_currentCycleDay <= _periodLength) return 'Menstrual Phase';
-    final fertileStart = (_estimatedOvulationDay - 5).clamp(_periodLength + 1, _estimatedOvulationDay);
-    if (_currentCycleDay < fertileStart) return 'Follicular Phase';
-    if (_currentCycleDay <= _estimatedOvulationDay) return 'Fertile Window';
-    return 'Luteal Phase (Two-Week Wait)';
-  }
 
   int? get _estimatedDpo {
     if (_currentCycleDay > _estimatedOvulationDay) {
       return _currentCycleDay - _estimatedOvulationDay;
     }
     return null;
+  }
+
+  TtcPhase get _currentTtcPhase {
+    if (!_hasLoggedPeriod) return TtcPhase.fertileApproach;
+    if (_currentCycleDay <= _periodLength) return TtcPhase.menstrualReset;
+    if (_currentCycleDay < _estimatedOvulationDay) {
+      if (_ttcLoggedOPK == 'Peak (Surge)' || _ttcLoggedCervicalFluid == 'Egg White (Peak)') {
+        return TtcPhase.ovulationPeak;
+      }
+      return TtcPhase.fertileApproach;
+    }
+    if (_currentCycleDay == _estimatedOvulationDay) {
+      return TtcPhase.ovulationPeak;
+    }
+    final dpo = _estimatedDpo ?? 0;
+    if (dpo >= 14 || _currentCycleDay > _cycleLength) {
+      return TtcPhase.extendedLuteal;
+    }
+    return TtcPhase.twoWeekWait;
+  }
+
+  String get _estimatedCyclePhase {
+    if (!_hasLoggedPeriod) return 'Follicular Rhythm';
+    switch (_currentTtcPhase) {
+      case TtcPhase.menstrualReset:
+        return 'Menstrual Reset';
+      case TtcPhase.fertileApproach:
+        return 'Fertile Approach';
+      case TtcPhase.ovulationPeak:
+        return 'Peak Fertile Window';
+      case TtcPhase.twoWeekWait:
+        final dpo = _estimatedDpo ?? 1;
+        return '$dpo DPO • Two-Week Wait';
+      case TtcPhase.extendedLuteal:
+        final dpo = _estimatedDpo ?? 14;
+        return '$dpo DPO • Extended Luteal Pattern';
+    }
   }
 
   /// Calculates transparent confidence level from biomarker alignment
@@ -276,15 +276,15 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     if (hasSustainedShift) {
       return {
         'status': 'POST-OVULATION PATTERN',
-        'sub': 'Progesterone thermal shift observed. Fertile window likely closed.',
+        'sub': 'Progesterone thermal shift observed. Fertile window closed.',
         'color': const Color(0xFF059669),
         'icon': Icons.check_circle_rounded,
         'signals': ['BBT sustained shift ≥ 98.0°F'],
       };
     } else if (isPeakLH || isEggWhite) {
       return {
-        'status': 'STRONG FERTILITY SIGNALS',
-        'sub': 'Strong estrogenic fluid or LH surge detected. Peak conception timing.',
+        'status': 'PEAK FERTILE WINDOW OPEN',
+        'sub': 'LH surge or peak fluid detected. Optimal conception in next 24–36 hrs.',
         'color': const Color(0xFFE11D48),
         'icon': Icons.local_fire_department_rounded,
         'signals': [
@@ -294,8 +294,8 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       };
     } else if (isHighLH || isWatery) {
       return {
-        'status': 'LIKELY FERTILE',
-        'sub': 'Biomarkers indicate follicular maturation. Approaching peak.',
+        'status': 'LIKELY FERTILE (APPROACHING PEAK)',
+        'sub': 'Biomarkers show follicular maturation. Fertile window is open.',
         'color': const Color(0xFFEA580C),
         'icon': Icons.trending_up_rounded,
         'signals': [
@@ -305,21 +305,30 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       };
     } else if (_ttcLoggedOPK != null || _ttcLoggedCervicalFluid != null || hasBBT) {
       return {
-        'status': 'BUILDING WINDOW',
-        'sub': 'Baseline follicular rhythm. Continuing daily observation.',
+        'status': 'BASELINE FOLLICULAR RHYTHM',
+        'sub': 'Continuing daily observation as your fertile window approaches.',
         'color': const Color(0xFF7C3AED),
         'icon': Icons.spa_rounded,
         'signals': ['Follicular baseline active'],
       };
     } else {
       return {
-        'status': 'NOT ENOUGH DATA',
-        'sub': 'Log today’s LH strip, cervical fluid, or BBT to uncover your window.',
+        'status': 'AWAITING TODAY\'S SIGNALS',
+        'sub': 'Quick-log your LH strip, cervical fluid, or BBT below.',
         'color': const Color(0xFF64748B),
         'icon': Icons.help_outline_rounded,
         'signals': ['No biomarkers logged today'],
       };
     }
+  }
+
+  int get _loggedSignalsCount {
+    int count = 0;
+    if (_ttcLoggedOPK != null) count++;
+    if (_ttcLoggedCervicalFluid != null) count++;
+    if (_ttcLoggedBBT != null) count++;
+    if (_ttcLoggedIntercourse || _partnerDecision != null) count++;
+    return count;
   }
 
   void _openDocsyPrompt(BuildContext context, String prompt) {
@@ -329,7 +338,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   // Consistent Crimson Eyebrow
   Widget _buildEyebrow(String label) {
     return Padding(
-      padding: const EdgeInsets.only(left: 2, bottom: 8),
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         label.toUpperCase(),
         style: GoogleFonts.manrope(
@@ -342,42 +351,40 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     );
   }
 
-  // Quick Docsy Prompt Chip Helper
-  Widget _buildQuickDocsyChip(BuildContext context, String text) {
-    return InkWell(
-      onTap: () => _openDocsyPrompt(context, text),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(
-          color: surfaceCanvas,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: cardBorderColor),
-        ),
-        child: Text(
-          text,
-          style: GoogleFonts.manrope(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF4A3E39),
-          ),
-        ),
-      ),
-    );
-  }
-
   // ════════════════════════════════════════════════════════════════════
-  // 01 — EDITORIAL GREETING (Unboxed, 2-Line Cormorant Garamond, Italic Crimson)
+  // 01 — EDITORIAL GREETING (Unboxed, Cormorant Garamond, Italic Crimson)
   // ════════════════════════════════════════════════════════════════════
   Widget _buildEditorialGreeting(BuildContext context) {
-    // Read `name`, a key onboarding never writes, so this always fell through
-    // to the literal 'lovely'.
     final String userName = userFirstName(context);
-
     final hour = DateTime.now().hour;
     final timeGreeting = hour < 12
         ? 'Good morning,'
         : (hour < 17 ? 'Good afternoon,' : 'Good evening,');
+
+    final String subGreeting;
+    if (!_hasLoggedPeriod) {
+      subGreeting = 'Log your last period below to activate your personalized conception rhythm.';
+    } else {
+      switch (_currentTtcPhase) {
+        case TtcPhase.menstrualReset:
+          subGreeting = 'Day $_currentCycleDay • Menstrual reset. A new cycle brings a fresh biological opportunity—take gentle care today.';
+          break;
+        case TtcPhase.fertileApproach:
+          subGreeting = 'Day $_currentCycleDay • Follicular approach. Estrogen is building—keep an unhurried, low-stress rhythm.';
+          break;
+        case TtcPhase.ovulationPeak:
+          subGreeting = 'Day $_currentCycleDay • Peak fertile window is open. Optimal conception timing over the next 24–36 hours.';
+          break;
+        case TtcPhase.twoWeekWait:
+          final dpo = _estimatedDpo ?? 1;
+          subGreeting = '$dpo DPO • Two-week wait. Be gentle with your body and mind; implantation is quiet, invisible work.';
+          break;
+        case TtcPhase.extendedLuteal:
+          final dpo = _estimatedDpo ?? 14;
+          subGreeting = '$dpo DPO • Extended luteal pattern. We\'re right beside you with compassionate clinical clarity.';
+          break;
+      }
+    }
 
     return Padding(
       padding: const EdgeInsets.only(left: 4, right: 4, bottom: 4),
@@ -407,7 +414,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           ),
           const SizedBox(height: 6),
           Text(
-            'Take today at your own pace. Blushy is right here with you.',
+            subGreeting,
             style: GoogleFonts.manrope(
               fontSize: 12.5,
               fontWeight: FontWeight.w400,
@@ -421,565 +428,1933 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   }
 
   // ════════════════════════════════════════════════════════════════════
-  // 02 — TODAY WITH DOCSY (Dynamic Real-Time AI Intelligence)
-  // ════════════════════════════════════════════════════════════════════
-  Widget _buildTodayWithDocsyCard(BuildContext context) {
-    final bool isPeak = _ttcLoggedOPK == 'Peak (Surge)' || _ttcLoggedCervicalFluid == 'Egg White (Peak)';
-    final bool hasBBTShift = _ttcLoggedBBT != null && _ttcLoggedBBT! >= 98.0;
-
-    final String docsyDisplayThought = hasBBTShift
-        ? 'Your sustained temperature shift suggests ovulation has likely passed. Time to rest and settle into your two-week wait.'
-        : (isPeak
-            ? 'Your biological signals point to peak fertility today. Conception is a shared partnership, not solitary homework.'
-            : _dynamicDocsyThought);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildEyebrow('TODAY WITH DOCSY'),
-            if (_isLoadingAi)
-              const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(strokeWidth: 1.5, color: crimsonPrimary),
-              ),
-          ],
-        ),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: cardRadius,
-            border: Border.all(color: cardBorderColor, width: 1.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                docsyDisplayThought,
-                style: GoogleFonts.cormorantGaramond(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w500,
-                  fontStyle: FontStyle.italic,
-                  color: const Color(0xFF221510),
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 12),
-              InkWell(
-                onTap: () => _openDocsyPrompt(
-                  context,
-                  'Docsy, I\'m on Cycle Day $_currentCycleDay in my $_estimatedCyclePhase. What should we focus on today for our fertility window?',
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'What to focus on today',
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: crimsonPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward_rounded, size: 12, color: crimsonPrimary),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Divider(height: 1, color: dividerColor),
-              const SizedBox(height: 12),
-              // Ask Docsy search-style bar
-              InkWell(
-                onTap: () => _openDocsyPrompt(context, ''),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: surfaceCanvas,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: cardBorderColor),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.search_rounded, size: 15, color: Color(0xFF7A6B72)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Ask Docsy anything about your fertility signals...',
-                          style: GoogleFonts.manrope(
-                            fontSize: 11.5,
-                            color: const Color(0xFF9E8E95),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_rounded, size: 13, color: crimsonPrimary),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Quick prompt chips (Dynamic from AI)
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: (_dynamicDocsyActions.isNotEmpty
-                        ? _dynamicDocsyActions
-                        : [
-                            'When is my fertile window?',
-                            'How to read LH strips?',
-                            'Explain BBT shift',
-                            'Can we take a break today?',
-                          ])
-                    .map((action) => _buildQuickDocsyChip(context, action))
-                    .toList(),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════════
-  // 03 — PERIOD TRACKER (Canonical Stage 2 Reusable Tracker)
+  // 02 — HERO PERIOD / CYCLE RHYTHM TRACKER (Phase-Adaptive)
   // ════════════════════════════════════════════════════════════════════
   Widget _buildPeriodTrackerCard(BuildContext context) {
+    String phaseName = _estimatedCyclePhase;
+    String? customDayLabel;
+    String? customDayValue;
+    String? customSubtitle;
+    Color? customPhaseColor;
+
+    if (_hasLoggedPeriod) {
+      switch (_currentTtcPhase) {
+        case TtcPhase.menstrualReset:
+          customDayLabel = 'Day ';
+          customDayValue = '$_currentCycleDay';
+          phaseName = 'Cycle Day $_currentCycleDay • Gentle Reset';
+          customSubtitle = 'Focus on physical comfort • Zero conception pressure';
+          customPhaseColor = const Color(0xFFEF4444);
+          break;
+        case TtcPhase.fertileApproach:
+          customDayLabel = 'Day ';
+          customDayValue = '$_currentCycleDay';
+          phaseName = 'Cycle Day $_currentCycleDay • Fertile Window Open';
+          final isHigh = _ttcLoggedOPK == 'High' || _ttcLoggedCervicalFluid == 'Watery';
+          customSubtitle = isHigh
+              ? 'High Fertility • Sperm survival window active'
+              : 'Low to Moderate Fertility • Follicular approach';
+          customPhaseColor = const Color(0xFFF97316);
+          break;
+        case TtcPhase.ovulationPeak:
+          customDayLabel = 'Day ';
+          customDayValue = '$_currentCycleDay';
+          phaseName = 'Cycle Day $_currentCycleDay • Peak Fertility';
+          customSubtitle = 'LH Surge Detected! • Optimal 24–36 hr conception window';
+          customPhaseColor = const Color(0xFFDD0D22);
+          break;
+        case TtcPhase.twoWeekWait:
+          final dpo = _estimatedDpo ?? 1;
+          customDayLabel = 'DPO ';
+          customDayValue = '$dpo';
+          phaseName = '$dpo DPO • Two-Week Wait';
+          if (dpo <= 7) {
+            customSubtitle = 'Testing Shield Locked • Implantation has not occurred yet';
+          } else if (dpo <= 10) {
+            customSubtitle = 'Possible Implantation Window • 85% false-negative rate if tested now';
+          } else {
+            customSubtitle = 'Early Detection Window • Test with first-morning urine if ready';
+          }
+          customPhaseColor = const Color(0xFF7C3AED);
+          break;
+        case TtcPhase.extendedLuteal:
+          final dpo = _estimatedDpo ?? 14;
+          customDayLabel = 'DPO ';
+          customDayValue = '$dpo';
+          phaseName = '$dpo DPO • Extended Luteal Pattern';
+          customSubtitle = 'Expected period date passed • Progesterone holding steady';
+          customPhaseColor = const Color(0xFF059669);
+          break;
+      }
+    }
+
     return BlushyPeriodTrackerCard(
       currentCycleDay: _currentCycleDay,
       cycleLength: _cycleLength,
       periodLength: _periodLength,
       hasLoggedPeriod: _hasLoggedPeriod,
-      currentPhaseName: _estimatedCyclePhase,
+      currentPhaseName: phaseName,
+      customDayLabel: _hasLoggedPeriod ? customDayLabel : null,
+      customDayValue: _hasLoggedPeriod ? customDayValue : null,
+      customSubtitle: _hasLoggedPeriod ? customSubtitle : null,
+      customPhaseColor: _hasLoggedPeriod ? customPhaseColor : null,
       onTapLogPeriod: () => _openLogPeriodDialog(context),
       onTapInsights: () {
         _openDocsyPrompt(
           context,
-          'Docsy, tell me what happens in the body during the $_estimatedCyclePhase and what signs to look out for.',
+          'Docsy, I\'m in the $phaseName phase of my cycle. What biological signs should I be mindful of today?',
         );
       },
     );
   }
 
   // ════════════════════════════════════════════════════════════════════
-  // 04 — FERTILITY SIGNAL CONFIDENCE & COMPASS
+  // 03 — COMPACT TODAY'S SIGNALS SUMMARY (Streamlined, Non-Cluttered)
   // ════════════════════════════════════════════════════════════════════
-  Widget _buildFertilityCompassCard(BuildContext context) {
+  Widget _buildDailyFertilitySignalsHub(BuildContext context) {
     final conf = _computeFertileConfidence();
     final Color confColor = conf['color'] as Color;
     final String status = conf['status'] as String;
     final String sub = conf['sub'] as String;
     final IconData icon = conf['icon'] as IconData;
+    final int filledSignals = _loggedSignalsCount;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildEyebrow('FERTILE SIGNAL CONFIDENCE'),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: cardRadius,
-            border: Border.all(color: cardBorderColor, width: 1.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: cardRadius,
+        border: Border.all(color: cardBorderColor, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with Section Icon & Signal Coverage Indicator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Status Banner with 48px circular icon badge
+              _buildSectionHeaderWithIcon(
+                title: 'YOUR SIGNALS TODAY',
+                icon: Icons.biotech_rounded,
+                badgeColor: const Color(0xFF7C3AED),
+              ),
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: confColor.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: confColor.withValues(alpha: 0.2)),
+                  color: filledSignals >= 3 ? const Color(0xFFCCFBF1) : surfaceCanvas,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: filledSignals >= 3 ? const Color(0xFF0D9488) : cardBorderColor,
+                    width: 1.0,
+                  ),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: confColor.withValues(alpha: 0.3)),
-                      ),
-                      child: Icon(icon, color: confColor, size: 22),
+                    Icon(
+                      filledSignals >= 3 ? Icons.check_circle_rounded : Icons.radar_rounded,
+                      size: 12,
+                      color: filledSignals >= 3 ? const Color(0xFF0D9488) : textMuted,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            status,
-                            style: GoogleFonts.manrope(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: confColor,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            sub,
-                            style: GoogleFonts.manrope(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w400,
-                              color: textMain,
-                              height: 1.35,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(width: 4),
+                    Text(
+                      '$filledSignals/4 Tracked',
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: filledSignals >= 3 ? const Color(0xFF0D9488) : textMuted,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
+            ],
+          ),
+          const SizedBox(height: 14),
 
-              // "Why am I seeing this?" Transparency Link
-              Align(
-                alignment: Alignment.centerRight,
-                child: InkWell(
-                  onTap: () => _showWhyAmISeeingThisModal(context),
-                  child: Text(
+          // 4 Compact Signal Status Badges with Rich Circular Icon Badges
+          Row(
+            children: [
+              _buildSignalSummaryPill(
+                icon: Icons.biotech_rounded,
+                label: 'LH STRIP',
+                value: _ttcLoggedOPK ?? 'Not logged',
+                tapPrompt: '+ Tap to test',
+                color: const Color(0xFF7C3AED),
+                onTap: () => _showBiomarkersLogSheet(context),
+              ),
+              const SizedBox(width: 8),
+              _buildSignalSummaryPill(
+                icon: Icons.thermostat_rounded,
+                label: 'BASAL TEMP',
+                value: _ttcLoggedBBT != null ? '${_ttcLoggedBBT!.toStringAsFixed(1)}°F' : 'Not logged',
+                tapPrompt: '+ Log temp',
+                color: const Color(0xFFEA580C),
+                onTap: () => _showBiomarkersLogSheet(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildSignalSummaryPill(
+                icon: Icons.water_drop_rounded,
+                label: 'CERVICAL FLUID',
+                value: _ttcLoggedCervicalFluid ?? 'Not logged',
+                tapPrompt: '+ Check fluid',
+                color: const Color(0xFF0284C7),
+                onTap: () => _showBiomarkersLogSheet(context),
+              ),
+              const SizedBox(width: 8),
+              _buildSignalSummaryPill(
+                icon: Icons.favorite_rounded,
+                label: 'INTIMACY',
+                value: _partnerDecision == 'trying_today'
+                    ? 'Trying ❤️'
+                    : (_partnerDecision == 'not_today'
+                        ? 'Not today 🌿'
+                        : (_partnerDecision == 'decide_together' ? 'Together 🤝' : 'Not logged')),
+                tapPrompt: '+ Log intimacy',
+                color: crimsonPrimary,
+                onTap: () => _showBiomarkersLogSheet(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // 3 Quick Action Rounded Pill Buttons (Tactile, Colorful, Elevated)
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionPillButton(
+                  icon: Icons.photo_camera_rounded,
+                  label: 'Scan OPK',
+                  color: const Color(0xFF7C3AED),
+                  onTap: () => _showOpkGalleryModal(context),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildActionPillButton(
+                  icon: Icons.show_chart_rounded,
+                  label: 'BBT Curve',
+                  color: const Color(0xFFEA580C),
+                  onTap: () => _showBbtCurveModal(context),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildActionPillButton(
+                  icon: Icons.edit_note_rounded,
+                  label: 'Log Sheet',
+                  color: crimsonPrimary,
+                  onTap: () => _showBiomarkersLogSheet(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Reactive Clinical Interpretation Banner (Vibrant Soft Gradient)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  confColor.withValues(alpha: 0.12),
+                  confColor.withValues(alpha: 0.03),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: confColor.withValues(alpha: 0.30), width: 1.0),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: confColor.withValues(alpha: 0.35)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: confColor.withValues(alpha: 0.15),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: confColor, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: confColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            status,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              color: confColor,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        sub,
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: textMain,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Transparency Link
+          Align(
+            alignment: Alignment.centerRight,
+            child: InkWell(
+              onTap: () => _showWhyAmISeeingThisModal(context),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 12, color: crimsonPrimary),
+                  const SizedBox(width: 4),
+                  Text(
                     'Why am I seeing this? →',
                     style: GoogleFonts.manrope(
-                      fontSize: 11.5,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: crimsonPrimary,
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Quick-Log Biomarkers Matrix (Soft & Elegant)
-              Text(AppLocalizations.of(context).ttcTodaySBiomarkerLog,
-                style: GoogleFonts.manrope(
-                  fontSize: 10.0,
-                  fontWeight: FontWeight.w800,
-                  color: textMuted,
-                  letterSpacing: 0.8,
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // 1. LH Strip
-              Row(
-                children: [
-                  const Icon(Icons.biotech_rounded, size: 16, color: Color(0xFF7C3AED)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'LH Surge Strip:',
-                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
-                  ),
                 ],
               ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildTtcLogChip('Low / Neg', _ttcLoggedOPK == 'Negative / Low', const Color(0xFF7C3AED), () {
-                    setState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'Negative / Low' ? null : 'Negative / Low');
-                    _saveDailyTtcLog();
-                  }),
-                  _buildTtcLogChip('High', _ttcLoggedOPK == 'High', const Color(0xFF7C3AED), () {
-                    setState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'High' ? null : 'High');
-                    _saveDailyTtcLog();
-                  }),
-                  _buildTtcLogChip('Peak (Surge)', _ttcLoggedOPK == 'Peak (Surge)', const Color(0xFFE11D48), () {
-                    setState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'Peak (Surge)' ? null : 'Peak (Surge)');
-                    _saveDailyTtcLog();
-                  }),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // 2. Cervical Fluid
-              Row(
-                children: [
-                  const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFF0284C7)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Cervical Fluid:',
-                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  _buildTtcLogChip('Dry', _ttcLoggedCervicalFluid == 'Dry', const Color(0xFF0284C7), () {
-                    setState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Dry' ? null : 'Dry');
-                    _saveDailyTtcLog();
-                  }),
-                  _buildTtcLogChip('Creamy', _ttcLoggedCervicalFluid == 'Creamy', const Color(0xFF0284C7), () {
-                    setState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Creamy' ? null : 'Creamy');
-                    _saveDailyTtcLog();
-                  }),
-                  _buildTtcLogChip('Watery', _ttcLoggedCervicalFluid == 'Watery', const Color(0xFF0284C7), () {
-                    setState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Watery' ? null : 'Watery');
-                    _saveDailyTtcLog();
-                  }),
-                  _buildTtcLogChip('Egg White (Peak)', _ttcLoggedCervicalFluid == 'Egg White (Peak)', const Color(0xFFE11D48), () {
-                    setState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Egg White (Peak)' ? null : 'Egg White (Peak)');
-                    _saveDailyTtcLog();
-                  }),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // 3. Morning BBT
-              Row(
-                children: [
-                  const Icon(Icons.thermostat_rounded, size: 16, color: Color(0xFFEA580C)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Morning BBT (°F):',
-                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
-                  ),
-                  const Spacer(),
-                  if (_ttcLoggedBBT != null)
-                    Text(
-                      '${_ttcLoggedBBT!.toStringAsFixed(1)}°F',
-                      style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFFEA580C)),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [97.2, 97.4, 97.7, 98.0, 98.3, 98.6].map((temp) {
-                  final isSel = _ttcLoggedBBT == temp;
-                  return _buildTtcLogChip('${temp.toStringAsFixed(1)}°', isSel, const Color(0xFFEA580C), () {
-                    setState(() => _ttcLoggedBBT = isSel ? null : temp);
-                    _saveDailyTtcLog();
-                  });
-                }).toList(),
-              ),
-              const SizedBox(height: 12),
-
-              // 4. Intimacy Toggle
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.favorite_rounded, size: 16, color: crimsonPrimary),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Intimacy / Trying:',
-                        style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: textMain),
-                      ),
-                    ],
-                  ),
-                  InkWell(
-                    onTap: () {
-                      setState(() => _ttcLoggedIntercourse = !_ttcLoggedIntercourse);
-                      _saveDailyTtcLog();
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _ttcLoggedIntercourse ? crimsonPrimary.withValues(alpha: 0.12) : surfaceCanvas,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _ttcLoggedIntercourse ? crimsonPrimary : cardBorderColor),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _ttcLoggedIntercourse ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            size: 13,
-                            color: crimsonPrimary,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            _ttcLoggedIntercourse ? 'Logged ❤️' : '+ Log Today',
-                            style: GoogleFonts.manrope(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: crimsonPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════
-  // 05 — MY FERTILITY PICTURE (Synthesized View: Raw -> Meaning)
-  // ════════════════════════════════════════════════════════════════════
-  Widget _buildMyFertilityPictureCard(BuildContext context) {
-    final bool isPeakLH = _ttcLoggedOPK == 'Peak (Surge)';
-    final bool isHighLH = _ttcLoggedOPK == 'High';
-    final bool isLowLH = _ttcLoggedOPK == 'Negative / Low';
-
-    final bool isPeakFluid = _ttcLoggedCervicalFluid == 'Egg White (Peak)';
-    final bool isWateryFluid = _ttcLoggedCervicalFluid == 'Watery';
-    final bool isFertileFluid = isPeakFluid || isWateryFluid;
-    final bool hasFluid = _ttcLoggedCervicalFluid != null;
-
-    final bool hasBBTShift = _ttcLoggedBBT != null && _ttcLoggedBBT! >= 98.0;
-    final bool hasBBT = _ttcLoggedBBT != null;
-
-    final String synthesisNarrative;
-    if (hasBBTShift) {
-      synthesisNarrative = 'Your sustained temperature shift suggests ovulation has likely occurred. The luteal window has commenced.';
-    } else if (isPeakLH || isPeakFluid) {
-      synthesisNarrative = 'Active peak fertile signals detected. Optimal conception timing over the next 24–36 hours.';
-    } else if (isHighLH || isWateryFluid) {
-      synthesisNarrative = 'Estrogenic signals are building nicely. Follicular maturation is progressing toward your surge.';
-    } else if (isLowLH || (_ttcLoggedCervicalFluid == 'Dry' || _ttcLoggedCervicalFluid == 'Creamy')) {
-      synthesisNarrative = 'Signals reflect baseline follicular rhythm. Continue gentle daily observation as your fertile window approaches.';
-    } else {
-      synthesisNarrative = 'Keep logging daily signs to help Blushy synthesize a high-confidence fertility picture.';
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildEyebrow('MY FERTILITY PICTURE'),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
+  Widget _buildSignalSummaryPill({
+    required IconData icon,
+    required String label,
+    required String value,
+    required String tapPrompt,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final bool isLogged = value != 'Not logged';
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: cardRadius,
-            border: Border.all(color: cardBorderColor, width: 1.0),
+            color: isLogged ? color.withValues(alpha: 0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isLogged ? color.withValues(alpha: 0.35) : const Color(0xFFE8E2D9),
+              width: 1.0,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: isLogged ? color.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(
-                'Raw Signals → Clinical Meaning',
-                style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
-              ),
-              const SizedBox(height: 10),
-
-              // Signal Checklist with 36px circular badges and overflow-safe layout
-              _buildSignalCheckRow(
-                'LH surge pattern',
-                isPeakLH
-                    ? 'Peak surge active'
-                    : (isHighLH
-                        ? 'Elevated (Approaching peak)'
-                        : (isLowLH ? 'Baseline (No surge yet)' : 'Pending test')),
-                isPeakLH || isHighLH,
-                isPeakLH ? const Color(0xFFE11D48) : const Color(0xFF7C3AED),
-                Icons.biotech_rounded,
-              ),
-              const SizedBox(height: 8),
-              _buildSignalCheckRow(
-                'Cervical fluid texture',
-                isPeakFluid
-                    ? 'Peak fertile (Egg white)'
-                    : (isWateryFluid
-                        ? 'Fertile (Watery texture)'
-                        : (hasFluid ? 'Non-fertile ($_ttcLoggedCervicalFluid)' : 'Pending check')),
-                isFertileFluid,
-                const Color(0xFF0284C7),
-                Icons.water_drop_rounded,
-              ),
-              const SizedBox(height: 8),
-              _buildSignalCheckRow(
-                'Sustained BBT thermal shift',
-                hasBBTShift
-                    ? 'Biphasic shift confirmed'
-                    : (hasBBT ? 'Pre-shift (${_ttcLoggedBBT!.toStringAsFixed(1)}°F)' : 'Pending morning reading'),
-                hasBBTShift,
-                const Color(0xFF059669),
-                Icons.device_thermostat_rounded,
-              ),
-              const SizedBox(height: 12),
-
-              // Synthesis Narrative
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: surfaceCanvas,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: cardBorderColor),
+                  color: color.withValues(alpha: isLogged ? 0.16 : 0.10),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: color.withValues(alpha: isLogged ? 0.35 : 0.20),
+                    width: 1.0,
+                  ),
                 ),
-                child: Text(
-                  synthesisNarrative,
-                  style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4),
+                child: Center(
+                  child: Icon(icon, size: 17, color: color),
                 ),
               ),
-              const SizedBox(height: 10),
-              InkWell(
-                onTap: () => _openDocsyPrompt(
-                  context,
-                  'Docsy, explain the relationship between my current LH ($_ttcLoggedOPK), cervical fluid ($_ttcLoggedCervicalFluid), and BBT ($_ttcLoggedBBT). What is our current fertility picture?',
-                ),
-                child: Row(
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.auto_awesome_rounded, size: 14, color: crimsonPrimary),
-                    const SizedBox(width: 6),
                     Text(
-                      'Ask Docsy to explain this picture →',
-                      style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: crimsonPrimary),
+                      label,
+                      style: GoogleFonts.manrope(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        color: textMuted,
+                        letterSpacing: 0.4,
+                      ),
                     ),
+                    const SizedBox(height: 1),
+                    if (isLogged)
+                      Row(
+                        children: [
+                          Icon(Icons.check_circle_rounded, size: 11, color: color),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              value,
+                              style: GoogleFonts.manrope(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: color,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Container(
+                        margin: const EdgeInsets.only(top: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          tapPrompt,
+                          style: GoogleFonts.manrope(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: color,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ],
           ),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildActionPillButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.35), width: 1.1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.16),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(icon, size: 13, color: color),
+              ),
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   // ════════════════════════════════════════════════════════════════════
-  // 06 — FERTILE WINDOW TIMELINE (Continuum + "Couldn't try today?")
+  // BIOMARKERS QUICK-LOG SHEET MODAL (Deep tool for editing all biomarkers)
   // ════════════════════════════════════════════════════════════════════
-  /// The first and last cycle day of the estimated fertile window.
-  ///
-  /// Five days before the estimated ovulation day through ovulation itself,
-  /// which is the same span `_estimatedCyclePhase` uses to decide whether today
-  /// is in the window. Both derive from the cycle length the server returned.
+  void _showBiomarkersLogSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalContext, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.82,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Today\'s Biomarkers Log',
+                        style: GoogleFonts.cormorantGaramond(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: textMain,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Track LH, cervical mucus, BBT, and intimacy to pinpoint your fertile timing.',
+                    style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        // 1. LH Strip
+                        Row(
+                          children: [
+                            const Icon(Icons.biotech_rounded, size: 16, color: Color(0xFF7C3AED)),
+                            const SizedBox(width: 6),
+                            Text('LH Surge Strip (OPK):', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildTtcLogChip('Low (0.2)', _ttcLoggedOPK == 'Negative / Low', const Color(0xFF7C3AED), () {
+                              setModalState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'Negative / Low' ? null : 'Negative / Low');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('High (0.6)', _ttcLoggedOPK == 'High', const Color(0xFFEA580C), () {
+                              setModalState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'High' ? null : 'High');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Peak Surge (1.4+)', _ttcLoggedOPK == 'Peak (Surge)', crimsonPrimary, () {
+                              setModalState(() => _ttcLoggedOPK = _ttcLoggedOPK == 'Peak (Surge)' ? null : 'Peak (Surge)');
+                              setState(() {});
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 2. Cervical Fluid
+                        Row(
+                          children: [
+                            const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFF0284C7)),
+                            const SizedBox(width: 6),
+                            Text('Cervical Fluid Texture:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _buildTtcLogChip('Dry', _ttcLoggedCervicalFluid == 'Dry', const Color(0xFF0284C7), () {
+                              setModalState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Dry' ? null : 'Dry');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Creamy', _ttcLoggedCervicalFluid == 'Creamy', const Color(0xFF0284C7), () {
+                              setModalState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Creamy' ? null : 'Creamy');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Watery', _ttcLoggedCervicalFluid == 'Watery', const Color(0xFF0284C7), () {
+                              setModalState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Watery' ? null : 'Watery');
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Egg White (Peak)', _ttcLoggedCervicalFluid == 'Egg White (Peak)', crimsonPrimary, () {
+                              setModalState(() => _ttcLoggedCervicalFluid = _ttcLoggedCervicalFluid == 'Egg White (Peak)' ? null : 'Egg White (Peak)');
+                              setState(() {});
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 3. Morning BBT
+                        Row(
+                          children: [
+                            const Icon(Icons.thermostat_rounded, size: 16, color: Color(0xFFEA580C)),
+                            const SizedBox(width: 6),
+                            Text('Morning BBT (°F):', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [97.2, 97.4, 97.7, 98.0, 98.3, 98.6].map((temp) {
+                            final isSel = _ttcLoggedBBT == temp;
+                            return _buildTtcLogChip('${temp.toStringAsFixed(1)}°', isSel, const Color(0xFFEA580C), () {
+                              setModalState(() => _ttcLoggedBBT = isSel ? null : temp);
+                              setState(() {});
+                            });
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 4. Intimacy & Timing
+                        Row(
+                          children: [
+                            const Icon(Icons.favorite_rounded, size: 16, color: crimsonPrimary),
+                            const SizedBox(width: 6),
+                            Text('Intimacy & Timing:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildTtcLogChip('Trying today ❤️', _partnerDecision == 'trying_today', crimsonPrimary, () {
+                              setModalState(() {
+                                _partnerDecision = _partnerDecision == 'trying_today' ? null : 'trying_today';
+                                _ttcLoggedIntercourse = _partnerDecision == 'trying_today';
+                              });
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Not today 🌿', _partnerDecision == 'not_today', const Color(0xFF059669), () {
+                              setModalState(() {
+                                _partnerDecision = _partnerDecision == 'not_today' ? null : 'not_today';
+                                _ttcLoggedIntercourse = false;
+                              });
+                              setState(() {});
+                            }),
+                            _buildTtcLogChip('Decide together 🤝', _partnerDecision == 'decide_together', const Color(0xFF7C3AED), () {
+                              setModalState(() {
+                                _partnerDecision = _partnerDecision == 'decide_together' ? null : 'decide_together';
+                              });
+                              setState(() {});
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 5. Supplements
+                        Row(
+                          children: [
+                            const Icon(Icons.medication_outlined, size: 16, color: Color(0xFF0D9488)),
+                            const SizedBox(width: 6),
+                            Text('Protocol & Supplements:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            'Prenatal + Folate',
+                            'CoQ10',
+                            'Inositol',
+                            'Vitamin D',
+                            'Letrozole / Clomid',
+                          ].map((sup) {
+                            final isSel = _selectedSupplements.contains(sup);
+                            return _buildTtcLogChip(sup, isSel, const Color(0xFF0D9488), () {
+                              setModalState(() {
+                                if (isSel) {
+                                  _selectedSupplements.remove(sup);
+                                } else {
+                                  _selectedSupplements.add(sup);
+                                }
+                              });
+                              setState(() {});
+                            });
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _saveDailyTtcLog();
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Today\'s fertility signals saved and synced.'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: crimsonPrimary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text(
+                        'Save Today\'s Signals',
+                        style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════
+  // 04A — PHASE 1: MENSTRUAL RESET CARD (Days 1–5)
+  // ════════════════════════════════════════════════════════════════════
+  Widget _buildMenstrualResetCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: cardRadius,
+        border: Border.all(color: cardBorderColor, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeaderWithIcon(
+            title: 'GENTLE RESET • DAY $_currentCycleDay',
+            icon: Icons.spa_rounded,
+            badgeColor: const Color(0xFF059669),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Zero Conception Pressure Today',
+            style: GoogleFonts.cormorantGaramond(
+              fontSize: 21,
+              fontWeight: FontWeight.w700,
+              color: textMain,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'Your ovaries are gently recruiting fresh follicles. Rest and replenish:',
+            style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
+          ),
+          const SizedBox(height: 12),
+
+          // 3 Visual Wellness Badges (With circular icons and colors)
+          Row(
+            children: [
+              _buildVisualResetTile(
+                icon: Icons.restaurant_rounded,
+                title: 'Iron Foods',
+                desc: 'Lentils & greens',
+                color: const Color(0xFF0D9488),
+              ),
+              const SizedBox(width: 8),
+              _buildVisualResetTile(
+                icon: Icons.bedtime_rounded,
+                title: 'Deep Sleep',
+                desc: '8+ hours rest',
+                color: const Color(0xFF7C3AED),
+              ),
+              const SizedBox(width: 8),
+              _buildVisualResetTile(
+                icon: Icons.self_improvement_rounded,
+                title: 'Gentle Pace',
+                desc: 'Warm tea & ease',
+                color: const Color(0xFFEA580C),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Ask Docsy CTA
+          InkWell(
+            onTap: () {
+              _openDocsyPrompt(
+                context,
+                'Docsy, I\'m on Cycle Day $_currentCycleDay in my menstrual reset. What nourishing foods and self-care steps help replenish iron and balance my hormones right now?',
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.auto_awesome_rounded, size: 15, color: Color(0xFF059669)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Ask Docsy About Cycle Reset & Iron',
+                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF059669)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVisualResetTile({
+    required IconData icon,
+    required String title,
+    required String desc,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.25), width: 1.0),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Center(child: Icon(icon, size: 16, color: color)),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: color),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              desc,
+              style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w500, color: textMuted),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 04B — PHASE 2 & 3: FERTILE WINDOW & MALE FACTOR ("The Other 50%")
+  // ════════════════════════════════════════════════════════════════════
+  Widget _buildFertileWindowAndMaleFactorCard(BuildContext context) {
+    final isPeak = _ttcLoggedOPK == 'Peak (Surge)' || _ttcLoggedCervicalFluid == 'Egg White (Peak)';
+    final isHigh = _ttcLoggedOPK == 'High' || _ttcLoggedCervicalFluid == 'Watery';
+    final String statusLabel = isPeak
+        ? 'Peak Fertility (LH Surge Detected!)'
+        : (isHigh ? 'High Fertility Window' : 'Low to Moderate Fertility (Approaching)');
+    final Color badgeColor = isPeak ? crimsonPrimary : (isHigh ? const Color(0xFFEA580C) : const Color(0xFF7C3AED));
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: cardRadius,
+        border: Border.all(color: cardBorderColor, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionHeaderWithIcon(
+                title: 'BEST TIME TO TRY',
+                icon: Icons.favorite_rounded,
+                badgeColor: badgeColor,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: badgeColor.withValues(alpha: 0.25)),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: badgeColor),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Your Conception Window',
+            style: GoogleFonts.cormorantGaramond(fontSize: 21, fontWeight: FontWeight.w700, color: textMain),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Timing intercourse in this overlap creates the highest odds of fertilization:',
+            style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted),
+          ),
+          const SizedBox(height: 12),
+
+          // Two Visual Biological Window Cards (Side by Side)
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFBAE6FD), width: 1.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0284C7).withValues(alpha: 0.05),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE0F2FE),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.water_drop_rounded, size: 18, color: Color(0xFF0284C7)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '5 Days',
+                              style: GoogleFonts.cormorantGaramond(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0284C7),
+                              ),
+                            ),
+                            Text(
+                              'Sperm in fertile fluid',
+                              style: GoogleFonts.manrope(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: textMuted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFFD1E6), width: 1.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF72585).withValues(alpha: 0.05),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFE5F0),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.hourglass_top_rounded, size: 18, color: Color(0xFFF72585)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '12–24 hrs',
+                              style: GoogleFonts.cormorantGaramond(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFFF72585),
+                              ),
+                            ),
+                            Text(
+                              'Egg viability window',
+                              style: GoogleFonts.manrope(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: textMuted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Partner Guidance: Two Visual Tiles (No dense bullet walls!)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: surfaceCanvas,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.favorite_border_rounded, size: 13, color: Color(0xFF0284C7)),
+                    const SizedBox(width: 5),
+                    Text(
+                      'PARTNER SCIENCE · THE OTHER 50%',
+                      style: GoogleFonts.manrope(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0284C7),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFBAE6FD)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFE0F2FE),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.ac_unit_rounded, size: 14, color: Color(0xFF0284C7)),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Keep Cool',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF0284C7),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Skip hot tubs & laptops',
+                                    style: GoogleFonts.manrope(fontSize: 9.5, color: textMuted),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFCCFBF1)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFCCFBF1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF0D9488)),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Every 24–48h',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF0D9488),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Optimal sperm motility',
+                                    style: GoogleFonts.manrope(fontSize: 9.5, color: textMuted),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Elevated Tactile Share Button
+          InkWell(
+            onTap: () {
+              const text = 'Hey love, Blushy shows our fertile window is active today. Zero pressure at all — just keeping you in the loop ❤️';
+              Share.share(text, subject: 'Blushy Today Update');
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF1F2),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFECDD3), width: 1.1),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFE4E6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Icon(Icons.ios_share_rounded, size: 13, color: crimsonPrimary),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Share Gentle Update with Partner',
+                    style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700, color: crimsonPrimary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 04C — PHASE 4: THE TWO-WEEK WAIT (1 DPO → 13 DPO)
+  // ════════════════════════════════════════════════════════════════════
+  Widget _buildTwoWeekWaitCard(BuildContext context) {
+    final dpo = _estimatedDpo ?? 1;
+    final String shieldTitle;
+    final String shieldDesc;
+    final Color shieldColor;
+    final IconData shieldIcon;
+    final bool isTestingUnlocked = dpo >= 11;
+
+    if (dpo <= 7) {
+      shieldTitle = 'Testing Shield Locked · Implantation Inactive';
+      shieldDesc = 'At $dpo DPO, implantation has not occurred yet. Testing now yields false negatives. Progesterone causes twinges, not pregnancy clues.';
+      shieldColor = const Color(0xFF64748B);
+      shieldIcon = Icons.lock_outline_rounded;
+    } else if (dpo <= 10) {
+      shieldTitle = 'Possible Implantation Window (8–10 DPO)';
+      shieldDesc = 'Blastocysts typically implant now. Early testing carries an 85% false-negative rate because hCG takes 48h+ to rise in urine.';
+      shieldColor = const Color(0xFFEA580C);
+      shieldIcon = Icons.hourglass_top_rounded;
+    } else {
+      shieldTitle = 'Early Detection Window (11–13 DPO)';
+      shieldDesc = 'hCG levels begin rising if conception occurred. Test with first-morning urine for clinical accuracy.';
+      shieldColor = const Color(0xFF0284C7);
+      shieldIcon = Icons.science_outlined;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: cardRadius,
+        border: Border.all(color: cardBorderColor, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionHeaderWithIcon(
+                title: 'THE TWO-WEEK WAIT',
+                icon: Icons.hourglass_bottom_rounded,
+                badgeColor: shieldColor,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: shieldColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: shieldColor.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  '$dpo DPO',
+                  style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: shieldColor),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            isTestingUnlocked ? 'Clinical Testing Window Open' : 'Protecting Your Mental Wellbeing',
+            style: GoogleFonts.cormorantGaramond(fontSize: 21, fontWeight: FontWeight.w700, color: textMain),
+          ),
+          const SizedBox(height: 10),
+
+          // 3-Stage Testing Timeline Bar (Visual Progress)
+          Row(
+            children: [
+              _buildTimelineStepPill('1–7 DPO', 'Locked 🔒', dpo <= 7, const Color(0xFF64748B)),
+              const SizedBox(width: 6),
+              _buildTimelineStepPill('8–10 DPO', 'Implant ⏳', dpo >= 8 && dpo <= 10, const Color(0xFFEA580C)),
+              const SizedBox(width: 6),
+              _buildTimelineStepPill('11+ DPO', 'Test 🧪', dpo >= 11, const Color(0xFF0284C7)),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Active Phase Comfort Banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: shieldColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: shieldColor.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: shieldColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Center(child: Icon(shieldIcon, size: 16, color: shieldColor)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        shieldTitle,
+                        style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w800, color: shieldColor),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        shieldDesc,
+                        style: GoogleFonts.manrope(fontSize: 11, color: textMain, height: 1.35),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Symptom Reality Check (3 Visual Cards with Icons & Colors)
+          Row(
+            children: [
+              const Icon(Icons.psychology_outlined, size: 13, color: textMuted),
+              const SizedBox(width: 5),
+              Text(
+                'SYMPTOM SPOTTER SHIELD · TAP FOR SCIENCE',
+                style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildSymptomRealityTile(
+                icon: Icons.bolt_rounded,
+                label: 'Cramps',
+                sub: 'Progesterone rise',
+                color: const Color(0xFFD97706),
+                onTap: () => _openDocsyPrompt(
+                  context,
+                  'Docsy, I\'m at $dpo DPO and noticed cramps. Why does normal luteal progesterone cause cramping even without pregnancy?',
+                ),
+              ),
+              const SizedBox(width: 6),
+              _buildSymptomRealityTile(
+                icon: Icons.nightlight_rounded,
+                label: 'Fatigue',
+                sub: 'Body working hard',
+                color: const Color(0xFF7C3AED),
+                onTap: () => _openDocsyPrompt(
+                  context,
+                  'Docsy, I\'m at $dpo DPO feeling fatigue. Can high luteal progesterone cause deep sleepiness during the two-week wait?',
+                ),
+              ),
+              const SizedBox(width: 6),
+              _buildSymptomRealityTile(
+                icon: Icons.spa_rounded,
+                label: 'Tender',
+                sub: 'Hormone peak',
+                color: const Color(0xFFF72585),
+                onTap: () => _openDocsyPrompt(
+                  context,
+                  'Docsy, I\'m at $dpo DPO and have breast tenderness. Is this a reliable pregnancy sign or standard luteal estrogen/progesterone effect?',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineStepPill(String days, String label, bool isActive, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isActive ? color.withValues(alpha: 0.15) : surfaceCanvas,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isActive ? color : cardBorderColor,
+            width: isActive ? 1.2 : 1.0,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              days,
+              style: GoogleFonts.manrope(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: isActive ? color : textMuted,
+              ),
+            ),
+            Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontSize: 9.5,
+                fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
+                color: isActive ? color : textMuted,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSymptomRealityTile({
+    required IconData icon,
+    required String label,
+    required String sub,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.04),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(child: Icon(icon, size: 14, color: color)),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: color),
+              ),
+              Text(
+                sub,
+                style: GoogleFonts.manrope(fontSize: 9, color: textMuted),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 04D — PHASE 5: EXTENDED LUTEAL PATTERN (14+ DPO)
+  // ════════════════════════════════════════════════════════════════════
+  Widget _buildExtendedLutealCard(BuildContext context) {
+    final dpo = _estimatedDpo ?? 14;
+    final bool ovulationConfirmed =
+        _ttcLoggedOPK == 'Peak (Surge)' || (_ttcLoggedBBT != null && _ttcLoggedBBT! >= 98.0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: cardRadius,
+        border: Border.all(color: cardBorderColor, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionHeaderWithIcon(
+                title: 'EXTENDED LUTEAL PATTERN',
+                icon: Icons.event_available_rounded,
+                badgeColor: const Color(0xFF059669),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCCFBF1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  '$dpo DPO',
+                  style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF0D9488)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Gentle Clarity for $dpo DPO',
+            style: GoogleFonts.cormorantGaramond(fontSize: 21, fontWeight: FontWeight.w700, color: textMain),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'Your expected period date has passed without bleeding. Zero alarms—just clinical facts:',
+            style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted),
+          ),
+          const SizedBox(height: 12),
+
+          // Two Visual Insight Tiles (Confirmed vs Unconfirmed)
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: ovulationConfirmed ? const Color(0xFFECFDF5) : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: ovulationConfirmed ? const Color(0xFF059669) : cardBorderColor,
+                      width: ovulationConfirmed ? 1.2 : 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.verified_rounded, size: 14, color: Color(0xFF059669)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Ovulation Confirmed',
+                              style: GoogleFonts.manrope(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF059669),
+                              ),
+                            ),
+                            Text(
+                              'Luteal 1-2 days longer. Period usually in 24-48h if negative.',
+                              style: GoogleFonts.manrope(fontSize: 9.5, color: textMain, height: 1.25),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: !ovulationConfirmed ? const Color(0xFFFFFBEB) : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: !ovulationConfirmed ? const Color(0xFFD97706) : cardBorderColor,
+                      width: !ovulationConfirmed ? 1.2 : 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD97706).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.update_rounded, size: 14, color: Color(0xFFD97706)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Ovulation Shifted',
+                              style: GoogleFonts.manrope(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFFD97706),
+                              ),
+                            ),
+                            Text(
+                              'Delayed ovulation pushes period back naturally.',
+                              style: GoogleFonts.manrope(fontSize: 9.5, color: textMain, height: 1.25),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Two Primary Action Buttons (Elevated, Vibrant)
+          InkWell(
+            onTap: () => _handleLogPositivePregnancyTest(context),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF059669), Color(0xFF047857)],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF059669).withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.favorite_rounded, size: 16, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    '➕ Log Positive Pregnancy Test',
+                    style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: () => _openLogPeriodDialog(context),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF1F2),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFECDD3), width: 1.1),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.water_drop_rounded, size: 14, color: crimsonPrimary),
+                  const SizedBox(width: 8),
+                  Text(
+                    '🩸 Period Started Today (Cycle Day 1)',
+                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: crimsonPrimary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // POSITIVE PREGNANCY TEST HANDLER (Smooth Transition to Pregnancy Stage)
+  // ════════════════════════════════════════════════════════════════════
+  void _handleLogPositivePregnancyTest(BuildContext context) {
+    final lmp = _lastPeriodStartDate ?? DateTime.now().subtract(Duration(days: _currentCycleDay));
+    final gestationalDays = DateTime.now().difference(lmp).inDays;
+    final gestationalWeeks = (gestationalDays / 7).floor();
+    final remainingDays = gestationalDays % 7;
+    final edd = lmp.add(const Duration(days: 280));
+
+    // Persist to BlushyStorage
+    try {
+      BlushyStorage.write('pregnancy_onboarding.json', {
+        'lmp': lmp.toIso8601String(),
+        'dueDate': edd.toIso8601String(),
+        'gestationalWeeks': gestationalWeeks,
+        'gestationalDays': remainingDays,
+        'conceptionDate': DateTime.now().subtract(Duration(days: _estimatedDpo ?? 14)).toIso8601String(),
+      });
+      final profile = Map<String, dynamic>.from(BlushyStorage.read('user_profile.json'));
+      profile['current_stage'] = 'pregnancy';
+      BlushyStorage.write('user_profile.json', profile);
+    } catch (_) {}
+
+    // Backend sync
+    ApiAuthService().saveOnboardingAnswers({
+      'stage': 'pregnancy',
+      'current_stage': 'pregnancy',
+      'pregnancy_due_date': edd.toIso8601String(),
+      'pregnancy_lmp': lmp.toIso8601String(),
+    }).catchError((_) => <String, dynamic>{});
+
+    ApiCheckinService().submitDailyCheckin(
+      logDate: DateTime.now().toIso8601String().substring(0, 10),
+      symptoms: ['Positive Pregnancy Test', 'Transition to Stage: Pregnancy'],
+    );
+
+    // Celebratory Dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dlgContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFCCFBF1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.favorite_rounded, color: Color(0xFF0D9488), size: 28),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Warmest Congratulations ❤️',
+                  style: GoogleFonts.cormorantGaramond(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: textMain,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'A wonderful new biological chapter begins.',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF0D9488),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: surfaceCanvas,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: cardBorderColor),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Gestational Age:', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),
+                          Text(
+                            '$gestationalWeeks w, $remainingDays d',
+                            style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: textMain),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Estimated Due Date:', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),
+                          Text(
+                            _formatDate(edd),
+                            style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: crimsonPrimary),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Blushy has updated your profile to Stage: Pregnancy. We\'re with you for trimester tracking, gentle nutrition, and clinical safety.',
+                  style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dlgContext);
+                      _openDocsyPrompt(
+                        context,
+                        'Docsy, I just confirmed a positive pregnancy test at approximately $gestationalWeeks weeks and $remainingDays days! What should I keep in mind for nutrition, prenatal appointments, and early symptoms?',
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(
+                      'Ask Docsy About First Trimester',
+                      style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.pop(dlgContext),
+                  child: Text(
+                    'Close & Stay on Dashboard',
+                    style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 04D — FERTILE WINDOW CONTINUUM (Timeline & Empty State)
+  // ════════════════════════════════════════════════════════════════════
   (int, int) get _fertileWindowDays {
     final ovulation = _estimatedOvulationDay;
     final start = (ovulation - 5).clamp(_periodLength + 1, ovulation);
@@ -992,13 +2367,10 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   }
 
   Widget _buildFertileWindowTimelineCard(BuildContext context) {
-    // Nothing is known about this cycle until a period has been logged, and a
-    // fertile window drawn from a default cycle length is a guess presented as
-    // a finding. Say so instead.
     if (!_hasLoggedPeriod) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: cardRadius,
@@ -1010,9 +2382,9 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             _buildSectionHeaderWithIcon(
               title: 'FERTILE WINDOW CONTINUUM',
               icon: Icons.timeline_rounded,
-              badgeColor: const Color(0xFFE11D48),
+              badgeColor: crimsonPrimary,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               'Log the first day of your last period and Blushy can estimate '
               'your fertile window. Until then there is nothing to place you on.',
@@ -1023,7 +2395,6 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       );
     }
 
-    // Each node is a real cycle day either side of today.
     final today = _currentCycleDay;
     final nodes = <(String, int)>[
       ('Earlier', today - 2),
@@ -1032,13 +2403,12 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       ('Tomorrow', today + 1),
       ('Later', today + 2),
     ];
-    final fertile = [for (final (_, day) in nodes) _isFertileCycleDay(day)];
     final (windowStart, windowEnd) = _fertileWindowDays;
-    final todayIsFertile = fertile[2];
+    final todayIsFertile = _isFertileCycleDay(today);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: cardRadius,
@@ -1050,318 +2420,101 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           _buildSectionHeaderWithIcon(
             title: 'FERTILE WINDOW CONTINUUM',
             icon: Icons.timeline_rounded,
-            badgeColor: const Color(0xFFE11D48),
+            badgeColor: crimsonPrimary,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: todayIsFertile ? crimsonPrimary.withValues(alpha: 0.1) : surfaceCanvas,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: todayIsFertile ? crimsonPrimary : cardBorderColor),
+              ),
+              child: Text(
+                todayIsFertile ? 'Window Active' : 'Outside Window',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: todayIsFertile ? crimsonPrimary : textMuted,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
+          Text(
+            todayIsFertile ? 'Your Current Multi-Day Window' : 'Estimated Cycle Continuum',
+            style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
+          ),
+          const SizedBox(height: 4),
           Text(
             todayIsFertile
-                ? 'Your Current Multi-Day Window'
-                : 'Your Estimated Window: Day $windowStart to Day $windowEnd',
-            style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Today is Cycle Day $today. Estimated from your cycle length, not measured.',
-            style: GoogleFonts.manrope(fontSize: 10.5, color: textMuted),
-          ),
-          const SizedBox(height: 14),
-
-          // Visual continuum. Each dot is a real cycle day, and a segment is
-          // only marked fertile when both days it joins fall in the window.
-          Row(
-            children: [
-              for (var i = 0; i < nodes.length; i++) ...[
-                if (i > 0)
-                  Expanded(
-                    child: Container(
-                      height: 3,
-                      color: (fertile[i - 1] && fertile[i]) ? crimsonPrimary : cardBorderColor,
-                    ),
-                  ),
-                _buildContinuumNode(
-                  nodes[i].$1,
-                  isCurrent: i == 2,
-                  isFertile: fertile[i],
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Low-cortisol reassurance. Only while the window is still open --
-          // telling someone they have not missed their chance after ovulation
-          // has passed is not reassurance, it is wrong.
-          if (todayIsFertile)
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF1F2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFFCCD5)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.spa_rounded, size: 16, color: crimsonPrimary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Couldn\'t try today? That\'s completely okay.',
-                        style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: crimsonPrimary),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Sperm can survive for up to 5 days in fertile cervical fluid. You have not missed your opportunity; consistency across the multi-day window is what counts.',
-                        style: GoogleFonts.manrope(fontSize: 11, color: textMain, height: 1.35),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════════
-  // 07 — SOMETHING CHANGED 🚨 (AI Anomaly Detector)
-  // ════════════════════════════════════════════════════════════════════
-  Widget _buildSomethingChangedCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeaderWithIcon(
-            title: 'CYCLE VARIATION DETECTOR',
-            icon: Icons.change_circle_outlined,
-            badgeColor: const Color(0xFFD97706),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFEF3C7),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFFD97706)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(AppLocalizations.of(context).ttcNaturalCycleToCycleRhythm,
-                      style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w800, color: textMain),
-                    ),
-                    Text(
-                      'Variations of 2–4 days in ovulation timing are biologically normal.',
-                      style: GoogleFonts.manrope(fontSize: 11, color: textMuted),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Your biological rhythm is unique. Blushy continuously compares your LH and temperature patterns against your historical baseline to highlight subtle shifts without clinical panic.',
-            style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4),
-          ),
-          const SizedBox(height: 10),
-          InkWell(
-            onTap: () => _openDocsyPrompt(
-              context,
-              'Docsy, how does normal cycle variation affect my fertile window timing, and how can I distinguish healthy shifts from irregularities?',
-            ),
-            child: Text(
-              'Explore cycle variation with Docsy →',
-              style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFFD97706)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════════
-  // 08 — TTC DATA QUALITY (Signal Coverage)
-  // ════════════════════════════════════════════════════════════════════
-  Widget _buildDataQualityCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeaderWithIcon(
-            title: 'DATA QUALITY & SIGNAL COVERAGE',
-            icon: Icons.signal_cellular_alt_rounded,
-            badgeColor: const Color(0xFF0D9488),
-          ),
-          const SizedBox(height: 12),
-          Text(AppLocalizations.of(context).ttcHonestSignalCoverage,
-            style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
-          ),
-          const SizedBox(height: 12),
-          _buildCoverageRow('LH Strip Tracking', 4, 5, const Color(0xFF7C3AED)),
-          const SizedBox(height: 8),
-          _buildCoverageRow('Basal Body Temperature', 3, 5, const Color(0xFFEA580C)),
-          const SizedBox(height: 8),
-          _buildCoverageRow('Cervical Fluid Observations', 4, 5, const Color(0xFF0284C7)),
-          const SizedBox(height: 12),
-          Text(
-            'Blushy will never fabricate high-confidence predictions on incomplete data. Consistent logging provides true clinical clarity.',
-            style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════════
-  // 09 — TOGETHER ❤️ (Partner Coordination Without Chores)
-  // ════════════════════════════════════════════════════════════════════
-  Widget _buildTogetherPartnerCard(BuildContext context) {
-    final decisions = [
-      {'id': 'trying_today', 'label': 'Trying today ❤️', 'icon': Icons.favorite_rounded, 'color': crimsonPrimary},
-      {'id': 'not_today', 'label': 'Not today', 'icon': Icons.spa_rounded, 'color': const Color(0xFF059669)},
-      {'id': 'decide_together', 'label': 'Decide together', 'icon': Icons.people_outline_rounded, 'color': const Color(0xFF7C3AED)},
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeaderWithIcon(
-            title: 'TOGETHER · PARTNER CONNECTION',
-            icon: Icons.favorite_rounded,
-            badgeColor: crimsonPrimary,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Keeping You Both in the Loop',
-            style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Your fertile window looks active today. Conception is a shared partnership, not solitary homework.',
+                ? 'Sperm can survive up to 5 days in fertile fluid. Every day in this window offers conception opportunity.'
+                : 'Estimated window runs from Day $windowStart to Day $windowEnd.',
             style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
           ),
           const SizedBox(height: 14),
-
-          // 3 Choice Tags with icons and Wrap to prevent overflow
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: decisions.map((d) {
-              final id = d['id'] as String;
-              final label = d['label'] as String;
-              final icon = d['icon'] as IconData;
-              final color = d['color'] as Color;
-              final isSel = _partnerDecision == id;
-
-              return InkWell(
-                onTap: () {
-                  setState(() => _partnerDecision = isSel ? null : id);
-                  _saveDailyTtcLog();
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: isSel ? color.withValues(alpha: 0.12) : surfaceCanvas,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isSel ? color : cardBorderColor, width: 1.0),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, size: 14, color: isSel ? color : textMuted),
-                      const SizedBox(width: 6),
-                      Text(
-                        label,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11.5,
-                          fontWeight: isSel ? FontWeight.w600 : FontWeight.w500,
-                          color: isSel ? color : textMain,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: nodes.map((node) {
+              final isToday = node.$1 == 'TODAY';
+              final isFertile = _isFertileCycleDay(node.$2);
+              return _buildContinuumNode(
+                node.$1,
+                dayNumber: node.$2,
+                isCurrent: isToday,
+                isFertile: isFertile,
               );
             }).toList(),
-          ),
-          const SizedBox(height: 14),
-
-          // Share Button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                const text = 'Hey love, Blushy shows our fertile window may be active today. Zero pressure at all — just keeping you in the loop ❤️';
-                Share.share(text, subject: 'Blushy Today Update');
-              },
-              icon: const Icon(Icons.ios_share_rounded, size: 15, color: crimsonPrimary),
-              label: Text(
-                'Share Gentle Update with Partner',
-                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: crimsonPrimary),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: crimsonPrimary, width: 1.1),
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildContinuumNode(String label, {required int dayNumber, required bool isCurrent, required bool isFertile}) {
+    final Color color = isFertile ? crimsonPrimary : const Color(0xFF64748B);
+    return Column(
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.manrope(
+            fontSize: 9.5,
+            fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
+            color: isCurrent ? crimsonPrimary : textMuted,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isCurrent ? color : (isFertile ? color.withValues(alpha: 0.12) : surfaceCanvas),
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: isCurrent ? 2.0 : 1.0),
+          ),
+          child: Center(
+            child: Text(
+              'D$dayNumber',
+              style: GoogleFonts.manrope(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: isCurrent ? Colors.white : color,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // ════════════════════════════════════════════════════════════════════
-  // 10 — TODAY, OUTSIDE TTC ("Don't Let TTC Take Over")
+  // 06 — MINDSET & DE-STRESS HUB (MERGE #2: Outside TTC + Anxiety Reset)
   // ════════════════════════════════════════════════════════════════════
-  Widget _buildOutsideTtcCard(BuildContext context) {
+  Widget _buildMindsetAndDeStressCard(BuildContext context) {
     final activities = [
-      {'id': 'walk', 'title': 'Nature\nWalk', 'icon': Icons.park_outlined, 'color': const Color(0xFF059669)},
-      {'id': 'movie', 'title': 'Movie\nNight', 'icon': Icons.movie_filter_outlined, 'color': const Color(0xFF7C3AED)},
-      {'id': 'cook', 'title': 'Comfort\nMeal', 'icon': Icons.restaurant_outlined, 'color': const Color(0xFFEA580C)},
-      {'id': 'read', 'title': 'Read &\nJournal', 'icon': Icons.auto_stories_outlined, 'color': const Color(0xFF0284C7)},
-      {'id': 'bath', 'title': 'Warm\nBath', 'icon': Icons.bathtub_outlined, 'color': const Color(0xFFE11D48)},
+      {'id': 'walk', 'title': 'Nature Walk', 'icon': Icons.park_outlined, 'color': const Color(0xFF059669)},
+      {'id': 'movie', 'title': 'Movie Night', 'icon': Icons.movie_filter_outlined, 'color': const Color(0xFF7C3AED)},
+      {'id': 'cook', 'title': 'Comfort Meal', 'icon': Icons.restaurant_outlined, 'color': const Color(0xFFEA580C)},
+      {'id': 'read', 'title': 'Journaling', 'icon': Icons.auto_stories_outlined, 'color': const Color(0xFF0284C7)},
+      {'id': 'bath', 'title': 'Warm Bath', 'icon': Icons.bathtub_outlined, 'color': crimsonPrimary},
     ];
 
     return Container(
@@ -1383,9 +2536,27 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeaderWithIcon(
-            title: 'TODAY, OUTSIDE TTC',
-            icon: Icons.spa_outlined,
-            badgeColor: const Color(0xFF059669),
+            title: 'A BREATHER FOR TODAY',
+            icon: Icons.spa_rounded,
+            badgeColor: const Color(0xFF7C3AED),
+            trailing: _isAnxietyModeActive
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3E8FF),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF7C3AED).withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      'Calm Mode Active',
+                      style: GoogleFonts.manrope(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF7C3AED),
+                      ),
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(height: 10),
           Text(
@@ -1397,132 +2568,54 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             'Conception doesn\'t define your day. Pick one restorative moment just for you:',
             style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
+
+          // 5 Restorative Activities
           Wrap(
-            alignment: WrapAlignment.spaceAround,
-            spacing: 12,
-            runSpacing: 12,
+            spacing: 8,
+            runSpacing: 8,
             children: activities.map((act) {
-              final String title = act['title'] as String;
-              final String id = act['id'] as String;
-              final IconData icon = act['icon'] as IconData;
-              final Color color = act['color'] as Color;
-              final bool isSel = _selectedOutsideActivity == id;
+              final id = act['id'] as String;
+              final title = act['title'] as String;
+              final icon = act['icon'] as IconData;
+              final color = act['color'] as Color;
+              final isSel = _selectedOutsideActivity == id;
 
               return InkWell(
                 onTap: () {
                   setState(() => _selectedOutsideActivity = isSel ? null : id);
                   _saveDailyTtcLog();
                 },
-                borderRadius: BorderRadius.circular(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: isSel ? color.withValues(alpha: 0.15) : surfaceCanvas,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSel ? color : cardBorderColor,
-                          width: isSel ? 1.5 : 1.0,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isSel ? color.withValues(alpha: 0.12) : surfaceCanvas,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isSel ? color : cardBorderColor),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 14, color: isSel ? color : textMuted),
+                      const SizedBox(width: 6),
+                      Text(
+                        title,
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                          color: isSel ? color : textMain,
                         ),
                       ),
-                      child: Icon(
-                        icon,
-                        size: 22,
-                        color: isSel ? color : const Color(0xFF5A4D46),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.manrope(
-                        fontSize: 10.5,
-                        fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                        color: isSel ? color : textMain,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }).toList(),
           ),
-          if (_selectedOutsideActivity != null) ...[
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: surfaceCanvas,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: cardBorderColor),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle_outline_rounded, size: 14, color: Color(0xFF059669)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Dedicated to your peace today. Step away whenever you need.',
-                      style: GoogleFonts.manrope(fontSize: 11, color: textMuted),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════════
-  // 11 — TTC ANXIETY MODE ("I'm Spiralling a Little")
-  // ════════════════════════════════════════════════════════════════════
-  Widget _buildAnxietyModeCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _isAnxietyModeActive ? const Color(0xFFF3E8FF) : cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: _isAnxietyModeActive ? const Color(0xFF7C3AED) : cardBorderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeaderWithIcon(
-            title: 'TTC ANXIETY RESET',
-            icon: Icons.spa_rounded,
-            badgeColor: const Color(0xFF7C3AED),
-            trailing: InkWell(
-              onTap: () {
-                setState(() => _isAnxietyModeActive = !_isAnxietyModeActive);
-              },
-              child: Text(
-                _isAnxietyModeActive ? 'Exit Calm Mode' : 'Activate',
-                style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF7C3AED)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _isAnxietyModeActive
-                ? 'Don\'t Google. Don\'t Symptom-Spot. Let\'s Slow Down.'
-                : 'Feeling Overwhelmed or Obsessively Checking?',
-            style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _isAnxietyModeActive
-                ? 'Right now, your body is doing what it knows how to do. You cannot think your way into a result today. Breathe in for 4 seconds, hold for 4, and release for 6.'
-                : 'Tap below to step into a low-cortisol headspace. Docsy will filter known facts from unknowables and guide you through a calm reset.',
-            style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
-          ),
           const SizedBox(height: 14),
+
+          // Anxiety Reset Button ("I'm spiralling a little — Calm me down")
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -1540,7 +2633,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF7C3AED),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 11),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -1551,217 +2644,14 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   }
 
   // ════════════════════════════════════════════════════════════════════
-  // 12 — TWO-WEEK WAIT & "DON'T INTERPRET THIS YET"
-  // ════════════════════════════════════════════════════════════════════
-  Widget _buildTwoWeekWaitCard(BuildContext context) {
-    final dpo = _estimatedDpo;
-    final String badgeText;
-    final String modeTitle;
-    final String modeDesc;
-    final Color modeColor;
-    final String shieldText;
-
-    if (dpo == null) {
-      badgeText = 'Pre-Ovulation';
-      modeTitle = 'Two-Week Wait (Activates Post-Ovulation)';
-      modeDesc = 'You are currently on Cycle Day $_currentCycleDay in your $_estimatedCyclePhase. The Two-Week Wait begins after ovulation occurs (estimated Day $_estimatedOvulationDay). Once confirmed by sustained BBT rise or LH surge, this tracker counts down your DPO timeline.';
-      modeColor = const Color(0xFF64748B);
-      shieldText = 'Pre-Ovulation Shield: Implantation cannot occur before ovulation. Focus on your fertile window rhythm without early testing stress.';
-    } else if (dpo <= 5) {
-      badgeText = '$dpo DPO';
-      modeTitle = 'Early Wait (Days 1–5)';
-      modeDesc = 'Too early to read into symptoms. Progesterone is just beginning to rise naturally from the corpus luteum.';
-      modeColor = const Color(0xFF059669);
-      shieldText = 'False-Negative Shield: At $dpo DPO, the blastocyst is still traveling the fallopian tube. Testing now yields false negatives. Save your heart and wait.';
-    } else if (dpo <= 10) {
-      badgeText = '$dpo DPO';
-      modeTitle = 'Implantation Phase (Days 6–10)';
-      modeDesc = 'Blastocyst implantation typically occurs between Days 8–10 DPO. Natural luteal progesterone mimics pregnancy sensations (tender breasts, mild fatigue, twinges). Symptoms cannot confirm pregnancy yet.';
-      modeColor = const Color(0xFFEA580C);
-      shieldText = 'False-Negative Shield: Implantation is just completing. hCG takes 48+ hours to reach detectable urine levels. Save your heart and test at 12+ DPO.';
-    } else {
-      badgeText = '$dpo DPO';
-      modeTitle = 'Testing Window (Days 11–14)';
-      modeDesc = 'Urine hCG concentrations are approaching reliable detection thresholds for first morning tests (10–25 mIU/mL).';
-      modeColor = const Color(0xFF4F46E5);
-      shieldText = 'Optimal Timing: If testing at $dpo DPO, use your first morning urine for the highest concentration of hCG.';
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeaderWithIcon(
-            title: 'TWO-WEEK WAIT GUIDANCE',
-            icon: Icons.hourglass_top_rounded,
-            badgeColor: modeColor,
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: modeColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: modeColor.withValues(alpha: 0.25)),
-              ),
-              child: Text(
-                badgeText,
-                style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w700, color: modeColor),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            modeTitle,
-            style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
-          ),
-          const SizedBox(height: 6),
-          Text(modeDesc, style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.35)),
-          const SizedBox(height: 14),
-
-          // False-Negative Shield Callout
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: surfaceCanvas,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cardBorderColor),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.shield_rounded, size: 18, color: Color(0xFF4F46E5)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    shieldText,
-                    style: GoogleFonts.manrope(fontSize: 11, color: textMain, height: 1.35),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Symptom Check Chips: Don't Interpret This Yet
-          Text(
-            'DON\'T INTERPRET THIS YET — SYMPTOM REALITY CHECK',
-            style: GoogleFonts.manrope(fontSize: 10.0, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              '“I\'m having cramps”',
-              '“Feeling unusually tired”',
-              '“Breast tenderness”',
-            ].map((q) {
-              return InkWell(
-                onTap: () => _openDocsyPrompt(
-                  context,
-                  dpo != null
-                      ? 'Docsy, I\'m at $dpo DPO in my two-week wait and noticed $q. Can you give me a medically honest explanation of why luteal progesterone causes this, and remind me why symptom spotting isn\'t reliable right now?'
-                      : 'Docsy, I\'m on Cycle Day $_currentCycleDay ($_estimatedCyclePhase) and noticed $q. Can you give me a medically honest explanation of what this symptom indicates at this cycle phase?',
-                ),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: crimsonPrimary),
-                  ),
-                  child: Text(
-                    q,
-                    style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: crimsonPrimary),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════════
-  // 13 — PREGNANCY TEST ASSISTANT ("Should I Test?")
-  // ════════════════════════════════════════════════════════════════════
-  Widget _buildPregnancyTestAssistantCard(BuildContext context) {
-    final dpo = _estimatedDpo;
-    final bool canTestReliably = dpo != null && dpo >= 12;
-
-    final String explainerText = dpo == null
-        ? 'You are currently on Cycle Day $_currentCycleDay (prior to ovulation). Home pregnancy tests detect hCG, which is secreted by trophoblast cells only after an embryo implants (typically 8–10 days post-ovulation). Testing prior to ovulation is biologically incapable of detecting pregnancy.'
-        : (canTestReliably
-            ? 'You are at $dpo DPO. If you choose to test, use your first morning urine for the highest hCG concentration, or wait for the day of your expected period for peak clinical accuracy.'
-            : 'You are currently at $dpo DPO. Testing today carries a high probability of a false negative even if conception occurred, because hCG concentration is still doubling toward test sensitivity.');
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeaderWithIcon(
-            title: 'PREGNANCY TEST ASSISTANT',
-            icon: Icons.science_outlined,
-            badgeColor: const Color(0xFF0284C7),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Should I Test Today?',
-            style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            explainerText,
-            style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _openDocsyPrompt(
-                context,
-                dpo == null
-                    ? 'Docsy, explain when is the earliest scientifically reliable day for me to take a pregnancy test based on my $_cycleLength-day cycle.'
-                    : 'Docsy, I\'m at $dpo DPO. Should I take a pregnancy test today? Explain the physiology of implantation, hCG doubling time, and urine test sensitivity.',
-              ),
-              icon: const Icon(Icons.help_outline_rounded, size: 15, color: Color(0xFF0284C7)),
-              label: Text(
-                'Ask Docsy: Should I Test Today?',
-                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF0284C7)),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF0284C7)),
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════════
-  // 14 — TTC JOURNEY HEALTH CHECK & DOCTOR PREPARATION
+  // 07 — CLINICAL CARE & DOCTOR PREPARATION
   // ════════════════════════════════════════════════════════════════════
   Widget _buildDoctorPreparationAndJourneyCard(BuildContext context) {
+    final lutealDays = _cycleLength - _estimatedOvulationDay;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: cardRadius,
@@ -1771,27 +2661,27 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeaderWithIcon(
-            title: 'FOR YOUR NEXT APPOINTMENT',
+            title: 'QUESTIONS FOR YOUR DOCTOR',
             icon: Icons.assignment_ind_outlined,
             badgeColor: const Color(0xFF059669),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             'Smart Questions for Your Doctor',
             style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.w700, color: textMain),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            'Blushy analyzes your longitudinal cycle rhythm to suggest concrete clinical questions for your OB/GYN:',
+            'Blushy analyzes your longitudinal rhythm to suggest clinical questions for your OB/GYN:',
             style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _buildDoctorQuestionItem('“My cycles average $_cycleLength days with LH surges typically around Day ${_estimatedOvulationDay - 1}.”'),
           const SizedBox(height: 6),
           _buildDoctorQuestionItem('“My BBT thermal shift establishes within 24–48 hours of positive LH strips.”'),
           const SizedBox(height: 6),
-          _buildDoctorQuestionItem('“My estimated luteal phase is ${_cycleLength - _estimatedOvulationDay} days between ovulation and menses (evaluating luteal sufficiency).”'),
-          const SizedBox(height: 14),
+          _buildDoctorQuestionItem('“My estimated luteal phase is $lutealDays days between ovulation and menses (evaluating luteal sufficiency).”'),
+          const SizedBox(height: 12),
 
           // Clinical Summary Export Button
           SizedBox(
@@ -1803,7 +2693,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                     '• Cycle Baseline: $_cycleLength days (Period: $_periodLength days)\n'
                     '• Current Cycle Day: $_currentCycleDay ($_estimatedCyclePhase)\n'
                     '• Estimated Ovulation Window: Day $_estimatedOvulationDay\n'
-                    '• Luteal Phase Duration: ${_cycleLength - _estimatedOvulationDay} days\n'
+                    '• Luteal Phase Duration: $lutealDays days\n'
                     '• LH Ovulation Testing: ${_ttcLoggedOPK ?? "Active"}\n'
                     '• Cervical Fluid Observations: ${_ttcLoggedCervicalFluid ?? "Observed"}\n'
                     '• Morning BBT: ${_ttcLoggedBBT != null ? "${_ttcLoggedBBT!.toStringAsFixed(1)}°F" : "Tracked"}\n'
@@ -1812,41 +2702,16 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                 Share.share(summary, subject: 'Blushy Clinical Fertility Report');
               },
               icon: const Icon(Icons.picture_as_pdf_rounded, size: 15, color: Colors.white),
-              label: Text(AppLocalizations.of(context).ttcGenerateClinicalReport,
-                style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white),
+              label: Text(
+                AppLocalizations.of(context).ttcGenerateClinicalReport,
+                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: crimsonPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 11),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: dividerColor),
-          const SizedBox(height: 16),
-
-          // Emotional Journey Health Check
-          Text(
-            'HOW ARE YOU DOING WITH ALL OF THIS?',
-            style: GoogleFonts.manrope(fontSize: 10.0, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildChoiceTag('I\'m okay', _emotionalCheckInStatus == 'okay', () {
-                setState(() => _emotionalCheckInStatus = 'okay');
-              }),
-              _buildChoiceTag('I\'m getting stressed', _emotionalCheckInStatus == 'stressed', () {
-                setState(() => _emotionalCheckInStatus = 'stressed');
-                _openDocsyPrompt(context, 'Docsy, I\'m feeling stressed by the TTC process. Can you help me find peace today?');
-              }),
-              _buildChoiceTag('I need a break', _isTtcPaused, () {
-                _showPauseTtcDialog(context);
-              }),
-            ],
           ),
         ],
       ),
@@ -1854,7 +2719,383 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   }
 
   // ════════════════════════════════════════════════════════════════════
-  // MODALS & DIALOGS
+  // MODALS & INTERACTIVE FEATURES (PRD FEATURES 1 & 2)
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Feature 1: OPK Photo Scanner & Progression Gallery
+  void _showOpkGalleryModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'OPK Strip Progression Gallery',
+                    style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.w700, color: textMain),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Visual chronological strip darkening to pinpoint your exact LH surge without second-guessing faint lines.',
+                style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+
+              // Mock Progression Gallery Cards
+              _buildOpkGalleryItem(day: 10, ratio: '0.2', status: 'Low', isPeak: false, color: const Color(0xFF7C3AED)),
+              const SizedBox(height: 8),
+              _buildOpkGalleryItem(day: 12, ratio: '0.6', status: 'High', isPeak: false, color: const Color(0xFFEA580C)),
+              const SizedBox(height: 8),
+              _buildOpkGalleryItem(day: 14, ratio: '1.4', status: 'Peak Surge! 🟢', isPeak: true, color: crimsonPrimary),
+              const SizedBox(height: 16),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    setState(() => _ttcLoggedOPK = 'Peak (Surge)');
+                    _saveDailyTtcLog();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Simulated OPK Strip logged: Peak Surge (1.4 ratio)!')),
+                    );
+                  },
+                  icon: const Icon(Icons.camera_alt_outlined, size: 16, color: Colors.white),
+                  label: Text(
+                    '📷 Snap / Log New Test Strip Photo',
+                    style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: crimsonPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOpkGalleryItem({required int day, required String ratio, required String status, required bool isPeak, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: surfaceCanvas,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isPeak ? color : cardBorderColor, width: isPeak ? 1.5 : 1.0),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Text(
+              'Day $day',
+              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: textMain),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Strip Graphic representation
+          Container(
+            width: 80,
+            height: 16,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFDE8E8),
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(color: const Color(0xFFFCA5A5)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Control line
+                Container(width: 3, height: 12, color: crimsonPrimary),
+                // Test line (varying opacity)
+                Container(
+                  width: 3,
+                  height: 12,
+                  color: isPeak ? crimsonPrimary : (status == 'High' ? const Color(0xFFEA580C) : const Color(0xFFFCA5A5)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ratio: $ratio · $status',
+                  style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w800, color: color),
+                ),
+                Text(
+                  isPeak ? 'Test line darker than control' : (status == 'High' ? 'Test line darkening' : 'Faint test line'),
+                  style: GoogleFonts.manrope(fontSize: 10, color: textMuted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Feature 2: Interactive BBT Biphasic Curve Graph
+  void _showBbtCurveModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'BBT Biphasic Temperature Curve',
+                    style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.w700, color: textMain),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20, color: textMuted),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'A single temperature reading has no clinical meaning—the sustained thermal shift of +0.4°F–1.0°F confirms ovulation.',
+                style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+
+              // Visual Simulated Chart
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: surfaceCanvas,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: cardBorderColor),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Follicular Phase: 97.2°–97.5°F', style: GoogleFonts.manrope(fontSize: 10, color: textMuted)),
+                        Text('Luteal Shift: 98.2°–98.6°F', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF059669))),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Visual step graph
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        _buildBbtBar(height: 30, temp: '97.3°', day: 'D10', isShift: false),
+                        _buildBbtBar(height: 28, temp: '97.2°', day: 'D12', isShift: false),
+                        _buildBbtBar(height: 32, temp: '97.4°', day: 'D13', isShift: false),
+                        _buildBbtBar(height: 65, temp: '98.2°', day: 'D15', isShift: true),
+                        _buildBbtBar(height: 70, temp: '98.4°', day: 'D16', isShift: true),
+                        _buildBbtBar(height: 72, temp: '98.5°', day: 'D17', isShift: true),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Coverline visual indicator
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '--- Coverline: 97.7°F (Thermal Shift +0.7°F sustained for 3 days) ---',
+                        style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFFD97706)),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCCFBF1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF0D9488)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF0D9488)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Ovulation confirmed on Cycle Day 14. Progesterone is actively sustaining your luteal phase.',
+                        style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF0D9488)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBbtBar({required double height, required String temp, required String day, required bool isShift}) {
+    return Column(
+      children: [
+        Text(temp, style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w600, color: isShift ? const Color(0xFF059669) : textMuted)),
+        const SizedBox(height: 4),
+        Container(
+          width: 22,
+          height: height,
+          decoration: BoxDecoration(
+            color: isShift ? const Color(0xFF059669) : const Color(0xFFCBD5E1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(day, style: GoogleFonts.manrope(fontSize: 9, color: textMuted)),
+      ],
+    );
+  }
+
+  void _showWhyAmISeeingThisModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Scientific Confidence Architecture',
+                style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.w700, color: textMain),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Blushy does not guess. Our fertility engine combines the Symptothermal Method (FAM) with longitudinal cycle pattern recognition to ensure high clinical clarity.',
+                style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
+              ),
+              const SizedBox(height: 14),
+              _buildConfidenceFeature('LH Surge Strips (OPK)', 'Detects the luteinizing hormone surge that triggers egg release within 24–36 hours.'),
+              const SizedBox(height: 10),
+              _buildConfidenceFeature('Cervical Fluid Texture', 'Peak estrogen produces clear, slippery, stretchy fluid (Egg White) that keeps sperm alive up to 5 days.'),
+              const SizedBox(height: 10),
+              _buildConfidenceFeature('Basal Body Temperature', 'Progesterone from the corpus luteum causes a sustained thermal shift of +0.4°F–1.0°F, proving ovulation occurred.'),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: crimsonPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text('Understood', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildConfidenceFeature(String title, String desc) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.check_circle_outline_rounded, size: 16, color: crimsonPrimary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+              const SizedBox(height: 2),
+              Text(desc, style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.35)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // LOG PERIOD DIALOG (Preserving Robust Save & Test Assertions)
   // ════════════════════════════════════════════════════════════════════
   void _openLogPeriodDialog(BuildContext context) {
     DateTime selectedDate = _lastPeriodStartDate ?? DateTime.now();
@@ -1921,13 +3162,6 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           });
                         } catch (_) {}
 
-                        // `logPeriodEntry` returns null when the write was
-                        // refused -- an expired session, a rejected date --
-                        // and the result used to be thrown away inside a bare
-                        // catch. So the card flipped to "Day N", nothing was
-                        // stored, and the next load showed "No period logged
-                        // yet" again. Reported as the tracker not rendering
-                        // after logging.
                         PeriodEntry? saved;
                         try {
                           saved = await ApiPeriodService()
@@ -1954,13 +3188,49 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           return;
                         }
 
+                        // Automatically record Luteal Phase Duration into pattern memory
+                        if (_estimatedDpo != null) {
+                          try {
+                            final history = BlushyStorage.read('luteal_phase_history.json');
+                            final list = history['records'] is List ? List<dynamic>.from(history['records']) : [];
+                            list.add({
+                              'luteal_phase_days': _estimatedDpo,
+                              'ended_at': selectedDate.toIso8601String(),
+                            });
+                            BlushyStorage.write('luteal_phase_history.json', {
+                              'records': list,
+                              'last_luteal_days': _estimatedDpo,
+                            });
+                          } catch (_) {}
+                        }
+
+                        // Clear previous cycle's daily biomarker logs
+                        setState(() {
+                          _ttcLoggedOPK = null;
+                          _ttcLoggedBBT = null;
+                          _ttcLoggedCervicalFluid = null;
+                          _ttcLoggedIntercourse = false;
+                          _partnerDecision = null;
+                        });
+                        _saveDailyTtcLog();
+
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Cycle reset to Day 1. Luteal phase recorded into pattern memory.'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+
                         _fetchDynamicAiInsights();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: crimsonPrimary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                      child: Text('Save Period & Reset Rhythm', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                      child: Text(
+                        'Save Period Date',
+                        style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
                     ),
                   ),
                 ],
@@ -1972,102 +3242,8 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     );
   }
 
-  void _showWhyAmISeeingThisModal(BuildContext context) {
-    final conf = _computeFertileConfidence();
-    final List<String> signals = conf['signals'] as List<String>;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 16),
-              Text('Why Am I Seeing This Confidence Level?', style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.w700, color: textMain)),
-              const SizedBox(height: 12),
-              Text(
-                'Blushy calculates fertile window confidence by evaluating agreement between biological indicators. Here is what contributed to today’s reading:',
-                style: GoogleFonts.manrope(fontSize: 12.5, color: textMuted, height: 1.4),
-              ),
-              const SizedBox(height: 14),
-              ...signals.map((sig) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle_rounded, size: 16, color: crimsonPrimary),
-                        const SizedBox(width: 8),
-                        Text(sig, style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700, color: textMain)),
-                      ],
-                    ),
-                  )),
-              const SizedBox(height: 16),
-              Text(
-                'Scientific Note: Blushy intentionally never calculates conception probabilities or percentage chances. We provide transparent indicator agreement so you remain informed without anxiety.',
-                style: GoogleFonts.manrope(fontSize: 11, fontStyle: FontStyle.italic, color: textMuted),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showPauseTtcDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 16),
-              Text(AppLocalizations.of(context).ttcPauseFertilityTracking, style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.w700, color: textMain)),
-              const SizedBox(height: 8),
-              Text(
-                'Taking a break is completely healthy and normal. Your historical timeline stays safe. Choose how you’d like to pause:',
-                style: GoogleFonts.manrope(fontSize: 12.5, color: textMuted),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: Text(AppLocalizations.of(context).ttcPauseFor1Week, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700)),
-                onTap: () {
-                  setState(() => _isTtcPaused = true);
-                  Navigator.pop(ctx);
-                },
-              ),
-              ListTile(
-                title: Text(AppLocalizations.of(context).ttcPauseUntilNextPeriod, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700)),
-                onTap: () {
-                  setState(() => _isTtcPaused = true);
-                  Navigator.pop(ctx);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   // ════════════════════════════════════════════════════════════════════
-  // HELPER WIDGETS
+  // REUSABLE UI HELPERS
   // ════════════════════════════════════════════════════════════════════
   Widget _buildSectionHeaderWithIcon({
     required String title,
@@ -2075,41 +3251,33 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     required Color badgeColor,
     Widget? trailing,
   }) {
-    final titleWidget = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(color: badgeColor.withValues(alpha: 0.12), shape: BoxShape.circle),
-          child: Icon(icon, size: 14, color: badgeColor),
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            title,
-            style: GoogleFonts.manrope(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              color: crimsonPrimary,
-              letterSpacing: 1.0,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-
-    if (trailing == null) {
-      return titleWidget;
-    }
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(child: titleWidget),
-        const SizedBox(width: 8),
-        trailing,
+        Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: badgeColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: badgeColor, size: 15),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: GoogleFonts.manrope(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                color: crimsonPrimary,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
+        ?trailing,
       ],
     );
   }
@@ -2118,21 +3286,22 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? activeColor.withValues(alpha: 0.12) : surfaceCanvas,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? activeColor : cardBorderColor,
-            width: 1.0,
+            width: isSelected ? 1.4 : 1.0,
           ),
         ),
         child: Text(
           label,
           style: GoogleFonts.manrope(
             fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected ? activeColor : textMain,
           ),
         ),
@@ -2140,167 +3309,63 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     );
   }
 
-  Widget _buildChoiceTag(String label, bool isSelected, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? crimsonPrimary.withValues(alpha: 0.12) : surfaceCanvas,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? crimsonPrimary : cardBorderColor, width: 1.0),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.manrope(
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? crimsonPrimary : textMain,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSignalCheckRow(String title, String status, bool isConfirmed, Color color, [IconData? icon]) {
-    final IconData effectiveIcon = icon ?? (isConfirmed ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded);
+  Widget _buildDoctorQuestionItem(String question) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: surfaceCanvas,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cardBorderColor),
+        border: Border.all(color: cardBorderColor, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+            width: 24,
+            height: 24,
+            decoration: const BoxDecoration(
+              color: Color(0xFFCCFBF1),
               shape: BoxShape.circle,
             ),
-            child: Icon(effectiveIcon, size: 16, color: color),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w600, color: textMain),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  status,
-                  style: GoogleFonts.manrope(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                    color: isConfirmed ? color : textMuted,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+            child: const Center(
+              child: Icon(Icons.chat_bubble_outline_rounded, size: 12, color: Color(0xFF0D9488)),
             ),
           ),
           const SizedBox(width: 8),
-          Icon(
-            isConfirmed ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-            size: 16,
-            color: isConfirmed ? color : const Color(0xFFCBD5E1),
+          Expanded(
+            child: Text(
+              question,
+              style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w600, color: textMain, height: 1.35),
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// One day on the fertile-window continuum.
-  ///
-  /// [isCurrent] marks today, [isFertile] whether that day falls inside the
-  /// estimated window. They were previously the same thing, which is how the
-  /// bar came to show today as fertile regardless of the cycle.
-  Widget _buildContinuumNode(String label, {required bool isCurrent, required bool isFertile}) {
-    final colour = isFertile ? crimsonPrimary : const Color(0xFFCBD5E1);
-    return Column(
-      children: [
-        Container(
-          width: isCurrent ? 14 : 10,
-          height: isCurrent ? 14 : 10,
-          decoration: BoxDecoration(
-            color: colour,
-            shape: BoxShape.circle,
-            border: isCurrent ? Border.all(color: Colors.white, width: 2) : null,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.manrope(
-            fontSize: 9.5,
-            fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
-            color: isFertile ? crimsonPrimary : textMuted,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCoverageRow(String title, int filled, int total, Color color) {
-    return Row(
-      children: [
-        Expanded(child: Text(title, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain))),
-        Row(
-          children: List.generate(total, (idx) {
-            final isFilled = idx < filled;
-            return Container(
-              width: 7,
-              height: 7,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: isFilled ? color : const Color(0xFFE2E8F0),
-                shape: BoxShape.circle,
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDoctorQuestionItem(String question) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('• ', style: TextStyle(color: crimsonPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
-        Expanded(
-          child: Text(question, style: GoogleFonts.manrope(fontSize: 12, color: textMain, fontStyle: FontStyle.italic)),
-        ),
-      ],
-    );
-  }
-
+  // ════════════════════════════════════════════════════════════════════
+  // ASSEMBLE DASHBOARD CARDS (Clean, Phase-Aware, Non-Repetitive)
+  // ════════════════════════════════════════════════════════════════════
   List<Widget> _buildDashboardCards(BuildContext context) {
+    final phase = _currentTtcPhase;
+
     return [
       // 01. Editorial Greeting
       _buildEditorialGreeting(context),
-      const SizedBox(height: 18),
+      const SizedBox(height: 14),
 
-      // 02. Period / Cycle Rhythm Tracker -- kept at the top, right after the
-      // greeting, so the cycle is the first thing she sees.
+      // 02. Period / Cycle Rhythm Tracker -- pinned to the top
       _buildPeriodTrackerCard(context),
-      const SizedBox(height: 18),
+      const SizedBox(height: 14),
 
-      // 03. Today with Docsy
-      _buildTodayWithDocsyCard(context),
-      const SizedBox(height: 18),
-
-      // Says which kind of nothing this is before the card asserts one.
+      // Load/Empty notice
       StageStateNotice(
         state: _cycleState,
         hasData: _hasLoggedPeriod,
@@ -2309,59 +3374,51 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             'working from your own cycle instead of general guidance.',
         onRetry: _rehydrateTtcState,
       ),
-      const SizedBox(height: 22),
-      const LogSymptomsSection(stageKey: 'tryingtoconceive'),
-      const SizedBox(height: 18),
-      const HealthLibrarySection(stageKey: 'tryingtoconceive'),
-      const SizedBox(height: 18),
+      const SizedBox(height: 16),
+
+      // Fertile Window Continuum (Guides empty state when no period logged)
+      if (!_hasLoggedPeriod) ...[
+        _buildFertileWindowTimelineCard(context),
+        const SizedBox(height: 16),
+      ],
+
+      // 03. Curated TTC Health Library (Brought directly below Period Tracker!)
+      _buildEyebrow("FERTILITY LIBRARY"),
       const TtcFertilitySection(),
-      const SizedBox(height: 20),
+      const SizedBox(height: 14),
       const TtcOvulationSection(),
-      const SizedBox(height: 20),
+      const SizedBox(height: 14),
       const TtcSexToConceiveSection(),
       const SizedBox(height: 18),
 
-      // 04. Fertility Signal Confidence & Compass
-      _buildFertilityCompassCard(context),
-      const SizedBox(height: 18),
+      // 04. Unified Daily Fertility Signals Hub (Compact 1-card hub with 3 action buttons)
+      _buildDailyFertilitySignalsHub(context),
+      const SizedBox(height: 16),
 
-      // 05. My Fertility Picture (BBT, OPK, Cervical Fluid, Intimacy)
-      _buildMyFertilityPictureCard(context),
-      const SizedBox(height: 18),
+      // 05. Phase-Specific Conception Focus Card (Only ONE phase card appears at a time!)
+      if (phase == TtcPhase.menstrualReset)
+        _buildMenstrualResetCard(context)
+      else if (phase == TtcPhase.fertileApproach || phase == TtcPhase.ovulationPeak)
+        _buildFertileWindowAndMaleFactorCard(context)
+      else if (phase == TtcPhase.twoWeekWait)
+        _buildTwoWeekWaitCard(context)
+      else if (phase == TtcPhase.extendedLuteal)
+        _buildExtendedLutealCard(context),
+      const SizedBox(height: 16),
 
-      // 06. Fertile Window Timeline
-      _buildFertileWindowTimelineCard(context),
-      const SizedBox(height: 18),
+      // 06. General Daily Symptoms Log (No double heading!)
+      _buildEyebrow('LOG SYMPTOMS'),
+      const LogSymptomsSection(
+        stageKey: 'tryingtoconceive',
+        showHeading: false,
+      ),
+      const SizedBox(height: 16),
 
-      // 07. Something Changed (Anomaly Detector)
-      _buildSomethingChangedCard(context),
-      const SizedBox(height: 18),
+      // 07. Mindset & De-Stress Hub ("A breather for today")
+      _buildMindsetAndDeStressCard(context),
+      const SizedBox(height: 16),
 
-      // 08. TTC Data Quality
-      _buildDataQualityCard(context),
-      const SizedBox(height: 18),
-
-      // 09. Together (Partner Connection)
-      _buildTogetherPartnerCard(context),
-      const SizedBox(height: 18),
-
-      // 10. Today, Outside TTC
-      _buildOutsideTtcCard(context),
-      const SizedBox(height: 18),
-
-      // 11. TTC Anxiety Mode
-      _buildAnxietyModeCard(context),
-      const SizedBox(height: 18),
-
-      // 12. Two-Week Wait Guidance
-      _buildTwoWeekWaitCard(context),
-      const SizedBox(height: 18),
-
-      // 13. Pregnancy Test Assistant
-      _buildPregnancyTestAssistantCard(context),
-      const SizedBox(height: 18),
-
-      // 14. Doctor Preparation & Journey Health Check
+      // 08. Clinical Care & Doctor Preparation ("Questions for your doctor")
       _buildDoctorPreparationAndJourneyCard(context),
       const SizedBox(height: 36),
     ];
