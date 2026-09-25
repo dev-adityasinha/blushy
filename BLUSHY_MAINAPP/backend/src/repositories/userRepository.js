@@ -59,6 +59,7 @@ function mapRow(row) {
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
     googleId: row.google_id ?? null,
+    appleId: row.apple_id ?? null,
   };
 }
 
@@ -85,7 +86,7 @@ async function getCollectionByUserId(userId) {
   return isMan ? 'users_man' : 'users_woman';
 }
 
-async function createUser({ email = null, phoneNumber = null, passwordHash = null, role, cycleStartDate = null, emailVerifiedAt = null, googleId = null, displayName = null }) {
+async function createUser({ email = null, phoneNumber = null, passwordHash = null, role, cycleStartDate = null, emailVerifiedAt = null, googleId = null, appleId = null, displayName = null }) {
   const userRole = normalizeRoleValue(role, 'woman');
   const collectionName = userRole === 'man' ? 'users_man' : 'users_woman';
 
@@ -99,6 +100,7 @@ async function createUser({ email = null, phoneNumber = null, passwordHash = nul
     cycle_start_date: normalizeCycleStartDate(cycleStartDate),
     email_verified_at: emailVerifiedAt ? new Date(emailVerifiedAt) : null,
     google_id: typeof googleId === 'string' && googleId.trim().length > 0 ? googleId.trim() : null,
+    apple_id: typeof appleId === 'string' && appleId.trim().length > 0 ? appleId.trim() : null,
     onboarding_answers: null,
     onboarding_completed_at: null,
     created_at: new Date(),
@@ -132,6 +134,37 @@ async function linkGoogleId(userId, googleId) {
     {
       $set: {
         google_id: cleanId,
+        updated_at: new Date(),
+      }
+    }
+  );
+  const updatedUser = await db.collection(collectionName).findOne({ user_id: userId });
+  return mapRow(updatedUser);
+}
+
+async function getUserByAppleId(appleId) {
+  if (typeof appleId !== 'string' || appleId.trim().length === 0) {
+    return null;
+  }
+  const cleanId = appleId.trim();
+  let user = await db.collection('users_man').findOne({ apple_id: cleanId });
+  if (!user) {
+    user = await db.collection('users_woman').findOne({ apple_id: cleanId });
+  }
+  return mapRow(user);
+}
+
+async function linkAppleId(userId, appleId) {
+  if (typeof appleId !== 'string' || appleId.trim().length === 0) {
+    return null;
+  }
+  const cleanId = appleId.trim();
+  const collectionName = await getCollectionByUserId(userId);
+  await db.collection(collectionName).updateOne(
+    { user_id: userId },
+    {
+      $set: {
+        apple_id: cleanId,
         updated_at: new Date(),
       }
     }
@@ -465,6 +498,8 @@ export {
   getUserByEmail,
   getUserByGoogleId,
   linkGoogleId,
+  getUserByAppleId,
+  linkAppleId,
   updateUserEmailVerifiedAt,
   updateUser,
   updatePasswordAndPhone,
@@ -485,6 +520,8 @@ export const userRepository = {
   getUserByEmail,
   getUserByGoogleId,
   linkGoogleId,
+  getUserByAppleId,
+  linkAppleId,
   updateUserEmailVerifiedAt,
   updateUser,
   updatePasswordAndPhone,

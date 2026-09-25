@@ -4,7 +4,6 @@ import '../../shared/bottom_navigation.dart';
 import '../../shared/header.dart';
 import '../../shared/product_tour.dart';
 import '../../l10n/app_localizations.dart';
-import '../community/community_screen.dart';
 import '../m_studio/m_studio_screen.dart';
 import '../sia/sia_screen.dart';
 import '../partner/partner_screen.dart';
@@ -29,10 +28,9 @@ class BlushyShellTabs {
   static final ValueNotifier<int?> requested = ValueNotifier<int?>(null);
 
   static const int home = 0;
-  static const int community = 1;
-  static const int docsy = 2;
-  static const int mStudio = 3;
-  static const int partner = 4;
+  static const int docsy = 1;
+  static const int mStudio = 2;
+  static const int partner = 3;
 
   static void open(int index) => requested.value = index;
 }
@@ -48,17 +46,20 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   int _currentIndex = 0;
 
-  // Order matches BlushyBottomNavigation, with Docsy in the middle slot.
+  // Order matches BlushyBottomNavigation, with Docsy in the raised slot.
   final List<Widget> _screens = [
     const BlushyHomeScreen(),
-    const BlushyCommunityScreen(),
     const BlushySiaScreen(),
     const BlushyMStudioScreen(),
     const BlushyPartnerScreen(),
   ];
 
   /// One anchor per destination, for the first-run tour.
-  final List<GlobalKey> _navKeys = List.generate(5, (_) => GlobalKey());
+  final List<GlobalKey> _navKeys = List.generate(4, (_) => GlobalKey());
+
+  /// Header anchors for the tour: the language selector and the account button.
+  final GlobalKey _tourLanguageKey = GlobalKey();
+  final GlobalKey _tourProfileKey = GlobalKey();
 
   bool _showTour = false;
 
@@ -124,8 +125,9 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     );
   }
 
-  /// The five stops, in the order the tabs appear.
-  List<TourStep> _tourSteps(AppLocalizations t) {
+  /// The stops of the tour, in the order they appear: the four tabs, then the
+  /// header's language and account controls.
+  List<TourStep> _tourSteps(AppLocalizations t, String? partnerLabel) {
     return [
       TourStep(
         targetKey: _navKeys[0],
@@ -133,24 +135,31 @@ class _BlushyOSShellState extends State<BlushyOSShell>
         body: t.tourHomeBody,
       ),
       TourStep(
-        targetKey: _navKeys[1],
-        title: t.navCommunity,
-        body: t.tourCommunityBody,
-      ),
-      TourStep(
         targetKey: _navKeys[BlushyBottomNavigation.siaIndex],
         title: t.navSia,
         body: t.tourSiaBody,
       ),
       TourStep(
-        targetKey: _navKeys[3],
+        targetKey: _navKeys[2],
         title: t.navStudio,
         body: t.tourStudioBody,
       ),
       TourStep(
-        targetKey: _navKeys[4],
-        title: t.navPartner,
+        targetKey: _navKeys[3],
+        title: partnerLabel ?? t.navPartner,
         body: t.tourPartnerBody,
+      ),
+      TourStep(
+        targetKey: _tourLanguageKey,
+        title: 'Language',
+        body: 'Tap here any time to change the language Docsy and the whole '
+            'app speak in.',
+      ),
+      TourStep(
+        targetKey: _tourProfileKey,
+        title: 'Your account',
+        body: 'Your profile, health details and settings live here — tap to '
+            'open them whenever you need.',
       ),
     ];
   }
@@ -208,17 +217,43 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     );
   }
 
+  /// Switches to [index], with the same cross-tab sync and fade the bottom
+  /// navigation uses. Shared so the nav and the system back button move
+  /// between tabs identically.
+  void _selectTab(int index) {
+    if (_currentIndex != index) {
+      final state = BlushyOSProvider.of(context);
+      SiaDashboardService().syncAllDashboardsFromBackend(state: state);
+      // Someone who asked for less motion gets the switch, not the fade.
+      if (!(MediaQuery.maybeDisableAnimationsOf(context) ?? false)) {
+        _tabFade.forward(from: 0);
+      }
+    }
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // Home keeps the wordmark; every other tab names itself instead, since the
     // wordmark is identical on all five and so says nothing about where you are.
     final t = AppLocalizations.of(context);
+
+    // The fourth tab is addressed as a "Companion" (a friend to talk to, and to
+    // connect with friends and family) rather than a "Partner", on every stage:
+    // none of its features are adult content. Kept in one place so the header
+    // title and the bar label cannot disagree.
+    const String partnerLabel = 'Companion';
+
     final scaffold = Scaffold(
       backgroundColor: BlushyColors.background,
       appBar: BlushyHeader(
         title: _currentIndex == 0
             ? null
-            : BlushyBottomNavigation.labelsFor(t)[_currentIndex],
+            : BlushyBottomNavigation.labelsFor(t, partnerLabel: partnerLabel)[_currentIndex],
+        languageKey: _tourLanguageKey,
+        profileKey: _tourProfileKey,
       ),
       body: FadeTransition(
         opacity: CurvedAnimation(parent: _tabFade, curve: Curves.easeOut),
@@ -230,32 +265,35 @@ class _BlushyOSShellState extends State<BlushyOSShell>
       bottomNavigationBar: BlushyBottomNavigation(
         itemKeys: _navKeys,
         currentIndex: _currentIndex,
-        onTap: (index) {
-          if (_currentIndex != index) {
-            final state = BlushyOSProvider.of(context);
-            SiaDashboardService().syncAllDashboardsFromBackend(state: state);
-            // Someone who asked for less motion gets the switch, not the fade.
-            if (!(MediaQuery.maybeDisableAnimationsOf(context) ?? false)) {
-              _tabFade.forward(from: 0);
-            }
-          }
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: _selectTab,
+        partnerLabel: partnerLabel,
       ),
     );
 
-    if (!_showTour) return scaffold;
+    // Back from any tab other than Home returns to Home rather than closing the
+    // app; on Home the default pop stands (Android exits at the root). Wraps the
+    // tour overlay too, so back behaves the same while it is showing.
+    Widget withBack(Widget child) => PopScope(
+          canPop: _currentIndex == BlushyShellTabs.home,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            if (_currentIndex != BlushyShellTabs.home) {
+              _selectTab(BlushyShellTabs.home);
+            }
+          },
+          child: child,
+        );
+
+    if (!_showTour) return withBack(scaffold);
 
     // Stacked over the whole Scaffold rather than inside its body: the tabs
     // being pointed at live in `bottomNavigationBar`, which the body does not
     // cover.
-    return Stack(
+    return withBack(Stack(
       children: [
         scaffold,
         ProductTour(
-          steps: _tourSteps(t),
+          steps: _tourSteps(t, partnerLabel),
           skipLabel: t.tourSkip,
           nextLabel: t.tourNext,
           doneLabel: t.tourDone,
@@ -264,6 +302,6 @@ class _BlushyOSShellState extends State<BlushyOSShell>
           },
         ),
       ],
-    );
+    ));
   }
 }

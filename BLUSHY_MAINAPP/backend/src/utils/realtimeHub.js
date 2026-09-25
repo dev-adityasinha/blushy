@@ -12,6 +12,54 @@ import { createRedisConnection } from './redisStore.js';
 const clientsByUser = new Map();
 
 /**
+ * Fired when a user's FIRST socket connects (online) or their LAST one closes
+ * (offline) -- a genuine presence transition, not every socket. Registered at
+ * startup (server.js) so the hub itself stays free of partner/DB imports and
+ * there is no import cycle. Async and best-effort: a failure here must never
+ * affect the socket lifecycle.
+ */
+let presenceObserver = null;
+export function setPresenceObserver(fn) {
+  presenceObserver = typeof fn === 'function' ? fn : null;
+}
+function notifyPresence(userId, online) {
+  if (!presenceObserver || !userId) return;
+  try {
+    Promise.resolve(presenceObserver(userId, online)).catch(() => {});
+  } catch {
+    // Never let a presence hook break connect/disconnect handling.
+  }
+}
+
+/**
+ * Handles a JSON message a client sends up the socket (e.g. a typing ping).
+ * Registered at startup so the hub stays free of partner/DB imports. Receives
+ * (userId, parsedMessage); best-effort, never throws into the socket.
+ */
+let inboundHandler = null;
+export function setInboundMessageHandler(fn) {
+  inboundHandler = typeof fn === 'function' ? fn : null;
+}
+function handleInbound(userId, rawMessage) {
+  if (!inboundHandler || !userId) return;
+  let parsed;
+  try {
+    const text = typeof rawMessage === 'string' ? rawMessage : rawMessage.toString();
+    // A typing ping is tiny; anything large is not something we handle inbound.
+    if (!text || text.length > 2000) return;
+    parsed = JSON.parse(text);
+  } catch {
+    return;
+  }
+  if (!parsed || typeof parsed !== 'object') return;
+  try {
+    Promise.resolve(inboundHandler(userId, parsed)).catch(() => {});
+  } catch {
+    // A bad inbound message must never break the connection.
+  }
+}
+
+/**
  * Cross-instance delivery.
  *
  * `clientsByUser` only knows about sockets attached to *this* process, so with
@@ -59,6 +107,8 @@ function addClient(userId, socket) {
   // A newly connected user is worth telling the others about immediately
   // rather than at the next scheduled announcement.
   announcePresence();
+  // First socket for this user -> they just came online.
+  notifyPresence(userId, true);
 }
 
 function removeClient(userId, socket) {
@@ -71,6 +121,8 @@ function removeClient(userId, socket) {
   if (set.size === 0) {
     clientsByUser.delete(userId);
     announcePresence();
+    // Last socket for this user closed -> they are now offline.
+    notifyPresence(userId, false);
   }
 }
 
@@ -166,6 +218,10 @@ export function initRealtimeHub(server) {
 
     addClient(userId, socket);
     safeSend(socket, { event: 'realtime.connected', userId, ts: new Date().toISOString() });
+
+    // Clients may send small JSON messages up (e.g. a typing ping); relayed to
+    // partners by the registered inbound handler.
+    socket.on('message', (raw) => handleInbound(userId, raw));
 
     socket.on('close', () => {
       removeClient(userId, socket);

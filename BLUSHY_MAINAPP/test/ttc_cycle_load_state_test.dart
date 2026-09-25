@@ -54,11 +54,16 @@ void main() {
         reason: 'a failed load has to be retryable');
   });
 
-  test('it still sits above the tracker card', () {
-    // Below the card it would be explaining a claim the card already made.
+  test('the tracker leads the page, with the load notice below it', () {
+    // The period tracker is pinned to the top (right after the greeting) by
+    // request, so the cycle is the first thing she sees. The notice explaining
+    // "still general guidance until you log" now sits just below the tracker.
+    final card = ttc.indexOf('_buildPeriodTrackerCard(context),');
     final notice = ttc.indexOf('StageStateNotice(');
-    final card = ttc.indexOf('_buildPeriodTrackerCard(context),', notice);
-    expect(card, greaterThan(notice));
+    expect(card, greaterThan(-1));
+    expect(notice, greaterThan(-1));
+    expect(card, lessThan(notice),
+        reason: 'the tracker is kept at the top, above the loading notice');
   });
 
   test('every cycle dashboard reports load state, one way or another', () {

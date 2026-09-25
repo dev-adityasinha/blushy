@@ -42,6 +42,7 @@ dependencies:
   http: ^1.2.2
   url_launcher: ^6.3.1
   google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.3
   provider: ^6.1.2
   confetti: ^0.7.0
   share_plus: ^10.0.0
@@ -81,6 +82,26 @@ flutter:
     - assets/color/bush/
     - assets/mono/flowers/
     - assets/mono/bush/
+    - assets/pregnancy_health/
+    - assets/pregnancy_lifestyle/
+    - assets/fetal_development/
+    - assets/period_started/
+    - assets/period_symptoms/
+    - assets/period_cramp/
+    - assets/body_changes/
+    - assets/puberty/
+    - assets/teenage_life/
+    - assets/perimenopause_symptoms/
+    - assets/perimenopause_more/
+    - assets/menopause_changes/
+    - assets/menopause_more/
+    - assets/ttc_fertility/
+    - assets/ttc_ovulation/
+    - assets/ttc_sex/
+    - assets/postpartum_motherhood/
+    - assets/postpartum_baby/
+    - assets/postpartum_recovery/
+    - assets/m_studio/
 
   # The layouts asked for Georgia and Courier and shipped neither, so on Android
   # both fell back to Roboto and the editorial serif was lost. Neither is

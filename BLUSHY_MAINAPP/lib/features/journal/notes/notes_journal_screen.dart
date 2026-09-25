@@ -14,6 +14,7 @@ import 'note_paper.dart';
 import 'note_stickers.dart';
 import 'note_style.dart';
 import 'note_template_picker_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// The journal: every entry, one after another, newest first.
 ///
@@ -133,7 +134,7 @@ class _NotesJournalScreenState extends State<NotesJournalScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Delete this entry?',
+        title: Text(AppLocalizations.of(context).noteDeleteEntry,
             style: GoogleFonts.manrope(height: 1.5, 
                 fontSize: 16, fontWeight: FontWeight.w600)),
         content: Text(
@@ -143,11 +144,11 @@ class _NotesJournalScreenState extends State<NotesJournalScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Keep'),
+            child: Text(AppLocalizations.of(context).noteKeep),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text('Delete',
+            child: Text(AppLocalizations.of(context).actionDelete,
                 style: GoogleFonts.manrope(color: BlushyColors.danger)),
           ),
         ],
@@ -314,17 +315,17 @@ class _NotesJournalScreenState extends State<NotesJournalScreen> {
             children: [
               _buildWayIn(
                 icon: Icons.mic_rounded,
-                label: 'Tell me',
+                label: AppLocalizations.of(context).noteTellMe,
                 onTap: _toggleVoice,
               ),
               _buildWayIn(
                 icon: Icons.edit_rounded,
-                label: 'Write it',
+                label: AppLocalizations.of(context).noteWriteIt,
                 onTap: () => _createEntry(),
               ),
               _buildWayIn(
                 icon: Icons.lightbulb_outline_rounded,
-                label: 'Give me a prompt',
+                label: AppLocalizations.of(context).noteGivePrompt,
                 onTap: _showPrompt,
               ),
             ],
@@ -397,7 +398,7 @@ class _NotesJournalScreenState extends State<NotesJournalScreen> {
         const Spacer(),
         _buildWayIn(
           icon: Icons.stop_rounded,
-          label: 'Done',
+          label: AppLocalizations.of(context).actionDone,
           onTap: _toggleVoice,
         ),
       ],
@@ -483,7 +484,7 @@ class _NotesJournalScreenState extends State<NotesJournalScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'another'),
-            child: const Text('Not this one'),
+            child: Text(AppLocalizations.of(context).noteNotThisOne),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'write'),

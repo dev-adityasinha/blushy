@@ -480,6 +480,10 @@ class BlushyOSState extends ChangeNotifier {
         }
 
         if (data['personalContext'] != null) {
+          // Real last-known data is being restored, so the dashboard renders the
+          // user's own figures on the first frame and the background refresh can
+          // stay silent (no "Updating your dashboard…" banner).
+          _hydratedFromCache = true;
           final pc = data['personalContext'];
           final List<dynamic> rawMedications = pc['medications'] ?? [];
           final meds = rawMedications.map((m) => Medication.fromJson(m)).toList();
@@ -610,6 +614,22 @@ class BlushyOSState extends ChangeNotifier {
   /// fetched, rather than rendering empty cards that silently fill in later.
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
+
+  /// True once the launch restore in [_loadState] rehydrated a real
+  /// personal-context from the local cache -- i.e. the dashboard is already
+  /// showing the user's own last-known data, not defaults.
+  ///
+  /// The "Updating your dashboard…" banner exists to explain a *first* fill
+  /// after onboarding, when there is nothing cached and the cards would
+  /// otherwise show defaults and then rewrite themselves. For a returning user
+  /// the cache is already on screen, so the background refresh happens silently
+  /// (see [isInitialSync]) rather than flashing that banner on every open.
+  bool _hydratedFromCache = false;
+  bool get hydratedFromCache => _hydratedFromCache;
+
+  /// Whether the sync banner should show: a sync is running *and* there was no
+  /// cached dashboard to show, so the user is genuinely waiting on first data.
+  bool get isInitialSync => _isSyncing && !_hydratedFromCache;
 
   /// Attaches an error handler at launch time, yielding null on failure.
   ///

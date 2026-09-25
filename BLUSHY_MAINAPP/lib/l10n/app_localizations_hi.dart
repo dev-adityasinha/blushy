@@ -9,6 +9,630 @@ class AppLocalizationsHi extends AppLocalizations {
   AppLocalizationsHi([String locale = 'hi']) : super(locale);
 
   @override
+  String get ceRemindScreenshot => 'स्क्रीनशॉट भेजने की याद दिलाएँ 📸';
+
+  @override
+  String get ceRemindMsg => '“अरे, वो स्क्रीनशॉट भेजने की प्यारी सी याद! 😉”';
+
+  @override
+  String get cePlayfulPing => 'मज़ेदार पिंग 👋';
+
+  @override
+  String get cePlayfulMsg => '“अरे तुम! अब भी तुम्हारे जवाब का इंतज़ार है 😉”';
+
+  @override
+  String get ceGentleThought => 'प्यारा ख्याल ☕';
+
+  @override
+  String get ceGentleMsg =>
+      '“अपना समय लो, बस तुम्हारे बारे में सोच रहा हूँ! 💕”';
+
+  @override
+  String get ceWhisperFollowUp => 'या एक झटपट संदेश फुसफुसाएँ...';
+
+  @override
+  String get ceMyTreat => 'मेरी तरफ़ से! प्यारा तैयार हो जाओ ❤️';
+
+  @override
+  String get ceAddCuteNote => 'एक प्यारा नोट जोड़ें...';
+
+  @override
+  String get ceUndo => 'पूर्ववत करें';
+
+  @override
+  String get ceClear => 'साफ़ करें';
+
+  @override
+  String get ceHotCoffee => 'गरम कॉफ़ी और प्यारी झप्पी ☕';
+
+  @override
+  String get ceHotCoffeeMsg => 'एक गरम कप कॉफ़ी और कसकर गले लगाना भेज रहा हूँ।';
+
+  @override
+  String get ceBigEmbrace => 'बड़ी कसकर झप्पी 🫂';
+
+  @override
+  String get ceBigEmbraceMsg =>
+      'आज तुम्हें सबसे बड़ी, सबसे गरम झप्पी में लपेट रहा हूँ।';
+
+  @override
+  String get ceForeheadKiss => 'प्यारा माथे पर चुंबन 💋';
+
+  @override
+  String get ceForeheadKissMsg =>
+      'तुम्हारा दिन रोशन करने के लिए एक प्यारा माथे पर चुंबन।';
+
+  @override
+  String get ceTreatDelivery => 'मीठी सौगात डिलीवरी 🍫';
+
+  @override
+  String get ceTreatDeliveryMsg => 'वर्चुअल मीठी चॉकलेट और मेरा सारा प्यार।';
+
+  @override
+  String get cePauseBreathe => 'प्यारा विराम और साँस लो 🌿';
+
+  @override
+  String get cePauseBreatheMsg => 'एक गहरी साँस लो, तुम कमाल कर रहे हो।';
+
+  @override
+  String get ceThinkingOfYou => 'तुम्हारे बारे में सोच रहा हूँ ✨';
+
+  @override
+  String get ceThinkingMsg =>
+      'तुम्हारे बारे में सोचकर सपने देख रहा हूँ और मुस्कुरा रहा हूँ।';
+
+  @override
+  String get ceMissingVoice => 'तुम्हारी आवाज़ की कमी 🥺';
+
+  @override
+  String get ceMissingMsg =>
+      'तुम्हें बहुत याद कर रहा हूँ और चाहता हूँ कि तुम यहीं होते।';
+
+  @override
+  String get ceCravingCuddles => 'झप्पियों की तलब 🧸';
+
+  @override
+  String get ceCravingMsg => 'अभी आधिकारिक रूप से झप्पी के लिए तैयार हूँ।';
+
+  @override
+  String get ceProudOfYou => 'तुम पर बहुत गर्व है 🌟';
+
+  @override
+  String get ceProudMsg => 'एक प्यारी याद कि तुम पूरे रॉकस्टार हो।';
+
+  @override
+  String get ceRechargeNeeded => 'रिचार्ज चाहिए 🔋';
+
+  @override
+  String get ceRechargeMsg =>
+      'आज बैटरी लो है, थोड़ी प्यारी साथी की गर्माहट चाहिए।';
+
+  @override
+  String get noteNoPhoto => 'कोई फ़ोटो नहीं जोड़ी गई।';
+
+  @override
+  String get noteKeepWriting => 'लिखते रहें';
+
+  @override
+  String get noteRemove => 'हटाएँ';
+
+  @override
+  String get noteSize => 'आकार';
+
+  @override
+  String get noteBold => 'बोल्ड';
+
+  @override
+  String get noteItalic => 'इटैलिक';
+
+  @override
+  String get noteUnderline => 'रेखांकित';
+
+  @override
+  String get noteBullet => 'बुलेट';
+
+  @override
+  String get noteNumbered => 'क्रमांकित';
+
+  @override
+  String get noteChecklist => 'चेकलिस्ट';
+
+  @override
+  String get noteSmaller => 'छोटा';
+
+  @override
+  String get noteBigger => 'बड़ा';
+
+  @override
+  String get noteDeleteEntry => 'इस प्रविष्टि को हटाएँ?';
+
+  @override
+  String get noteKeep => 'रखें';
+
+  @override
+  String get noteTellMe => 'मुझे बताएँ';
+
+  @override
+  String get noteWriteIt => 'इसे लिखें';
+
+  @override
+  String get noteGivePrompt => 'मुझे एक संकेत दें';
+
+  @override
+  String get noteNotThisOne => 'यह नहीं';
+
+  @override
+  String get ptGardenGrew => 'आपका बगीचा बढ़ा। आपका साथी भी इसे देखता है।';
+
+  @override
+  String get ptDatePlanner => 'डेट प्लानर और AI कंसीयज';
+
+  @override
+  String get ptDrawingCanvas => 'साझा ड्रॉइंग कैनवास';
+
+  @override
+  String get ptCoupleGames => 'कपल गेम्स और सवाल';
+
+  @override
+  String get ptVirtualBouquet => 'वर्चुअल गुलदस्ता और फूल';
+
+  @override
+  String get ptGratitudeChallenge => 'दैनिक आभार चुनौती';
+
+  @override
+  String get ptConnectedSuccess => '🎉 आपके साथी से सफलतापूर्वक जुड़ गए!';
+
+  @override
+  String get ptAccept => 'स्वीकार करें';
+
+  @override
+  String get ptPortalLive => 'जुड़ गए! आपका साझा साथी पोर्टल अब लाइव है 🎉';
+
+  @override
+  String get ptPrivateSpaceOn =>
+      'निजी स्थान चालू। आपके व्यक्तिगत अपडेट रोक दिए गए हैं।';
+
+  @override
+  String get ptSharingResumed => 'साझाकरण फिर से शुरू, बिल्कुल पहले जैसा।';
+
+  @override
+  String get ptCycle => 'चक्र';
+
+  @override
+  String get ptEnergy => 'ऊर्जा';
+
+  @override
+  String get ptMood => 'मनोदशा';
+
+  @override
+  String get ptPartnerSpaceLive => 'जुड़ गए! आपका पार्टनर स्पेस अब लाइव है 🎉';
+
+  @override
+  String get commonOk => 'ठीक है';
+
+  @override
+  String get ptDisconnectPartner => 'साथी को डिस्कनेक्ट करें?';
+
+  @override
+  String get ptInvite => 'आमंत्रित करें';
+
+  @override
+  String get ptPrivacySettings => 'गोपनीयता सेटिंग्स';
+
+  @override
+  String get ptWhatYouShare => 'आप क्या साझा करते हैं';
+
+  @override
+  String get ptPrivacyUpdated => 'गोपनीयता सेटिंग्स अपडेट हो गईं।';
+
+  @override
+  String get ptRequestAccepted => 'साथी अनुरोध स्वीकार किया गया! 🎉';
+
+  @override
+  String get ptPartnerEmail => 'साथी का ईमेल पता';
+
+  @override
+  String get commonOr => 'या';
+
+  @override
+  String get ptInviteLinkCopied =>
+      'आमंत्रण लिंक क्लिपबोर्ड पर कॉपी किया गया! 📋';
+
+  @override
+  String get ptCopyLink => 'लिंक कॉपी करें';
+
+  @override
+  String get ptInviteCode => 'आमंत्रण कोड';
+
+  @override
+  String get ptSavedScrapbook => 'साझा स्क्रैपबुक मेमोरी में सहेजा गया!';
+
+  @override
+  String get ptLetterTitle => 'पत्र शीर्षक (जैसे हमारे खास दिन के लिए)';
+
+  @override
+  String get ptLetterHint =>
+      'अपने दिल की बात यहाँ लिखें... अपने साथी के लिए विचार, आभार या यादें।';
+
+  @override
+  String get ptLetterValidation =>
+      'कृपया शीर्षक और पत्र संदेश दोनों दर्ज करें।';
+
+  @override
+  String get jrSelfReflection => 'आत्म चिंतन';
+
+  @override
+  String get jrReflection => 'चिंतन';
+
+  @override
+  String get jrScrapbook => 'स्क्रैपबुक';
+
+  @override
+  String get jrAccessibilityMotion => 'सुगम्यता और मोशन सेटिंग्स';
+
+  @override
+  String get jrAmbientSounds => 'परिवेशी ध्वनियाँ';
+
+  @override
+  String get jrPlayBackgroundSounds => 'पृष्ठभूमि परिवेश ध्वनियाँ चलाएँ।';
+
+  @override
+  String get jrLongAnimations => 'लंबे एनिमेशन और ट्रांज़िशन';
+
+  @override
+  String get jrEnable3D => '3D कवर फ़्लिपिंग और ओपनिंग मोशन सक्षम करें।';
+
+  @override
+  String get jrDecorativeEffects => 'सजावटी प्रभाव';
+
+  @override
+  String get jrCoffeeSteam => 'कॉफ़ी भाप की लहरें, पौधों की हलचल और प्रतिबिंब।';
+
+  @override
+  String get jrMyScrapbook => 'मेरी स्क्रैपबुक';
+
+  @override
+  String get jrDreamBig => 'बड़े सपने देखें। खूबसूरती से लिखें।';
+
+  @override
+  String get jrCover => 'कवर: ';
+
+  @override
+  String get jrRibbon => 'रिबन: ';
+
+  @override
+  String get jrDesk => 'डेस्क: ';
+
+  @override
+  String get jrDeskDiaryCover => 'डेस्क और डायरी कवर';
+
+  @override
+  String get jrAmbientSoundEnv => 'परिवेशी ध्वनि वातावरण';
+
+  @override
+  String get jrAccessibilitySettings => 'सुगम्यता सेटिंग्स';
+
+  @override
+  String get jrSearchMemories => 'यादें, स्टिकर और टेम्पलेट खोजें...';
+
+  @override
+  String get jrSmartMemoryTimeline => 'स्मार्ट मेमोरी टाइमलाइन';
+
+  @override
+  String get jrTapNewMemory =>
+      '\"नई मेमोरी\" टैप करें या वॉइस चिंतन रिकॉर्ड करें।';
+
+  @override
+  String get jrDailyAmbientSounds => 'दैनिक परिवेशी वातावरण ध्वनियाँ';
+
+  @override
+  String get jrScrapbookMemory => 'स्क्रैपबुक मेमोरी';
+
+  @override
+  String get jrWriteReflection => 'चिंतन लिखें';
+
+  @override
+  String get jrFreshCanvas => 'नए स्क्रैपबुक कैनवास पर शुरू करें';
+
+  @override
+  String get jrRecordTranscribe => 'रिकॉर्ड और लिप्यंतरण';
+
+  @override
+  String get jrSpeakDocsyTranscribe =>
+      'बोलें और Docsy को आपकी जर्नल में लिप्यंतरण करने दें';
+
+  @override
+  String get jrStartFromTemplate => 'टेम्पलेट से शुरू करें';
+
+  @override
+  String get jrChooseTemplate => 'एक निर्देशित जर्नलिंग टेम्पलेट चुनें';
+
+  @override
+  String get jrSmartAiSearch => 'स्मार्ट AI खोज';
+
+  @override
+  String get jrSemanticSearch => 'यादों में प्रासंगिक अर्थपूर्ण खोज';
+
+  @override
+  String get jrMemoryVault => 'मेमोरी वॉल्ट';
+
+  @override
+  String get jrStarredMemories => 'तारांकित यादें और कस्टम संग्रह';
+
+  @override
+  String get jrSmartCalendarMap => 'स्मार्ट कैलेंडर और मानचित्र';
+
+  @override
+  String get jrVisualMoodGrid => 'विज़ुअल मूड ग्रिड और स्थान पिन';
+
+  @override
+  String get jrContentGarden => 'चिंतनशील सामग्री उद्यान';
+
+  @override
+  String get jrGardenGrowth => 'चिंतन की गहराई से जुड़ी जैविक उद्यान वृद्धि';
+
+  @override
+  String get jrInsightsDashboard => 'जर्नल इनसाइट्स डैशबोर्ड';
+
+  @override
+  String get jrWritingStats => 'लेखन आँकड़े, शब्द गणना और सक्रिय घंटे';
+
+  @override
+  String get jrYearInReview => 'वर्ष समीक्षा स्क्रैपबुक';
+
+  @override
+  String get jrGuidedRecap => 'निर्देशित बहु-पृष्ठ वार्षिक सारांश';
+
+  @override
+  String get jrMemoryTimeCapsule => 'मेमोरी टाइम कैप्सूल';
+
+  @override
+  String get jrEncryptedFuture =>
+      'औपचारिक अनलॉक के साथ एन्क्रिप्टेड भविष्य की यादें';
+
+  @override
+  String get jrExportStudio => 'एक्सपोर्ट स्टूडियो (6 लेआउट)';
+
+  @override
+  String get jrExportFormats => 'PDF, Markdown, JSON, HTML एक्सपोर्ट करें';
+
+  @override
+  String get jrExportStudioPreview => 'एक्सपोर्ट स्टूडियो पूर्वावलोकन';
+
+  @override
+  String get jrEntryTitle => 'प्रविष्टि शीर्षक...';
+
+  @override
+  String get jrAiTitleSuggestions => 'AI शीर्षक सुझाव';
+
+  @override
+  String get jrWeeklyMemoryBook => 'साप्ताहिक मेमोरी बुक';
+
+  @override
+  String get jrAiPrivacySettings => 'AI और गोपनीयता सेटिंग्स';
+
+  @override
+  String get jrSaveClose => 'सहेजें और बंद करें';
+
+  @override
+  String get jrDocsyInsights => 'DOCSY इनसाइट्स';
+
+  @override
+  String get jrBringToFront => 'सामने लाएँ';
+
+  @override
+  String get jrSendToBack => 'पीछे भेजें';
+
+  @override
+  String get jrZoomIn => 'ज़ूम इन';
+
+  @override
+  String get jrZoomOut => 'ज़ूम आउट';
+
+  @override
+  String get jrRotate15 => '15° घुमाएँ';
+
+  @override
+  String get jrObjectColor => 'ऑब्जेक्ट रंग';
+
+  @override
+  String get jrDuplicate => 'डुप्लिकेट';
+
+  @override
+  String get jrDeselect => 'चयन हटाएँ';
+
+  @override
+  String get jrAddPolaroid => 'पोलेरॉइड फ़्रेम जोड़ें';
+
+  @override
+  String get jrPinkRoseFrame => 'गुलाबी गुलाब फ़्रेम';
+
+  @override
+  String get jrDictateToText => 'टेक्स्ट में बोलें (STT)';
+
+  @override
+  String get jrAddReflectionSummary => 'चिंतन सारांश जोड़ें';
+
+  @override
+  String get jrDocsyTitleSuggestions => 'Docsy शीर्षक सुझाव';
+
+  @override
+  String get jrPickTitleMood => 'अपने चिंतन के मूड से मेल खाता शीर्षक चुनें:';
+
+  @override
+  String get jrSuggestTitles => 'विचारशील प्रविष्टि शीर्षक सुझाएँ';
+
+  @override
+  String get jrMemoryLinks => 'मेमोरी लिंक';
+
+  @override
+  String get jrDiscoverLinks => 'यादों के बीच व्याख्या योग्य लिंक खोजें';
+
+  @override
+  String get jrSmartContextSearch => 'स्मार्ट संदर्भ खोज';
+
+  @override
+  String get jrSearchExamples => 'खोजें (जैसे बीच, खुश, परीक्षाएँ)...';
+
+  @override
+  String get jrHexCode => 'हेक्स कोड';
+
+  @override
+  String get jrRed => 'लाल';
+
+  @override
+  String get jrGreen => 'हरा';
+
+  @override
+  String get jrBlue => 'नीला';
+
+  @override
+  String get jrBasicColors => 'मूल रंग';
+
+  @override
+  String get msRecovery => 'रिकवरी';
+
+  @override
+  String get msTimeCapsules => 'टाइम कैप्सूल';
+
+  @override
+  String get msStartSession => 'सत्र शुरू करें';
+
+  @override
+  String get msNoSessions => 'अभी कोई सत्र उपलब्ध नहीं है।';
+
+  @override
+  String get msCreateNewCapsule => 'नया कैप्सूल बनाएं';
+
+  @override
+  String get msNameIt => 'इसे नाम दें';
+
+  @override
+  String get msWhatToSay => 'आप क्या कहना चाहते हैं?';
+
+  @override
+  String get msOpenItIn => 'इसे इसमें खोलें';
+
+  @override
+  String get msSeal => 'सील करें';
+
+  @override
+  String get msKeepsakeSaved => 'जर्नल यादगार सहेजी गई!';
+
+  @override
+  String get msStartWriting => 'लिखना शुरू करें या अपने विचार बोलें...';
+
+  @override
+  String get authEmailAddress => 'ईमेल पता';
+
+  @override
+  String get authPassword => 'पासवर्ड';
+
+  @override
+  String get authConfirmPassword => 'पासवर्ड की पुष्टि करें';
+
+  @override
+  String get authNewPassword => 'नया पासवर्ड';
+
+  @override
+  String get authConfirmNewPassword => 'नए पासवर्ड की पुष्टि करें';
+
+  @override
+  String get authUpdatePassword => 'पासवर्ड अपडेट करें';
+
+  @override
+  String get authSignIn => 'साइन इन करें';
+
+  @override
+  String get authSignInInstead => 'इसके बजाय साइन इन करें?';
+
+  @override
+  String get authUseAnotherEmail => 'दूसरा ईमेल उपयोग करें';
+
+  @override
+  String get authVerify => 'सत्यापित करें';
+
+  @override
+  String get authSendRecoveryCode => 'रिकवरी कोड भेजें';
+
+  @override
+  String get authCodeSentIfExists =>
+      'यदि उस ईमेल के लिए कोई खाता मौजूद है, तो एक कोड भेजा जा रहा है।';
+
+  @override
+  String get authPasswordUpdated => 'पासवर्ड अपडेट हो गया। कृपया साइन इन करें।';
+
+  @override
+  String get authNewCodeSent => 'एक नया सत्यापन कोड भेजा गया है।';
+
+  @override
+  String get setAccountSettings => 'खाता सेटिंग्स';
+
+  @override
+  String get setAccountProfile => 'खाता और प्रोफ़ाइल';
+
+  @override
+  String get setPreferredName => 'पसंदीदा नाम';
+
+  @override
+  String get setAddName => 'नाम जोड़ें';
+
+  @override
+  String get setDateOfBirth => 'जन्म तिथि';
+
+  @override
+  String get setEmail => 'ईमेल';
+
+  @override
+  String get setCycleBodyBaseline => 'चक्र और शरीर आधार';
+
+  @override
+  String get setCurrentLifeStage => 'वर्तमान जीवन चरण';
+
+  @override
+  String get setCycleTracking => 'चक्र ट्रैकिंग';
+
+  @override
+  String get setCycleLength => 'चक्र अवधि';
+
+  @override
+  String get setPeriodLength => 'माहवारी अवधि';
+
+  @override
+  String get setHealthMedicalProfile => 'स्वास्थ्य और चिकित्सा प्रोफ़ाइल';
+
+  @override
+  String get setNotSet => 'सेट नहीं';
+
+  @override
+  String get setAppPreferencesDocsy => 'ऐप प्राथमिकताएँ और Docsy AI';
+
+  @override
+  String get setDocsyMemory => 'Docsy मेमोरी';
+
+  @override
+  String get setSupportAccount => 'सहायता और खाता';
+
+  @override
+  String get setHelpFaq => 'सहायता और सामान्य प्रश्न';
+
+  @override
+  String get setPrivacyDataReset => 'गोपनीयता और डेटा रीसेट';
+
+  @override
+  String get setLogOut => 'लॉग आउट';
+
+  @override
+  String setDaysValue(num count) {
+    return '$count दिन';
+  }
+
+  @override
+  String setEditItems(num count) {
+    return '$count आइटम संपादित करें';
+  }
+
+  @override
   String get navHome => 'होम';
 
   @override

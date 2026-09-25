@@ -6521,7 +6521,7 @@ Widget _buildStage2LetsTalkSection() {
     // what was logged lately.
     final t = AppLocalizations.of(context);
     final rawName = (pc.userName ?? '').trim();
-    final greetName = rawName.isEmpty ? 'there' : rawName;
+    final greetName = rawName.isEmpty ? 'there' : titleCaseName(rawName);
     final greeting = GreetingCard.greetingFor(t, greetName, DateTime.now());
 
     final CyclePhaseKind? phaseKind =

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/services.dart';
 import 'theme/colors.dart';
 import 'features/home/blushy_shell.dart';
 import 'features/home/presentation/partner_shell.dart';
@@ -30,6 +31,40 @@ import 'core/theme.dart' hide BlushyColors;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Android 15 (SDK 35) draws every app edge-to-edge and ignores the old
+  // window-flag ways of colouring the status/navigation bars, so an app that
+  // does not opt in explicitly gets Play Console's "edge-to-edge may not
+  // display for all users" warning and, on-device, a grey scrim behind the
+  // bars. Opt in the Flutter-blessed way -- draw under both system bars, then
+  // make them transparent with icon brightnesses that read on our light
+  // background -- so content extends to the screen edges and the bars stay
+  // legible. SafeArea in the screens already keeps content clear of the insets.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarDividerColor: Colors.transparent,
+  ));
+  // A build error in release renders as a bare grey box by default (Flutter's
+  // ErrorWidget). Replace it with a quiet, on-brand placeholder so a transient
+  // exception during a rebuild -- e.g. a half-loaded card mid-refresh -- shows a
+  // soft "just a moment" that recovers on the next good frame, instead of a grey
+  // screen. Left as the red diagnostic screen in debug so bugs stay visible.
+  if (!kDebugMode) {
+    ErrorWidget.builder = (FlutterErrorDetails details) => Container(
+          color: BlushyColors.background,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Just a moment…',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: BlushyColors.secondaryText, fontSize: 14),
+          ),
+        );
+  }
   // An invite link opens the app at `/#code=...`, and the first named-route
   // navigation on web overwrites that fragment. Read before anything can
   // navigate; the partner screen claims it when it mounts.

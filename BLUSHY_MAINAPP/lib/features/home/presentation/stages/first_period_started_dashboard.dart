@@ -23,6 +23,8 @@ import '../../widgets/home_hero.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../shared/stage_empty_notice.dart';
+import 'health_library_section.dart';
+import 'first_period_sections.dart';
 import '../../widgets/log_symptoms_section.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
@@ -50,8 +52,11 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
 
   /// This screen is the View; the cycle read lives in the tested
   /// CycleViewModel and is mirrored back by _onCycleChanged.
+  // 31, not 28: the median cycle for adolescents in their first 1–3 years
+  // post-menarche is 31–34 days (ACOG/AAP). A 31-day baseline stops the tracker
+  // calling a normal first-year cycle "late".
   final CycleViewModel _cycleVM =
-      CycleViewModel(defaultCycleLength: 28, defaultCycleDay: 1);
+      CycleViewModel(defaultCycleLength: 31, defaultCycleDay: 1);
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final ScrollController _internalScrollController = ScrollController();
@@ -70,16 +75,32 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   // Real-time Cycle Tracking State
   DateTime? _lastPeriodStartDate;
   int _currentCycleDay = 1;
-  int _cycleLength = 28;
+  int _cycleLength = 31;
   int _periodLength = 5;
+  // How many complete cycles the backend has learned her rhythm from. Drives
+  // the personalised "Blushy Pattern Note".
+  int _completedCycles = 0;
   bool _hasLoggedPeriod = false;
   StreamSubscription? _periodEventSub;
 
   String get _currentPhaseName {
-    if (_currentCycleDay <= _periodLength) return 'Menstrual Phase';
-    if (_currentCycleDay <= _periodLength + 9) return 'Follicular Phase';
-    if (_currentCycleDay <= _periodLength + 11) return 'Ovulation Phase';
-    return 'Luteal Phase';
+    // Friendly, non-clinical phase names for a first-year teen. "Luteal" and
+    // "Ovulation" read as fertility-tracker jargon and most first-year cycles
+    // are anovulatory, so the focus stays on how she feels, not fertility.
+    if (_currentCycleDay <= _periodLength) return 'Period Phase';
+    if (_currentCycleDay <= _periodLength + 9) return 'Fresh Start Phase';
+    if (_currentCycleDay <= _periodLength + 11) return 'Mid-Cycle Phase';
+    return 'Pre-Period Phase';
+  }
+
+  /// The tracker's colour for the current phase, so the "Day N" number matches
+  /// the arc and the legend dot (Period red, Fresh Start orange, Mid-Cycle
+  /// yellow, Pre-Period purple).
+  Color get _currentPhaseColor {
+    if (_currentCycleDay <= _periodLength) return const Color(0xFFEF4444);
+    if (_currentCycleDay <= _periodLength + 9) return const Color(0xFFF97316);
+    if (_currentCycleDay <= _periodLength + 11) return const Color(0xFFFACC15);
+    return const Color(0xFF7C3AED);
   }
 
   // User logging state (Unselected for 1st time users)
@@ -290,7 +311,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
         setState(() {
           _lastPeriodStartDate = event.date;
           _hasLoggedPeriod = true;
-          _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
           if (event.flowIntensity.isNotEmpty) {
             _loggedFlow = event.flowIntensity;
           }
@@ -314,6 +335,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
       _cycleLength = _cycleVM.cycleLength;
       _periodLength = _cycleVM.periodLength;
       _currentCycleDay = _cycleVM.currentCycleDay;
+      _completedCycles = _cycleVM.completedCyclesCount;
     });
   }
 
@@ -344,7 +366,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
 
     if (picked != null) {
       final diff = now.difference(picked).inDays;
-      final newDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+      final newDay = (diff + 1).clamp(1, _cycleLength);
 
       setState(() {
         _lastPeriodStartDate = picked;
@@ -514,6 +536,10 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   // ════════════════════════════════════════════════════════════════
   Widget _buildPeriodTrackerCard(BuildContext context) {
     final int daysLeft = (_cycleLength - _currentCycleDay).clamp(0, _cycleLength);
+    // Past the 31-day baseline is not "late" in the first year -- it is an
+    // extended pattern. Counted, not clamped, and worded calmly.
+    final bool isExtendedCycle = _hasLoggedPeriod && _currentCycleDay > _cycleLength;
+    final int extendedByDays = _currentCycleDay - _cycleLength;
 
     return Container(
       width: double.infinity,
@@ -594,7 +620,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                     style: GoogleFonts.manrope(
                       fontSize: 44,
                       fontWeight: FontWeight.w800,
-                      color: blushyPrimary,
+                      color: _currentPhaseColor,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -613,29 +639,41 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
               ),
             ),
             const SizedBox(height: 6),
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Next cycle begins in ',
-                    style: GoogleFonts.manrope(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF7A6B72),
+            if (isExtendedCycle)
+              // Soft, non-alarming: no red badge, no "OVERDUE".
+              Text(
+                'Taking a little longer this month · +$extendedByDays days',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.manrope(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF7C3AED),
+                ),
+              )
+            else
+              RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Next cycle expected in ',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF7A6B72),
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: '$daysLeft Days',
-                    style: GoogleFonts.manrope(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF221510),
+                    TextSpan(
+                      text: '~$daysLeft days',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF221510),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
           ] else ...[
             RichText(
               text: TextSpan(
@@ -707,7 +745,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
           // Medical Disclaimer
           Text(
             _hasLoggedPeriod
-                ? 'Estimated ovulation based on 28-day baseline. Not medically certain.'
+                ? 'Estimated based on a 31-day adolescent baseline. Cycles in your first year naturally vary.'
                 : 'Blushy cycle tracker uses your logged period dates to estimate phases.',
             textAlign: TextAlign.center,
             style: GoogleFonts.manrope(
@@ -719,19 +757,57 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
           ),
           const SizedBox(height: 10),
 
+          // Adaptive baseline: once the backend has learned her rhythm from a
+          // couple of logged cycles and it differs from the 31-day default,
+          // tell her the tracker has personalised itself.
+          if (_hasLoggedPeriod &&
+              _completedCycles >= 2 &&
+              (_cycleLength - 31).abs() >= 2) ...[
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF6F1FB),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE7DBF3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('✨', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Blushy Pattern Note: your natural rhythm looks like about '
+                      "$_cycleLength days. We've personalized your tracker to match "
+                      'your body.',
+                      style: GoogleFonts.manrope(
+                        fontSize: 11.5,
+                        height: 1.45,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF6D5A8A),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // 4-Phase Dot Legend
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildPhaseDot(const Color(0xFFEF4444), 'Menstrual'),
+                _buildPhaseDot(const Color(0xFFEF4444), 'Period'),
                 const SizedBox(width: 12),
-                _buildPhaseDot(const Color(0xFFF97316), 'Follicular'),
+                _buildPhaseDot(const Color(0xFFF97316), 'Fresh Start'),
                 const SizedBox(width: 12),
-                _buildPhaseDot(const Color(0xFFFACC15), 'Ovulation'),
+                _buildPhaseDot(const Color(0xFFFACC15), 'Mid-Cycle'),
                 const SizedBox(width: 12),
-                _buildPhaseDot(const Color(0xFF7C3AED), 'Luteal'),
+                _buildPhaseDot(const Color(0xFF7C3AED), 'Pre-Period'),
               ],
             ),
           ),
@@ -743,6 +819,13 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
           // Insights Row
           InkWell(
             onTap: () {
+              // Before any period is logged there is no real phase (the day
+              // count defaults to 1, which would otherwise read as the Period
+              // phase and prompt Docsy about it). Offer to log instead.
+              if (!_hasLoggedPeriod) {
+                _openLogPeriodDialog(context);
+                return;
+              }
               _openDocsyWithPrompt(
                 context,
                 'Tell me what happens in the body during the $_currentPhaseName of the first year.',
@@ -808,6 +891,122 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   }
 
   // ════════════════════════════════════════════════════════════════
+  // 01b — EXTENDED CYCLE REASSURANCE (shown directly below the tracker)
+  // ════════════════════════════════════════════════════════════════
+  /// Calm, non-alarming card for when the cycle runs past the 31-day baseline.
+  /// An extended first-year cycle is normal; a very long gap (60+ days) adds a
+  /// gentle nudge to check in with a caregiver, without warnings or red badges.
+  Widget _buildExtendedCycleCard(BuildContext context) {
+    if (!_hasLoggedPeriod || _currentCycleDay <= _cycleLength) {
+      return const SizedBox.shrink();
+    }
+    final bool longGap = _currentCycleDay > 60;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF6F1FB),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE7DBF3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('🌸', style: TextStyle(fontSize: 18)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      longGap
+                          ? "It's been a while since your last period"
+                          : "Your body is taking its time — and that's completely normal!",
+                      style: GoogleFonts.cormorantGaramond(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF221510),
+                        height: 1.15,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                longGap
+                    ? 'Skipping is common in puberty, but it might be a good time to check in with Mom or a doctor to make sure your nutrition and rest are on track.'
+                    : 'In your first 1–2 years of periods, cycles often stretch to 35, 40, or even 45 days while your hormones find their natural rhythm.',
+                style: GoogleFonts.manrope(
+                  fontSize: 12.5,
+                  height: 1.5,
+                  color: const Color(0xFF5A4E54),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _extendedActionChip('🎒 School bag check', () {
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: const Color(0xFF7C3AED),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        content: Text(
+                          'Keep an extra pad in your bag just in case it starts today 💛',
+                          style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    );
+                  }),
+                  _extendedActionChip('💬 Ask Docsy', () {
+                    _openDocsyWithPrompt(
+                      context,
+                      'Why is my period taking longer this month? It has been $_currentCycleDay days since my last period.',
+                    );
+                  }),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+      ],
+    );
+  }
+
+  Widget _extendedActionChip(String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE7DBF3)),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.manrope(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF7C3AED),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════
   // 02 — NOTE FROM DOCSY CARD
   // ════════════════════════════════════════════════════════════════
   Widget _buildNoteFromDocsy(BuildContext context) {
@@ -819,7 +1018,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildEyebrow('A Little Note From Docsy'),
+        _buildEyebrow('Today with Docsy'),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
@@ -968,12 +1167,11 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildEyebrow('Things You Might Need'),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Things you’ll want to know',
+              'Quick things to ask Docsy',
               style: GoogleFonts.cormorantGaramond(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -1072,9 +1270,13 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   }
 
   // ════════════════════════════════════════════════════════════════
-  // 03 — PERIOD MODE / LOG TODAY (Adaptive Day 1–4 Experience)
+  // 03 — DAILY CHECK-IN (unified: Flow + Cramps + Body & Mood)
   // ════════════════════════════════════════════════════════════════
-  Widget _buildPeriodModeLoggerCard(BuildContext context) {
+  // One card replaces the three that overlapped (Log Symptoms, Your Period
+  // Today, Body Changes Journal): cramps and mood used to be logged in two
+  // places each, which a 12-year-old found confusing. Flow + Cramps + Body &
+  // Mood now live together as a single daily check-in.
+  Widget _buildDailyCheckInCard(BuildContext context) {
     final flows = [
       {'label': 'Light', 'icon': '💧', 'intensity': 'light'},
       {'label': 'Medium', 'icon': '💧💧', 'intensity': 'medium'},
@@ -1101,22 +1303,19 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
     }
 
     int? cycleDay;
-    String headerTitle = 'Log Today’s Flow';
     String statusTag = _loggedFlow != null ? 'Logged' : 'Daily Log';
-    String subtitleText = 'Tap your flow intensity if your period is active today.';
+    String subtitleText = 'Log your flow, cramps and how you feel — all in one place.';
 
     if (lastPeriod != null) {
       final diff = DateTime.now().difference(lastPeriod).inDays + 1;
       if (diff > 0 && diff <= 45) {
         cycleDay = diff;
         if (cycleDay <= 6) {
-          headerTitle = 'Day $cycleDay · Period Flow';
           statusTag = cycleDay <= 2 ? 'Heavy / Medium' : 'Winding Down';
           subtitleText = 'Your flow is changing. Take it easy and stay comfortable.';
         } else {
-          headerTitle = 'Day $cycleDay of Cycle';
           statusTag = 'Cycle Active';
-          subtitleText = 'Track any symptoms or spotting to keep your cycle history updated.';
+          subtitleText = 'Track anything you notice to keep your cycle history updated.';
         }
       }
     }
@@ -1124,7 +1323,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildEyebrow('Your Period Today'),
+        _buildEyebrow("Today's Check-in"),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
@@ -1140,7 +1339,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    headerTitle,
+                    'How are you feeling today?',
                     style: GoogleFonts.cormorantGaramond(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -1190,19 +1389,31 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                         'flow': _loggedFlow,
                         'cramp': _selectedCramp,
                       });
-                      if (f['intensity'] != 'ended') {
-                        ApiPeriodService().logPeriodEntry(
-                          periodStartDate: DateTime.now(),
-                          flowIntensity: f['intensity'],
-                          notes: 'Logged from Stage 2 Home',
+                      // Logging today's flow is a symptom, not a new period
+                      // start. Only bootstrap a start the very first time a
+                      // period is recorded; once one is on record, daily flow
+                      // must not move the cycle start. Posting a start for today
+                      // made the backend supersede the real start (its "logging
+                      // a start corrects the current cycle" rule deletes any
+                      // start within a cycle-length window) and reset the
+                      // tracker to Day 1/2, while the device's cached real start
+                      // was left untouched -- so the day flashed from the real
+                      // value to 1 or 2 on the next refresh.
+                      if (!_hasLoggedPeriod) {
+                        if (f['intensity'] != 'ended') {
+                          ApiPeriodService().logPeriodEntry(
+                            periodStartDate: DateTime.now(),
+                            flowIntensity: f['intensity'],
+                            notes: 'Logged from Stage 2 Home',
+                          );
+                        }
+                        HomeEventBus().emit(
+                          PeriodLoggedEvent(
+                            flowIntensity: f['intensity']!,
+                            date: DateTime.now(),
+                          ),
                         );
                       }
-                      HomeEventBus().emit(
-                        PeriodLoggedEvent(
-                          flowIntensity: f['intensity']!,
-                          date: DateTime.now(),
-                        ),
-                      );
                       ScaffoldMessenger.of(context).clearSnackBars();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -1215,6 +1426,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                           ),
                         ),
                       );
+                      _maybeCheckInSafety(context);
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: AnimatedContainer(
@@ -1290,15 +1502,159 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                           'flow': _loggedFlow,
                           'cramp': _selectedCramp,
                         });
+                        _maybeCheckInSafety(context);
                       }
                     },
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 14),
+              Text(
+                'Body & Mood:',
+                style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w700, color: const Color(0xFF7A6B72)),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: const [
+                  'Tired', 'Mood swings', 'Bloated', 'Acne',
+                  'Discharge', 'Body hair', 'Breast changes', 'Body odor',
+                ].map((item) {
+                  final isSelected = _selectedBodyChanges.contains(item);
+                  return FilterChip(
+                    label: Text(item),
+                    selected: isSelected,
+                    selectedColor: blushySoftPink,
+                    backgroundColor: const Color(0xFFFAF7F2),
+                    labelStyle: GoogleFonts.manrope(
+                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? blushyPrimary : const Color(0xFF4A3E39),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(color: isSelected ? blushyPrimary : cardBorderColor),
+                    ),
+                    onSelected: (sel) {
+                      setState(() {
+                        if (sel) {
+                          _selectedBodyChanges.add(item);
+                        } else {
+                          _selectedBodyChanges.remove(item);
+                        }
+                      });
+                      UserStateStore.write('stage2_body_changes', {'selected': _selectedBodyChanges.toList()});
+                      try {
+                        BlushyOSProvider.of(context).updateWellbeing(symptoms: _selectedBodyChanges.toList());
+                      } catch (_) {}
+                    },
+                  );
+                }).toList(),
+              ),
+              if (_selectedBodyChanges.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final listStr = _selectedBodyChanges.join(', ');
+                      _openDocsyWithPrompt(context, 'Can you explain why I am noticing $listStr during puberty and my first year of periods?');
+                    },
+                    icon: const Icon(Icons.auto_awesome_rounded, size: 14, color: Colors.white),
+                    label: Text(AppLocalizations.of(context).fpsUnderstandWithDocsy,
+                      style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w700),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: blushyPrimary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ],
+    );
+  }
+
+  /// A gentle, non-diagnostic nudge when she logs a signal worth mentioning to
+  /// a trusted adult -- heavy flow or strong cramps. This is the lightweight
+  /// safety check that replaced the removed symptom-sheet escalation on the
+  /// merged daily check-in. Shown at most once a day so it never nags, and it
+  /// only ever offers help; it never diagnoses.
+  void _maybeCheckInSafety(BuildContext context) {
+    final concerning = _loggedFlow == 'heavy' || _selectedCramp == 'Strong';
+    if (!concerning) return;
+
+    final todayStr = DateTime.now().toIso8601String().split('T').first;
+    final key = 'stage2_safety_nudge_$todayStr';
+    try {
+      if (UserStateStore.read(key)['shown'] == true) return;
+    } catch (_) {}
+    UserStateStore.write(key, {'shown': true});
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFFFFFDFC),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Checking in on you 💛',
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF221510),
+          ),
+        ),
+        content: Text(
+          'Heavy flow or strong cramps that stop you from your day are worth '
+          'mentioning to a trusted adult or a doctor. It doesn’t mean anything '
+          'is wrong — but you never have to handle it on your own.',
+          style: GoogleFonts.manrope(
+            fontSize: 13,
+            height: 1.5,
+            color: const Color(0xFF5A4E54),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Not now',
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF7A6B72),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _openDocsyWithPrompt(
+                context,
+                _selectedCramp == 'Strong'
+                    ? 'I logged strong cramps today. Is that normal, and what can help?'
+                    : 'I logged heavy flow today. Is that normal, and what can help?',
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: blushyPrimary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(
+              'Ask Docsy',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1402,11 +1758,11 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
   // ════════════════════════════════════════════════════════════════
   // 05 — SCHOOL MODE (First-Class Destination)
   // ════════════════════════════════════════════════════════════════
-  Widget _buildSchoolModeCard(BuildContext context) {
+  Widget _buildSchoolToolkitCard(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildEyebrow('School Mode'),
+        _buildEyebrow('School Toolkit'),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
@@ -1519,22 +1875,20 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        _buildSchoolBagBody(context),
       ],
     );
   }
 
   // ════════════════════════════════════════════════════════════════
-  // 06 — SMART PERIOD BAG (Contextual Checklist)
+  // 06 — SCHOOL BAG CHECKLIST (bottom half of the School Toolkit)
   // ════════════════════════════════════════════════════════════════
-  Widget _buildSmartPeriodBagCard(BuildContext context) {
+  Widget _buildSchoolBagBody(BuildContext context) {
     final packedCount = _schoolBagItems.values.where((v) => v).length;
     final totalCount = _schoolBagItems.length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildEyebrow('Smart Period Bag'),
-        Container(
+    return Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -1608,113 +1962,7 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
               ),
             ],
           ),
-        ),
-      ],
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // 07 — BODY CHANGES JOURNAL ("Things I'm Noticing")
-  // ════════════════════════════════════════════════════════════════
-  Widget _buildBodyChangesCard(BuildContext context) {
-    final changesList = [
-      'Discharge',
-      'Body hair',
-      'Breast changes',
-      'Acne',
-      'Body odor',
-      'Mood swings',
-      'Cramps',
-      'Feeling tired',
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildEyebrow('Body Changes Journal'),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: cardBorderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(AppLocalizations.of(context).fpsThingsIMNoticingLately,
-                style: GoogleFonts.cormorantGaramond(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF221510),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Select what you’ve experienced recently to explore with Docsy.',
-                style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF7A6B72)),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: changesList.map((item) {
-                  final isSelected = _selectedBodyChanges.contains(item);
-                  return FilterChip(
-                    label: Text(item),
-                    selected: isSelected,
-                    selectedColor: blushySoftPink,
-                    backgroundColor: const Color(0xFFFAF7F2),
-                    labelStyle: GoogleFonts.manrope(
-                      fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? blushyPrimary : const Color(0xFF4A3E39),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(color: isSelected ? blushyPrimary : cardBorderColor),
-                    ),
-                    onSelected: (sel) {
-                      setState(() {
-                        if (sel) {
-                          _selectedBodyChanges.add(item);
-                        } else {
-                          _selectedBodyChanges.remove(item);
-                        }
-                      });
-                      UserStateStore.write('stage2_body_changes', {'selected': _selectedBodyChanges.toList()});
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 12),
-              if (_selectedBodyChanges.isNotEmpty)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final listStr = _selectedBodyChanges.join(', ');
-                      _openDocsyWithPrompt(context, 'Can you explain why I am noticing $listStr during puberty and my first year of periods?');
-                    },
-                    icon: const Icon(Icons.auto_awesome_rounded, size: 14, color: Colors.white),
-                    label: Text(AppLocalizations.of(context).fpsUnderstandWithDocsy,
-                      style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w700),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: blushyPrimary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
+        );
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -2147,7 +2395,12 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 1. Header & greeting.
                   _buildEditorialGreeting(context),
+                  const SizedBox(height: 16),
+                  // 2. Gentle cycle tracker.
+                  _buildPeriodTrackerCard(context),
+                  _buildExtendedCycleCard(context),
                   StageStateNotice(
                     state: _cycleState,
                     hasData: _hasLoggedPeriod,
@@ -2155,26 +2408,40 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                         'works from your own cycle rather than general guidance.',
                     onRetry: _loadPeriodData,
                   ),
-                  _buildPeriodTrackerCard(context),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 18),
+                  // Fuller symptom log, right after the tracker (backed by events
+                  // and shared into Docsy's context).
                   const LogSymptomsSection(stageKey: 'firstperiodstarted'),
+                  const SizedBox(height: 22),
+                  // 3. Emergency quick rescue, elevated so it is one tap away.
+                  _buildSchoolToolkitCard(context),
                   const SizedBox(height: 18),
+                  // 4. Today with Docsy: the friendly note + quick starters.
                   _buildNoteFromDocsy(context),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
                   _buildThingsYouMightNeed(context),
                   const SizedBox(height: 18),
-                  _buildPeriodModeLoggerCard(context),
+                  // 5. Daily check-in (flow + cramps + body & mood).
+                  _buildDailyCheckInCard(context),
                   const SizedBox(height: 18),
+                  // 6. "Is this normal?"
                   _buildIsThisNormalCard(context),
                   const SizedBox(height: 18),
-                  _buildSchoolModeCard(context),
-                  const SizedBox(height: 18),
-                  _buildSmartPeriodBagCard(context),
-                  const SizedBox(height: 18),
-                  _buildBodyChangesCard(context),
-                  const SizedBox(height: 18),
+                  // 7. Ask a caregiver for me.
                   _buildAskMomForMeCard(context),
                   const SizedBox(height: 18),
+                  // 8. Age-appropriate teen health library.
+                  const HealthLibrarySection(stageKey: 'firstperiodstarted'),
+                  const SizedBox(height: 18),
+                  const FirstPeriodHealthSection(),
+                  const SizedBox(height: 20),
+                  const FirstPeriodSymptomsSection(),
+                  const SizedBox(height: 20),
+                  const FirstPeriodCrampSection(),
+                  const SizedBox(height: 20),
+                  const FirstPeriodGoodToKnowSection(),
+                  const SizedBox(height: 18),
+                  // 9. When to tell a trusted adult (safety).
                   _buildSafetyHelperCard(context),
                   const SizedBox(height: 24),
                 ],
@@ -2201,18 +2468,29 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _buildPeriodTrackerCard(context),
-                                const SizedBox(height: 22),
+                                _buildExtendedCycleCard(context),
+                                const SizedBox(height: 18),
                                 const LogSymptomsSection(stageKey: 'firstperiodstarted'),
+                                const SizedBox(height: 22),
+                                _buildSchoolToolkitCard(context),
                                 const SizedBox(height: 18),
                                 _buildNoteFromDocsy(context),
-                                const SizedBox(height: 18),
+                                const SizedBox(height: 14),
                                 _buildThingsYouMightNeed(context),
                                 const SizedBox(height: 18),
-                                _buildPeriodModeLoggerCard(context),
+                                _buildDailyCheckInCard(context),
                                 const SizedBox(height: 18),
                                 _buildIsThisNormalCard(context),
                                 const SizedBox(height: 18),
-                                _buildBodyChangesCard(context),
+                                const HealthLibrarySection(stageKey: 'firstperiodstarted'),
+                                const SizedBox(height: 18),
+                                const FirstPeriodHealthSection(),
+                                const SizedBox(height: 20),
+                                const FirstPeriodSymptomsSection(),
+                                const SizedBox(height: 20),
+                                const FirstPeriodCrampSection(),
+                                const SizedBox(height: 20),
+                                const FirstPeriodGoodToKnowSection(),
                               ],
                             ),
                           ),
@@ -2222,10 +2500,6 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildSchoolModeCard(context),
-                                const SizedBox(height: 18),
-                                _buildSmartPeriodBagCard(context),
-                                const SizedBox(height: 18),
                                 _buildAskMomForMeCard(context),
                                 const SizedBox(height: 18),
                                 _buildSafetyHelperCard(context),

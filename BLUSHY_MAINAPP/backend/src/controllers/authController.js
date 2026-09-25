@@ -2,6 +2,7 @@ import { emailAuthService } from '../services/emailAuthService.js';
 import { clearLoginAttempts } from '../middleware/rateLimiter.js';
 import { analyseOnboarding } from '../services/onboardingAnalysisService.js';
 import { googleAuthService } from '../services/googleAuthService.js';
+import { appleAuthService } from '../services/appleAuthService.js';
 import { createHttpError } from '../utils/httpError.js';
 import { userRepository } from '../repositories/userRepository.js';
 import { dailyMoodRepository } from '../repositories/dailyMoodRepository.js';
@@ -406,6 +407,18 @@ export async function loginWithGoogle(req, res, next) {
   try {
     const { idToken, role } = req.body ?? {};
     const result = await googleAuthService.signInWithGoogle(idToken, role);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function loginWithApple(req, res, next) {
+  try {
+    // Apple's identity token carries the account id and email; the name arrives
+    // separately (first sign-in only) as `fullName` from the client.
+    const { identityToken, role, fullName, email } = req.body ?? {};
+    const result = await appleAuthService.signInWithApple(identityToken, { role, fullName, email });
     res.status(200).json(result);
   } catch (error) {
     next(error);

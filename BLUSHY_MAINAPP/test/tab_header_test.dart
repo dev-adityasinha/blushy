@@ -71,16 +71,34 @@ void main() {
     expect(stopColour, BlushyColors.accent);
   });
 
-  testWidgets('the name is set in the display face, a quarter smaller',
+  testWidgets('the name is set in the same upright face as the wordmark, a quarter smaller',
       (tester) async {
+    // The tab name used to be the slanted AdaHybrid display face, which read as
+    // italic; it now matches the upright BLUSHY. wordmark (Manrope).
     await tester.pumpWidget(_host(const BlushyHeader(title: 'Partner')));
     await tester.pumpAndSettle();
+    final tab = _titleText(tester, 'Partner').text.style!;
 
-    final style = _titleText(tester, 'Partner').text.style!;
-    expect(style.fontFamily, 'AdaHybrid');
-    expect(style.fontSize, closeTo(16.5, 0.01),
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(_host(const BlushyHeader()));
+    await tester.pumpAndSettle();
+    final mark = tester
+        .widget<RichText>(find
+            .descendant(
+              of: find.byType(BlushyHeader),
+              matching: find.byType(RichText),
+            )
+            .first)
+        .text
+        .style!;
+
+    expect(tab.fontFamily, mark.fontFamily,
+        reason: 'the tab name uses the same face as BLUSHY.');
+    expect(tab.fontFamily, isNot('AdaHybrid'),
+        reason: 'no longer the slanted display face');
+    expect(tab.fontSize, closeTo(16.5, 0.01),
         reason: '22 was the wordmark size; a tab name is 75% of it');
-    expect(style.color, BlushyColors.primary);
+    expect(tab.color, BlushyColors.primary);
   });
 
   testWidgets('every tab gets one, and only one', (tester) async {

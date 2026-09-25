@@ -108,6 +108,1218 @@ abstract class AppLocalizations {
     Locale('te'),
   ];
 
+  /// No description provided for @ceRemindScreenshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind to send screenshot 📸'**
+  String get ceRemindScreenshot;
+
+  /// No description provided for @ceRemindMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'“Hey, gentle reminder to send that screenshot! 😉”'**
+  String get ceRemindMsg;
+
+  /// No description provided for @cePlayfulPing.
+  ///
+  /// In en, this message translates to:
+  /// **'Playful Ping 👋'**
+  String get cePlayfulPing;
+
+  /// No description provided for @cePlayfulMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'“Hey you! Still waiting on your reply 😉”'**
+  String get cePlayfulMsg;
+
+  /// No description provided for @ceGentleThought.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle Thought ☕'**
+  String get ceGentleThought;
+
+  /// No description provided for @ceGentleMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'“Take your time, just thinking of you! 💕”'**
+  String get ceGentleMsg;
+
+  /// No description provided for @ceWhisperFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Or whisper a quick follow-up...'**
+  String get ceWhisperFollowUp;
+
+  /// No description provided for @ceMyTreat.
+  ///
+  /// In en, this message translates to:
+  /// **'My treat! Dress up cute ❤️'**
+  String get ceMyTreat;
+
+  /// No description provided for @ceAddCuteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cute note...'**
+  String get ceAddCuteNote;
+
+  /// No description provided for @ceUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get ceUndo;
+
+  /// No description provided for @ceClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get ceClear;
+
+  /// No description provided for @ceHotCoffee.
+  ///
+  /// In en, this message translates to:
+  /// **'Hot Coffee & Cozy Hug ☕'**
+  String get ceHotCoffee;
+
+  /// No description provided for @ceHotCoffeeMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending a warm cup of coffee and a tight embrace.'**
+  String get ceHotCoffeeMsg;
+
+  /// No description provided for @ceBigEmbrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Big Tight Embrace 🫂'**
+  String get ceBigEmbrace;
+
+  /// No description provided for @ceBigEmbraceMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrapping you in the biggest, warmest hug today.'**
+  String get ceBigEmbraceMsg;
+
+  /// No description provided for @ceForeheadKiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweet Forehead Kiss 💋'**
+  String get ceForeheadKiss;
+
+  /// No description provided for @ceForeheadKissMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'A gentle forehead kiss to brighten your day.'**
+  String get ceForeheadKissMsg;
+
+  /// No description provided for @ceTreatDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweet Treat Delivery 🍫'**
+  String get ceTreatDelivery;
+
+  /// No description provided for @ceTreatDeliveryMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtual sweet chocolates and all my affection.'**
+  String get ceTreatDeliveryMsg;
+
+  /// No description provided for @cePauseBreathe.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle Pause & Breathe 🌿'**
+  String get cePauseBreathe;
+
+  /// No description provided for @cePauseBreatheMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a deep breath, you are doing incredible.'**
+  String get cePauseBreatheMsg;
+
+  /// No description provided for @ceThinkingOfYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking of You ✨'**
+  String get ceThinkingOfYou;
+
+  /// No description provided for @ceThinkingMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Daydreaming and smiling thinking about you.'**
+  String get ceThinkingMsg;
+
+  /// No description provided for @ceMissingVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing Your Voice 🥺'**
+  String get ceMissingVoice;
+
+  /// No description provided for @ceMissingMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing you extra and wishing you were right here.'**
+  String get ceMissingMsg;
+
+  /// No description provided for @ceCravingCuddles.
+  ///
+  /// In en, this message translates to:
+  /// **'Craving Cuddles 🧸'**
+  String get ceCravingCuddles;
+
+  /// No description provided for @ceCravingMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Officially on cuddle standby right now.'**
+  String get ceCravingMsg;
+
+  /// No description provided for @ceProudOfYou.
+  ///
+  /// In en, this message translates to:
+  /// **'So Proud of You 🌟'**
+  String get ceProudOfYou;
+
+  /// No description provided for @ceProudMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'A gentle reminder that you are a total rockstar.'**
+  String get ceProudMsg;
+
+  /// No description provided for @ceRechargeNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recharge Needed 🔋'**
+  String get ceRechargeNeeded;
+
+  /// No description provided for @ceRechargeMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Low battery today, need some sweet partner warmth.'**
+  String get ceRechargeMsg;
+
+  /// No description provided for @noteNoPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'No photo added.'**
+  String get noteNoPhoto;
+
+  /// No description provided for @noteKeepWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep writing'**
+  String get noteKeepWriting;
+
+  /// No description provided for @noteRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get noteRemove;
+
+  /// No description provided for @noteSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get noteSize;
+
+  /// No description provided for @noteBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get noteBold;
+
+  /// No description provided for @noteItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get noteItalic;
+
+  /// No description provided for @noteUnderline.
+  ///
+  /// In en, this message translates to:
+  /// **'Underline'**
+  String get noteUnderline;
+
+  /// No description provided for @noteBullet.
+  ///
+  /// In en, this message translates to:
+  /// **'Bullet'**
+  String get noteBullet;
+
+  /// No description provided for @noteNumbered.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered'**
+  String get noteNumbered;
+
+  /// No description provided for @noteChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get noteChecklist;
+
+  /// No description provided for @noteSmaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller'**
+  String get noteSmaller;
+
+  /// No description provided for @noteBigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Bigger'**
+  String get noteBigger;
+
+  /// No description provided for @noteDeleteEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this entry?'**
+  String get noteDeleteEntry;
+
+  /// No description provided for @noteKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get noteKeep;
+
+  /// No description provided for @noteTellMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me'**
+  String get noteTellMe;
+
+  /// No description provided for @noteWriteIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Write it'**
+  String get noteWriteIt;
+
+  /// No description provided for @noteGivePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Give me a prompt'**
+  String get noteGivePrompt;
+
+  /// No description provided for @noteNotThisOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Not this one'**
+  String get noteNotThisOne;
+
+  /// No description provided for @ptGardenGrew.
+  ///
+  /// In en, this message translates to:
+  /// **'Your garden grew. Your partner sees it too.'**
+  String get ptGardenGrew;
+
+  /// No description provided for @ptDatePlanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Date Planner & AI Concierge'**
+  String get ptDatePlanner;
+
+  /// No description provided for @ptDrawingCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared Drawing Canvas'**
+  String get ptDrawingCanvas;
+
+  /// No description provided for @ptCoupleGames.
+  ///
+  /// In en, this message translates to:
+  /// **'Couple Games & Questions'**
+  String get ptCoupleGames;
+
+  /// No description provided for @ptVirtualBouquet.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtual Bouquet & Blooms'**
+  String get ptVirtualBouquet;
+
+  /// No description provided for @ptGratitudeChallenge.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Gratitude Challenge'**
+  String get ptGratitudeChallenge;
+
+  /// No description provided for @ptConnectedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'🎉 Connected with your partner successfully!'**
+  String get ptConnectedSuccess;
+
+  /// No description provided for @ptAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'ACCEPT'**
+  String get ptAccept;
+
+  /// No description provided for @ptPortalLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected! Your shared partner portal is now live 🎉'**
+  String get ptPortalLive;
+
+  /// No description provided for @ptPrivateSpaceOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Private space on. Your personal updates are paused.'**
+  String get ptPrivateSpaceOn;
+
+  /// No description provided for @ptSharingResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing resumed, exactly as it was.'**
+  String get ptSharingResumed;
+
+  /// No description provided for @ptCycle.
+  ///
+  /// In en, this message translates to:
+  /// **'CYCLE'**
+  String get ptCycle;
+
+  /// No description provided for @ptEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'ENERGY'**
+  String get ptEnergy;
+
+  /// No description provided for @ptMood.
+  ///
+  /// In en, this message translates to:
+  /// **'MOOD'**
+  String get ptMood;
+
+  /// No description provided for @ptPartnerSpaceLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected! Your Partner Space is now live 🎉'**
+  String get ptPartnerSpaceLive;
+
+  /// No description provided for @commonOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get commonOk;
+
+  /// No description provided for @ptDisconnectPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect partner?'**
+  String get ptDisconnectPartner;
+
+  /// No description provided for @ptInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get ptInvite;
+
+  /// No description provided for @ptPrivacySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Settings'**
+  String get ptPrivacySettings;
+
+  /// No description provided for @ptWhatYouShare.
+  ///
+  /// In en, this message translates to:
+  /// **'What you share'**
+  String get ptWhatYouShare;
+
+  /// No description provided for @ptPrivacyUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy settings updated.'**
+  String get ptPrivacyUpdated;
+
+  /// No description provided for @ptRequestAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner request accepted! 🎉'**
+  String get ptRequestAccepted;
+
+  /// No description provided for @ptPartnerEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner Email Address'**
+  String get ptPartnerEmail;
+
+  /// No description provided for @commonOr.
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get commonOr;
+
+  /// No description provided for @ptInviteLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite link copied to clipboard! 📋'**
+  String get ptInviteLinkCopied;
+
+  /// No description provided for @ptCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get ptCopyLink;
+
+  /// No description provided for @ptInviteCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite code'**
+  String get ptInviteCode;
+
+  /// No description provided for @ptSavedScrapbook.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to shared scrapbook memory!'**
+  String get ptSavedScrapbook;
+
+  /// No description provided for @ptLetterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Letter Title (e.g. For our special day)'**
+  String get ptLetterTitle;
+
+  /// No description provided for @ptLetterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pour your heart out here... Your thoughts, gratitude, or memories for your partner.'**
+  String get ptLetterHint;
+
+  /// No description provided for @ptLetterValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter both a title and letter message.'**
+  String get ptLetterValidation;
+
+  /// No description provided for @jrSelfReflection.
+  ///
+  /// In en, this message translates to:
+  /// **'Self Reflection'**
+  String get jrSelfReflection;
+
+  /// No description provided for @jrReflection.
+  ///
+  /// In en, this message translates to:
+  /// **'Reflection'**
+  String get jrReflection;
+
+  /// No description provided for @jrScrapbook.
+  ///
+  /// In en, this message translates to:
+  /// **'Scrapbook'**
+  String get jrScrapbook;
+
+  /// No description provided for @jrAccessibilityMotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility & Motion Settings'**
+  String get jrAccessibilityMotion;
+
+  /// No description provided for @jrAmbientSounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambient Sounds'**
+  String get jrAmbientSounds;
+
+  /// No description provided for @jrPlayBackgroundSounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Play background environment soundscapes.'**
+  String get jrPlayBackgroundSounds;
+
+  /// No description provided for @jrLongAnimations.
+  ///
+  /// In en, this message translates to:
+  /// **'Long Animations & Transitions'**
+  String get jrLongAnimations;
+
+  /// No description provided for @jrEnable3D.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable 3D cover flipping and opening motion.'**
+  String get jrEnable3D;
+
+  /// No description provided for @jrDecorativeEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Decorative Effects'**
+  String get jrDecorativeEffects;
+
+  /// No description provided for @jrCoffeeSteam.
+  ///
+  /// In en, this message translates to:
+  /// **'Coffee steam curves, plant sway, & reflections.'**
+  String get jrCoffeeSteam;
+
+  /// No description provided for @jrMyScrapbook.
+  ///
+  /// In en, this message translates to:
+  /// **'My Scrapbook'**
+  String get jrMyScrapbook;
+
+  /// No description provided for @jrDreamBig.
+  ///
+  /// In en, this message translates to:
+  /// **'Dream Big. Write Beautifully.'**
+  String get jrDreamBig;
+
+  /// No description provided for @jrCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover: '**
+  String get jrCover;
+
+  /// No description provided for @jrRibbon.
+  ///
+  /// In en, this message translates to:
+  /// **'Ribbon: '**
+  String get jrRibbon;
+
+  /// No description provided for @jrDesk.
+  ///
+  /// In en, this message translates to:
+  /// **'Desk: '**
+  String get jrDesk;
+
+  /// No description provided for @jrDeskDiaryCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Desk & Diary Cover'**
+  String get jrDeskDiaryCover;
+
+  /// No description provided for @jrAmbientSoundEnv.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambient Sound Environment'**
+  String get jrAmbientSoundEnv;
+
+  /// No description provided for @jrAccessibilitySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility Settings'**
+  String get jrAccessibilitySettings;
+
+  /// No description provided for @jrSearchMemories.
+  ///
+  /// In en, this message translates to:
+  /// **'Search memories, stickers & templates...'**
+  String get jrSearchMemories;
+
+  /// No description provided for @jrSmartMemoryTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Memory Timeline'**
+  String get jrSmartMemoryTimeline;
+
+  /// No description provided for @jrTapNewMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"New Memory\" or record a voice reflection.'**
+  String get jrTapNewMemory;
+
+  /// No description provided for @jrDailyAmbientSounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Ambient Environment Sounds'**
+  String get jrDailyAmbientSounds;
+
+  /// No description provided for @jrScrapbookMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Scrapbook Memory'**
+  String get jrScrapbookMemory;
+
+  /// No description provided for @jrWriteReflection.
+  ///
+  /// In en, this message translates to:
+  /// **'Write Reflection'**
+  String get jrWriteReflection;
+
+  /// No description provided for @jrFreshCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'Start on a fresh scrapbook canvas'**
+  String get jrFreshCanvas;
+
+  /// No description provided for @jrRecordTranscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Record & Transcribe'**
+  String get jrRecordTranscribe;
+
+  /// No description provided for @jrSpeakDocsyTranscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak and let Docsy transcribe into your journal'**
+  String get jrSpeakDocsyTranscribe;
+
+  /// No description provided for @jrStartFromTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start from Template'**
+  String get jrStartFromTemplate;
+
+  /// No description provided for @jrChooseTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a guided journaling template'**
+  String get jrChooseTemplate;
+
+  /// No description provided for @jrSmartAiSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart AI Search'**
+  String get jrSmartAiSearch;
+
+  /// No description provided for @jrSemanticSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Contextual semantic search across memories'**
+  String get jrSemanticSearch;
+
+  /// No description provided for @jrMemoryVault.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory Vault'**
+  String get jrMemoryVault;
+
+  /// No description provided for @jrStarredMemories.
+  ///
+  /// In en, this message translates to:
+  /// **'Starred memories & custom collections'**
+  String get jrStarredMemories;
+
+  /// No description provided for @jrSmartCalendarMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Calendar & Map'**
+  String get jrSmartCalendarMap;
+
+  /// No description provided for @jrVisualMoodGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Visual mood grid & location pins'**
+  String get jrVisualMoodGrid;
+
+  /// No description provided for @jrContentGarden.
+  ///
+  /// In en, this message translates to:
+  /// **'Reflective Content Garden'**
+  String get jrContentGarden;
+
+  /// No description provided for @jrGardenGrowth.
+  ///
+  /// In en, this message translates to:
+  /// **'Organic garden growth tied to reflection depth'**
+  String get jrGardenGrowth;
+
+  /// No description provided for @jrInsightsDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal Insights Dashboard'**
+  String get jrInsightsDashboard;
+
+  /// No description provided for @jrWritingStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing statistics, word count & active hours'**
+  String get jrWritingStats;
+
+  /// No description provided for @jrYearInReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Year in Review Scrapbook'**
+  String get jrYearInReview;
+
+  /// No description provided for @jrGuidedRecap.
+  ///
+  /// In en, this message translates to:
+  /// **'Guided multi-page yearly recap'**
+  String get jrGuidedRecap;
+
+  /// No description provided for @jrMemoryTimeCapsule.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory Time Capsule'**
+  String get jrMemoryTimeCapsule;
+
+  /// No description provided for @jrEncryptedFuture.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted future memories with ceremonial unlock'**
+  String get jrEncryptedFuture;
+
+  /// No description provided for @jrExportStudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Studio (6 Layouts)'**
+  String get jrExportStudio;
+
+  /// No description provided for @jrExportFormats.
+  ///
+  /// In en, this message translates to:
+  /// **'Export PDF, Markdown, JSON, HTML'**
+  String get jrExportFormats;
+
+  /// No description provided for @jrExportStudioPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Studio Preview'**
+  String get jrExportStudioPreview;
+
+  /// No description provided for @jrEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry Title...'**
+  String get jrEntryTitle;
+
+  /// No description provided for @jrAiTitleSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Title Suggestions'**
+  String get jrAiTitleSuggestions;
+
+  /// No description provided for @jrWeeklyMemoryBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Memory Book'**
+  String get jrWeeklyMemoryBook;
+
+  /// No description provided for @jrAiPrivacySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'AI & Privacy Settings'**
+  String get jrAiPrivacySettings;
+
+  /// No description provided for @jrSaveClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & close'**
+  String get jrSaveClose;
+
+  /// No description provided for @jrDocsyInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'DOCSY INSIGHTS'**
+  String get jrDocsyInsights;
+
+  /// No description provided for @jrBringToFront.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring to Front'**
+  String get jrBringToFront;
+
+  /// No description provided for @jrSendToBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to Back'**
+  String get jrSendToBack;
+
+  /// No description provided for @jrZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom In'**
+  String get jrZoomIn;
+
+  /// No description provided for @jrZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom Out'**
+  String get jrZoomOut;
+
+  /// No description provided for @jrRotate15.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate 15°'**
+  String get jrRotate15;
+
+  /// No description provided for @jrObjectColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Object Color'**
+  String get jrObjectColor;
+
+  /// No description provided for @jrDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get jrDuplicate;
+
+  /// No description provided for @jrDeselect.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect'**
+  String get jrDeselect;
+
+  /// No description provided for @jrAddPolaroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Polaroid Frame'**
+  String get jrAddPolaroid;
+
+  /// No description provided for @jrPinkRoseFrame.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink Rose Frame'**
+  String get jrPinkRoseFrame;
+
+  /// No description provided for @jrDictateToText.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictate to Text (STT)'**
+  String get jrDictateToText;
+
+  /// No description provided for @jrAddReflectionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Reflection Summary'**
+  String get jrAddReflectionSummary;
+
+  /// No description provided for @jrDocsyTitleSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Docsy Title Suggestions'**
+  String get jrDocsyTitleSuggestions;
+
+  /// No description provided for @jrPickTitleMood.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a title that matches your reflection mood:'**
+  String get jrPickTitleMood;
+
+  /// No description provided for @jrSuggestTitles.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest thoughtful entry titles'**
+  String get jrSuggestTitles;
+
+  /// No description provided for @jrMemoryLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory Links'**
+  String get jrMemoryLinks;
+
+  /// No description provided for @jrDiscoverLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover explainable links between memories'**
+  String get jrDiscoverLinks;
+
+  /// No description provided for @jrSmartContextSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Context Search'**
+  String get jrSmartContextSearch;
+
+  /// No description provided for @jrSearchExamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Search (e.g. Beach, Happy, Exams)...'**
+  String get jrSearchExamples;
+
+  /// No description provided for @jrHexCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex Code'**
+  String get jrHexCode;
+
+  /// No description provided for @jrRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get jrRed;
+
+  /// No description provided for @jrGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get jrGreen;
+
+  /// No description provided for @jrBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get jrBlue;
+
+  /// No description provided for @jrBasicColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Colors'**
+  String get jrBasicColors;
+
+  /// No description provided for @msRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery'**
+  String get msRecovery;
+
+  /// No description provided for @msTimeCapsules.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Capsules'**
+  String get msTimeCapsules;
+
+  /// No description provided for @msStartSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a Session'**
+  String get msStartSession;
+
+  /// No description provided for @msNoSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'No sessions available yet.'**
+  String get msNoSessions;
+
+  /// No description provided for @msCreateNewCapsule.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Capsule'**
+  String get msCreateNewCapsule;
+
+  /// No description provided for @msNameIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Name it'**
+  String get msNameIt;
+
+  /// No description provided for @msWhatToSay.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you want to say?'**
+  String get msWhatToSay;
+
+  /// No description provided for @msOpenItIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Open it in'**
+  String get msOpenItIn;
+
+  /// No description provided for @msSeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Seal'**
+  String get msSeal;
+
+  /// No description provided for @msKeepsakeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal keepsake saved!'**
+  String get msKeepsakeSaved;
+
+  /// No description provided for @msStartWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Start writing or speak your thoughts...'**
+  String get msStartWriting;
+
+  /// No description provided for @authEmailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get authEmailAddress;
+
+  /// No description provided for @authPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authPassword;
+
+  /// No description provided for @authConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password'**
+  String get authConfirmPassword;
+
+  /// No description provided for @authNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get authNewPassword;
+
+  /// No description provided for @authConfirmNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm New Password'**
+  String get authConfirmNewPassword;
+
+  /// No description provided for @authUpdatePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Password'**
+  String get authUpdatePassword;
+
+  /// No description provided for @authSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authSignIn;
+
+  /// No description provided for @authSignInInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in instead?'**
+  String get authSignInInstead;
+
+  /// No description provided for @authUseAnotherEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Use another email'**
+  String get authUseAnotherEmail;
+
+  /// No description provided for @authVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get authVerify;
+
+  /// No description provided for @authSendRecoveryCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Recovery Code'**
+  String get authSendRecoveryCode;
+
+  /// No description provided for @authCodeSentIfExists.
+  ///
+  /// In en, this message translates to:
+  /// **'If an account exists for that email, a code is on its way.'**
+  String get authCodeSentIfExists;
+
+  /// No description provided for @authPasswordUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated. Please sign in.'**
+  String get authPasswordUpdated;
+
+  /// No description provided for @authNewCodeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'A new verification code has been sent.'**
+  String get authNewCodeSent;
+
+  /// No description provided for @setAccountSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Settings'**
+  String get setAccountSettings;
+
+  /// No description provided for @setAccountProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Account & Profile'**
+  String get setAccountProfile;
+
+  /// No description provided for @setPreferredName.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred Name'**
+  String get setPreferredName;
+
+  /// No description provided for @setAddName.
+  ///
+  /// In en, this message translates to:
+  /// **'Add name'**
+  String get setAddName;
+
+  /// No description provided for @setDateOfBirth.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of Birth'**
+  String get setDateOfBirth;
+
+  /// No description provided for @setEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get setEmail;
+
+  /// No description provided for @setCycleBodyBaseline.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle & Body Baseline'**
+  String get setCycleBodyBaseline;
+
+  /// No description provided for @setCurrentLifeStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Life Stage'**
+  String get setCurrentLifeStage;
+
+  /// No description provided for @setCycleTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle Tracking'**
+  String get setCycleTracking;
+
+  /// No description provided for @setCycleLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle Length'**
+  String get setCycleLength;
+
+  /// No description provided for @setPeriodLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Period Length'**
+  String get setPeriodLength;
+
+  /// No description provided for @setHealthMedicalProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Health & Medical Profile'**
+  String get setHealthMedicalProfile;
+
+  /// No description provided for @setNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get setNotSet;
+
+  /// No description provided for @setAppPreferencesDocsy.
+  ///
+  /// In en, this message translates to:
+  /// **'App Preferences & Docsy AI'**
+  String get setAppPreferencesDocsy;
+
+  /// No description provided for @setDocsyMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Docsy Memory'**
+  String get setDocsyMemory;
+
+  /// No description provided for @setSupportAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Support & Account'**
+  String get setSupportAccount;
+
+  /// No description provided for @setHelpFaq.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & FAQ'**
+  String get setHelpFaq;
+
+  /// No description provided for @setPrivacyDataReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Data Reset'**
+  String get setPrivacyDataReset;
+
+  /// No description provided for @setLogOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Out'**
+  String get setLogOut;
+
+  /// No description provided for @setDaysValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days'**
+  String setDaysValue(num count);
+
+  /// No description provided for @setEditItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {count} items'**
+  String setEditItems(num count);
+
   /// No description provided for @navHome.
   ///
   /// In en, this message translates to:

@@ -5,7 +5,6 @@ import '../../theme/colors.dart';
 import '../../services/api_blushy_service.dart';
 import 'recovery_session_player.dart';
 import '../../core/theme.dart' hide BlushyColors;
-import '../../core/storage.dart';
 import '../journal/journal_screen.dart';
 import '../journal/notes/notes_journal_screen.dart';
 import 'view_models/m_studio_view_model.dart';
@@ -68,7 +67,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
       // these replaced belonged to a full-width row and wrapped to four lines
       // in a grid.
       'sub': 'Write it out',
-      'icon': Icons.auto_stories_rounded,
+      'icon': 'assets/m_studio/journal.png',
       // From the accent table in STAGE1_DESIGN_RULES.md. These were the theme's
       // primary and secondary, and `secondary` is #FF9B9E -- a pastel, which
       // the rules rule out: at a 12% tint it is barely a badge at all.
@@ -78,21 +77,21 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
       'title': 'Recovery',
       'kind': 'HEAL & RECHARGE',
       'sub': 'Slow down',
-      'icon': Icons.spa_rounded,
+      'icon': 'assets/m_studio/recovery.png',
       'accent': Color(0xFF0D9488), // Emerald Teal
     },
     {
       'title': 'Time Capsules',
       'kind': 'SAVE FOR LATER',
       'sub': 'For future you',
-      'icon': Icons.hourglass_bottom_rounded,
+      'icon': 'assets/m_studio/time_capsules.png',
       'accent': Color(0xFFD97706), // Warm Amber
     },
     {
       'title': 'Bouquet',
       'kind': 'CREATE & SHARE',
       'sub': 'Send some love',
-      'icon': Icons.local_florist_rounded,
+      'icon': 'assets/m_studio/bouquet.png',
       'accent': Color(0xFFF72585), // Vivid Magenta
     },
   ];
@@ -188,7 +187,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
           child: Text(opened.data!['body']?.toString() ?? ''),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context).actionClose)),
         ],
       ),
     );
@@ -322,8 +321,9 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.02,
-      mainAxisSpacing: 12,
+      // Taller than wide: a square image card with the label sitting beneath it.
+      childAspectRatio: 0.80,
+      mainAxisSpacing: 16,
       crossAxisSpacing: 12,
       children: [for (final section in _sections) _buildStudioHubCard(section)],
     );
@@ -447,7 +447,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
     final entry = _latestEntry;
     if (entry != null) {
       items.add({
-        'icon': Icons.auto_stories_rounded,
+        'icon': 'assets/m_studio/journal.png',
         'accent': const Color(0xFF7209B7),
         'label': entry.title.trim().isEmpty ? 'Untitled' : entry.title.trim(),
         'meta': 'Your latest journal',
@@ -458,7 +458,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
     if (_capsules.isNotEmpty) {
       final capsule = _capsules.first;
       items.add({
-        'icon': Icons.hourglass_bottom_rounded,
+        'icon': 'assets/m_studio/time_capsules.png',
         'accent': const Color(0xFFD97706),
         'label': capsule['title']?.toString().trim().isNotEmpty == true
             ? capsule['title'].toString().trim()
@@ -473,7 +473,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
     if (done.isNotEmpty) {
       final session = done.first;
       items.add({
-        'icon': Icons.spa_rounded,
+        'icon': 'assets/m_studio/recovery.png',
         'accent': const Color(0xFF0D9488),
         'label': session['title']?.toString() ?? 'Session',
         'meta': 'Last recovery session',
@@ -506,8 +506,9 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                           .withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(items[i]['icon'] as IconData,
-                        size: 16, color: items[i]['accent'] as Color),
+                    padding: const EdgeInsets.all(5),
+                    child: Image.asset(items[i]['icon'] as String,
+                        fit: BoxFit.contain),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -573,70 +574,57 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
     final title = section['title'] as String;
 
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      color: Colors.transparent,
       child: InkWell(
         onTap: () => _openStudioSection(title),
         borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            // Pure white with one soft border, the same on every tile. The
-            // accent used to tint the whole surface, the chip and the chevron
-            // as well -- four cards, four colours, and nothing left to mean
-            // "this one is different".
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: _cardBorder),
-          ),
-          // A tile, not a row. The badge sits above the name the way it does
-          // on the dashboards, which is what lets two fit across a phone
-          // without the subtitle wrapping to four lines.
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // The one place the accent is allowed: a circular badge.
-              Container(
-                width: 46,
-                height: 46,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // The image card: the illustration sits neatly on a soft accent
+            // wash, fully visible, filling the card above the label.
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: _cardBorder),
                 ),
-                child:
-                    Icon(section['icon'] as IconData, size: 22, color: accent),
+                padding: const EdgeInsets.all(16),
+                child: Image.asset(
+                  section['icon'] as String,
+                  fit: BoxFit.contain,
+                ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.cormorantGaramond(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: _charcoal,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    section['sub'] as String,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w400,
-                      color: _mutedText,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
+            ),
+            const SizedBox(height: 10),
+            // The title sits below the card, not on it.
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: _charcoal,
+                height: 1.1,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              section['sub'] as String,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.manrope(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w400,
+                color: _mutedText,
+                height: 1.3,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -660,12 +648,12 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
         await push(const NotesJournalScreen());
       case 'Recovery':
         await push(_StudioSectionScreen(
-          title: 'Recovery',
+          title: AppLocalizations.of(context).msRecovery,
           builder: () => _buildRecoveryTab(),
         ));
       case 'Time Capsules':
         await push(_StudioSectionScreen(
-          title: 'Time Capsules',
+          title: AppLocalizations.of(context).msTimeCapsules,
           builder: () => _buildTimeCapsulesTab(),
           onRegister: (refresh) => _refreshOpenSection = refresh,
         ));
@@ -709,7 +697,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
         // Starting a session used to be the floating button, which was tied to
         // the tab strip. It is a card here so it survives that going away.
         _buildWorkspaceActionCard(
-          title: 'Start a Session',
+          title: AppLocalizations.of(context).msStartSession,
           sub: 'Begin a guided relaxation now',
           icon: Icons.spa_rounded,
           onTap: _startRecoveryFlow,
@@ -851,7 +839,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
       if (!mounted) return;
       if (_sessions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No sessions available yet.')),
+          SnackBar(content: Text(AppLocalizations.of(context).msNoSessions)),
         );
         return;
       }
@@ -883,7 +871,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildWorkspaceActionCard(
-          title: 'Create New Capsule',
+          title: AppLocalizations.of(context).msCreateNewCapsule,
           sub: 'Seal letters, voice recordings, or photos for the future.',
           icon: Icons.hourglass_top_rounded,
           onTap: _showCreateCapsuleDialog,
@@ -1060,7 +1048,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                 children: [
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Name it'),
+                    decoration: InputDecoration(labelText: AppLocalizations.of(context).msNameIt),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -1068,14 +1056,14 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                     minLines: 4,
                     maxLines: 8,
                     maxLength: 5000,
-                    decoration: const InputDecoration(
-                      labelText: 'What do you want to say?',
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).msWhatToSay,
                       alignLabelWithHint: true,
                     ),
                   ),
                   DropdownButtonFormField<String>(
                     initialValue: window,
-                    decoration: const InputDecoration(labelText: 'Open it in'),
+                    decoration: InputDecoration(labelText: AppLocalizations.of(context).msOpenItIn),
                     items: windows.keys
                         .map((w) => DropdownMenuItem(value: w, child: Text(w)))
                         .toList(),
@@ -1102,7 +1090,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
             actions: [
               TextButton(
                 onPressed: saving ? null : () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
+                child: Text(AppLocalizations.of(context).actionCancel),
               ),
               TextButton(
                 onPressed: saving ? null : seal,
@@ -1112,7 +1100,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Seal'),
+                    : Text(AppLocalizations.of(context).msSeal),
               ),
             ],
           );
@@ -1228,7 +1216,7 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                 } catch (_) {}
               }
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Journal keepsake saved!')),
+                SnackBar(content: Text(AppLocalizations.of(context).msKeepsakeSaved)),
               );
               setState(() => _isEditorOpen = false);
             },
@@ -1260,9 +1248,9 @@ class _BlushyMStudioScreenState extends State<BlushyMStudioScreen>
                       color: BlushyColors.text,
                       height: 1.6,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: 'Start writing or speak your thoughts...',
+                      hintText: AppLocalizations.of(context).msStartWriting,
                     ),
                   ),
                 ],

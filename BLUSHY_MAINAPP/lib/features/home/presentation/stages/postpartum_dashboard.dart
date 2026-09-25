@@ -15,6 +15,8 @@ import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
+import 'health_library_section.dart';
+import 'postpartum_sections.dart';
 import '../../../../l10n/app_localizations.dart';
 
 class PostpartumDashboard extends StatefulWidget {
@@ -2237,6 +2239,14 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                     _buildTodayWithDocsyCard(),
                     const SizedBox(height: 22),
                     const LogSymptomsSection(stageKey: 'postpartum'),
+                    const SizedBox(height: 18),
+                    const HealthLibrarySection(stageKey: 'postpartum'),
+                    const SizedBox(height: 20),
+                    const PostpartumAdjustingSection(),
+                    const SizedBox(height: 20),
+                    const PostpartumRaisingBabySection(),
+                    const SizedBox(height: 20),
+                    const PostpartumRecoveringSection(),
                     const SizedBox(height: 20),
 
                     // 04: WHAT MATTERS TODAY? (Dynamic Priorities)

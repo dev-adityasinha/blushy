@@ -241,6 +241,11 @@ ${messagesText}`,
     mood = null,
     user = null,
     languageCode = 'en',
+    // Recent themes from her Docsy conversations, so the daily note reflects
+    // what is actually on her mind rather than a generic stage line.
+    recentTopics = [],
+    // Today's date, so the note is fresh each day rather than the same text.
+    dateStamp = null,
   }) {
     const stageName = String(lifeStage).replace(/_/g, ' ');
 
@@ -265,6 +270,8 @@ ${dueDate ? `Pregnancy due date: ${dueDate}.` : ''}
 ${babyBirthDate ? `Postpartum baby birth date: ${babyBirthDate}.` : ''}
 ${symptoms.length > 0 ? `Recently logged signals: ${symptoms.join(', ')}.` : ''}
 ${mood ? `Current mood: ${mood}.` : ''}
+${recentTopics.length > 0 ? `In her recent chats with you she has been thinking about: ${recentTopics.join('; ')}. Gently connect today's reflection to what is on her mind, without repeating her words back verbatim.` : ''}
+${dateStamp ? `Today is ${dateStamp}. Make today's reflection feel fresh and specific to today, and do not reuse a generic line she may have seen before.` : ''}
 
 ${isTtc ? `CRITICAL CLINICAL & SCIENTIFIC TTC RULES:
 1. STRICTLY NO CONCEPTION PROBABILITIES: Never predict percentage chances of pregnancy or make definitive claims.
@@ -272,6 +279,12 @@ ${isTtc ? `CRITICAL CLINICAL & SCIENTIFIC TTC RULES:
 3. LOW-CORTISOL & PRESSURE-FREE: Help her feel that she does not need to obsessively decode every bodily sensation. Reassure her that fertile windows span multiple days.
 4. TWO-WEEK WAIT SAFETY: In the luteal phase (post-ovulation), remind her that early symptoms (cramps, fatigue) are normal progesterone effects, NOT reliable pregnancy signs. Discourage premature testing before 12 DPO to protect from false negatives.
 5. NO FAILED-CYCLE LANGUAGE: Never use "unsuccessful", "failed cycle", or "missed chance".` : ''}
+
+EVIDENCE-BASED NUTRITION RULE (all stages): Never recommend "detox", "liver
+cleanse", "flush toxins", or lemon/lemon-water remedies. These are wellness
+myths, not clinical endocrinology. Prefer validated metabolic and hormonal
+nutrition, e.g. pairing carbohydrates with protein or healthy fats to steady
+insulin and blunt cortisol spikes that drive inflammation.
 
 You MUST respond strictly with a valid JSON object in the exact format:
 {

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'api_base_url.dart';
 import 'api_contract_client.dart';
+import 'api_warmup.dart';
 import 'auth_storage.dart';
 import 'log_redaction.dart';
 
@@ -209,6 +210,9 @@ class ApiPeriodService {
   String get _baseUrl => resolveApiBaseUrl();
 
   Future<Map<String, String>> _headers() async {
+    // Every period request goes through here, so this is where we wait for the
+    // server to be awake -- a cold start becomes a spinner, not a failed load.
+    await ApiWarmup.ensureWarm();
     final token = AuthStorage.getToken();
     return {
       'Content-Type': 'application/json',

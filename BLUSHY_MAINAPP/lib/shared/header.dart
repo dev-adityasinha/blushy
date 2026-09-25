@@ -23,24 +23,27 @@ const double _headerLeadingSize = 22;
 
 /// The size a tab's own name is set at.
 ///
-/// A quarter smaller than the wordmark it sits in place of: BLUSHY. is the
-/// product, and a tab name printed at the same size competes with it.
-const double _tabTitleSize = _headerLeadingSize * 0.75;
+/// The same size as the BLUSHY. wordmark, so every header leading mark --
+/// BLUSHY., DOCSY., M STUDIO., the Companion/Partner tab -- reads at one
+/// consistent size rather than the tab names sitting a step smaller.
+const double _tabTitleSize = _headerLeadingSize;
 
-/// A tab name, in the display face with the accent full stop.
+/// A tab name, in the same upright face as the BLUSHY. wordmark, with the accent
+/// full stop.
 ///
 /// The stop is the same one BLUSHY. ends on -- the mark that says this is a
-/// Blushy page rather than a screen title.
-TextStyle _tabTitleStyle() => const TextStyle(
-      fontFamily: 'AdaHybrid',
+/// Blushy page rather than a screen title. It uses Manrope (not the slanted
+/// AdaHybrid display face) so the tab name reads upright like BLUSHY. rather
+/// than as italic.
+TextStyle _tabTitleStyle() => GoogleFonts.manrope(
       fontSize: _tabTitleSize,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w800,
       letterSpacing: 1.5,
       color: BlushyColors.primary,
     );
 
 class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
-  const BlushyHeader({super.key, this.title});
+  const BlushyHeader({super.key, this.title, this.languageKey, this.profileKey});
 
   /// The tab name to show in place of the wordmark.
   ///
@@ -49,6 +52,11 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
   /// are -- the tab name does, and the account and language controls stay put
   /// either way.
   final String? title;
+
+  /// Optional anchors for the first-run tour to point at the language selector
+  /// and the account/profile button. Null everywhere the tour is not running.
+  final GlobalKey? languageKey;
+  final GlobalKey? profileKey;
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +118,7 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
                   ValueListenableBuilder<String>(
                     valueListenable: LanguagePreference.current,
                     builder: (context, code, _) => GestureDetector(
+                      key: languageKey,
                       onTap: () => _showLanguagePicker(context),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -140,6 +149,7 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
 
                   // Profile Button without round card container
                   GestureDetector(
+                    key: profileKey,
                     onTap: () {
                       final role = AuthStorage.getRole();
                       if (role == 'partner' || role == 'man') {
@@ -174,8 +184,8 @@ class BlushyHeader extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(64.0);
 }
 
-/// The BLUSHY. lockup in Ada Hybrid bold style.
-/// One tab's name, ending in the accent stop.
+/// One tab's name, ending in the accent stop, in the same upright face as the
+/// BLUSHY. wordmark.
 class _TabTitle extends StatelessWidget {
   const _TabTitle({required this.title});
 

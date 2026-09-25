@@ -68,6 +68,67 @@ void main() {
     expect(vm.hasLoggedPeriod, isFalse, reason: 'the server genuinely had nothing');
   });
 
+  test('a real last-period date shows the day even when hasData is false', () async {
+    // The server marks an account with too little history for predictions as
+    // hasData:false, but still returns the real last-period date. The day is
+    // hers and must show, not fall back to the screen's placeholder (Day 1/14).
+    final vm = CycleViewModel(
+      defaultCycleDay: 1, // the first-period screen's placeholder
+      fetchPredictions: _returns(ApiResult<PeriodPrediction>(
+        state: ApiState.insufficientData,
+        data: PeriodPrediction(
+          hasData: false,
+          cycleLengthDays: 28,
+          lastPeriodStartDate:
+              DateTime.now().subtract(const Duration(days: 5)).toIso8601String(),
+        ),
+      )),
+    );
+    await vm.load();
+
+    expect(vm.hasLoggedPeriod, isTrue, reason: 'a real start date is real logged data');
+    expect(vm.cycleDayOrNull, 6, reason: 'day 6, not the placeholder Day 1');
+  });
+
+  test('uses the server current-cycle day, overdue and all, not a rolled one', () async {
+    // A period logged ~a cycle ago: the backend counts straight through
+    // (Day 31, overdue), and the client must not roll it to Day 1.
+    final vm = CycleViewModel(
+      defaultCycleLength: 30,
+      fetchPredictions: _returns(ApiResult<PeriodPrediction>(
+        state: ApiState.ready,
+        data: PeriodPrediction(
+          hasData: true,
+          cycleLengthDays: 30,
+          currentCycleDay: 31,
+          lastPeriodStartDate:
+              DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
+        ),
+      )),
+    );
+    await vm.load();
+    expect(vm.cycleDayOrNull, 31, reason: 'the server day wins; no modulo roll to Day 1');
+  });
+
+  test('offline recompute counts days straight through, not modulo the cycle', () async {
+    // No server day, so the local recompute is used. A start 30 days ago with
+    // a 30-day cycle must be Day 31, not (30 % 30 + 1) = Day 1.
+    final vm = CycleViewModel(
+      defaultCycleLength: 30,
+      fetchPredictions: _returns(ApiResult<PeriodPrediction>(
+        state: ApiState.ready,
+        data: PeriodPrediction(
+          hasData: true,
+          cycleLengthDays: 30,
+          lastPeriodStartDate:
+              DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
+        ),
+      )),
+    );
+    await vm.load();
+    expect(vm.cycleDayOrNull, 31, reason: 'no modulo: an overdue day stays overdue');
+  });
+
   test('notifies its listeners so the View can rebuild', () async {
     final vm = CycleViewModel(fetchPredictions: _returns(ApiResult<PeriodPrediction>(
       state: ApiState.ready,

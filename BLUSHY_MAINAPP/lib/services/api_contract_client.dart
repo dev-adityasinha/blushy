@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 
 import 'api_auth_service.dart';
 import 'api_base_url.dart';
+import 'api_warmup.dart';
 import 'auth_storage.dart';
 
 /// The states the backend can return for any card (spec section 27
@@ -237,6 +238,13 @@ class ApiContractClient {
     T Function(dynamic data)? parse, {
     required bool repeatable,
   }) async {
+    // Never fire a real request into a sleeping server: wait for the API to be
+    // awake first. On a warm server this returns at once; on a cold one the
+    // caller is held here (and shows a spinner) until the wake completes, so a
+    // stage load becomes a wait rather than a "could not be loaded" error. It is
+    // time-boxed, so a genuinely-down server still falls through to the retry
+    // logic below rather than blocking forever.
+    await ApiWarmup.ensureWarm();
     try {
       http.Response response;
       try {

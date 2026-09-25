@@ -45,6 +45,18 @@ class CycleViewModel extends BlushyViewModel {
   int periodLength = 5;
   int currentCycleDay = 14;
 
+  /// How many complete cycles the backend has learned from. Drives the
+  /// "personalised rhythm" note: below 2, the baseline is still an estimate.
+  int completedCyclesCount = 0;
+
+  /// Forward-looking predictions (ISO date strings), for a forecast bar. Null
+  /// until a prediction with these has loaded (and null on hormonal
+  /// contraception, where the server withholds ovulation/fertile dates).
+  String? nextPeriodStartDate;
+  String? estimatedOvulationDate;
+  String? fertileWindowStart;
+  String? fertileWindowEnd;
+
   /// True once a load has succeeded or failed at least once.
   bool get isResolved => state != ApiState.loading;
 
@@ -63,16 +75,35 @@ class CycleViewModel extends BlushyViewModel {
       final result = await _fetch();
       state = result.state;
       final prediction = result.data;
-      if (prediction != null && prediction.hasData) {
+      final start = prediction?.lastPeriodStartDate == null
+          ? null
+          : DateTime.tryParse(prediction!.lastPeriodStartDate!);
+
+      // A logged period is a real day even when the server flags the history
+      // as too short for predictions (`hasData == false`). The day was gated
+      // on `hasData`, so an account with a real last-period date but limited
+      // history fell through to the screen's placeholder -- Day 1 on the
+      // first-period screen, Day 14 elsewhere -- rather than her real day.
+      // Apply it whenever a start date is present; only a genuinely empty
+      // read (no data and no start) leaves the defaults untouched.
+      if (prediction != null && (prediction.hasData || start != null)) {
         if (prediction.cycleLengthDays > 0) cycleLength = prediction.cycleLengthDays;
         if (prediction.periodLengthDays > 0) periodLength = prediction.periodLengthDays;
-        final start = prediction.lastPeriodStartDate == null
-            ? null
-            : DateTime.tryParse(prediction.lastPeriodStartDate!);
+        completedCyclesCount = prediction.completedCyclesCount;
+        nextPeriodStartDate = prediction.nextPeriodStartDate;
+        estimatedOvulationDate = prediction.estimatedOvulationDate;
+        fertileWindowStart = prediction.fertileWindowStart;
+        fertileWindowEnd = prediction.fertileWindowEnd;
         if (start != null) {
           lastPeriodStart = start;
           hasLoggedPeriod = true;
-          currentCycleDay = _dayFrom(start);
+          // Prefer the server's own current-cycle day: it is timezone-correct
+          // and already counts overdue days straight past the cycle length.
+          // Recompute locally only when the server did not send one (the
+          // offline cache path).
+          final serverDay = prediction.currentCycleDay;
+          currentCycleDay =
+              (serverDay != null && serverDay > 0) ? serverDay : _dayFrom(start);
         }
       }
     } catch (_) {
@@ -105,7 +136,15 @@ class CycleViewModel extends BlushyViewModel {
   }
 
   int _dayFrom(DateTime start) {
+    // Days since the last logged period, counted straight through, the same
+    // way the backend computes currentCycleDay -- a period logged about a
+    // cycle ago is an overdue "Day 30-something", not a rolled-over "Day 1".
+    //
+    // The old `% cycleLength` invented cycles that were never logged: a last
+    // period entered ~one cycle back (e.g. 30 days, 30-day cycle) rolled to
+    // `30 % 30 + 1 = 1`, so the tracker dropped to Day 1 on the next reload.
+    // The upper bound only guards a corrupt far-past date.
     final diff = DateTime.now().difference(start).inDays;
-    return ((diff % cycleLength) + 1).clamp(1, cycleLength);
+    return (diff + 1).clamp(1, 999);
   }
 }

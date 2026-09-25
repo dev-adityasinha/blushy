@@ -3,6 +3,7 @@ import path from 'node:path';
 import { aiChatService } from '../services/aiChatService.js';
 import { uploadedFileBytes } from '../utils/uploadedFileBytes.js';
 import { aiHistoryRepository } from '../repositories/aiHistoryRepository.js';
+import { cycleNotificationService } from '../services/cycleNotificationService.js';
 import { profileMemoryRepository } from '../repositories/profileMemoryRepository.js';
 import { userRepository } from '../repositories/userRepository.js';
 import { journalRepository } from '../repositories/journalRepository.js';
@@ -1215,6 +1216,7 @@ export async function getHealthInsights(req, res, next) {
     let predictionContext = { moodHistory: [], sleepHistory: [] };
     let ownPeriodEntries = [];
     let detectedStage = stageQuery || 'hormonal_health';
+    let recentTopics = [];
 
     if (userId) {
       userProfile = await userRepository.getUserById(userId);
@@ -1230,6 +1232,19 @@ export async function getHealthInsights(req, res, next) {
       }).catch(() => ({ moodHistory: [], sleepHistory: [] }));
 
       ownPeriodEntries = await getPeriodEntries(userId, 20).catch(() => []);
+
+      // Recent things she has asked Docsy, so the daily note connects to what
+      // is actually on her mind rather than a generic stage line.
+      try {
+        const history = await aiHistoryRepository.listHistory(`user:${userId}`);
+        recentTopics = history
+          .map((h) => (h.userMessage || '').trim())
+          .filter((m) => m.length > 0)
+          .slice(-5)
+          .map((m) => (m.length > 120 ? `${m.slice(0, 120)}…` : m));
+      } catch (_) {
+        recentTopics = [];
+      }
     }
 
     const healthAnalysis = healthInsightsService.analyzeUserHealth({
@@ -1242,8 +1257,11 @@ export async function getHealthInsights(req, res, next) {
       periodEntries: ownPeriodEntries,
     });
 
-    // In-memory cache for dynamic AI daily insights: 10 minute TTL
-    const cacheKey = `daily_ai_${userId || 'guest'}_${detectedStage}_${cycleDayQuery || 'none'}`;
+    // In-memory cache for dynamic AI daily insights: 10 minute TTL. Keyed by
+    // the calendar day too, so the note refreshes at least once a day even when
+    // she opens the app repeatedly.
+    const dateStamp = new Date().toISOString().split('T')[0];
+    const cacheKey = `daily_ai_${userId || 'guest'}_${detectedStage}_${cycleDayQuery || 'none'}_${dateStamp}`;
     if (!global.dailyAiInsightCache) {
       global.dailyAiInsightCache = new Map();
     }
@@ -1262,6 +1280,8 @@ export async function getHealthInsights(req, res, next) {
         mood: predictionContext.moodHistory?.[0]?.mood || null,
         user: userProfile,
         languageCode,
+        recentTopics,
+        dateStamp,
       });
       // Only a real generation is worth keeping. Caching the fallback would
       // hold a "could not be generated" message in front of her for ten
@@ -1269,6 +1289,15 @@ export async function getHealthInsights(req, res, next) {
       if (aiDaily?.source !== 'unavailable_fallback') {
         global.dailyAiInsightCache.set(cacheKey, { timestamp: now, data: aiDaily });
       }
+    }
+
+    // Generate today's health/cycle notifications for the inbox + push. Fire and
+    // forget: it is idempotent (per-day dedupe keys) and must never slow or fail
+    // the insights response.
+    if (userId) {
+      cycleNotificationService
+        .syncForUser(userId, { hasDailyNote: aiDaily?.source === 'ai_grok' })
+        .catch(() => {});
     }
 
     res.status(200).json({

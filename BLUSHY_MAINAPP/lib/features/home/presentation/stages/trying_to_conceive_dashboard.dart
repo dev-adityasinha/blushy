@@ -15,6 +15,8 @@ import '../../widgets/blushy_period_tracker_card.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
+import 'health_library_section.dart';
+import 'trying_to_conceive_sections.dart';
 import '../../../../l10n/app_localizations.dart';
 
 class TryingToConceiveDashboard extends StatefulWidget {
@@ -170,7 +172,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           _lastPeriodStartDate = parsed;
           _hasLoggedPeriod = true;
           final diff = DateTime.now().difference(parsed).inDays;
-          _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
         }
       }
 
@@ -1909,7 +1911,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           _lastPeriodStartDate = selectedDate;
                           _hasLoggedPeriod = true;
                           final diff = DateTime.now().difference(selectedDate).inDays;
-                          _currentCycleDay = ((diff % _cycleLength) + 1).clamp(1, _cycleLength);
+                          _currentCycleDay = (diff + 1).clamp(1, _cycleLength);
                         });
                         try {
                           BlushyStorage.write('last_period_entry.json', {
@@ -2289,11 +2291,15 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       _buildEditorialGreeting(context),
       const SizedBox(height: 18),
 
-      // 02. Today with Docsy
+      // 02. Period / Cycle Rhythm Tracker -- kept at the top, right after the
+      // greeting, so the cycle is the first thing she sees.
+      _buildPeriodTrackerCard(context),
+      const SizedBox(height: 18),
+
+      // 03. Today with Docsy
       _buildTodayWithDocsyCard(context),
       const SizedBox(height: 18),
 
-      // 03. Period / Cycle Rhythm Tracker (Stage 2 Canonical Reusable Tracker)
       // Says which kind of nothing this is before the card asserts one.
       StageStateNotice(
         state: _cycleState,
@@ -2303,9 +2309,16 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             'working from your own cycle instead of general guidance.',
         onRetry: _rehydrateTtcState,
       ),
-      _buildPeriodTrackerCard(context),
       const SizedBox(height: 22),
       const LogSymptomsSection(stageKey: 'tryingtoconceive'),
+      const SizedBox(height: 18),
+      const HealthLibrarySection(stageKey: 'tryingtoconceive'),
+      const SizedBox(height: 18),
+      const TtcFertilitySection(),
+      const SizedBox(height: 20),
+      const TtcOvulationSection(),
+      const SizedBox(height: 20),
+      const TtcSexToConceiveSection(),
       const SizedBox(height: 18),
 
       // 04. Fertility Signal Confidence & Compass

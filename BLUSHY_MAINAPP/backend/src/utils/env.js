@@ -146,6 +146,14 @@ export const env = {
   googleClientIdAndroid: process.env.GOOGLE_CLIENT_ID_ANDROID ?? '',
   googleClientIdIos: process.env.GOOGLE_CLIENT_ID_IOS ?? '',
 
+  // Sign in with Apple. Apple sets the identity token's `aud` to the client it
+  // was minted for: the app's bundle id for the native iOS flow, or the
+  // Services id for the web/Android redirect flow. A token only proves identity
+  // if it was minted for us, so these are pinned as the accepted audiences.
+  // With neither set, Apple sign-in fails closed (see appleAuthService).
+  appleBundleId: process.env.APPLE_BUNDLE_ID ?? '',
+  appleServiceId: process.env.APPLE_SERVICE_ID ?? '',
+
   // Push transport. The dispatch worker stays off until this is set, so an
   // unconfigured deployment does not spin over the queue doing nothing.
   fcmServiceAccountJson: process.env.FCM_SERVICE_ACCOUNT_JSON ?? '',

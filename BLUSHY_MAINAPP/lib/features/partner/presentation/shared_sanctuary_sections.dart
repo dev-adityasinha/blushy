@@ -59,6 +59,7 @@ class SharedSanctuaryHeader extends StatelessWidget {
     required this.onInvite,
     required this.onManageConnection,
     this.onOpenMessenger,
+    this.partnerOnline = false,
   });
 
   final bool hasConnection;
@@ -68,6 +69,10 @@ class SharedSanctuaryHeader extends StatelessWidget {
   final VoidCallback onInvite;
   final VoidCallback onManageConnection;
   final VoidCallback? onOpenMessenger;
+
+  /// Whether the connected partner currently has a live socket -- drives the
+  /// online/offline dot under their name.
+  final bool partnerOnline;
 
   @override
   Widget build(BuildContext context) {
@@ -111,23 +116,6 @@ class SharedSanctuaryHeader extends StatelessWidget {
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 18),
-          ElevatedButton.icon(
-            onPressed: onInvite,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: kSanctuaryCrimson,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              elevation: 3,
-              shadowColor: kSanctuaryCrimson.withValues(alpha: 0.35),
-            ),
-            icon: const Icon(Icons.favorite_rounded, size: 18, color: Colors.white),
-            label: Text(
-              'Invite Partner',
-              style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700),
-            ),
-          ),
         ],
       );
     }
@@ -167,6 +155,33 @@ class SharedSanctuaryHeader extends StatelessWidget {
                   height: 1.15,
                   letterSpacing: -0.3,
                 ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: partnerOnline
+                          ? const Color(0xFF22C55E)
+                          : const Color(0xFF9E9296),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    partnerOnline ? 'Online' : 'Offline',
+                    style: GoogleFonts.manrope(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: partnerOnline
+                          ? const Color(0xFF16A34A)
+                          : kSanctuaryMuted,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               InkWell(

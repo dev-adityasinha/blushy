@@ -118,7 +118,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       _hasPond = result.data!['hasPond'] == true;
     });
     messenger.showSnackBar(
-      const SnackBar(content: Text('Your garden grew. Your partner sees it too.')),
+      SnackBar(content: Text(AppLocalizations.of(context).ptGardenGrew)),
     );
   }
 
@@ -143,6 +143,31 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   // Partner connections state
   List<Map<String, dynamic>> _connections = [];
+
+  // Whether the first connection load (cache + server) has resolved. Until it
+  // has, an empty _connections means "still loading", not "no partner" -- so the
+  // screen shows a spinner rather than flashing the unpaired "Invite Partner"
+  // view over an account that is in fact connected.
+  bool _connectionsLoaded = false;
+
+  // Whether the connected partner currently has a live socket. Seeded from the
+  // connection's `partnerOnline` on each load and kept live by the
+  // 'partner.presence' events the server sends on connect/disconnect.
+  bool _partnerOnline = false;
+
+  /// The partner's online flag as it stands in the latest connection payload.
+  bool _connectionPartnerOnline() =>
+      _connections.isNotEmpty && _connections.first['partnerOnline'] == true;
+
+  // Whether the partner is currently typing, driven by 'partner.typing' events.
+  bool _partnerTyping = false;
+  // Clears the indicator if the partner's "stopped" ping never arrives (socket
+  // drop, backgrounded app), so it can never stick "typing…" for ever.
+  Timer? _partnerTypingClearTimer;
+  // Throttles our own outgoing typing pings and remembers the last state sent,
+  // so we send at most one ping per burst and one "stopped" when idle.
+  Timer? _typingIdleTimer;
+  bool _typingSent = false;
 
   // Shared activities belong to the connection: whatever one partner does, the
   // other sees. They are loaded from the server rather than assumed.
@@ -549,7 +574,14 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       }
     } catch (_) {}
     try {
-      final cachedConnections = BlushyStorage.read('partner_connections_cache');
+      // Read through UserStateStore -- the same store the cache is WRITTEN
+      // through below (_fetchPartnerData). It previously read via BlushyStorage
+      // with the raw key while the write went through UserStateStore's mirrored
+      // key, so this synchronous read always missed and the screen flashed the
+      // unpaired "Invite Partner" view before the server answered. Reading it
+      // consistently means a returning, connected user sees the paired state on
+      // the very first frame.
+      final cachedConnections = UserStateStore.read('partner_connections_cache');
       if (cachedConnections.isNotEmpty) {
         if (cachedConnections['connections'] is List) {
           _connections = List<Map<String, dynamic>>.from(
@@ -570,6 +602,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           );
         }
         _hadActiveConnection = _connections.any((c) => c['status'] == 'active');
+        _partnerOnline = _connectionPartnerOnline();
         if (_connections.isNotEmpty) {
           unawaited(_loadSharedActivities());
         }
@@ -592,6 +625,30 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     ws.connect();
     _wsSubscription = ws.events.listen((event) {
       if (!mounted) return;
+      if (event.event == 'partner.presence') {
+        // The server sends this to a user when their partner's socket connects
+        // or fully disconnects. Only sent about this user's partner, so applies
+        // straight to the online dot.
+        final online = event.rawPayload['online'] == true;
+        if (online != _partnerOnline) {
+          setState(() => _partnerOnline = online);
+        }
+        return;
+      }
+      if (event.event == 'partner.typing') {
+        final typing = event.rawPayload['typing'] == true;
+        _partnerTypingClearTimer?.cancel();
+        if (typing) {
+          if (!_partnerTyping) setState(() => _partnerTyping = true);
+          // Safety net: if the "stopped" ping is lost, clear it anyway.
+          _partnerTypingClearTimer = Timer(const Duration(seconds: 6), () {
+            if (mounted && _partnerTyping) setState(() => _partnerTyping = false);
+          });
+        } else {
+          if (_partnerTyping) setState(() => _partnerTyping = false);
+        }
+        return;
+      }
       if (event.reason == 'message-sent') {
         _syncLiveMessages();
       } else if (event.reason == 'invitation-accepted' ||
@@ -644,8 +701,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       } else {
         PendingInviteCode.clear();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎉 Connected with your partner successfully!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).ptConnectedSuccess),
             backgroundColor: BlushyColors.success,
           ),
         );
@@ -711,7 +768,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               backgroundColor: BlushyColors.primary,
               duration: const Duration(seconds: 6),
               action: SnackBarAction(
-                label: 'ACCEPT',
+                label: AppLocalizations.of(context).ptAccept,
                 textColor: Colors.white,
                 onPressed: () async {
                   final ok = await _partnerService.respondToInvitation(invId, 'accept');
@@ -719,8 +776,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     await _fetchPartnerData();
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Connected! Your shared partner portal is now live 🎉'),
+                        SnackBar(
+                          content: Text(AppLocalizations.of(context).ptPortalLive),
                           backgroundColor: BlushyColors.success,
                         ),
                       );
@@ -819,6 +876,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           _connections = connections;
           _incomingInvitations = incoming;
           _outgoingInvitations = outgoing;
+          _partnerOnline = _connectionPartnerOnline();
         });
         try {
           UserStateStore.write('partner_connections_cache', {
@@ -839,6 +897,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     } finally {
       if (mounted) {
         setState(() {
+          // The first load has resolved (succeeded or failed): from here an
+          // empty _connections genuinely means "no partner", so the unpaired
+          // view is correct rather than a premature flash.
+          _connectionsLoaded = true;
         });
       }
     }
@@ -849,6 +911,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     _messengerScrollController.dispose();
     _wsSubscription?.cancel();
     _liveChatTimer?.cancel();
+    _partnerTypingClearTimer?.cancel();
+    _typingIdleTimer?.cancel();
     _msgController.dispose();
     _partnerInviteEmailController.dispose();
     _relationshipController.dispose();
@@ -914,11 +978,42 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     }
   }
 
+  /// Sends throttled typing pings as she types: one "typing" at the start of a
+  /// burst, and one "stopped" after ~3s idle or when the field is cleared.
+  void _handleTypingInput(String text) {
+    final ws = PartnerWebSocketService();
+    if (text.trim().isNotEmpty) {
+      if (!_typingSent) {
+        _typingSent = true;
+        ws.sendTyping(true);
+      }
+      _typingIdleTimer?.cancel();
+      _typingIdleTimer = Timer(const Duration(seconds: 3), () {
+        if (_typingSent) {
+          _typingSent = false;
+          ws.sendTyping(false);
+        }
+      });
+    } else {
+      _stopTyping();
+    }
+  }
+
+  /// Immediately tells the partner we've stopped typing (on send or on clear).
+  void _stopTyping() {
+    _typingIdleTimer?.cancel();
+    if (_typingSent) {
+      _typingSent = false;
+      PartnerWebSocketService().sendTyping(false);
+    }
+  }
+
   void _sendTextMessage() async {
     final text = _msgController.text.trim();
     if (text.isEmpty) return;
 
     _msgController.clear();
+    _stopTyping();
     final state = BlushyOSProvider.of(context);
     final currentUserId = AuthStorage.getUserId();
     final currentRole = AuthStorage.getRole() ?? state.selectedRole;
@@ -1087,7 +1182,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
     if (!ok) {
       messenger.showSnackBar(
-        const SnackBar(
+        SnackBar(
           // Not "could not reach the server": the server may well have been
           // reached and have refused. Saying which it was would need the
           // error itself; what matters to her is that nothing changed.
@@ -1105,8 +1200,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     if (!mounted) return;
     setState(() {});
     messenger.showSnackBar(
-      const SnackBar(
-        content: Text('Private space on. Your personal updates are paused.'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context).ptPrivateSpaceOn),
       ),
     );
   }
@@ -1121,7 +1216,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       if (!mounted) return;
       if (!ok) {
         messenger.showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
               'Could not reach the server. Your sharing is still paused.',
             ),
@@ -1136,7 +1231,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     if (!mounted) return;
     setState(() {});
     messenger.showSnackBar(
-      const SnackBar(content: Text('Sharing resumed, exactly as it was.')),
+      SnackBar(content: Text(AppLocalizations.of(context).ptSharingResumed)),
     );
   }
 
@@ -1169,6 +1264,21 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // --- TAB 1: PARTNER SPACE (WOMAN'S HOME) ---
   Widget _buildOverviewTab(BlushyOSState state) {
     final hasConnection = _connections.isNotEmpty;
+
+    // Until the first load resolves, an empty list means "still loading", not
+    // "no partner": show a spinner rather than flashing the unpaired "Invite
+    // Partner" view over an account that is actually connected.
+    if (!hasConnection && !_connectionsLoaded) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.only(top: 96),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: kSanctuaryCrimson,
+          ),
+        ),
+      );
+    }
     final primaryPartner = hasConnection ? _connections.first : null;
     final partnerName = primaryPartner != null
         ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner))
@@ -1205,6 +1315,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           onInvite: _showPartnerConnectionsModal,
           onManageConnection: () => _showManageConnectionSheet(state),
           onOpenMessenger: hasConnection ? () => _openPartnerTab(2) : null,
+          partnerOnline: _partnerOnline,
         ),
         const SizedBox(height: 20),
 
@@ -1379,7 +1490,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           icon: Icons.water_drop_rounded,
           colour: kCobalt,
           tint: kCobaltTint,
-          label: 'CYCLE',
+          label: AppLocalizations.of(context).ptCycle,
           value: 'Day $cDay',
           onTap: _openSharingPanel,
         ));
@@ -1393,7 +1504,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         icon: Icons.bolt_rounded,
         colour: kAmber,
         tint: kAmberTint,
-        label: 'ENERGY',
+        label: AppLocalizations.of(context).ptEnergy,
         value: energyVal,
         onTap: _openSharingPanel,
       ));
@@ -1406,7 +1517,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         icon: Icons.favorite_rounded,
         colour: kMagenta,
         tint: kMagentaTint,
-        label: 'MOOD',
+        label: AppLocalizations.of(context).ptMood,
         value: moodVal.substring(0, 1).toUpperCase() + moodVal.substring(1).toLowerCase(),
         onTap: _openSharingPanel,
       ));
@@ -1669,8 +1780,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         await _fetchPartnerData();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Connected! Your Partner Space is now live 🎉'),
+                            SnackBar(
+                              content: Text(AppLocalizations.of(context).ptPartnerSpaceLive),
                               backgroundColor: Color(0xFF0D9488),
                             ),
                           );
@@ -1825,7 +1936,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
+            child: Text(AppLocalizations.of(context).commonOk),
           ),
         ],
       ),
@@ -1866,7 +1977,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Disconnect partner?'),
+        title: Text(AppLocalizations.of(context).ptDisconnectPartner),
         content: Text(
           'Are you sure you want to disconnect from $partnerLabel? This ends '
           'the connection for both of you and stops all sharing immediately.',
@@ -1874,7 +1985,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).actionCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -2464,7 +2575,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       // partner far more often than by someone managing one,
                       // and it used to open on an empty Connections list.
                       tabs: [
-                        const Tab(text: 'Invite'),
+                        Tab(text: AppLocalizations.of(context).ptInvite),
                         Tab(
                           text: _incomingInvitations.isNotEmpty
                               ? 'Pending (${_incomingInvitations.length})'
@@ -2560,7 +2671,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.shield_outlined, color: BlushyColors.primary, size: 20),
-                tooltip: 'Privacy Settings',
+                tooltip: AppLocalizations.of(context).ptPrivacySettings,
                 onPressed: () => _showGranularPermissionsModal(context, conn),
               ),
               // Full server-enforced permission matrix (spec section 10).
@@ -2568,7 +2679,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               // person sharing can always see exactly what is shared.
               IconButton(
                 icon: const Icon(Icons.visibility_outlined, color: BlushyColors.primary, size: 20),
-                tooltip: 'What you share',
+                tooltip: AppLocalizations.of(context).ptWhatYouShare,
                 onPressed: connectionId.isEmpty
                     ? null
                     : () => Navigator.of(context).push(
@@ -2724,6 +2835,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         ),
                         onPressed: () async {
                           final messenger = ScaffoldMessenger.of(context);
+                          final loc = AppLocalizations.of(context);
                           final nav = Navigator.of(ctx);
                           final ok = await _partnerService
                               .updatePermissions(connectionId, changeableBy(perms));
@@ -2731,7 +2843,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                           if (ok && mounted) {
                             await _fetchPartnerData();
                             messenger.showSnackBar(
-                              const SnackBar(content: Text('Privacy settings updated.')),
+                              SnackBar(content: Text(loc.ptPrivacyUpdated)),
                             );
                           }
                         },
@@ -2846,7 +2958,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             setModalState(() {});
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Partner request accepted! 🎉')),
+                                SnackBar(content: Text(AppLocalizations.of(context).ptRequestAccepted)),
                               );
                             }
                           }
@@ -2938,7 +3050,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               hintText: 'partner@example.com',
-              labelText: 'Partner Email Address',
+              labelText: AppLocalizations.of(context).ptPartnerEmail,
               prefixIcon: const Icon(Icons.email_outlined, color: BlushyColors.primary),
               filled: true,
               fillColor: Colors.white,
@@ -3045,7 +3157,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
               const Expanded(child: Divider()),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('OR', style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText)),
+                child: Text(AppLocalizations.of(context).commonOr, style: GoogleFonts.manrope(height: 1.5, fontSize: 11, fontWeight: FontWeight.bold, color: BlushyColors.secondaryText)),
               ),
               const Expanded(child: Divider()),
             ],
@@ -3114,8 +3226,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       // if they cannot open the link.
                       _showInviteLinkSheet(url, linkData['inviteCode']?.toString());
                       messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Invite link copied to clipboard! 📋'),
+                        SnackBar(
+                          content: Text(AppLocalizations.of(context).ptInviteLinkCopied),
                           backgroundColor: BlushyColors.success,
                         ),
                       );
@@ -3221,7 +3333,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   if (sheetContext.mounted) Navigator.of(sheetContext).pop();
                 },
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                label: Text('Copy link', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
+                label: Text(AppLocalizations.of(context).ptCopyLink, style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -3260,8 +3372,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             Navigator.of(sheetContext).pop();
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('🎉 Connected with your partner successfully!'),
+              SnackBar(
+                content: Text(AppLocalizations.of(context).ptConnectedSuccess),
                 backgroundColor: BlushyColors.success,
               ),
             );
@@ -3294,7 +3406,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   autofocus: true,
                   style: GoogleFonts.robotoMono(fontSize: 12),
                   decoration: InputDecoration(
-                    labelText: 'Invite code',
+                    labelText: AppLocalizations.of(context).ptInviteCode,
                     errorText: error,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -3377,7 +3489,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       ),
                     ),
                   ),
-                  if (_showActiveStatus)
+                  if (_showActiveStatus && _partnerOnline)
                     Positioned(
                       right: 0,
                       bottom: 0,
@@ -3408,7 +3520,17 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (_showActiveStatus)
+                    if (_partnerTyping)
+                      Text(
+                        'typing…',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          color: const Color(0xFF0D9488),
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      )
+                    else if (_showActiveStatus && _partnerOnline)
                       Text(
                         'Active now',
                         style: GoogleFonts.manrope(
@@ -3591,6 +3713,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     ),
+                    onChanged: _handleTypingInput,
                     onSubmitted: (_) => _sendTextMessage(),
                   ),
                 ),
@@ -4129,7 +4252,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                   _selectedMessageIndexForActions = -1;
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Saved to shared scrapbook memory!')),
+                  SnackBar(content: Text(AppLocalizations.of(context).ptSavedScrapbook)),
                 );
               }),
               _buildOverlayActionItem('Close', Icons.close_rounded, () {
@@ -4745,8 +4868,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     child: TextField(
                       controller: titleController,
                       style: GoogleFonts.manrope(height: 1.5, fontSize: 13, fontWeight: FontWeight.bold),
-                      decoration: const InputDecoration(
-                        hintText: "Letter Title (e.g. For our special day)",
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context).ptLetterTitle,
                         border: InputBorder.none,
                       ),
                     ),
@@ -4767,8 +4890,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         maxLines: null,
                         expands: true,
                         style: GoogleFonts.manrope(fontSize: 13, height: 1.6),
-                        decoration: const InputDecoration(
-                          hintText: "Pour your heart out here... Your thoughts, gratitude, or memories for your partner.",
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context).ptLetterHint,
                           border: InputBorder.none,
                         ),
                       ),
@@ -4812,7 +4935,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         final body = bodyController.text.trim();
                         if (title.isEmpty || body.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter both a title and letter message.')),
+                            SnackBar(content: Text(AppLocalizations.of(context).ptLetterValidation)),
                           );
                           return;
                         }

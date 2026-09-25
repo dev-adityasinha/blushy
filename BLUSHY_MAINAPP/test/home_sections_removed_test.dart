@@ -42,15 +42,16 @@ void main() {
     );
   });
 
-  test('the community page itself is untouched and still routed', () {
-    // Removing it from home must not remove it from the app.
+  test('the community page code itself is untouched', () {
+    // Removing it from home -- and later removing the tab -- must not delete
+    // the feature's own code.
     expect(File('lib/features/community/community_screen.dart').existsSync(), isTrue);
 
     final shell = File('lib/features/home/blushy_shell.dart').readAsStringSync();
     expect(
       shell.contains('BlushyCommunityScreen'),
-      isTrue,
-      reason: 'the community tab must still be reachable from the bottom navigation',
+      isFalse,
+      reason: 'the community tab was intentionally removed from the bottom navigation',
     );
   });
 }

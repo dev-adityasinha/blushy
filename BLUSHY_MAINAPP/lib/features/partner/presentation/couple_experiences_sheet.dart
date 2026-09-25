@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'shared_sanctuary_sections.dart';
+import '../../../l10n/app_localizations.dart';
 
 // ============================================================================
 // 01. QUICK FOLLOW-UP / AWAITING REPLY SHEET
@@ -100,8 +101,8 @@ void showQuickFollowUpSheet(
             _buildNudgeTile(
               ctx,
               icon: Icons.camera_alt_rounded,
-              title: 'Remind to send screenshot 📸',
-              subtitle: '“Hey, gentle reminder to send that screenshot! 😉”',
+              title: AppLocalizations.of(context).ceRemindScreenshot,
+              subtitle: AppLocalizations.of(context).ceRemindMsg,
               onTap: () {
                 Navigator.pop(ctx);
                 onSendNudge('Hey, gentle reminder to send that screenshot! 📸 😉');
@@ -112,8 +113,8 @@ void showQuickFollowUpSheet(
           _buildNudgeTile(
             ctx,
             icon: Icons.waving_hand_rounded,
-            title: 'Playful Ping 👋',
-            subtitle: '“Hey you! Still waiting on your reply 😉”',
+            title: AppLocalizations.of(context).cePlayfulPing,
+            subtitle: AppLocalizations.of(context).cePlayfulMsg,
             onTap: () {
               Navigator.pop(ctx);
               onSendNudge('Hey you! Still waiting on your reply 😉');
@@ -123,8 +124,8 @@ void showQuickFollowUpSheet(
           _buildNudgeTile(
             ctx,
             icon: Icons.coffee_rounded,
-            title: 'Gentle Thought ☕',
-            subtitle: '“Take your time, just thinking of you! 💕”',
+            title: AppLocalizations.of(context).ceGentleThought,
+            subtitle: AppLocalizations.of(context).ceGentleMsg,
             onTap: () {
               Navigator.pop(ctx);
               onSendNudge('Take your time, just thinking of you! 💕');
@@ -146,7 +147,7 @@ void showQuickFollowUpSheet(
                     controller: customController,
                     style: GoogleFonts.manrope(fontSize: 13, color: kSanctuaryCharcoal),
                     decoration: InputDecoration(
-                      hintText: 'Or whisper a quick follow-up...',
+                      hintText: AppLocalizations.of(context).ceWhisperFollowUp,
                       hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: kSanctuaryMuted),
                       border: InputBorder.none,
                     ),
@@ -516,9 +517,9 @@ void showDatePlannerSheet(
                         child: TextField(
                           controller: noteController,
                           style: GoogleFonts.manrope(fontSize: 13, color: kSanctuaryCharcoal),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             border: InputBorder.none,
-                            hintText: 'Add a cute note...',
+                            hintText: AppLocalizations.of(context).ceAddCuteNote,
                           ),
                         ),
                       ),
@@ -655,14 +656,14 @@ void showSharedCanvasSheet(
                     ),
                     IconButton(
                       icon: const Icon(Icons.undo_rounded, color: kSanctuaryCharcoal),
-                      tooltip: 'Undo',
+                      tooltip: AppLocalizations.of(context).ceUndo,
                       onPressed: strokes.isNotEmpty
                           ? () => setModalState(() => strokes.removeLast())
                           : null,
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline_rounded, color: kSanctuaryCrimson),
-                      tooltip: 'Clear',
+                      tooltip: AppLocalizations.of(context).ceClear,
                       onPressed: () => setModalState(() {
                         strokes.clear();
                         currentStroke.clear();
@@ -1139,40 +1140,40 @@ void showWarmGestureSheet(
 }) {
   final gestures = [
     (
-      title: 'Hot Coffee & Cozy Hug ☕',
-      subtitle: 'Sending a warm cup of coffee and a tight embrace.',
+      title: AppLocalizations.of(context).ceHotCoffee,
+      subtitle: AppLocalizations.of(context).ceHotCoffeeMsg,
       message: 'Sending you a warm cup of coffee & cozy hug ☕❤️',
       icon: Icons.coffee_rounded,
       tint: kTealTint,
       accent: kTeal,
     ),
     (
-      title: 'Big Tight Embrace 🫂',
-      subtitle: 'Wrapping you in the biggest, warmest hug today.',
+      title: AppLocalizations.of(context).ceBigEmbrace,
+      subtitle: AppLocalizations.of(context).ceBigEmbraceMsg,
       message: 'Wrapping you in the biggest warm embrace today 🫂✨',
       icon: Icons.favorite_rounded,
       tint: kMagentaTint,
       accent: kMagenta,
     ),
     (
-      title: 'Sweet Forehead Kiss 💋',
-      subtitle: 'A gentle forehead kiss to brighten your day.',
+      title: AppLocalizations.of(context).ceForeheadKiss,
+      subtitle: AppLocalizations.of(context).ceForeheadKissMsg,
       message: 'A gentle forehead kiss to brighten your day 💋🌸',
       icon: Icons.face_rounded,
       tint: kCoralTint,
       accent: kCoral,
     ),
     (
-      title: 'Sweet Treat Delivery 🍫',
-      subtitle: 'Virtual sweet chocolates and all my affection.',
+      title: AppLocalizations.of(context).ceTreatDelivery,
+      subtitle: AppLocalizations.of(context).ceTreatDeliveryMsg,
       message: 'Sending sweet treats and all my love to you 🍫🥰',
       icon: Icons.cookie_rounded,
       tint: kAmberTint,
       accent: kAmber,
     ),
     (
-      title: 'Gentle Pause & Breathe 🌿',
-      subtitle: 'Take a deep breath, you are doing incredible.',
+      title: AppLocalizations.of(context).cePauseBreathe,
+      subtitle: AppLocalizations.of(context).cePauseBreatheMsg,
       message: 'Take a deep breath, my love. You are doing amazing 🌿🕊️',
       icon: Icons.spa_rounded,
       tint: kCobaltTint,
@@ -1319,40 +1320,40 @@ void showVibePulseSheet(
 }) {
   final vibes = [
     (
-      title: 'Thinking of You ✨',
-      subtitle: 'Daydreaming and smiling thinking about you.',
+      title: AppLocalizations.of(context).ceThinkingOfYou,
+      subtitle: AppLocalizations.of(context).ceThinkingMsg,
       message: 'Thinking of you right now and smiling ✨❤️',
       icon: Icons.auto_awesome_rounded,
       tint: kCobaltTint,
       accent: kCobalt,
     ),
     (
-      title: 'Missing Your Voice 🥺',
-      subtitle: 'Missing you extra and wishing you were right here.',
+      title: AppLocalizations.of(context).ceMissingVoice,
+      subtitle: AppLocalizations.of(context).ceMissingMsg,
       message: 'Missing you a little extra today 🥺❤️',
       icon: Icons.favorite_border_rounded,
       tint: kMagentaTint,
       accent: kMagenta,
     ),
     (
-      title: 'Craving Cuddles 🧸',
-      subtitle: 'Officially on cuddle standby right now.',
+      title: AppLocalizations.of(context).ceCravingCuddles,
+      subtitle: AppLocalizations.of(context).ceCravingMsg,
       message: 'Officially craving cuddles with you 🧸❤️',
       icon: Icons.pets_rounded,
       tint: kAmberTint,
       accent: kAmber,
     ),
     (
-      title: 'So Proud of You 🌟',
-      subtitle: 'A gentle reminder that you are a total rockstar.',
+      title: AppLocalizations.of(context).ceProudOfYou,
+      subtitle: AppLocalizations.of(context).ceProudMsg,
       message: 'Just wanted to say: I am so incredibly proud of you 🌟💖',
       icon: Icons.star_rounded,
       tint: kAmberTint,
       accent: kAmber,
     ),
     (
-      title: 'Recharge Needed 🔋',
-      subtitle: 'Low battery today, need some sweet partner warmth.',
+      title: AppLocalizations.of(context).ceRechargeNeeded,
+      subtitle: AppLocalizations.of(context).ceRechargeMsg,
       message: 'Low battery today, need your sweet positive warmth 🔋🥺',
       icon: Icons.battery_charging_full_rounded,
       tint: kTealTint,

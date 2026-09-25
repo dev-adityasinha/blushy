@@ -53,7 +53,8 @@ void main() {
 
       expect(find.text('YOUR SHARED SPACE'), findsOneWidget);
       expect(find.text('A little space for the two of you.'), findsOneWidget);
-      expect(find.text('Invite Partner'), findsWidgets);
+      // The header no longer carries its own invite button (removed by request);
+      // the single "Invite Your Partner" CTA lower down is the way in.
       expect(find.textContaining('No partner paired yet'), findsNothing,
           reason: 'the screen does not announce absence as an error');
     });
@@ -81,8 +82,20 @@ void main() {
     await withTestImages(() async {
       await _open(tester);
 
-      // Tap the primary invite button
-      await tester.tap(find.text('Invite Partner').first);
+      // Tap the primary invite CTA (lower down the aspirational preview). Scroll
+      // to build it in the lazy list, then ensure it is fully on-screen so the
+      // tap lands rather than hitting the viewport edge.
+      final invite = find.text('Invite Your Partner');
+      await tester.scrollUntilVisible(
+        invite,
+        400,
+        scrollable: find.byType(Scrollable).first,
+        maxScrolls: 40,
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(invite);
+      await tester.pumpAndSettle();
+      await tester.tap(invite);
       await tester.pumpAndSettle();
 
       // Opens the partner connections modal

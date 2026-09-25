@@ -259,7 +259,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   /// M Studio holds a GlobalKey to this state so its section cards can drive
   /// the journal directly, instead of every route into the journal going
   /// through one bottom sheet of tiles.
-  void openWriteReflection() => _createNewEntry(title: 'Self Reflection');
+  void openWriteReflection() => _createNewEntry(title: AppLocalizations.of(context).jrSelfReflection);
 
   void openRecordAndTranscribe() {
     _leaveDeskCover();
@@ -275,7 +275,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   /// Titled "Reflection" rather than the template's name: the title is what
   /// the editor's header shows, and the template still decides the prompts.
   void openTemplate(String name) =>
-      _createNewEntry(title: 'Reflection', templateName: name);
+      _createNewEntry(title: AppLocalizations.of(context).jrReflection, templateName: name);
 
   /// Opens a blank scrapbook page: the canvas and its sticker, washi tape and
   /// photo-frame toolbar, with nothing written on it.
@@ -285,7 +285,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
   /// same journal Reflection opens, and whose cover and desk choices were
   /// never saved.
   void openScrapbookCanvas() => _createNewEntry(
-        title: 'Scrapbook',
+        title: AppLocalizations.of(context).jrScrapbook,
         // Recorded as the template too, so history can tell the two apart.
         templateName: scrapbookTemplateName,
         blank: true,
@@ -713,15 +713,15 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Accessibility & Motion Settings', style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                      Text(AppLocalizations.of(context).jrAccessibilityMotion, style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
                       IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
                     ],
                   ),
                   const SizedBox(height: 12),
                   SwitchListTile(
                     activeThumbColor: BlushyColors.primary,
-                    title: Text('Ambient Sounds', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('Play background environment soundscapes.', style: GoogleFonts.manrope(fontSize: 12)),
+                    title: Text(AppLocalizations.of(context).jrAmbientSounds, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text(AppLocalizations.of(context).jrPlayBackgroundSounds, style: GoogleFonts.manrope(fontSize: 12)),
                     value: _enableAmbientAudio,
                     onChanged: (val) {
                       setModalState(() => _enableAmbientAudio = val);
@@ -732,8 +732,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   SwitchListTile(
                     activeThumbColor: BlushyColors.primary,
-                    title: Text('Long Animations & Transitions', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('Enable 3D cover flipping and opening motion.', style: GoogleFonts.manrope(fontSize: 12)),
+                    title: Text(AppLocalizations.of(context).jrLongAnimations, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text(AppLocalizations.of(context).jrEnable3D, style: GoogleFonts.manrope(fontSize: 12)),
                     value: _enableAnimations,
                     onChanged: (val) {
                       setModalState(() => _enableAnimations = val);
@@ -742,8 +742,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   SwitchListTile(
                     activeThumbColor: BlushyColors.primary,
-                    title: Text('Decorative Effects', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('Coffee steam curves, plant sway, & reflections.', style: GoogleFonts.manrope(fontSize: 12)),
+                    title: Text(AppLocalizations.of(context).jrDecorativeEffects, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text(AppLocalizations.of(context).jrCoffeeSteam, style: GoogleFonts.manrope(fontSize: 12)),
                     value: _enableDecorativeEffects,
                     onChanged: (val) {
                       setModalState(() => _enableDecorativeEffects = val);
@@ -1374,8 +1374,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               JournalCoverWidget(
-                title: 'My Scrapbook',
-                subtitle: 'Dream Big. Write Beautifully.',
+                title: AppLocalizations.of(context).jrMyScrapbook,
+                subtitle: AppLocalizations.of(context).jrDreamBig,
                 coverColor: _selectedCoverColor,
                 ribbonColor: _selectedRibbonColor,
                 material: _selectedCoverMaterial,
@@ -1404,20 +1404,20 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    Text('Cover: ', style: GoogleFonts.manrope(fontSize: 11, color: Colors.white)),
+                    Text(AppLocalizations.of(context).jrCover, style: GoogleFonts.manrope(fontSize: 11, color: Colors.white)),
                     _buildCoverColorDot(const Color(0xFF8B4513)),
                     _buildCoverColorDot(const Color(0xFFFBCFE8)),
                     _buildCoverColorDot(const Color(0xFFC084FC)),
                     _buildCoverColorDot(const Color(0xFF1E3A8A)),
                     _buildCoverColorDot(const Color(0xFF065F46)),
                     const SizedBox(width: 8),
-                    Text('Ribbon: ', style: GoogleFonts.manrope(fontSize: 11, color: Colors.white)),
+                    Text(AppLocalizations.of(context).jrRibbon, style: GoogleFonts.manrope(fontSize: 11, color: Colors.white)),
                     _buildRibbonDot(const Color(0xFFD97706)),
                     _buildRibbonDot(const Color(0xFFE11D48)),
                     _buildRibbonDot(const Color(0xFF059669)),
                     _buildRibbonDot(BlushyColors.accent),
                     const SizedBox(width: 8),
-                    Text('Desk: ', style: GoogleFonts.manrope(fontSize: 11, color: Colors.white)),
+                    Text(AppLocalizations.of(context).jrDesk, style: GoogleFonts.manrope(fontSize: 11, color: Colors.white)),
                     _buildDeskChip('Wood', DeskSurfaceTheme.wood),
                     _buildDeskChip('Marble', DeskSurfaceTheme.marble),
                     _buildDeskChip('Pink', DeskSurfaceTheme.pink),
@@ -1549,17 +1549,17 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     children: [
                       IconButton(
                         icon: const Icon(Icons.book_rounded, color: BlushyColors.primary),
-                        tooltip: 'Desk & Diary Cover',
+                        tooltip: AppLocalizations.of(context).jrDeskDiaryCover,
                         onPressed: () => setState(() => _showDeskCoverView = true),
                       ),
                       IconButton(
                         icon: const Icon(Icons.volume_up_rounded, color: BlushyColors.primary),
-                        tooltip: 'Ambient Sound Environment',
+                        tooltip: AppLocalizations.of(context).jrAmbientSoundEnv,
                         onPressed: () => _showAmbientAudioDialog(),
                       ),
                       IconButton(
                         icon: const Icon(Icons.accessibility_new_rounded, color: BlushyColors.primary),
-                        tooltip: 'Accessibility Settings',
+                        tooltip: AppLocalizations.of(context).jrAccessibilitySettings,
                         onPressed: () => _showAccessibilityDialog(),
                       ),
                     ],
@@ -1570,7 +1570,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search memories, stickers & templates...',
+                  hintText: AppLocalizations.of(context).jrSearchMemories,
                   hintStyle: GoogleFonts.manrope(fontSize: 13, color: BlushyColors.secondaryText),
                   prefixIcon: const Icon(Icons.search_rounded, size: 18, color: BlushyColors.secondaryText),
                   filled: true,
@@ -1717,7 +1717,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               Row(
                 children: [
                   const Text('📜 ', style: TextStyle(fontSize: 18)),
-                  Text('Smart Memory Timeline', style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                  Text(AppLocalizations.of(context).jrSmartMemoryTimeline, style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1732,7 +1732,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                         const SizedBox(height: 12),
                         Text(AppLocalizations.of(context).journalNoMemoriesFound, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text)),
                         const SizedBox(height: 4),
-                        Text('Tap "New Memory" or record a voice reflection.', style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText)),
+                        Text(AppLocalizations.of(context).jrTapNewMemory, style: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText)),
                       ],
                     ),
                   ),
@@ -1777,7 +1777,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Daily Ambient Environment Sounds', style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
+                      Text(AppLocalizations.of(context).jrDailyAmbientSounds, style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.bold, color: BlushyColors.text)),
                       IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
                     ],
                   ),
@@ -1822,7 +1822,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
     final newId = 'entry_${DateTime.now().millisecondsSinceEpoch}';
     final newEntry = JournalEntryItem(
       id: newId,
-      title: 'Scrapbook Memory',
+      title: AppLocalizations.of(context).jrScrapbookMemory,
       dateTime: DateTime.now(),
       items: [
         ScrapbookItem(id: 'tape_$newId', type: 'tape', content: const Color(0xFFFBCFE8), position: const Offset(20, 16)),
@@ -2021,17 +2021,17 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   const SizedBox(height: 12),
                   _buildOptionTile(
                     icon: Icons.edit_note_rounded,
-                    title: 'Write Reflection',
-                    subtitle: 'Start on a fresh scrapbook canvas',
+                    title: AppLocalizations.of(context).jrWriteReflection,
+                    subtitle: AppLocalizations.of(context).jrFreshCanvas,
                     onTap: () {
                       Navigator.pop(context);
-                      _createNewEntry(title: 'Self Reflection');
+                      _createNewEntry(title: AppLocalizations.of(context).jrSelfReflection);
                     },
                   ),
                   _buildOptionTile(
                     icon: Icons.mic_none_rounded,
-                    title: 'Record & Transcribe',
-                    subtitle: 'Speak and let Docsy transcribe into your journal',
+                    title: AppLocalizations.of(context).jrRecordTranscribe,
+                    subtitle: AppLocalizations.of(context).jrSpeakDocsyTranscribe,
                     onTap: () {
                       Navigator.pop(context);
                       setState(() {
@@ -2042,8 +2042,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   _buildOptionTile(
                     icon: Icons.grid_view_rounded,
-                    title: 'Start from Template',
-                    subtitle: 'Choose a guided journaling template',
+                    title: AppLocalizations.of(context).jrStartFromTemplate,
+                    subtitle: AppLocalizations.of(context).jrChooseTemplate,
                     onTap: () {
                       Navigator.pop(context);
                       _showTemplateSelectionModal();
@@ -2051,8 +2051,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   _buildOptionTile(
                     icon: Icons.search_rounded,
-                    title: 'Smart AI Search',
-                    subtitle: 'Contextual semantic search across memories',
+                    title: AppLocalizations.of(context).jrSmartAiSearch,
+                    subtitle: AppLocalizations.of(context).jrSemanticSearch,
                     onTap: () {
                       Navigator.pop(context);
                       _openSmartSearchDialog();
@@ -2060,8 +2060,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   _buildOptionTile(
                     icon: Icons.military_tech_rounded,
-                    title: 'Memory Vault',
-                    subtitle: 'Starred memories & custom collections',
+                    title: AppLocalizations.of(context).jrMemoryVault,
+                    subtitle: AppLocalizations.of(context).jrStarredMemories,
                     onTap: () {
                       Navigator.pop(context);
                       final localList = _entries.map((e) => LocalJournalEntry(id: e.id, date: e.dateTime.toString(), title: e.title, body: '', moodKey: e.moodKey)).toList();
@@ -2070,8 +2070,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   _buildOptionTile(
                     icon: Icons.calendar_month_rounded,
-                    title: 'Smart Calendar & Map',
-                    subtitle: 'Visual mood grid & location pins',
+                    title: AppLocalizations.of(context).jrSmartCalendarMap,
+                    subtitle: AppLocalizations.of(context).jrVisualMoodGrid,
                     onTap: () {
                       Navigator.pop(context);
                       final localList = _entries.map((e) => LocalJournalEntry(id: e.id, date: e.dateTime.toString(), title: e.title, body: '', moodKey: e.moodKey)).toList();
@@ -2081,8 +2081,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   _buildOptionTile(
                     icon: Icons.eco_rounded,
-                    title: 'Reflective Content Garden',
-                    subtitle: 'Organic garden growth tied to reflection depth',
+                    title: AppLocalizations.of(context).jrContentGarden,
+                    subtitle: AppLocalizations.of(context).jrGardenGrowth,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(
@@ -2092,8 +2092,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   _buildOptionTile(
                     icon: Icons.analytics_rounded,
-                    title: 'Journal Insights Dashboard',
-                    subtitle: 'Writing statistics, word count & active hours',
+                    title: AppLocalizations.of(context).jrInsightsDashboard,
+                    subtitle: AppLocalizations.of(context).jrWritingStats,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const JournalDashboardWidget()));
@@ -2101,8 +2101,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   _buildOptionTile(
                     icon: Icons.history_edu_rounded,
-                    title: 'Year in Review Scrapbook',
-                    subtitle: 'Guided multi-page yearly recap',
+                    title: AppLocalizations.of(context).jrYearInReview,
+                    subtitle: AppLocalizations.of(context).jrGuidedRecap,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => YearInReviewScrapbook(
@@ -2114,8 +2114,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   _buildOptionTile(
                     icon: Icons.lock_clock_rounded,
-                    title: 'Memory Time Capsule',
-                    subtitle: 'Encrypted future memories with ceremonial unlock',
+                    title: AppLocalizations.of(context).jrMemoryTimeCapsule,
+                    subtitle: AppLocalizations.of(context).jrEncryptedFuture,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const TimeCapsuleWidget()));
@@ -2123,8 +2123,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   _buildOptionTile(
                     icon: Icons.file_upload_rounded,
-                    title: 'Export Studio (6 Layouts)',
-                    subtitle: 'Export PDF, Markdown, JSON, HTML',
+                    title: AppLocalizations.of(context).jrExportStudio,
+                    subtitle: AppLocalizations.of(context).jrExportFormats,
                     onTap: () {
                       Navigator.pop(context);
                       if (_entries.isNotEmpty) {
@@ -2132,7 +2132,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                         final exp = _exportService.exportEntry(entry: sample, format: ExportFormat.markdown, style: ExportLayoutStyle.hardcoverScrapbook);
                         showDialog(
                           context: context,
-                          builder: (_) => AlertDialog(title: const Text('Export Studio Preview'), content: SingleChildScrollView(child: Text(exp))),
+                          builder: (_) => AlertDialog(title: Text(AppLocalizations.of(context).jrExportStudioPreview), content: SingleChildScrollView(child: Text(exp))),
                         );
                       }
                     },
@@ -2235,8 +2235,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                           child: TextField(
                             controller: _titleController,
                             style: GoogleFonts.instrumentSerif(fontSize: 18, fontWeight: FontWeight.w700, color: BlushyColors.text),
-                            decoration: const InputDecoration(
-                              hintText: 'Entry Title...',
+                            decoration: InputDecoration(
+                              hintText: AppLocalizations.of(context).jrEntryTitle,
                               border: InputBorder.none,
                             ),
                           ),
@@ -2247,17 +2247,17 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   IconButton(
                     icon: const Icon(Icons.auto_awesome_rounded, color: Color(0xFFD97706), size: 20),
-                    tooltip: 'AI Title Suggestions',
+                    tooltip: AppLocalizations.of(context).jrAiTitleSuggestions,
                     onPressed: _showAiTitlePickerModal,
                   ),
                   IconButton(
                     icon: const Icon(Icons.menu_book_rounded, color: Color(0xFFD97706), size: 20),
-                    tooltip: 'Weekly Memory Book',
+                    tooltip: AppLocalizations.of(context).jrWeeklyMemoryBook,
                     onPressed: _showMemoryBookModal,
                   ),
                   IconButton(
                     icon: const Icon(Icons.shield_rounded, color: Color(0xFF10B981), size: 20),
-                    tooltip: 'AI & Privacy Settings',
+                    tooltip: AppLocalizations.of(context).jrAiPrivacySettings,
                     onPressed: _showAiPrivacySettingsModal,
                   ),
                   IconButton(
@@ -2266,7 +2266,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   ),
                   IconButton(
                     icon: const Icon(Icons.check_rounded, color: Colors.green),
-                    tooltip: 'Save & close',
+                    tooltip: AppLocalizations.of(context).jrSaveClose,
                     onPressed: _saveAndCloseEntry,
                   ),
                 ],
@@ -2566,7 +2566,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               keyboardType: TextInputType.multiline,
               cursorColor: BlushyColors.primary,
               style: _getTextStyle(14, color: item.customColor != null ? Colors.white : BlushyColors.text),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -2679,7 +2679,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               children: [
                 const Icon(Icons.auto_awesome_rounded, size: 14, color: BlushyColors.primary),
                 const SizedBox(width: 4),
-                Text('DOCSY INSIGHTS', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
+                Text(AppLocalizations.of(context).jrDocsyInsights, style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: BlushyColors.primary)),
               ],
             ),
             const SizedBox(height: 6),
@@ -2711,37 +2711,37 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             children: [
               IconButton(
                 icon: const Icon(Icons.flip_to_front_rounded, color: Colors.white, size: 16),
-                tooltip: 'Bring to Front',
+                tooltip: AppLocalizations.of(context).jrBringToFront,
                 onPressed: () => _bringToFront(item.id),
               ),
               IconButton(
                 icon: const Icon(Icons.flip_to_back_rounded, color: Colors.white, size: 16),
-                tooltip: 'Send to Back',
+                tooltip: AppLocalizations.of(context).jrSendToBack,
                 onPressed: () => _sendToBack(item.id),
               ),
               IconButton(
                 icon: const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 16),
-                tooltip: 'Zoom In',
+                tooltip: AppLocalizations.of(context).jrZoomIn,
                 onPressed: () => setState(() => item.scale = (item.scale + 0.15).clamp(0.4, 3.0)),
               ),
               IconButton(
                 icon: const Icon(Icons.zoom_out_rounded, color: Colors.white, size: 16),
-                tooltip: 'Zoom Out',
+                tooltip: AppLocalizations.of(context).jrZoomOut,
                 onPressed: () => setState(() => item.scale = (item.scale - 0.15).clamp(0.4, 3.0)),
               ),
               IconButton(
                 icon: const Icon(Icons.rotate_right_rounded, color: Colors.white, size: 16),
-                tooltip: 'Rotate 15°',
+                tooltip: AppLocalizations.of(context).jrRotate15,
                 onPressed: () => setState(() => item.rotation += 0.26),
               ),
               IconButton(
                 icon: const Icon(Icons.color_lens_rounded, color: Colors.white, size: 16),
-                tooltip: 'Object Color',
+                tooltip: AppLocalizations.of(context).jrObjectColor,
                 onPressed: () => _showColorPickerDialog(item),
               ),
               IconButton(
                 icon: const Icon(Icons.copy_rounded, color: Colors.white, size: 16),
-                tooltip: 'Duplicate',
+                tooltip: AppLocalizations.of(context).jrDuplicate,
                 onPressed: () => _duplicateItem(item),
               ),
               IconButton(
@@ -2751,7 +2751,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
               ),
               IconButton(
                 icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
-                tooltip: 'Deselect',
+                tooltip: AppLocalizations.of(context).jrDeselect,
                 onPressed: () => setState(() => _selectedItemId = null),
               ),
             ],
@@ -2926,7 +2926,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 border: Border.all(color: BlushyColors.border),
               ),
               child: Center(
-                child: Text('Add Polaroid Frame', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.text)),
+                child: Text(AppLocalizations.of(context).jrAddPolaroid, style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: BlushyColors.text)),
               ),
             ),
           ),
@@ -2941,7 +2941,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 border: Border.all(color: const Color(0xFFFBCFE8)),
               ),
               child: Center(
-                child: Text('Pink Rose Frame', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF831843))),
+                child: Text(AppLocalizations.of(context).jrPinkRoseFrame, style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF831843))),
               ),
             ),
           ),
@@ -2999,7 +2999,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             _startRecordingFlow();
           },
           icon: const Icon(Icons.mic_rounded, size: 16),
-          label: const Text('Dictate to Text (STT)'),
+          label: Text(AppLocalizations.of(context).jrDictateToText),
           style: ElevatedButton.styleFrom(
             backgroundColor: BlushyColors.primary,
             foregroundColor: Colors.white,
@@ -3023,7 +3023,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
             ElevatedButton.icon(
               onPressed: () => _addItem('ai_${DateTime.now().millisecondsSinceEpoch}', 'ai_insight', 'Docsy Reflection: ${reflection.summaryText}', const Offset(30, 180)),
               icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-              label: const Text('Add Reflection Summary'),
+              label: Text(AppLocalizations.of(context).jrAddReflectionSummary),
               style: ElevatedButton.styleFrom(backgroundColor: BlushyColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
             ),
             const SizedBox(width: 8),
@@ -3078,11 +3078,11 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 children: [
                   const Icon(Icons.auto_awesome_rounded, color: Color(0xFFD97706), size: 20),
                   const SizedBox(width: 8),
-                  Text('Docsy Title Suggestions', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context).jrDocsyTitleSuggestions, style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 6),
-              Text('Pick a title that matches your reflection mood:', style: GoogleFonts.manrope(fontSize: 12, color: Colors.grey[600])),
+              Text(AppLocalizations.of(context).jrPickTitleMood, style: GoogleFonts.manrope(fontSize: 12, color: Colors.grey[600])),
               const SizedBox(height: 16),
               ...suggestions.map((title) => ListTile(
                     leading: const Icon(Icons.edit_note_rounded, color: Color(0xFFD97706)),
@@ -3127,7 +3127,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   const SizedBox(height: 12),
                   SwitchListTile(
                     title: Text(AppLocalizations.of(context).journalTitleGeneration, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
-                    subtitle: Text('Suggest thoughtful entry titles', style: GoogleFonts.manrope(fontSize: 11)),
+                    subtitle: Text(AppLocalizations.of(context).jrSuggestTitles, style: GoogleFonts.manrope(fontSize: 11)),
                     value: _insightScheduler.enableTitles,
                     activeTrackColor: const Color(0xFF10B981),
                     onChanged: (val) {
@@ -3144,8 +3144,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                     },
                   ),
                   SwitchListTile(
-                    title: Text('Memory Links', style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
-                    subtitle: Text('Discover explainable links between memories', style: GoogleFonts.manrope(fontSize: 11)),
+                    title: Text(AppLocalizations.of(context).jrMemoryLinks, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600)),
+                    subtitle: Text(AppLocalizations.of(context).jrDiscoverLinks, style: GoogleFonts.manrope(fontSize: 11)),
                     value: _insightScheduler.enableMemoryLinks,
                     activeTrackColor: const Color(0xFF10B981),
                     onChanged: (val) {
@@ -3256,7 +3256,7 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                 children: [
                   const Icon(Icons.search_rounded, color: Color(0xFFD97706)),
                   const SizedBox(width: 8),
-                  Text('Smart Context Search', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context).jrSmartContextSearch, style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               content: SizedBox(
@@ -3266,8 +3266,8 @@ class BlushyJournalScreenState extends State<BlushyJournalScreen> with TickerPro
                   children: [
                     TextField(
                       controller: searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'Search (e.g. Beach, Happy, Exams)...',
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context).jrSearchExamples,
                         prefixIcon: Icon(Icons.psychology_rounded, color: Color(0xFFD97706)),
                       ),
                       onChanged: (val) {
@@ -3573,7 +3573,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
                       controller: _hexController,
                       style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: BlushyColors.text),
                       decoration: InputDecoration(
-                        labelText: 'Hex Code',
+                        labelText: AppLocalizations.of(context).jrHexCode,
                         labelStyle: GoogleFonts.manrope(fontSize: 12, color: BlushyColors.secondaryText),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -3592,7 +3592,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
               // Red Slider
               Row(
                 children: [
-                  SizedBox(width: 45, child: Text('Red', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
+                  SizedBox(width: 45, child: Text(AppLocalizations.of(context).jrRed, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
                   Expanded(
                     child: SliderTheme(
                       data: SliderThemeData(
@@ -3620,7 +3620,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
               // Green Slider
               Row(
                 children: [
-                  SizedBox(width: 45, child: Text('Green', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
+                  SizedBox(width: 45, child: Text(AppLocalizations.of(context).jrGreen, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
                   Expanded(
                     child: SliderTheme(
                       data: SliderThemeData(
@@ -3648,7 +3648,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
               // Blue Slider
               Row(
                 children: [
-                  SizedBox(width: 45, child: Text('Blue', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
+                  SizedBox(width: 45, child: Text(AppLocalizations.of(context).jrBlue, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.text))),
                   Expanded(
                     child: SliderTheme(
                       data: SliderThemeData(
@@ -3674,7 +3674,7 @@ class _EditColorDialogState extends State<_EditColorDialog> {
               ),
 
               const SizedBox(height: 16),
-              Text('Basic Colors', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.secondaryText)),
+              Text(AppLocalizations.of(context).jrBasicColors, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: BlushyColors.secondaryText)),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,

@@ -6,7 +6,8 @@ import { initDatabase } from './utils/initDatabase.js';
 import { logger } from './utils/logger.js';
 import { assertCaptchaNotFalselyEnabled } from './services/captchaService.js';
 import { startCapsuleDeliveryScheduler } from './services/timeCapsuleService.js';
-import { connectRealtimeBus, disconnectRealtimeBus, initRealtimeHub, stopRealtimeHeartbeat } from './utils/realtimeHub.js';
+import { connectRealtimeBus, disconnectRealtimeBus, initRealtimeHub, publishToUsers, setInboundMessageHandler, setPresenceObserver, stopRealtimeHeartbeat } from './utils/realtimeHub.js';
+import { getActivePartnerUserIds } from './repositories/partnerRepository.js';
 import { startCommunityCleanupScheduler } from './services/communityCleanupService.js';
 import { startDailyChatSummaryScheduler } from './services/dailyChatSummaryService.js';
 import { startPushDispatchScheduler } from './services/pushDispatchService.js';
@@ -68,6 +69,35 @@ async function start() {
   await initDatabase();
   await bootstrapMedicalContent();
   initRealtimeHub(server);
+  // When a user's socket connects or fully disconnects, tell their active
+  // partners so the partner screen can show an online/offline dot. Registered
+  // here (not inside the hub) so the hub stays free of partner/DB imports.
+  setPresenceObserver(async (userId, online) => {
+    try {
+      const partnerIds = await getActivePartnerUserIds(userId);
+      if (partnerIds.length > 0) {
+        publishToUsers(partnerIds, 'partner.presence', { subjectUserId: userId, online });
+      }
+    } catch (error) {
+      logger.warn(`Presence notify failed: ${error?.message ?? error}`);
+    }
+  });
+  // Relay a typing ping to the sender's active partners so their messenger can
+  // show a "typing…" indicator. Fire-and-forget; a dropped ping is harmless.
+  setInboundMessageHandler(async (userId, message) => {
+    if (message?.type !== 'typing') return;
+    try {
+      const partnerIds = await getActivePartnerUserIds(userId);
+      if (partnerIds.length > 0) {
+        publishToUsers(partnerIds, 'partner.typing', {
+          subjectUserId: userId,
+          typing: message.typing === true,
+        });
+      }
+    } catch (error) {
+      logger.warn(`Typing relay failed: ${error?.message ?? error}`);
+    }
+  });
   // Joins the cross-instance bus. No-op without REDIS_URL, so a single
   // instance behaves exactly as before.
   await connectRealtimeBus();

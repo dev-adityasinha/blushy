@@ -197,16 +197,23 @@ export async function invitePartner(req, res, next) {
 
     const receiver = await partnerRepository.getUserByEmail(partnerEmail);
     if (!receiver) {
-      if (process.env.NODE_ENV === 'test') {
-        throw createHttpError(404, 'Partner with this email not found. Please ask them to sign up first.');
+      // No account yet: rather than refusing (which meant nobody was ever
+      // emailed), send an invite link to that address so they can join and
+      // connect. Reuses the shareable-invite machinery and is rate limited so
+      // it cannot be used to email arbitrary addresses in bulk.
+      const rateLimitOk = await partnerRepository.checkDistributedRateLimit({
+        key: `invite_email_new_${sender.user_id}`,
+        limit: 5,
+        windowSeconds: 600,
+      });
+      if (!rateLimitOk) {
+        throw createHttpError(429, 'Too many invitations sent. Please try again later.');
       }
 
-      // Unregistered partner: generate an invitation link and email it to them!
       const token = crypto.randomBytes(32).toString('hex');
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
       const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
-
-      const invitation = await partnerRepository.createShareableInvite({
+      const pendingInvite = await partnerRepository.createShareableInvite({
         senderUserId: sender.user_id,
         tokenHash,
         expiresAt,
@@ -214,31 +221,33 @@ export async function invitePartner(req, res, next) {
       });
 
       const inviteUrl = buildInviteUrl(token);
-
-      let emailed = false;
+      let invitedByEmail = false;
       try {
         await emailService.sendPartnerInvite({
           to: partnerEmail,
           senderName: sender.display_name || sender.displayName || sender.email,
           inviteUrl,
         });
-        emailed = true;
+        invitedByEmail = true;
       } catch (error) {
-        logger.warn('Partner invitation email to unregistered partner failed', {
+        logger.warn('Partner invite email to a new account failed', {
+          invitationId: pendingInvite?.invitationId,
           to: partnerEmail,
           message: error?.message,
         });
       }
 
-      return res.status(201).json({
-        message: emailed
-          ? `Invitation sent to ${partnerEmail}!`
-          : `Invitation created for ${partnerEmail}. Share your invite code: ${token}`,
-        emailed,
-        invitation,
+      res.status(201).json({
+        message: invitedByEmail
+          ? 'Invitation emailed. They will connect once they sign up and open the link.'
+          : 'Invitation created, but we could not email them.',
+        emailed: invitedByEmail,
+        pendingSignup: true,
+        invitation: pendingInvite,
         inviteUrl,
         inviteCode: token,
       });
+      return;
     }
 
     const alreadyConnected = await partnerRepository.hasConnectionBetween(sender.user_id, receiver.userId);

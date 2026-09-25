@@ -1495,14 +1495,19 @@ test('invite: you cannot invite yourself', async () => {
   assert.equal(result.status, 400);
 });
 
-test('invite: an address with no account is refused, not silently dropped', async () => {
+test('invite: an address with no account gets an emailed invite to join', async () => {
   const woman = await createTestUser({ role: 'woman' });
 
   const result = await api('POST', '/partner/invite', {
     token: woman.token,
     body: { partnerEmail: 'nobody-here@example.test' },
   });
-  assert.equal(result.status, 404, 'the sender needs to know it did not go anywhere');
+  // No account yet is no longer refused: they are emailed an invite link so
+  // they can sign up and connect, rather than the invite being dropped.
+  assert.ok(result.status === 200 || result.status === 201, `invite failed: ${result.status}`);
+  assert.equal(result.body.pendingSignup, true, 'a no-account invite is a pending-signup invite');
+  assert.equal(result.body.emailed, true, 'the invite is emailed to that address');
+  assert.ok(result.body.invitation, 'a shareable invitation is created to back the emailed link');
 });
 
 test('invite: a third party cannot answer an invitation addressed to someone else', async () => {

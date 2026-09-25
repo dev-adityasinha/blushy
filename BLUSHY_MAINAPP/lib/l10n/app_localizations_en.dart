@@ -9,6 +9,636 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get ceRemindScreenshot => 'Remind to send screenshot 📸';
+
+  @override
+  String get ceRemindMsg =>
+      '“Hey, gentle reminder to send that screenshot! 😉”';
+
+  @override
+  String get cePlayfulPing => 'Playful Ping 👋';
+
+  @override
+  String get cePlayfulMsg => '“Hey you! Still waiting on your reply 😉”';
+
+  @override
+  String get ceGentleThought => 'Gentle Thought ☕';
+
+  @override
+  String get ceGentleMsg => '“Take your time, just thinking of you! 💕”';
+
+  @override
+  String get ceWhisperFollowUp => 'Or whisper a quick follow-up...';
+
+  @override
+  String get ceMyTreat => 'My treat! Dress up cute ❤️';
+
+  @override
+  String get ceAddCuteNote => 'Add a cute note...';
+
+  @override
+  String get ceUndo => 'Undo';
+
+  @override
+  String get ceClear => 'Clear';
+
+  @override
+  String get ceHotCoffee => 'Hot Coffee & Cozy Hug ☕';
+
+  @override
+  String get ceHotCoffeeMsg =>
+      'Sending a warm cup of coffee and a tight embrace.';
+
+  @override
+  String get ceBigEmbrace => 'Big Tight Embrace 🫂';
+
+  @override
+  String get ceBigEmbraceMsg =>
+      'Wrapping you in the biggest, warmest hug today.';
+
+  @override
+  String get ceForeheadKiss => 'Sweet Forehead Kiss 💋';
+
+  @override
+  String get ceForeheadKissMsg =>
+      'A gentle forehead kiss to brighten your day.';
+
+  @override
+  String get ceTreatDelivery => 'Sweet Treat Delivery 🍫';
+
+  @override
+  String get ceTreatDeliveryMsg =>
+      'Virtual sweet chocolates and all my affection.';
+
+  @override
+  String get cePauseBreathe => 'Gentle Pause & Breathe 🌿';
+
+  @override
+  String get cePauseBreatheMsg =>
+      'Take a deep breath, you are doing incredible.';
+
+  @override
+  String get ceThinkingOfYou => 'Thinking of You ✨';
+
+  @override
+  String get ceThinkingMsg => 'Daydreaming and smiling thinking about you.';
+
+  @override
+  String get ceMissingVoice => 'Missing Your Voice 🥺';
+
+  @override
+  String get ceMissingMsg =>
+      'Missing you extra and wishing you were right here.';
+
+  @override
+  String get ceCravingCuddles => 'Craving Cuddles 🧸';
+
+  @override
+  String get ceCravingMsg => 'Officially on cuddle standby right now.';
+
+  @override
+  String get ceProudOfYou => 'So Proud of You 🌟';
+
+  @override
+  String get ceProudMsg => 'A gentle reminder that you are a total rockstar.';
+
+  @override
+  String get ceRechargeNeeded => 'Recharge Needed 🔋';
+
+  @override
+  String get ceRechargeMsg =>
+      'Low battery today, need some sweet partner warmth.';
+
+  @override
+  String get noteNoPhoto => 'No photo added.';
+
+  @override
+  String get noteKeepWriting => 'Keep writing';
+
+  @override
+  String get noteRemove => 'Remove';
+
+  @override
+  String get noteSize => 'Size';
+
+  @override
+  String get noteBold => 'Bold';
+
+  @override
+  String get noteItalic => 'Italic';
+
+  @override
+  String get noteUnderline => 'Underline';
+
+  @override
+  String get noteBullet => 'Bullet';
+
+  @override
+  String get noteNumbered => 'Numbered';
+
+  @override
+  String get noteChecklist => 'Checklist';
+
+  @override
+  String get noteSmaller => 'Smaller';
+
+  @override
+  String get noteBigger => 'Bigger';
+
+  @override
+  String get noteDeleteEntry => 'Delete this entry?';
+
+  @override
+  String get noteKeep => 'Keep';
+
+  @override
+  String get noteTellMe => 'Tell me';
+
+  @override
+  String get noteWriteIt => 'Write it';
+
+  @override
+  String get noteGivePrompt => 'Give me a prompt';
+
+  @override
+  String get noteNotThisOne => 'Not this one';
+
+  @override
+  String get ptGardenGrew => 'Your garden grew. Your partner sees it too.';
+
+  @override
+  String get ptDatePlanner => 'Date Planner & AI Concierge';
+
+  @override
+  String get ptDrawingCanvas => 'Shared Drawing Canvas';
+
+  @override
+  String get ptCoupleGames => 'Couple Games & Questions';
+
+  @override
+  String get ptVirtualBouquet => 'Virtual Bouquet & Blooms';
+
+  @override
+  String get ptGratitudeChallenge => 'Daily Gratitude Challenge';
+
+  @override
+  String get ptConnectedSuccess =>
+      '🎉 Connected with your partner successfully!';
+
+  @override
+  String get ptAccept => 'ACCEPT';
+
+  @override
+  String get ptPortalLive =>
+      'Connected! Your shared partner portal is now live 🎉';
+
+  @override
+  String get ptPrivateSpaceOn =>
+      'Private space on. Your personal updates are paused.';
+
+  @override
+  String get ptSharingResumed => 'Sharing resumed, exactly as it was.';
+
+  @override
+  String get ptCycle => 'CYCLE';
+
+  @override
+  String get ptEnergy => 'ENERGY';
+
+  @override
+  String get ptMood => 'MOOD';
+
+  @override
+  String get ptPartnerSpaceLive =>
+      'Connected! Your Partner Space is now live 🎉';
+
+  @override
+  String get commonOk => 'OK';
+
+  @override
+  String get ptDisconnectPartner => 'Disconnect partner?';
+
+  @override
+  String get ptInvite => 'Invite';
+
+  @override
+  String get ptPrivacySettings => 'Privacy Settings';
+
+  @override
+  String get ptWhatYouShare => 'What you share';
+
+  @override
+  String get ptPrivacyUpdated => 'Privacy settings updated.';
+
+  @override
+  String get ptRequestAccepted => 'Partner request accepted! 🎉';
+
+  @override
+  String get ptPartnerEmail => 'Partner Email Address';
+
+  @override
+  String get commonOr => 'OR';
+
+  @override
+  String get ptInviteLinkCopied => 'Invite link copied to clipboard! 📋';
+
+  @override
+  String get ptCopyLink => 'Copy link';
+
+  @override
+  String get ptInviteCode => 'Invite code';
+
+  @override
+  String get ptSavedScrapbook => 'Saved to shared scrapbook memory!';
+
+  @override
+  String get ptLetterTitle => 'Letter Title (e.g. For our special day)';
+
+  @override
+  String get ptLetterHint =>
+      'Pour your heart out here... Your thoughts, gratitude, or memories for your partner.';
+
+  @override
+  String get ptLetterValidation =>
+      'Please enter both a title and letter message.';
+
+  @override
+  String get jrSelfReflection => 'Self Reflection';
+
+  @override
+  String get jrReflection => 'Reflection';
+
+  @override
+  String get jrScrapbook => 'Scrapbook';
+
+  @override
+  String get jrAccessibilityMotion => 'Accessibility & Motion Settings';
+
+  @override
+  String get jrAmbientSounds => 'Ambient Sounds';
+
+  @override
+  String get jrPlayBackgroundSounds =>
+      'Play background environment soundscapes.';
+
+  @override
+  String get jrLongAnimations => 'Long Animations & Transitions';
+
+  @override
+  String get jrEnable3D => 'Enable 3D cover flipping and opening motion.';
+
+  @override
+  String get jrDecorativeEffects => 'Decorative Effects';
+
+  @override
+  String get jrCoffeeSteam => 'Coffee steam curves, plant sway, & reflections.';
+
+  @override
+  String get jrMyScrapbook => 'My Scrapbook';
+
+  @override
+  String get jrDreamBig => 'Dream Big. Write Beautifully.';
+
+  @override
+  String get jrCover => 'Cover: ';
+
+  @override
+  String get jrRibbon => 'Ribbon: ';
+
+  @override
+  String get jrDesk => 'Desk: ';
+
+  @override
+  String get jrDeskDiaryCover => 'Desk & Diary Cover';
+
+  @override
+  String get jrAmbientSoundEnv => 'Ambient Sound Environment';
+
+  @override
+  String get jrAccessibilitySettings => 'Accessibility Settings';
+
+  @override
+  String get jrSearchMemories => 'Search memories, stickers & templates...';
+
+  @override
+  String get jrSmartMemoryTimeline => 'Smart Memory Timeline';
+
+  @override
+  String get jrTapNewMemory =>
+      'Tap \"New Memory\" or record a voice reflection.';
+
+  @override
+  String get jrDailyAmbientSounds => 'Daily Ambient Environment Sounds';
+
+  @override
+  String get jrScrapbookMemory => 'Scrapbook Memory';
+
+  @override
+  String get jrWriteReflection => 'Write Reflection';
+
+  @override
+  String get jrFreshCanvas => 'Start on a fresh scrapbook canvas';
+
+  @override
+  String get jrRecordTranscribe => 'Record & Transcribe';
+
+  @override
+  String get jrSpeakDocsyTranscribe =>
+      'Speak and let Docsy transcribe into your journal';
+
+  @override
+  String get jrStartFromTemplate => 'Start from Template';
+
+  @override
+  String get jrChooseTemplate => 'Choose a guided journaling template';
+
+  @override
+  String get jrSmartAiSearch => 'Smart AI Search';
+
+  @override
+  String get jrSemanticSearch => 'Contextual semantic search across memories';
+
+  @override
+  String get jrMemoryVault => 'Memory Vault';
+
+  @override
+  String get jrStarredMemories => 'Starred memories & custom collections';
+
+  @override
+  String get jrSmartCalendarMap => 'Smart Calendar & Map';
+
+  @override
+  String get jrVisualMoodGrid => 'Visual mood grid & location pins';
+
+  @override
+  String get jrContentGarden => 'Reflective Content Garden';
+
+  @override
+  String get jrGardenGrowth => 'Organic garden growth tied to reflection depth';
+
+  @override
+  String get jrInsightsDashboard => 'Journal Insights Dashboard';
+
+  @override
+  String get jrWritingStats => 'Writing statistics, word count & active hours';
+
+  @override
+  String get jrYearInReview => 'Year in Review Scrapbook';
+
+  @override
+  String get jrGuidedRecap => 'Guided multi-page yearly recap';
+
+  @override
+  String get jrMemoryTimeCapsule => 'Memory Time Capsule';
+
+  @override
+  String get jrEncryptedFuture =>
+      'Encrypted future memories with ceremonial unlock';
+
+  @override
+  String get jrExportStudio => 'Export Studio (6 Layouts)';
+
+  @override
+  String get jrExportFormats => 'Export PDF, Markdown, JSON, HTML';
+
+  @override
+  String get jrExportStudioPreview => 'Export Studio Preview';
+
+  @override
+  String get jrEntryTitle => 'Entry Title...';
+
+  @override
+  String get jrAiTitleSuggestions => 'AI Title Suggestions';
+
+  @override
+  String get jrWeeklyMemoryBook => 'Weekly Memory Book';
+
+  @override
+  String get jrAiPrivacySettings => 'AI & Privacy Settings';
+
+  @override
+  String get jrSaveClose => 'Save & close';
+
+  @override
+  String get jrDocsyInsights => 'DOCSY INSIGHTS';
+
+  @override
+  String get jrBringToFront => 'Bring to Front';
+
+  @override
+  String get jrSendToBack => 'Send to Back';
+
+  @override
+  String get jrZoomIn => 'Zoom In';
+
+  @override
+  String get jrZoomOut => 'Zoom Out';
+
+  @override
+  String get jrRotate15 => 'Rotate 15°';
+
+  @override
+  String get jrObjectColor => 'Object Color';
+
+  @override
+  String get jrDuplicate => 'Duplicate';
+
+  @override
+  String get jrDeselect => 'Deselect';
+
+  @override
+  String get jrAddPolaroid => 'Add Polaroid Frame';
+
+  @override
+  String get jrPinkRoseFrame => 'Pink Rose Frame';
+
+  @override
+  String get jrDictateToText => 'Dictate to Text (STT)';
+
+  @override
+  String get jrAddReflectionSummary => 'Add Reflection Summary';
+
+  @override
+  String get jrDocsyTitleSuggestions => 'Docsy Title Suggestions';
+
+  @override
+  String get jrPickTitleMood =>
+      'Pick a title that matches your reflection mood:';
+
+  @override
+  String get jrSuggestTitles => 'Suggest thoughtful entry titles';
+
+  @override
+  String get jrMemoryLinks => 'Memory Links';
+
+  @override
+  String get jrDiscoverLinks => 'Discover explainable links between memories';
+
+  @override
+  String get jrSmartContextSearch => 'Smart Context Search';
+
+  @override
+  String get jrSearchExamples => 'Search (e.g. Beach, Happy, Exams)...';
+
+  @override
+  String get jrHexCode => 'Hex Code';
+
+  @override
+  String get jrRed => 'Red';
+
+  @override
+  String get jrGreen => 'Green';
+
+  @override
+  String get jrBlue => 'Blue';
+
+  @override
+  String get jrBasicColors => 'Basic Colors';
+
+  @override
+  String get msRecovery => 'Recovery';
+
+  @override
+  String get msTimeCapsules => 'Time Capsules';
+
+  @override
+  String get msStartSession => 'Start a Session';
+
+  @override
+  String get msNoSessions => 'No sessions available yet.';
+
+  @override
+  String get msCreateNewCapsule => 'Create New Capsule';
+
+  @override
+  String get msNameIt => 'Name it';
+
+  @override
+  String get msWhatToSay => 'What do you want to say?';
+
+  @override
+  String get msOpenItIn => 'Open it in';
+
+  @override
+  String get msSeal => 'Seal';
+
+  @override
+  String get msKeepsakeSaved => 'Journal keepsake saved!';
+
+  @override
+  String get msStartWriting => 'Start writing or speak your thoughts...';
+
+  @override
+  String get authEmailAddress => 'Email Address';
+
+  @override
+  String get authPassword => 'Password';
+
+  @override
+  String get authConfirmPassword => 'Confirm Password';
+
+  @override
+  String get authNewPassword => 'New Password';
+
+  @override
+  String get authConfirmNewPassword => 'Confirm New Password';
+
+  @override
+  String get authUpdatePassword => 'Update Password';
+
+  @override
+  String get authSignIn => 'Sign in';
+
+  @override
+  String get authSignInInstead => 'Sign in instead?';
+
+  @override
+  String get authUseAnotherEmail => 'Use another email';
+
+  @override
+  String get authVerify => 'Verify';
+
+  @override
+  String get authSendRecoveryCode => 'Send Recovery Code';
+
+  @override
+  String get authCodeSentIfExists =>
+      'If an account exists for that email, a code is on its way.';
+
+  @override
+  String get authPasswordUpdated => 'Password updated. Please sign in.';
+
+  @override
+  String get authNewCodeSent => 'A new verification code has been sent.';
+
+  @override
+  String get setAccountSettings => 'Account Settings';
+
+  @override
+  String get setAccountProfile => 'Account & Profile';
+
+  @override
+  String get setPreferredName => 'Preferred Name';
+
+  @override
+  String get setAddName => 'Add name';
+
+  @override
+  String get setDateOfBirth => 'Date of Birth';
+
+  @override
+  String get setEmail => 'Email';
+
+  @override
+  String get setCycleBodyBaseline => 'Cycle & Body Baseline';
+
+  @override
+  String get setCurrentLifeStage => 'Current Life Stage';
+
+  @override
+  String get setCycleTracking => 'Cycle Tracking';
+
+  @override
+  String get setCycleLength => 'Cycle Length';
+
+  @override
+  String get setPeriodLength => 'Period Length';
+
+  @override
+  String get setHealthMedicalProfile => 'Health & Medical Profile';
+
+  @override
+  String get setNotSet => 'Not set';
+
+  @override
+  String get setAppPreferencesDocsy => 'App Preferences & Docsy AI';
+
+  @override
+  String get setDocsyMemory => 'Docsy Memory';
+
+  @override
+  String get setSupportAccount => 'Support & Account';
+
+  @override
+  String get setHelpFaq => 'Help & FAQ';
+
+  @override
+  String get setPrivacyDataReset => 'Privacy & Data Reset';
+
+  @override
+  String get setLogOut => 'Log Out';
+
+  @override
+  String setDaysValue(num count) {
+    return '$count days';
+  }
+
+  @override
+  String setEditItems(num count) {
+    return 'Edit $count items';
+  }
+
+  @override
   String get navHome => 'Home';
 
   @override

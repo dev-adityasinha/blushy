@@ -105,6 +105,11 @@ function mapConnectionRow(row, viewerUserId) {
       ...(row.permissions ?? {}),
     },
     partnerUserId: viewerIsUserA ? row.user_b_id : row.user_a_id,
+    // Whether the partner has a live WebSocket right now, so the client can
+    // show an online/offline dot on load without waiting for a presence event.
+    // Kept in sync afterwards by the 'partner.presence' events the hub emits on
+    // connect/disconnect.
+    partnerOnline: isUserOnline(viewerIsUserA ? row.user_b_id : row.user_a_id),
     // The name the partner chose, when they have set one. The three
     // aggregations below join the user document and only passed the
     // address through, so the portal had nothing else to show and put an
@@ -645,6 +650,28 @@ async function requestBreakup({ connectionId, actorUserId }) {
 
     return getConnectionForUser(connectionId, actorUserId, client);
   });
+}
+
+/**
+ * The user_ids on the other side of this user's ACTIVE connections.
+ *
+ * Used to tell a partner when this user comes online or goes offline. Scoped to
+ * 'active' so a pending or ended connection does not leak presence.
+ */
+export async function getActivePartnerUserIds(userId) {
+  if (!userId) return [];
+  const rows = await db.collection('partner_connections')
+    .find({
+      $or: [{ user_a_id: userId }, { user_b_id: userId }],
+      status: 'active',
+    })
+    .toArray();
+  const ids = new Set();
+  for (const row of rows) {
+    const other = row.user_a_id === userId ? row.user_b_id : row.user_a_id;
+    if (other) ids.add(other);
+  }
+  return [...ids];
 }
 
 async function listConnectionsForUser(userId) {

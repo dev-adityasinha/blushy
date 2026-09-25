@@ -30,12 +30,14 @@ void main() {
     }
   });
 
-  test('the Community tab itself still exists', () {
-    // The failure mode of over-removing here is deleting the feature rather
-    // than the duplicate entry point into it.
-    final shell = File('lib/features/home/blushy_shell.dart').readAsStringSync();
-    expect(shell.contains('BlushyCommunityScreen'), isTrue);
-
+  test('the Community feature is kept, just no longer a bottom-nav tab', () {
+    // The Community tab was removed from both shells by request. The failure
+    // mode to guard against is over-removing: deleting the feature code itself
+    // rather than only unwiring it from the navigation.
     expect(File('lib/features/community/community_screen.dart').existsSync(), isTrue);
+
+    final shell = File('lib/features/home/blushy_shell.dart').readAsStringSync();
+    expect(shell.contains('BlushyCommunityScreen'), isFalse,
+        reason: 'the community tab was intentionally removed from the shell');
   });
 }
