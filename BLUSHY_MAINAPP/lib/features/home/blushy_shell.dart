@@ -13,6 +13,7 @@ import 'dart:async';
 import '../../services/daily_rollover.dart';
 import '../../services/offline_event_queue.dart';
 import '../../services/sia_dashboard_service.dart';
+import '../../services/partner_websocket_service.dart';
 import 'home_screen.dart';
 
 /// Asks the shell to show one of its five tabs.
@@ -82,6 +83,7 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     WidgetsBinding.instance.addObserver(this);
 
     BlushyShellTabs.requested.addListener(_onTabRequested);
+    _listenForNudges();
 
     // After the first frame: the tour measures the tabs, and they have no
     // position until they have been laid out.
@@ -169,6 +171,9 @@ class _BlushyOSShellState extends State<BlushyOSShell>
     BlushyShellTabs.requested.removeListener(_onTabRequested);
     WidgetsBinding.instance.removeObserver(this);
     _midnightTimer?.cancel();
+    // Cancel only this listener; the socket is shared and other surfaces (and
+    // logout in state.dart) own its lifecycle.
+    _nudgeSub?.cancel();
     _tabFade.dispose();
     super.dispose();
   }
@@ -201,6 +206,79 @@ class _BlushyOSShellState extends State<BlushyOSShell>
 
   /// Fires once at the next local midnight, then reschedules itself.
   Timer? _midnightTimer;
+
+  /// Live "someone sent you a nudge" delivery, anywhere in her app.
+  ///
+  /// A companion's nudge always arrives as a notification; this shows it in the
+  /// moment too when the app is open, on whichever tab she is on. The socket is a
+  /// broadcast singleton, so listening here costs no extra connection.
+  StreamSubscription<PartnerWebSocketEvent>? _nudgeSub;
+
+  void _listenForNudges() {
+    final ws = PartnerWebSocketService();
+    ws.connect();
+    _nudgeSub = ws.events.listen((event) {
+      if (!mounted || event.event != 'partner.nudge') return;
+      final payload = event.rawPayload;
+      final sender = (payload['senderName'] ?? 'Your companion').toString();
+      final message = (payload['message'] ?? '').toString();
+      if (message.isEmpty) return;
+      _showNudgeBanner(sender, message);
+    });
+  }
+
+  void _showNudgeBanner(String sender, String message) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.white,
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: BlushyColors.border),
+          ),
+          content: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFCE7F3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.favorite_rounded, size: 18, color: BlushyColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      sender,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: BlushyColors.text,
+                      ),
+                    ),
+                    Text(
+                      message,
+                      style: const TextStyle(fontSize: 13, color: BlushyColors.text),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+  }
 
   Future<void> _flushPendingWrites() async {
     // Resuming the next morning is the usual way a day turns over while the

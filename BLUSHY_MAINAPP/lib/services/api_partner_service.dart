@@ -90,10 +90,11 @@ class ApiPartnerService {
   /// Returns an `{'error': ...}` map rather than null on failure. Returning
   /// null meant the caller could not tell "no link" from "it went wrong", and
   /// the button silently did nothing whenever the server was unreachable.
-  Future<Map<String, dynamic>> createInviteLink() async {
+  Future<Map<String, dynamic>> createInviteLink({String? relationshipType}) async {
     try {
       final response = await _dio.post(
         '/partner/invite/link',
+        data: relationshipType == null ? null : {'relationshipType': relationshipType},
         options: _authOptions(),
       );
       if (response.data is Map<String, dynamic>) {
@@ -182,11 +183,14 @@ class ApiPartnerService {
   }
 
   /// Invites a partner by email: `POST /partner/invite`
-  Future<Map<String, dynamic>> invitePartnerByEmail(String email) async {
+  Future<Map<String, dynamic>> invitePartnerByEmail(String email, {String? relationshipType}) async {
     try {
       final response = await _dio.post(
         '/partner/invite',
-        data: {'partnerEmail': email},
+        data: {
+          'partnerEmail': email,
+          if (relationshipType != null) 'relationshipType': relationshipType,
+        },
         options: _authOptions(),
       );
       if (response.data is Map<String, dynamic>) {

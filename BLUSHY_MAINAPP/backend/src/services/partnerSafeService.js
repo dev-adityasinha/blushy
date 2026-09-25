@@ -13,6 +13,13 @@ import {
   legacyFlagsForPatch,
 } from '../domain/partnerPermissions.js';
 import { normalizeLifeStage, getBranchCapabilities } from '../domain/lifeStages.js';
+import {
+  normalizeRelationshipType,
+  isRelationshipTypeAllowedFor,
+  categoryForType,
+  capabilitiesForType,
+} from '../domain/partnerRelationshipTypes.js';
+import { resolveNudge, nudgesForCategory } from '../domain/partnerNudges.js';
 import { calculatePregnancyState, getMilestones } from '../domain/pregnancy.js';
 import { calculatePostpartumState, getRecoveryMilestones } from '../domain/postpartum.js';
 import { getLifeStageState } from '../repositories/lifeStageRepository.js';
@@ -451,6 +458,8 @@ export async function getPartnerHome(connectionId, viewerUserId, { referenceDate
       lifeStageContext: contextResult.data?.lifeStage ?? null,
       permittedContext: contextResult.data ?? {},
       allowedGrants: contextResult.permissions?.allowedGrants ?? [],
+      // The nudges this companion may send, scoped by relationship category.
+      availableNudges: nudgesForCategory(categoryForType(auth.relationshipType)),
       supportRequests,
       sharedSections: shared.data?.sections ?? [],
       nothingShared: shared.data?.nothingShared ?? true,
@@ -537,6 +546,121 @@ export async function updatePermissions(connectionId, actorUserId, patch) {
     revoked,
     matrixVersion: PERMISSION_MATRIX_VERSION,
     sharingState: describeSharingState(next),
+  };
+}
+
+/**
+ * Changes the relationship type on an existing connection ("who is this to
+ * you?"). Only the permission owner (the woman) may set it, and the same
+ * child-safety choke point applies as at invite time: a romantic type is
+ * refused when she is in a minor life stage. Passing null/empty clears it.
+ *
+ * Returns the new capabilities so the client can re-render immediately.
+ */
+export async function updateRelationshipType(connectionId, actorUserId, rawType) {
+  const auth = await authorizeConnection(connectionId, actorUserId);
+  if (!auth.ok) return { ok: false, errorCode: auth.errorCode };
+
+  if (!auth.viewerIsSubject) {
+    return {
+      ok: false,
+      errorCode: 'FORBIDDEN',
+      message: 'Only the person sharing can change this.',
+    };
+  }
+
+  const normalized = normalizeRelationshipType(rawType);
+  if (rawType != null && rawType !== '' && !normalized) {
+    return { ok: false, errorCode: 'VALIDATION_FAILED', message: 'Unknown relationship type.' };
+  }
+
+  let lifeStage = null;
+  let dateOfBirth = null;
+  try {
+    const stageState = await getLifeStageState(auth.subjectUserId);
+    lifeStage = normalizeLifeStage(stageState?.lifeStage, null);
+  } catch {
+    lifeStage = null;
+  }
+  try {
+    const subject = await userRepository.getUserById(cleanUserId(auth.subjectUserId));
+    dateOfBirth = subject?.onboardingAnswers?.date_of_birth ?? null;
+  } catch {
+    dateOfBirth = null;
+  }
+  if (!isRelationshipTypeAllowedFor({ type: normalized, lifeStage, dateOfBirth })) {
+    return {
+      ok: false,
+      errorCode: 'VALIDATION_FAILED',
+      message: 'A romantic companion is not available for this account.',
+    };
+  }
+
+  await db.collection(CONNECTIONS).updateOne(
+    { connection_id: connectionId },
+    { $set: { relationship_type: normalized, updated_at: new Date() } },
+  );
+
+  return {
+    ok: true,
+    relationshipType: normalized,
+    relationshipCategory: categoryForType(normalized),
+    capabilities: capabilitiesForType(normalized),
+  };
+}
+
+/**
+ * A companion sends a small one-tap "nudge" (a pre-defined supportive gesture)
+ * to the woman. The catalogue is server-side and scoped by relationship
+ * category, so a family/friend companion cannot send romantic content and no
+ * free text is ever accepted.
+ *
+ * Only the companion (the partner side) may send; the woman does not nudge
+ * herself. Delivery is a notification to her; the controller also emits a
+ * realtime event so her app can surface it live.
+ */
+export async function sendCompanionNudge(connectionId, actorUserId, nudgeId) {
+  const auth = await authorizeConnection(connectionId, actorUserId);
+  if (!auth.ok) return { ok: false, errorCode: auth.errorCode };
+  if (!auth.active) return { ok: false, errorCode: 'RELATIONSHIP_INACTIVE' };
+
+  if (!auth.viewerIsPartner) {
+    return {
+      ok: false,
+      errorCode: 'FORBIDDEN',
+      message: 'Only a companion can send a nudge.',
+    };
+  }
+
+  const category = categoryForType(auth.relationshipType);
+  const nudge = resolveNudge(category, nudgeId);
+  if (!nudge) {
+    return { ok: false, errorCode: 'VALIDATION_FAILED', message: 'Unknown nudge.' };
+  }
+
+  const sender = await userRepository.getUserById(cleanUserId(auth.partnerUserId));
+  const senderName = sender?.onboardingAnswers?.preferred_name
+    ?? sender?.displayName
+    ?? 'Your companion';
+
+  try {
+    await scheduleNotification(auth.subjectUserId, {
+      category: 'partner_nudge',
+      title: `A little something from ${senderName}`,
+      body: nudge.message,
+      entityType: 'partner_nudge',
+      entityId: `${connectionId}:${nudge.id}`,
+      deepLink: `blushy://partner?connectionId=${connectionId}`,
+    });
+  } catch (_) {
+    // Best effort: the nudge still counts as sent for realtime delivery.
+  }
+
+  return {
+    ok: true,
+    recipientUserId: auth.subjectUserId,
+    senderName,
+    nudge: { id: nudge.id, message: nudge.message },
   };
 }
 

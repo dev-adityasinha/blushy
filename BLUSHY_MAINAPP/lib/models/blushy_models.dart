@@ -908,6 +908,10 @@ class PartnerHomeModel {
   final bool nothingShared;
   final bool relationshipActive;
 
+  /// The one-tap nudges this companion may send, scoped by relationship category
+  /// server-side. Each entry has `id`, `label`, `message`.
+  final List<Map<String, dynamic>> availableNudges;
+
   const PartnerHomeModel({
     this.prompt = 'How can I show up today?',
     this.partnerPreferredName,
@@ -918,7 +922,32 @@ class PartnerHomeModel {
     this.sharedSections = const [],
     this.nothingShared = true,
     this.relationshipActive = false,
+    this.availableNudges = const [],
   });
+
+  /// The relationship-type capability block the server attaches to
+  /// `permittedContext` (see backend partnerRelationshipTypes.js). Drives which
+  /// whole experiences the companion app renders. Absent/legacy connections
+  /// return an empty map, which reads as "no special experience".
+  Map<String, dynamic> get capabilities => ApiParse.map(permittedContext['capabilities']);
+
+  /// The romantic couple surface (love notes, date planner, couple games, flirty
+  /// nudges) renders only for a romantic-partner connection.
+  bool get allowsCoupleFeatures => capabilities['coupleFeatures'] == true;
+
+  /// Caregiver tools (care-request inbox, supply/support prompts) for a
+  /// parent/family or co-parent connection.
+  bool get allowsCaregiverTools => capabilities['caregiverTools'] == true;
+
+  /// Peer-support surface (empathy nudges, neutral cycle-overlap view) for a
+  /// friend connection.
+  bool get allowsPeerSupport => capabilities['peerSupport'] == true;
+
+  /// e.g. 'romantic_partner', 'family', 'friend', 'coparent_caregiver', or null.
+  String? get relationshipCategory => permittedContext['relationshipCategory']?.toString();
+
+  /// Copy/persona hint: 'romantic', 'family', 'peer', 'logistics', 'neutral'.
+  String? get relationshipFraming => capabilities['framing']?.toString();
 
   factory PartnerHomeModel.fromJson(dynamic raw) {
     final json = ApiParse.map(raw);
@@ -933,6 +962,7 @@ class PartnerHomeModel {
       sharedSections: ApiParse.list(json['sharedSections']).map(SharedSection.fromJson).toList(),
       nothingShared: json['nothingShared'] != false,
       relationshipActive: json['relationshipActive'] == true,
+      availableNudges: ApiParse.list(json['availableNudges']),
     );
   }
 }

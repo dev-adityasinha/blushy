@@ -193,6 +193,25 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     return id?.toString();
   }
 
+  /// Whether the romantic couple surface (letters, gestures, vibe pulses, couple
+  /// games, date planner) may render for the active connection.
+  ///
+  /// The server stamps every connection with `coupleFeatures` from its
+  /// relationship type. This is the belt-and-suspenders guard: the companion
+  /// shell already hides the couple tab, and this stops the couple cards from
+  /// rendering even if this screen is reached another way. Defaults to allowed
+  /// for a legacy/untyped connection (no `relationshipCategory`), so existing
+  /// romantic partners are never regressed.
+  bool get _coupleFeaturesAllowed {
+    if (_connections.isEmpty) return true;
+    final active = _connections.firstWhere(
+      (c) => c['status'] == 'active',
+      orElse: () => _connections.first,
+    );
+    if (active['relationshipCategory'] == null) return true;
+    return active['coupleFeatures'] == true;
+  }
+
   static const List<SharedActivity> _defaultActivities = [
     SharedActivity(
       key: 'date_planner',
@@ -413,6 +432,13 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   List<Map<String, dynamic>> _outgoingInvitations = [];
   final TextEditingController _partnerInviteEmailController = TextEditingController();
   bool _isSendingInvite = false;
+
+  /// The relationship the woman is assigning to this connection ("who is this
+  /// to you?"). Drives the companion's whole experience server-side: romantic
+  /// types unlock the couple surface, family/friend get supportive views, and a
+  /// romantic type is refused outright for a minor (first-period) stage. Null
+  /// until she picks one.
+  String? _inviteRelationshipType;
   Timer? _liveChatTimer;
   Set<String> _knownIncomingInvitationIds = {};
   bool _hadActiveConnection = false;
@@ -1357,6 +1383,11 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
           ),
           const SizedBox(height: 24),
 
+          // 04 & 05 — Couple surface: romantic connections only. The companion
+          // shell already hides the couple tab; this also stops the cards from
+          // rendering if the screen is reached another way (deep link, the
+          // woman's own view of a family/friend connection, a future button).
+          if (_coupleFeaturesAllowed) ...[
           // 04 — MAKE A LITTLE MOMENT (Tactile Surprises & Micro-Gestures)
           MakeALittleMomentRail(
             onSendBloom: () => _openPartnerTab(1),
@@ -1443,6 +1474,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             onViewAllActivities: () => _openPartnerTab(3),
           ),
           const SizedBox(height: 28),
+          ],
 
           // 06 — YOUR STORY (Living Memory Archive)
           YourStoryCard(
@@ -2173,6 +2205,72 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
+
+                      // 1.2. Relationship type ("who is this to you?"). Changing
+                      // it re-shapes their whole companion experience.
+                      if (hasConnection)
+                        InkWell(
+                          onTap: () {
+                            Navigator.pop(sheetCtx);
+                            _showChangeRelationshipTypeSheet(
+                              (primaryPartner?['connectionId'] ??
+                                      primaryPartner?['_id'] ??
+                                      '')
+                                  .toString(),
+                              primaryPartner?['relationshipType']?.toString(),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(18),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: kSanctuaryCard,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: kSanctuaryBorder),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: const BoxDecoration(
+                                    color: kCrimsonTint,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.group_outlined,
+                                      color: kSanctuaryCrimson, size: 18),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Relationship', // i18n-ignore: companion mode is English-first pending a localization pass
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: kSanctuaryCharcoal,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _relationshipTypeLabel(primaryPartner?['relationshipType']?.toString()),
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: kSanctuaryMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_right_rounded, color: kSanctuaryMuted),
+                              ],
+                            ),
+                          ),
+                        ),
+                      if (hasConnection) const SizedBox(height: 12),
 
                       // 1.5. Active Status & Read Receipts Settings Card
                       Container(
@@ -3029,6 +3127,330 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     );
   }
 
+  /// Whether the woman is in a minor (first-period / menarche) life stage.
+  /// Romantic companion options are hidden for minors; the server enforces the
+  /// same rule as a hard choke point regardless of what the client shows.
+  bool get _isMinorStage {
+    final stage = BlushyOSProvider.of(context)
+        .personalContext
+        .lifeStage
+        ?.toLowerCase() ?? '';
+    return stage.startsWith('firstperiod') || stage.startsWith('first_period');
+  }
+
+  /// The relationship options offered for the woman's current life stage.
+  ///
+  /// Every label maps to a backend relationship type (the second element), so
+  /// friendly stage-specific wording ("Conception partner", "Co-parent",
+  /// "Confidante") still resolves to a known type and its capability category.
+  /// The romantic group is dropped entirely for a minor stage.
+  List<MapEntry<String, List<List<String>>>> _relationshipGroupsForStage() {
+    final stage = (BlushyOSProvider.of(context).personalContext.lifeStage ?? '')
+        .toLowerCase();
+
+    const family = <List<String>>[
+      ['mother', 'Mother'],
+      ['father', 'Father'],
+      ['sister', 'Sister'],
+      ['brother', 'Brother'],
+      ['family', 'Family'],
+    ];
+    const friend = <List<String>>[
+      ['best_friend', 'Best friend'],
+      ['friend', 'Friend'],
+    ];
+
+    // Minors: no romantic group at all.
+    if (_isMinorStage) {
+      return const [
+        MapEntry('FAMILY', family),
+        MapEntry('FRIEND', friend),
+      ];
+    }
+
+    bool has(String s) => stage.contains(s);
+
+    if (has('tryingtoconceive') || has('trying_to_conceive') || has('ttc') || has('fertility')) {
+      return const [
+        MapEntry('CONCEPTION PARTNER', [
+          ['spouse', 'Conception partner'],
+          ['husband', 'Husband'],
+          ['partner', 'Partner'],
+        ]),
+        MapEntry('FAMILY', family),
+        MapEntry('CONFIDANTE', [
+          ['best_friend', 'Confidante'],
+          ['friend', 'Friend'],
+        ]),
+      ];
+    }
+
+    if (has('pregnan') || has('postpartum') || has('postnatal') || has('newmotherhood')) {
+      return const [
+        MapEntry('PARTNER / CO-PARENT', [
+          ['spouse', 'Partner'],
+          ['coparent', 'Co-parent'],
+        ]),
+        MapEntry('SUPPORT CIRCLE', [
+          ['mother', 'Mom'],
+          ['doula', 'Doula'],
+          ['caregiver', 'Caregiver'],
+          ['family', 'Family'],
+        ]),
+        MapEntry('FRIEND', friend),
+      ];
+    }
+
+    if (has('hormonal') || has('pcos') || has('endo')) {
+      return const [
+        MapEntry('PARTNER', [
+          ['partner', 'Partner'],
+          ['husband', 'Husband'],
+          ['boyfriend', 'Boyfriend'],
+        ]),
+        MapEntry('SUPPORT CIRCLE', [
+          ['family', 'Family'],
+          ['caregiver', 'Caregiver'],
+          ['best_friend', 'Close friend'],
+        ]),
+      ];
+    }
+
+    // Default adult stages (cycle tracking, perimenopause, menopause, ...).
+    return const [
+      MapEntry('PARTNER', [
+        ['partner', 'Partner'],
+        ['husband', 'Husband'],
+        ['boyfriend', 'Boyfriend'],
+      ]),
+      MapEntry('FAMILY', family),
+      MapEntry('FRIEND', friend),
+    ];
+  }
+
+  /// "Who is this to you?" picker. Stage-aware (see [_relationshipGroupsForStage]).
+  /// Selecting a chip sets [_inviteRelationshipType], which both invite paths
+  /// send to the server.
+  Widget _buildRelationshipTypePicker(StateSetter setModalState) {
+    Widget group(String title, List<List<String>> options) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.manrope(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+                color: BlushyColors.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final opt in options)
+                  ChoiceChip(
+                    label: Text(opt[1]),
+                    selected: _inviteRelationshipType == opt[0],
+                    onSelected: (_) => setModalState(() {
+                      _inviteRelationshipType = opt[0];
+                    }),
+                    labelStyle: GoogleFonts.manrope(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _inviteRelationshipType == opt[0]
+                          ? Colors.white
+                          : BlushyColors.text,
+                    ),
+                    selectedColor: BlushyColors.primary,
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: BlushyColors.border),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+          ],
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Who is this to you?', // i18n-ignore: companion mode is English-first pending a localization pass
+          style: GoogleFonts.manrope(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: BlushyColors.text,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _isMinorStage
+              ? 'They will get a supportive companion view. What they can see is always your choice.'
+              : 'This shapes their companion experience. What they can see is always your choice.',
+          style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
+        ),
+        const SizedBox(height: 12),
+        for (final g in _relationshipGroupsForStage()) group(g.key, g.value),
+      ],
+    );
+  }
+
+  /// Display label for a stored relationship type, for the manage sheet.
+  String _relationshipTypeLabel(String? type) {
+    const labels = {
+      'spouse': 'Spouse', 'husband': 'Husband', 'wife': 'Wife',
+      'partner': 'Partner', 'boyfriend': 'Boyfriend', 'girlfriend': 'Girlfriend',
+      'mother': 'Mother', 'father': 'Father', 'sister': 'Sister',
+      'brother': 'Brother', 'daughter': 'Daughter', 'son': 'Son',
+      'parent': 'Parent', 'family': 'Family',
+      'best_friend': 'Best friend', 'friend': 'Friend',
+      'coparent': 'Co-parent', 'doula': 'Doula', 'caregiver': 'Caregiver',
+    };
+    if (type == null || type.isEmpty) return 'Not set — tap to choose';
+    return labels[type] ?? 'Not set — tap to choose';
+  }
+
+  /// Lets the woman re-assign the relationship type on an existing connection.
+  /// Reuses the stage-aware option groups; the server re-validates (a romantic
+  /// type is refused for a minor stage) and returns the new capabilities.
+  void _showChangeRelationshipTypeSheet(String connectionId, String? currentType) {
+    if (connectionId.isEmpty) return;
+    String? selected = currentType;
+    bool saving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            Widget chip(String type, String label) => ChoiceChip(
+                  label: Text(label),
+                  selected: selected == type,
+                  onSelected: (_) => setSheetState(() => selected = type),
+                  labelStyle: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: selected == type ? Colors.white : BlushyColors.text,
+                  ),
+                  selectedColor: BlushyColors.primary,
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: const BorderSide(color: BlushyColors.border),
+                  ),
+                );
+
+            return Container(
+              decoration: const BoxDecoration(
+                color: kSanctuaryCanvas,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: EdgeInsets.only(
+                left: 20, right: 20, top: 14,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 36, height: 4,
+                          decoration: BoxDecoration(
+                            color: kSanctuaryBorder,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        'Who is this to you?', // i18n-ignore: companion mode is English-first pending a localization pass
+                        style: GoogleFonts.manrope(
+                          fontSize: 16, fontWeight: FontWeight.bold, color: BlushyColors.text,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'This re-shapes their companion experience. What they can see is always your choice.', // i18n-ignore
+                        style: GoogleFonts.manrope(fontSize: 11, color: BlushyColors.secondaryText),
+                      ),
+                      const SizedBox(height: 16),
+                      for (final g in _relationshipGroupsForStage()) ...[
+                        Text(
+                          g.key,
+                          style: GoogleFonts.manrope(
+                            fontSize: 10.5, fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6, color: BlushyColors.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8, runSpacing: 8,
+                          children: [for (final o in g.value) chip(o[0], o[1])],
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: BlushyColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: (saving || selected == null)
+                              ? null
+                              : () async {
+                                  setSheetState(() => saving = true);
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  final result = await PartnerApi.updateRelationshipType(connectionId, selected);
+                                  if (result.isReady) {
+                                    if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                                    await _fetchPartnerData();
+                                    messenger.showSnackBar(
+                                      const SnackBar(content: Text('Relationship updated.')), // i18n-ignore
+                                    );
+                                  } else {
+                                    setSheetState(() => saving = false);
+                                    messenger.showSnackBar(
+                                      SnackBar(content: Text(result.errorMessage ?? 'Could not update.')),
+                                    );
+                                  }
+                                },
+                          child: saving
+                              ? const SizedBox(
+                                  width: 18, height: 18,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : Text(
+                                  'Update', // i18n-ignore
+                                  style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildInvitePartnerTab(StateSetter setModalState) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -3045,6 +3467,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
             style: GoogleFonts.manrope(height: 1.5, fontSize: 12, color: BlushyColors.secondaryText),
           ),
           const SizedBox(height: 20),
+          _buildRelationshipTypePicker(setModalState),
+          const SizedBox(height: 4),
           TextField(
             controller: _partnerInviteEmailController,
             keyboardType: TextInputType.emailAddress,
@@ -3091,7 +3515,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
                       setModalState(() => _isSendingInvite = true);
                       try {
-                        final res = await _partnerService.invitePartnerByEmail(email);
+                        final res = await _partnerService.invitePartnerByEmail(
+                          email,
+                          relationshipType: _inviteRelationshipType,
+                        );
 
                         if (res.containsKey('error')) {
                           if (mounted) {
@@ -3200,7 +3627,9 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                     ),
                     onPressed: () async {
                       final messenger = ScaffoldMessenger.of(context);
-                      final linkData = await _partnerService.createInviteLink();
+                      final linkData = await _partnerService.createInviteLink(
+                        relationshipType: _inviteRelationshipType,
+                      );
                       final url = linkData['inviteUrl'] as String?;
 
                       if (url == null) {

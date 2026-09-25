@@ -18,6 +18,11 @@ import {
 } from '../domain/sharedActivities.js';
 import { buildPartnerCareSuggestions, buildPartnerSharedDataPayload, buildCycleInfo } from '../services/partnerSuggestionService.js';
 import { getLifeStageState } from './lifeStageRepository.js';
+import {
+  normalizeRelationshipType,
+  categoryForType,
+  capabilitiesForType,
+} from '../domain/partnerRelationshipTypes.js';
 import { getDynamicPartnerNeeds } from '../services/partnerNeedsService.js';
 import { aiFetch } from '../utils/aiRequest.js';
 
@@ -74,6 +79,7 @@ function mapInvitationRow(row) {
     receiverEmail: row.receiver_email,
     receiverRole: row.receiver_role ?? null,
     inviteToken: row.invite_token,
+    relationshipType: row.relationship_type ?? null,
     status: row.status,
     respondedAt: row.responded_at ? new Date(row.responded_at).toISOString() : null,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
@@ -123,6 +129,13 @@ function mapConnectionRow(row, viewerUserId) {
     partnerRole: viewerIsUserA ? row.user_b_role : row.user_a_role,
     viewerIsSender: viewerIsUserA,
     canManagePermissions: row.permission_owner_user_id === viewerUserId,
+    // The relationship type and its capability category, so any surface that
+    // has the connection list (the woman's own partner space included, which
+    // cannot call the partner-only home endpoint) can gate the romantic couple
+    // features without re-deriving the rules on the client.
+    relationshipType: row.relationship_type ?? null,
+    relationshipCategory: categoryForType(row.relationship_type ?? null),
+    coupleFeatures: capabilitiesForType(row.relationship_type ?? null).coupleFeatures,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
   };
@@ -247,7 +260,7 @@ async function hasPendingInvitationFrom(senderUserId) {
   return Boolean(result);
 }
 
-async function createInvitation({ senderUserId, receiverUserId, receiverEmail }) {
+async function createInvitation({ senderUserId, receiverUserId, receiverEmail, relationshipType = null }) {
   const invitationId = randomUUID();
   const inviteToken = randomUUID();
 
@@ -257,6 +270,7 @@ async function createInvitation({ senderUserId, receiverUserId, receiverEmail })
     receiver_user_id: receiverUserId,
     receiver_email: receiverEmail,
     invite_token: inviteToken,
+    relationship_type: normalizeRelationshipType(relationshipType),
     status: 'pending',
     responded_at: null,
     created_at: new Date(),
@@ -400,6 +414,7 @@ async function createConnectionForInvitation(invitation) {
     user_b_id: invitation.receiverUserId,
     permission_owner_user_id: permissionOwnerUserId,
     permissions: DEFAULT_PERMISSIONS,
+    relationship_type: normalizeRelationshipType(invitation.relationshipType),
     status: 'active',
     receiver_accepted_at: new Date(),
     sender_accepted_at: new Date(),
@@ -507,6 +522,7 @@ async function respondToInvitation({ invitationId, receiverUserId, action }) {
         user_b_id: invitation.receiverUserId,
         permission_owner_user_id: permissionOwnerUserId,
         permissions: DEFAULT_PERMISSIONS,
+        relationship_type: normalizeRelationshipType(invitationDoc.relationship_type),
         status: 'active',
         receiver_accepted_at: now,
         sender_accepted_at: now,
@@ -1764,7 +1780,7 @@ async function checkDistributedRateLimit({ key, limit, windowSeconds }) {
   return true;
 }
 
-async function createShareableInvite({ senderUserId, tokenHash, expiresAt, receiverEmail = null }) {
+async function createShareableInvite({ senderUserId, tokenHash, expiresAt, receiverEmail = null, relationshipType = null }) {
   const invitationId = randomUUID();
   const doc = {
     invitation_id: invitationId,
@@ -1773,6 +1789,7 @@ async function createShareableInvite({ senderUserId, tokenHash, expiresAt, recei
     receiver_email: receiverEmail,
     invite_token: randomUUID(),
     invite_token_hash: tokenHash,
+    relationship_type: normalizeRelationshipType(relationshipType),
     status: 'pending',
     responded_at: null,
     expires_at: expiresAt || new Date(Date.now() + 48 * 60 * 60 * 1000),
@@ -1846,16 +1863,12 @@ async function claimInviteTokenHash({ claimerUserId, tokenHash }) {
     user_a_id: senderUser.user_id,
     user_b_id: claimerUser.user_id,
     permission_owner_user_id: permissionOwnerUserId,
-    permissions: {
-      shareMood: true,
-      shareCycle: true,
-      shareSleep: true,
-      shareInsights: true,
-      shareOnboarding: true,
-      allowAiSuggestionsWoman: true,
-      allowAiSuggestionsMan: true,
-      allowDecoderMan: true,
-    },
+    // Default-off, opt-in only. This previously stored every permission TRUE,
+    // so anyone who claimed a share link instantly saw cycle/mood/sleep/
+    // onboarding with no consent from the woman -- the exact opposite of the
+    // email-invite path. The woman turns sharing on afterwards, per connection.
+    permissions: DEFAULT_PERMISSIONS,
+    relationship_type: normalizeRelationshipType(invitationDoc.relationship_type),
     status: 'active',
     sender_accepted_at: now,
     receiver_accepted_at: now,

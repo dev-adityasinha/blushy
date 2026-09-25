@@ -4,6 +4,8 @@ import {
   getPermissionMatrix,
   getMySharingState,
   patchPermissions,
+  patchRelationshipType,
+  postCompanionNudge,
   getPermissionHistory,
   createPermissionRequest,
   listPermissionRequestsController,
@@ -34,6 +36,8 @@ router.get('/support-request-types', getSupportRequestTypes);
 
 router.get('/connections/:connectionId/sharing', requireAuth, getMySharingState);
 router.patch('/connections/:connectionId/sharing', requireAuth, patchPermissions);
+router.patch('/connections/:connectionId/relationship-type', requireAuth, patchRelationshipType);
+router.post('/connections/:connectionId/nudge', requireAuth, postCompanionNudge);
 router.get('/connections/:connectionId/sharing/history', requireAuth, getPermissionHistory);
 
 // A partner asking to be shown something that is currently off. Asking never

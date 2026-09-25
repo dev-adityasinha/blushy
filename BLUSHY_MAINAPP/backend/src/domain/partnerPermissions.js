@@ -9,6 +9,12 @@
  * Pure module: unit testable without a database.
  */
 
+import {
+  capabilitiesForType,
+  forbiddenGrantsForType,
+  categoryForType,
+} from './partnerRelationshipTypes.js';
+
 export const PERMISSION_MATRIX_VERSION = 'permissions-v2.0.0';
 
 /**
@@ -312,6 +318,14 @@ export function buildPartnerSafeContext(fullContext = {}, permissions = {}, { co
   const allowedGrants = [];
   const restrictedGrants = [];
 
+  // Relationship-type layer (see partnerRelationshipTypes.js). `capabilities`
+  // drive which whole experiences the companion app renders; `forbiddenGrants`
+  // are data grants stripped for this relationship even if the woman enabled
+  // them (defence in depth -- a parent or friend never sees a fertile window).
+  const relationshipType = fullContext.relationshipType ?? null;
+  const capabilities = capabilitiesForType(relationshipType);
+  const forbiddenGrants = new Set(forbiddenGrantsForType(relationshipType));
+
   // Always-available, non-private context. The partner app must stay useful
   // even when nothing is shared (spec §25: "No sharing -> partner still
   // receives general education/support").
@@ -319,10 +333,18 @@ export function buildPartnerSafeContext(fullContext = {}, permissions = {}, { co
     relationshipActive: true,
     partnerPreferredName: fullContext.preferredName ?? null,
     lifeStage: fullContext.lifeStage ?? null, // stage only; never the underlying data
-    relationshipType: fullContext.relationshipType ?? null,
+    relationshipType,
+    relationshipCategory: categoryForType(relationshipType),
+    capabilities,
   };
 
   const put = (grant, key, value) => {
+    // A grant forbidden for this relationship is treated as restricted no matter
+    // what the permission says -- the hard cap sits above the woman's toggles.
+    if (forbiddenGrants.has(grant)) {
+      restrictedGrants.push(grant);
+      return;
+    }
     if (hasGrant(perms, grant)) {
       allowedGrants.push(grant);
       if (value !== undefined && value !== null) {
@@ -356,7 +378,14 @@ export function buildPartnerSafeContext(fullContext = {}, permissions = {}, { co
   }
 
   const sharedKeys = Object.keys(context).filter(
-    (key) => !['relationshipActive', 'partnerPreferredName', 'lifeStage', 'relationshipType'].includes(key),
+    (key) => ![
+      'relationshipActive',
+      'partnerPreferredName',
+      'lifeStage',
+      'relationshipType',
+      'relationshipCategory',
+      'capabilities',
+    ].includes(key),
   );
 
   return {

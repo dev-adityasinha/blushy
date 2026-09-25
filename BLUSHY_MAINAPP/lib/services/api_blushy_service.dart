@@ -601,6 +601,34 @@ class PartnerApi {
     );
   }
 
+  /// Changes the relationship type on an existing connection ("who is this to
+  /// you?"). Owner-only and re-validated against her life stage server-side.
+  /// Pass null to clear it.
+  static Future<ApiResult<Map<String, dynamic>>> updateRelationshipType(
+    String connectionId,
+    String? relationshipType,
+  ) {
+    return ApiContractClient.patch(
+      '/partner/connections/$connectionId/relationship-type',
+      body: {'relationshipType': relationshipType},
+      parse: ApiParse.map,
+    );
+  }
+
+  /// Sends a one-tap nudge (a pre-defined supportive gesture) to the woman.
+  /// The message is chosen server-side from a category-scoped catalogue; the
+  /// client only names the nudge id.
+  static Future<ApiResult<Map<String, dynamic>>> sendNudge(
+    String connectionId,
+    String nudgeId,
+  ) {
+    return ApiContractClient.post(
+      '/partner/connections/$connectionId/nudge',
+      body: {'nudgeId': nudgeId},
+      parse: ApiParse.map,
+    );
+  }
+
   /// A partner asks to be shown something that is currently off.
   ///
   /// Asking shares nothing. The person whose data it is stays the only one who

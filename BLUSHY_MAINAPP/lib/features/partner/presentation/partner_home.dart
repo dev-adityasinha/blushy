@@ -5,6 +5,10 @@ import 'partner_home_sections.dart';
 import '../../../shared/live_refresh.dart';
 import '../../../services/partner_websocket_service.dart';
 import 'partner_stage_today.dart';
+import 'partner_empathy_translator.dart';
+import 'partner_caregiver_dashboard.dart';
+import 'partner_peer_hub.dart';
+import 'partner_nudge_row.dart';
 import '../partner_stage.dart';
 import 'private_space_partner_state.dart';
 import 'cycle_harmony_card.dart';
@@ -79,6 +83,27 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
         SnackBar(content: Text(result.errorMessage ?? 'That could not be saved.')),
       );
     }
+  }
+
+  /// Sends a one-tap nudge to the woman. Returns whether it went through, so the
+  /// chip can show its sent state.
+  Future<bool> _sendNudge(String nudgeId) async {
+    final connectionId =
+        (_activeConnection?['connectionId'] ?? _activeConnection?['_id'] ?? '').toString();
+    if (connectionId.isEmpty) return false;
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await PartnerApi.sendNudge(connectionId, nudgeId);
+    if (!mounted) return result.isReady;
+    if (result.isReady) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Sent to her 💛')), // i18n-ignore: companion mode is English-first
+      );
+      return true;
+    }
+    messenger.showSnackBar(
+      SnackBar(content: Text(result.errorMessage ?? 'Could not send that right now.')),
+    );
+    return false;
   }
 
   String _getTodayDateKey() => DateTime.now().toIso8601String().substring(0, 10);
@@ -1242,6 +1267,34 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
                   onPressed: _fetchLivePartnerData,
                 ),
               ),
+              // Empathy Translator: turns her shared phase into concrete
+              // do/don't guidance. Shown for any close companion whenever she
+              // shares her cycle phase; the affection line is romantic-only.
+              if (isConnected && cycleInfo?['phase'] != null)
+                PartnerEmpathyTranslator(
+                  phase: cycleInfo!['phase']?.toString(),
+                  partnerName: partnerName,
+                  isRomantic: _partnerHome.data?.allowsCoupleFeatures ?? false,
+                ),
+              // Persona panels: caregiver/Dad guide for family, peer hub for a
+              // friend. Driven by the server capability block; one at most shows.
+              if (isConnected && (_partnerHome.data?.allowsCaregiverTools ?? false))
+                PartnerCaregiverDashboard(
+                  relationshipType: permitted['relationshipType']?.toString(),
+                  partnerName: partnerName,
+                ),
+              if (isConnected && (_partnerHome.data?.allowsPeerSupport ?? false))
+                PartnerPeerHub(
+                  partnerName: partnerName,
+                  phase: cycleInfo?['phase']?.toString(),
+                ),
+              // One-tap nudges (server-scoped by relationship). Delivers a
+              // gesture straight to her app.
+              if (isConnected && (_partnerHome.data?.availableNudges.isNotEmpty ?? false))
+                PartnerNudgeRow(
+                  nudges: _partnerHome.data!.availableNudges,
+                  onSend: (nudgeId) => _sendNudge(nudgeId),
+                ),
               _buildUsSection(),
               const SizedBox(height: 24),
 

@@ -8,6 +8,50 @@ import { emailService } from '../services/emailService.js';
 import { logger } from '../utils/logger.js';
 import { buildInviteUrl } from '../utils/inviteUrl.js';
 import { env } from '../utils/env.js';
+import { getLifeStageState } from '../repositories/lifeStageRepository.js';
+import { normalizeLifeStage } from '../domain/lifeStages.js';
+import {
+  normalizeRelationshipType,
+  isRelationshipTypeAllowedFor,
+} from '../domain/partnerRelationshipTypes.js';
+
+/**
+ * Validates a client-supplied relationship type against the inviting user's life
+ * stage and returns the normalized value (or null when none was supplied).
+ *
+ * Child-safety choke point: a user in a minor life stage (first_period /
+ * menarche) can never attach a romantic companion, so a romantic type is
+ * rejected outright rather than silently downgraded. This runs server-side so no
+ * client can bypass it.
+ */
+async function resolveRelationshipType(senderUserId, rawType) {
+  if (rawType == null || rawType === '') return null;
+  const normalized = normalizeRelationshipType(rawType);
+  if (!normalized) {
+    throw createHttpError(400, 'Unknown relationship type.');
+  }
+  let lifeStage = null;
+  let dateOfBirth = null;
+  try {
+    const stageState = await getLifeStageState(senderUserId);
+    lifeStage = normalizeLifeStage(stageState?.lifeStage, null);
+  } catch {
+    lifeStage = null;
+  }
+  try {
+    const user = await userRepository.getUserById(senderUserId);
+    dateOfBirth = user?.onboardingAnswers?.date_of_birth ?? null;
+  } catch {
+    dateOfBirth = null;
+  }
+  if (!isRelationshipTypeAllowedFor({ type: normalized, lifeStage, dateOfBirth })) {
+    throw createHttpError(
+      409,
+      'A romantic companion is not available for this account. You can add a parent, family member or friend.',
+    );
+  }
+  return normalized;
+}
 
 /// Returns the full user record, so unlike the other controllers' helpers this
 /// cannot be skipped when the middleware has already verified the request --
@@ -91,6 +135,8 @@ export async function createPartnerInviteLink(req, res, next) {
       throw createHttpError(429, 'Too many invite links generated. Please try again later.');
     }
 
+    const relationshipType = await resolveRelationshipType(sender.user_id, req.body?.relationshipType);
+
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
@@ -99,6 +145,7 @@ export async function createPartnerInviteLink(req, res, next) {
       senderUserId: sender.user_id,
       tokenHash,
       expiresAt,
+      relationshipType,
     });
 
     res.status(201).json({
@@ -195,6 +242,8 @@ export async function invitePartner(req, res, next) {
       throw createHttpError(400, 'You cannot invite your own email.');
     }
 
+    const relationshipType = await resolveRelationshipType(sender.user_id, req.body?.relationshipType);
+
     const receiver = await partnerRepository.getUserByEmail(partnerEmail);
     if (!receiver) {
       // No account yet: rather than refusing (which meant nobody was ever
@@ -218,6 +267,7 @@ export async function invitePartner(req, res, next) {
         tokenHash,
         expiresAt,
         receiverEmail: partnerEmail,
+        relationshipType,
       });
 
       const inviteUrl = buildInviteUrl(token);
@@ -264,6 +314,7 @@ export async function invitePartner(req, res, next) {
       senderUserId: sender.user_id,
       receiverUserId: receiver.userId,
       receiverEmail: receiver.email,
+      relationshipType,
     });
 
     publishToUsers(

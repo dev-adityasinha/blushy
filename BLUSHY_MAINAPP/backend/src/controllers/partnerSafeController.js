@@ -5,6 +5,8 @@ import {
   getPartnerHome,
   updatePermissions,
   getSharingState,
+  updateRelationshipType,
+  sendCompanionNudge,
   PERMISSION_MATRIX_VERSION,
   requestPermission,
   respondToPermissionRequest,
@@ -112,6 +114,74 @@ export const patchPermissions = contractHandler(async (req, res) => {
     source: SOURCES.MANUAL,
     permissions: { rejectedKeys: result.rejected },
   });
+});
+
+export const patchRelationshipType = contractHandler(async (req, res) => {
+  const userId = resolveUserId(req);
+  if (!userId) return sendError(res, 401, ERROR_CODES.UNAUTHENTICATED, 'Authentication required.');
+
+  const result = await updateRelationshipType(
+    req.params.connectionId,
+    userId,
+    req.body?.relationshipType,
+  );
+
+  if (!result.ok) {
+    if (result.errorCode === 'FORBIDDEN') {
+      return sendError(res, 403, ERROR_CODES.FORBIDDEN, result.message ?? 'Only the person sharing can change this.');
+    }
+    if (result.errorCode === 'NOT_FOUND') return authError(res, 'NOT_FOUND');
+    return sendError(res, 400, ERROR_CODES.VALIDATION_FAILED, result.message ?? 'Invalid relationship type.');
+  }
+
+  return sendData(res, {
+    relationshipType: result.relationshipType,
+    relationshipCategory: result.relationshipCategory,
+    capabilities: result.capabilities,
+  }, {
+    state: RESPONSE_STATES.READY,
+    source: SOURCES.MANUAL,
+  });
+});
+
+export const postCompanionNudge = contractHandler(async (req, res) => {
+  const userId = resolveUserId(req);
+  if (!userId) return sendError(res, 401, ERROR_CODES.UNAUTHENTICATED, 'Authentication required.');
+
+  const connectionId = req.params.connectionId;
+  const nudgeId = (req.body?.nudgeId ?? '').toString();
+
+  // A companion sending a flood of nudges would become harassment, so cap it.
+  const rateOk = await partnerRepository.checkDistributedRateLimit({
+    key: `nudge_${connectionId}_${userId}`,
+    limit: 30,
+    windowSeconds: 3600,
+  });
+  if (!rateOk) {
+    return sendError(res, 429, ERROR_CODES.VALIDATION_FAILED, 'Too many nudges for now. Take a breather and try again later.');
+  }
+
+  const result = await sendCompanionNudge(connectionId, userId, nudgeId);
+  if (!result.ok) {
+    if (result.errorCode === 'FORBIDDEN') return sendError(res, 403, ERROR_CODES.FORBIDDEN, result.message ?? 'Not permitted.');
+    if (result.errorCode === 'NOT_FOUND') return authError(res, 'NOT_FOUND');
+    if (result.errorCode === 'RELATIONSHIP_INACTIVE') return sendError(res, 409, ERROR_CODES.RELATIONSHIP_INACTIVE, 'This relationship is not active.');
+    return sendError(res, 400, ERROR_CODES.VALIDATION_FAILED, result.message ?? 'Could not send that nudge.');
+  }
+
+  // Live delivery so her app can surface it immediately.
+  try {
+    publishToUsers([result.recipientUserId], 'partner.nudge', {
+      connectionId,
+      senderName: result.senderName,
+      message: result.nudge.message,
+      nudgeId: result.nudge.id,
+    });
+  } catch (_) {
+    // The notification already went out; a missed socket is not fatal.
+  }
+
+  return sendData(res, { sent: true }, { state: RESPONSE_STATES.READY, source: SOURCES.MANUAL });
 });
 
 export const getPermissionHistory = contractHandler(async (req, res) => {
