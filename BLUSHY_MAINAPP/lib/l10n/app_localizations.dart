@@ -108,6 +108,174 @@ abstract class AppLocalizations {
     Locale('te'),
   ];
 
+  /// No description provided for @sqTailorGuidance.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll tailor helpful guidance to prepare you with confidence.'**
+  String get sqTailorGuidance;
+
+  /// No description provided for @sqBaselinePredictions.
+  ///
+  /// In en, this message translates to:
+  /// **'This sets baseline predictions and cycle health insights.'**
+  String get sqBaselinePredictions;
+
+  /// No description provided for @sqSelectAllPersonalize.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all that apply to personalize your dashboard.'**
+  String get sqSelectAllPersonalize;
+
+  /// No description provided for @sqPredictOvulation.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps predict ovulation and fertile phases accurately.'**
+  String get sqPredictOvulation;
+
+  /// No description provided for @sqForecastCycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Used to forecast your cycle phase and upcoming period.'**
+  String get sqForecastCycle;
+
+  /// No description provided for @sqCustomizeFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize your tracking feed and daily recommendations.'**
+  String get sqCustomizeFeed;
+
+  /// No description provided for @sqContraceptionInfluences.
+  ///
+  /// In en, this message translates to:
+  /// **'Contraception influences cycle symptoms and bleeding patterns.'**
+  String get sqContraceptionInfluences;
+
+  /// No description provided for @sqHomeShowsCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Your home page shows the cards for what you track.'**
+  String get sqHomeShowsCards;
+
+  /// No description provided for @sqSpecializedTrackers.
+  ///
+  /// In en, this message translates to:
+  /// **'Enables specialized trackers and clinical insights.'**
+  String get sqSpecializedTrackers;
+
+  /// No description provided for @sqMedicationLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps tailor medication and protocol logs.'**
+  String get sqMedicationLogs;
+
+  /// No description provided for @sqWhatHelpWith.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like help with?'**
+  String get sqWhatHelpWith;
+
+  /// No description provided for @sqHomeShowsPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Your home page shows the cards for what you pick.'**
+  String get sqHomeShowsPick;
+
+  /// No description provided for @sqFertilityTimelines.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapts fertility timelines and proactive guidance.'**
+  String get sqFertilityTimelines;
+
+  /// No description provided for @sqSelectBiomarkerTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the primary biomarker you track.'**
+  String get sqSelectBiomarkerTrack;
+
+  /// No description provided for @sqHormoneSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalizes protocols and hormone support tracking.'**
+  String get sqHormoneSupport;
+
+  /// No description provided for @sqGestationalAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculates weekly gestational age and baby milestones.'**
+  String get sqGestationalAge;
+
+  /// No description provided for @sqEducationalPacing.
+  ///
+  /// In en, this message translates to:
+  /// **'Customizes educational pacing and milestone insights.'**
+  String get sqEducationalPacing;
+
+  /// No description provided for @sqBabyDevelopment.
+  ///
+  /// In en, this message translates to:
+  /// **'Prioritize baby development, nutrition, and wellness.'**
+  String get sqBabyDevelopment;
+
+  /// No description provided for @sqMaternalHealing.
+  ///
+  /// In en, this message translates to:
+  /// **'Drives maternal healing recovery and infant milestones.'**
+  String get sqMaternalHealing;
+
+  /// No description provided for @sqHydrationFeeding.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapts hydration targets and feeding logs.'**
+  String get sqHydrationFeeding;
+
+  /// No description provided for @sqPostpartumSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize maternal postpartum recovery support.'**
+  String get sqPostpartumSupport;
+
+  /// No description provided for @sqRecoveryIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery included. Your home page shows what you track.'**
+  String get sqRecoveryIncluded;
+
+  /// No description provided for @sqMenstrualRhythms.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracks fluctuations in menstrual rhythms.'**
+  String get sqMenstrualRhythms;
+
+  /// No description provided for @sqProactiveInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves priorities for proactive daily insights.'**
+  String get sqProactiveInsights;
+
+  /// No description provided for @sqPostmenopausalFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'Determines postmenopausal health focus areas.'**
+  String get sqPostmenopausalFocus;
+
+  /// No description provided for @sqSelectAllCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all that apply to personalize your care.'**
+  String get sqSelectAllCare;
+
+  /// No description provided for @sqHealthyAgeing.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailor your healthy ageing companion feed.'**
+  String get sqHealthyAgeing;
+
+  /// No description provided for @sqCompanionCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalizes daily companion cards.'**
+  String get sqCompanionCards;
+
   /// No description provided for @onbOnDeviceEncryption.
   ///
   /// In en, this message translates to:

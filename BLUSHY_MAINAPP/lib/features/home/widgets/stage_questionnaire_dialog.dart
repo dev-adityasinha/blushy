@@ -317,7 +317,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqWhatWouldYouLike,
-                subtitle: "We'll tailor helpful guidance to prepare you with confidence.",
+                subtitle: AppLocalizations.of(context).sqTailorGuidance,
                 storageKey: "not_started_learn",
                 options: [
                   "Puberty & body changes",
@@ -334,7 +334,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqWhenDidYourFirst,
-                subtitle: "This sets baseline predictions and cycle health insights.",
+                subtitle: AppLocalizations.of(context).sqBaselinePredictions,
                 storageKey: "first_period_start_time",
                 options: [
                   "Within the last month",
@@ -344,7 +344,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhatWouldYouLike2,
-                subtitle: "Select all that apply to personalize your dashboard.",
+                subtitle: AppLocalizations.of(context).sqSelectAllPersonalize,
                 selectedSet: _selectedGoals,
                 options: [
                   "Tracking periods",
@@ -362,7 +362,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqHowWouldYouDescribe,
-                subtitle: "Helps predict ovulation and fertile phases accurately.",
+                subtitle: AppLocalizations.of(context).sqPredictOvulation,
                 storageKey: "reproductive_cycle_type",
                 options: [
                   "Very regular (28-30 days)",
@@ -374,12 +374,12 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildDatePickerStep(
                 title: AppLocalizations.of(context).sqWhenDidYourLast,
-                subtitle: "Used to forecast your cycle phase and upcoming period.",
+                subtitle: AppLocalizations.of(context).sqForecastCycle,
                 storageKey: "last_period",
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhatAreYourPrimary,
-                subtitle: "Customize your tracking feed and daily recommendations.",
+                subtitle: AppLocalizations.of(context).sqCustomizeFeed,
                 selectedSet: _selectedGoals,
                 options: [
                   "Predict periods accurately",
@@ -394,7 +394,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqAreYouUsingHormonal,
-                subtitle: "Contraception influences cycle symptoms and bleeding patterns.",
+                subtitle: AppLocalizations.of(context).sqContraceptionInfluences,
                 storageKey: "contraception_choice",
                 options: [
                   "No contraception",
@@ -406,7 +406,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
-                subtitle: "Your home page shows the cards for what you track.",
+                subtitle: AppLocalizations.of(context).sqHomeShowsCards,
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Cramps & period pain",
@@ -431,7 +431,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhichHormonalConditionS,
-                subtitle: "Enables specialized trackers and clinical insights.",
+                subtitle: AppLocalizations.of(context).sqSpecializedTrackers,
                 selectedSet: _selectedConditions,
                 options: [
                   "PCOS (Polycystic Ovary Syndrome)",
@@ -445,7 +445,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
-                subtitle: "Docsy adapts tracking cards to prioritize these.",
+                subtitle: AppLocalizations.of(context).onbDocsyAdaptsCards,
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Pelvic pain / Cramps",
@@ -462,7 +462,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqAreYouCurrentlyReceiving,
-                subtitle: "Helps tailor medication and protocol logs.",
+                subtitle: AppLocalizations.of(context).sqMedicationLogs,
                 storageKey: "hormonal_treatment",
                 options: [
                   "Yes, active medical care / medication",
@@ -472,8 +472,8 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
                 ],
               ),
           () => _buildMultiSelectStep(
-                title: "What would you like help with?",
-                subtitle: "Your home page shows the cards for what you pick.",
+                title: AppLocalizations.of(context).sqWhatHelpWith,
+                subtitle: AppLocalizations.of(context).sqHomeShowsPick,
                 selectedSet: _selectedGoals,
                 options: [
                   "Manage pain",
@@ -496,7 +496,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqHowLongHaveYou,
-                subtitle: "Adapts fertility timelines and proactive guidance.",
+                subtitle: AppLocalizations.of(context).sqFertilityTimelines,
                 storageKey: "ttc_duration",
                 options: [
                   "Just starting (0–3 months)",
@@ -507,7 +507,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqHowAreYouTracking,
-                subtitle: "Select the primary biomarker you track.",
+                subtitle: AppLocalizations.of(context).sqSelectBiomarkerTrack,
                 storageKey: "ttc_tracking_method",
                 options: [
                   "Ovulation test strips (LH)",
@@ -520,7 +520,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqAreYouUndergoingFertility,
-                subtitle: "Personalizes protocols and hormone support tracking.",
+                subtitle: AppLocalizations.of(context).sqHormoneSupport,
                 storageKey: "ttc_treatment",
                 options: [
                   "No medical assistance",
@@ -532,7 +532,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
-                subtitle: "Your home page shows the cards for what you track.",
+                subtitle: AppLocalizations.of(context).sqHomeShowsCards,
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Cramps & pelvic pain",
@@ -551,8 +551,8 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
           () => _buildMultiSelectStep(
                 // Asked here as on every other stage, so the home can put
                 // what she wants help with first.
-                title: "What would you like help with?",
-                subtitle: "Your home page shows the cards for what you pick.",
+                title: AppLocalizations.of(context).sqWhatHelpWith,
+                subtitle: AppLocalizations.of(context).sqHomeShowsPick,
                 selectedSet: _selectedGoals,
                 options: [
                   "Ovulation timing",
@@ -574,13 +574,13 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildDatePickerStep(
                 title: AppLocalizations.of(context).sqWhatIsYourEstimated,
-                subtitle: "Calculates weekly gestational age and baby milestones.",
+                subtitle: AppLocalizations.of(context).sqGestationalAge,
                 storageKey: "due_date",
                 isFutureDate: true,
               ),
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqIsThisYourFirst,
-                subtitle: "Customizes educational pacing and milestone insights.",
+                subtitle: AppLocalizations.of(context).sqEducationalPacing,
                 storageKey: "pregnancy_first",
                 options: [
                   "Yes, my first pregnancy",
@@ -589,7 +589,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhatSupportWouldYou,
-                subtitle: "Prioritize baby development, nutrition, and wellness.",
+                subtitle: AppLocalizations.of(context).sqBabyDevelopment,
                 selectedSet: _selectedGoals,
                 options: [
                   "Weekly baby growth & milestones",
@@ -608,12 +608,12 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildDatePickerStep(
                 title: AppLocalizations.of(context).sqWhenWasYourBaby,
-                subtitle: "Drives maternal healing recovery and infant milestones.",
+                subtitle: AppLocalizations.of(context).sqMaternalHealing,
                 storageKey: "baby_birth_date",
               ),
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqHowAreYouFeeding,
-                subtitle: "Adapts hydration targets and feeding logs.",
+                subtitle: AppLocalizations.of(context).sqHydrationFeeding,
                 storageKey: "postpartum_feeding",
                 options: [
                   "Exclusive Breastfeeding / Chestfeeding",
@@ -624,7 +624,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhatAreasWouldYou,
-                subtitle: "Customize maternal postpartum recovery support.",
+                subtitle: AppLocalizations.of(context).sqPostpartumSupport,
                 selectedSet: _selectedGoals,
                 options: [
                   "Physical recovery & pelvic health",
@@ -637,7 +637,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
-                subtitle: "Recovery included. Your home page shows what you track.",
+                subtitle: AppLocalizations.of(context).sqRecoveryIncluded,
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Bleeding / lochia",
@@ -660,7 +660,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqHowHaveYourPeriods,
-                subtitle: "Tracks fluctuations in menstrual rhythms.",
+                subtitle: AppLocalizations.of(context).sqMenstrualRhythms,
                 storageKey: "perimenopause_cycle_change",
                 options: [
                   "Still regular with slight timing shifts",
@@ -672,7 +672,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhichSymptomsAffectYou,
-                subtitle: "Docsy adapts tracking cards to prioritize these.",
+                subtitle: AppLocalizations.of(context).onbDocsyAdaptsCards,
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Hot flashes & temperature shifts",
@@ -687,7 +687,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhatWouldYouMost,
-                subtitle: "Saves priorities for proactive daily insights.",
+                subtitle: AppLocalizations.of(context).sqProactiveInsights,
                 selectedSet: _selectedGoals,
                 options: [
                   "Sleep quality & night routine",
@@ -705,7 +705,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildSingleSelectStep(
                 title: AppLocalizations.of(context).sqHowLongHasIt,
-                subtitle: "Determines postmenopausal health focus areas.",
+                subtitle: AppLocalizations.of(context).sqPostmenopausalFocus,
                 storageKey: "menopause_duration",
                 options: [
                   "Under 12 months",
@@ -717,7 +717,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhichSymptomsAffectYour,
-                subtitle: "Select all that apply to personalize your care.",
+                subtitle: AppLocalizations.of(context).sqSelectAllCare,
                 selectedSet: _selectedSymptoms,
                 options: [
                   "Hot flashes & vasomotor symptoms",
@@ -731,7 +731,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
           () => _buildMultiSelectStep(
                 title: AppLocalizations.of(context).sqWhatAreYourTop,
-                subtitle: "Tailor your healthy ageing companion feed.",
+                subtitle: AppLocalizations.of(context).sqHealthyAgeing,
                 selectedSet: _selectedGoals,
                 options: [
                   "Bone density & osteoporosis prevention",
@@ -749,7 +749,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
         _steps = [
           () => _buildSingleSelectStep(
                 title: "What is your main focus for ${widget.stageTitle}?",
-                subtitle: "Personalizes daily companion cards.",
+                subtitle: AppLocalizations.of(context).sqCompanionCards,
                 storageKey: "wellness_focus",
                 options: [
                   "General vitality & energy",

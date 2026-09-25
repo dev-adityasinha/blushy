@@ -9,6 +9,112 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get sqTailorGuidance =>
+      'We\'ll tailor helpful guidance to prepare you with confidence.';
+
+  @override
+  String get sqBaselinePredictions =>
+      'This sets baseline predictions and cycle health insights.';
+
+  @override
+  String get sqSelectAllPersonalize =>
+      'Select all that apply to personalize your dashboard.';
+
+  @override
+  String get sqPredictOvulation =>
+      'Helps predict ovulation and fertile phases accurately.';
+
+  @override
+  String get sqForecastCycle =>
+      'Used to forecast your cycle phase and upcoming period.';
+
+  @override
+  String get sqCustomizeFeed =>
+      'Customize your tracking feed and daily recommendations.';
+
+  @override
+  String get sqContraceptionInfluences =>
+      'Contraception influences cycle symptoms and bleeding patterns.';
+
+  @override
+  String get sqHomeShowsCards =>
+      'Your home page shows the cards for what you track.';
+
+  @override
+  String get sqSpecializedTrackers =>
+      'Enables specialized trackers and clinical insights.';
+
+  @override
+  String get sqMedicationLogs => 'Helps tailor medication and protocol logs.';
+
+  @override
+  String get sqWhatHelpWith => 'What would you like help with?';
+
+  @override
+  String get sqHomeShowsPick =>
+      'Your home page shows the cards for what you pick.';
+
+  @override
+  String get sqFertilityTimelines =>
+      'Adapts fertility timelines and proactive guidance.';
+
+  @override
+  String get sqSelectBiomarkerTrack =>
+      'Select the primary biomarker you track.';
+
+  @override
+  String get sqHormoneSupport =>
+      'Personalizes protocols and hormone support tracking.';
+
+  @override
+  String get sqGestationalAge =>
+      'Calculates weekly gestational age and baby milestones.';
+
+  @override
+  String get sqEducationalPacing =>
+      'Customizes educational pacing and milestone insights.';
+
+  @override
+  String get sqBabyDevelopment =>
+      'Prioritize baby development, nutrition, and wellness.';
+
+  @override
+  String get sqMaternalHealing =>
+      'Drives maternal healing recovery and infant milestones.';
+
+  @override
+  String get sqHydrationFeeding => 'Adapts hydration targets and feeding logs.';
+
+  @override
+  String get sqPostpartumSupport =>
+      'Customize maternal postpartum recovery support.';
+
+  @override
+  String get sqRecoveryIncluded =>
+      'Recovery included. Your home page shows what you track.';
+
+  @override
+  String get sqMenstrualRhythms => 'Tracks fluctuations in menstrual rhythms.';
+
+  @override
+  String get sqProactiveInsights =>
+      'Saves priorities for proactive daily insights.';
+
+  @override
+  String get sqPostmenopausalFocus =>
+      'Determines postmenopausal health focus areas.';
+
+  @override
+  String get sqSelectAllCare =>
+      'Select all that apply to personalize your care.';
+
+  @override
+  String get sqHealthyAgeing => 'Tailor your healthy ageing companion feed.';
+
+  @override
+  String get sqCompanionCards => 'Personalizes daily companion cards.';
+
+  @override
   String get onbOnDeviceEncryption => 'On-Device Encryption';
 
   @override

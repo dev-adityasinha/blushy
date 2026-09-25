@@ -9,6 +9,112 @@ class AppLocalizationsBn extends AppLocalizations {
   AppLocalizationsBn([String locale = 'bn']) : super(locale);
 
   @override
+  String get sqTailorGuidance =>
+      'আমরা আপনাকে আত্মবিশ্বাসের সাথে প্রস্তুত করতে সহায়ক নির্দেশনা সাজিয়ে দেব।';
+
+  @override
+  String get sqBaselinePredictions =>
+      'এটি বেসলাইন পূর্বাভাস ও চক্র স্বাস্থ্য অন্তর্দৃষ্টি সেট করে।';
+
+  @override
+  String get sqSelectAllPersonalize =>
+      'আপনার ড্যাশবোর্ড ব্যক্তিগতকৃত করতে প্রযোজ্য সবকিছু নির্বাচন করুন।';
+
+  @override
+  String get sqPredictOvulation =>
+      'ডিম্বস্ফোটন ও উর্বর পর্যায় সঠিকভাবে পূর্বাভাস দিতে সাহায্য করে।';
+
+  @override
+  String get sqForecastCycle =>
+      'আপনার চক্র পর্যায় ও আসন্ন পিরিয়ড পূর্বাভাস দিতে ব্যবহৃত হয়।';
+
+  @override
+  String get sqCustomizeFeed =>
+      'আপনার ট্র্যাকিং ফিড ও দৈনিক সুপারিশ কাস্টমাইজ করুন।';
+
+  @override
+  String get sqContraceptionInfluences =>
+      'গর্ভনিরোধক চক্রের উপসর্গ ও রক্তপাতের ধরনকে প্রভাবিত করে।';
+
+  @override
+  String get sqHomeShowsCards =>
+      'আপনার হোম পেজ আপনি যা ট্র্যাক করেন তার কার্ড দেখায়।';
+
+  @override
+  String get sqSpecializedTrackers =>
+      'বিশেষায়িত ট্র্যাকার ও ক্লিনিকাল অন্তর্দৃষ্টি সক্ষম করে।';
+
+  @override
+  String get sqMedicationLogs => 'ওষুধ ও প্রোটোকল লগ সাজাতে সাহায্য করে।';
+
+  @override
+  String get sqWhatHelpWith => 'আপনি কীসে সাহায্য চান?';
+
+  @override
+  String get sqHomeShowsPick =>
+      'আপনার হোম পেজ আপনি যা বেছে নেন তার কার্ড দেখায়।';
+
+  @override
+  String get sqFertilityTimelines =>
+      'উর্বরতা সময়রেখা ও সক্রিয় নির্দেশনা খাপ খাওয়ায়।';
+
+  @override
+  String get sqSelectBiomarkerTrack =>
+      'আপনি যে প্রাথমিক বায়োমার্কার ট্র্যাক করেন তা নির্বাচন করুন।';
+
+  @override
+  String get sqHormoneSupport =>
+      'প্রোটোকল ও হরমোন সহায়তা ট্র্যাকিং ব্যক্তিগতকৃত করে।';
+
+  @override
+  String get sqGestationalAge =>
+      'সাপ্তাহিক গর্ভকালীন বয়স ও শিশুর মাইলফলক গণনা করে।';
+
+  @override
+  String get sqEducationalPacing =>
+      'শিক্ষামূলক গতি ও মাইলফলক অন্তর্দৃষ্টি কাস্টমাইজ করে।';
+
+  @override
+  String get sqBabyDevelopment =>
+      'শিশুর বিকাশ, পুষ্টি ও সুস্থতাকে অগ্রাধিকার দিন।';
+
+  @override
+  String get sqMaternalHealing =>
+      'মাতৃত্বকালীন নিরাময় পুনরুদ্ধার ও শিশুর মাইলফলক পরিচালনা করে।';
+
+  @override
+  String get sqHydrationFeeding => 'হাইড্রেশন লক্ষ্য ও ফিডিং লগ খাপ খাওয়ায়।';
+
+  @override
+  String get sqPostpartumSupport =>
+      'মাতৃত্বকালীন প্রসবোত্তর পুনরুদ্ধার সহায়তা কাস্টমাইজ করুন।';
+
+  @override
+  String get sqRecoveryIncluded =>
+      'পুনরুদ্ধার অন্তর্ভুক্ত। আপনার হোম পেজ দেখায় আপনি যা ট্র্যাক করেন।';
+
+  @override
+  String get sqMenstrualRhythms => 'মাসিক ছন্দের ওঠানামা ট্র্যাক করে।';
+
+  @override
+  String get sqProactiveInsights =>
+      'সক্রিয় দৈনিক অন্তর্দৃষ্টির জন্য অগ্রাধিকার সংরক্ষণ করে।';
+
+  @override
+  String get sqPostmenopausalFocus =>
+      'পোস্টমেনোপজাল স্বাস্থ্য ফোকাস ক্ষেত্র নির্ধারণ করে।';
+
+  @override
+  String get sqSelectAllCare =>
+      'আপনার যত্ন ব্যক্তিগতকৃত করতে প্রযোজ্য সবকিছু নির্বাচন করুন।';
+
+  @override
+  String get sqHealthyAgeing => 'আপনার সুস্থ বার্ধক্য সঙ্গী ফিড সাজান।';
+
+  @override
+  String get sqCompanionCards => 'দৈনিক সঙ্গী কার্ড ব্যক্তিগতকৃত করে।';
+
+  @override
   String get onbOnDeviceEncryption => 'ডিভাইসে এনক্রিপশন';
 
   @override

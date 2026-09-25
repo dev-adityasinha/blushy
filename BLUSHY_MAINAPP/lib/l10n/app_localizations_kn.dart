@@ -9,6 +9,117 @@ class AppLocalizationsKn extends AppLocalizations {
   AppLocalizationsKn([String locale = 'kn']) : super(locale);
 
   @override
+  String get sqTailorGuidance =>
+      'ನಿಮ್ಮನ್ನು ಆತ್ಮವಿಶ್ವಾಸದಿಂದ ಸಿದ್ಧಗೊಳಿಸಲು ಸಹಾಯಕ ಮಾರ್ಗದರ್ಶನವನ್ನು ರೂಪಿಸುತ್ತೇವೆ.';
+
+  @override
+  String get sqBaselinePredictions =>
+      'ಇದು ಬೇಸ್‌ಲೈನ್ ಮುನ್ಸೂಚನೆಗಳು ಮತ್ತು ಚಕ್ರ ಆರೋಗ್ಯ ಒಳನೋಟಗಳನ್ನು ಹೊಂದಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqSelectAllPersonalize =>
+      'ನಿಮ್ಮ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ವೈಯಕ್ತೀಕರಿಸಲು ಅನ್ವಯಿಸುವ ಎಲ್ಲವನ್ನೂ ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get sqPredictOvulation =>
+      'ಅಂಡೋತ್ಪತ್ತಿ ಮತ್ತು ಫಲವತ್ತಾದ ಹಂತಗಳನ್ನು ನಿಖರವಾಗಿ ಊಹಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqForecastCycle =>
+      'ನಿಮ್ಮ ಚಕ್ರ ಹಂತ ಮತ್ತು ಮುಂಬರುವ ಪೀರಿಯಡ್ ಅನ್ನು ಊಹಿಸಲು ಬಳಸಲಾಗುತ್ತದೆ.';
+
+  @override
+  String get sqCustomizeFeed =>
+      'ನಿಮ್ಮ ಟ್ರ್ಯಾಕಿಂಗ್ ಫೀಡ್ ಮತ್ತು ದೈನಂದಿನ ಶಿಫಾರಸುಗಳನ್ನು ಕಸ್ಟಮೈಸ್ ಮಾಡಿ.';
+
+  @override
+  String get sqContraceptionInfluences =>
+      'ಗರ್ಭನಿರೋಧಕವು ಚಕ್ರ ಲಕ್ಷಣಗಳು ಮತ್ತು ರಕ್ತಸ್ರಾವ ಮಾದರಿಗಳ ಮೇಲೆ ಪ್ರಭಾವ ಬೀರುತ್ತದೆ.';
+
+  @override
+  String get sqHomeShowsCards =>
+      'ನೀವು ಟ್ರ್ಯಾಕ್ ಮಾಡುವುದಕ್ಕೆ ಕಾರ್ಡ್‌ಗಳನ್ನು ನಿಮ್ಮ ಹೋಮ್ ಪೇಜ್ ತೋರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqSpecializedTrackers =>
+      'ವಿಶೇಷ ಟ್ರ್ಯಾಕರ್‌ಗಳು ಮತ್ತು ಕ್ಲಿನಿಕಲ್ ಒಳನೋಟಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqMedicationLogs =>
+      'ಔಷಧಿ ಮತ್ತು ಪ್ರೋಟೋಕಾಲ್ ಲಾಗ್‌ಗಳನ್ನು ರೂಪಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqWhatHelpWith => 'ನಿಮಗೆ ಯಾವುದರಲ್ಲಿ ಸಹಾಯ ಬೇಕು?';
+
+  @override
+  String get sqHomeShowsPick =>
+      'ನೀವು ಆಯ್ಕೆ ಮಾಡುವುದಕ್ಕೆ ಕಾರ್ಡ್‌ಗಳನ್ನು ನಿಮ್ಮ ಹೋಮ್ ಪೇಜ್ ತೋರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqFertilityTimelines =>
+      'ಫಲವತ್ತತೆ ಕಾಲಾವಧಿಗಳು ಮತ್ತು ಪೂರ್ವಭಾವಿ ಮಾರ್ಗದರ್ಶನವನ್ನು ಹೊಂದಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqSelectBiomarkerTrack =>
+      'ನೀವು ಟ್ರ್ಯಾಕ್ ಮಾಡುವ ಪ್ರಾಥಮಿಕ ಬಯೋಮಾರ್ಕರ್ ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get sqHormoneSupport =>
+      'ಪ್ರೋಟೋಕಾಲ್‌ಗಳು ಮತ್ತು ಹಾರ್ಮೋನ್ ಬೆಂಬಲ ಟ್ರ್ಯಾಕಿಂಗ್ ಅನ್ನು ವೈಯಕ್ತೀಕರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqGestationalAge =>
+      'ಸಾಪ್ತಾಹಿಕ ಗರ್ಭಾವಸ್ಥೆಯ ವಯಸ್ಸು ಮತ್ತು ಮಗುವಿನ ಮೈಲಿಗಲ್ಲುಗಳನ್ನು ಲೆಕ್ಕಾಚಾರ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqEducationalPacing =>
+      'ಶೈಕ್ಷಣಿಕ ವೇಗ ಮತ್ತು ಮೈಲಿಗಲ್ಲು ಒಳನೋಟಗಳನ್ನು ಕಸ್ಟಮೈಸ್ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqBabyDevelopment =>
+      'ಮಗುವಿನ ಬೆಳವಣಿಗೆ, ಪೋಷಣೆ ಮತ್ತು ಸ್ವಾಸ್ಥ್ಯಕ್ಕೆ ಆದ್ಯತೆ ನೀಡಿ.';
+
+  @override
+  String get sqMaternalHealing =>
+      'ಮಾತೃ ಗುಣಪಡಿಸುವ ಚೇತರಿಕೆ ಮತ್ತು ಶಿಶು ಮೈಲಿಗಲ್ಲುಗಳನ್ನು ಚಾಲನೆ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqHydrationFeeding =>
+      'ಜಲಸಂಚಯನ ಗುರಿಗಳು ಮತ್ತು ಆಹಾರ ಲಾಗ್‌ಗಳನ್ನು ಹೊಂದಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqPostpartumSupport =>
+      'ಮಾತೃ ಹೆರಿಗೆಯ ನಂತರದ ಚೇತರಿಕೆ ಬೆಂಬಲವನ್ನು ಕಸ್ಟಮೈಸ್ ಮಾಡಿ.';
+
+  @override
+  String get sqRecoveryIncluded =>
+      'ಚೇತರಿಕೆ ಸೇರಿಸಲಾಗಿದೆ. ನೀವು ಟ್ರ್ಯಾಕ್ ಮಾಡುವುದನ್ನು ನಿಮ್ಮ ಹೋಮ್ ಪೇಜ್ ತೋರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqMenstrualRhythms =>
+      'ಋತು ಲಯಗಳಲ್ಲಿನ ಏರಿಳಿತಗಳನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡುತ್ತದೆ.';
+
+  @override
+  String get sqProactiveInsights =>
+      'ಪೂರ್ವಭಾವಿ ದೈನಂದಿನ ಒಳನೋಟಗಳಿಗಾಗಿ ಆದ್ಯತೆಗಳನ್ನು ಉಳಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqPostmenopausalFocus =>
+      'ಋತುಬಂಧದ ನಂತರದ ಆರೋಗ್ಯ ಗಮನ ಕ್ಷೇತ್ರಗಳನ್ನು ನಿರ್ಧರಿಸುತ್ತದೆ.';
+
+  @override
+  String get sqSelectAllCare =>
+      'ನಿಮ್ಮ ಆರೈಕೆಯನ್ನು ವೈಯಕ್ತೀಕರಿಸಲು ಅನ್ವಯಿಸುವ ಎಲ್ಲವನ್ನೂ ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get sqHealthyAgeing =>
+      'ನಿಮ್ಮ ಆರೋಗ್ಯಕರ ವಯಸ್ಸಾಗುವಿಕೆ ಸಂಗಾತಿ ಫೀಡ್ ಹೊಂದಿಸಿ.';
+
+  @override
+  String get sqCompanionCards =>
+      'ದೈನಂದಿನ ಸಂಗಾತಿ ಕಾರ್ಡ್‌ಗಳನ್ನು ವೈಯಕ್ತೀಕರಿಸುತ್ತದೆ.';
+
+  @override
   String get onbOnDeviceEncryption => 'ಸಾಧನದಲ್ಲಿ ಎನ್‌ಕ್ರಿಪ್ಷನ್';
 
   @override
