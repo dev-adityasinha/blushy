@@ -227,7 +227,7 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
 
     final subtitle = isCalibrated
         ? 'Postpartum Day $days • $phaseName • $deliveryType'
-        : 'Welcome to your 4th Trimester • Set Delivery Date';
+        : 'Welcome to your 4th Trimester • Your Fourth Trimester Healing Companion';
 
     return Padding(
       padding: const EdgeInsets.only(left: 4, right: 4, bottom: 4),
@@ -266,7 +266,7 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
             ),
           ),
           const SizedBox(height: 12),
-          // Orientation Badges Row
+          // Orientation Badges Row (Clean, subtle status pills - no calibrate button in greeting)
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -276,16 +276,9 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                 _buildStatusPill(phaseName, const Color(0xFF0D9488), const Color(0xFFCCFBF1)),
                 _buildStatusPill(deliveryType, const Color(0xFF7209B7), const Color(0xFFF3E8FF)),
               ] else ...[
-                OutlinedButton.icon(
-                  onPressed: _openCalibrationDialog,
-                  icon: const Icon(Icons.tune, size: 16, color: crimsonPrimary),
-                  label: Text('Calibrate Delivery Path & Date', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: crimsonPrimary)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: crimsonPrimary, width: 1.2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  ),
-                ),
+                _buildStatusPill('4th Trimester', const Color(0xFF2563EB), const Color(0xFFDBEAFE)),
+                _buildStatusPill('Early Recovery', const Color(0xFF0D9488), const Color(0xFFCCFBF1)),
+                _buildStatusPill('Gentle Healing', const Color(0xFF7209B7), const Color(0xFFF3E8FF)),
               ],
             ],
           ),
@@ -930,15 +923,37 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildSectionTitleWithFilledIcon(
-          icon: Icons.menu_book_rounded,
-          title: 'Postpartum Health Library',
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'HEALTH LIBRARY',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: crimsonPrimary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Essential Reads for 4th Trimester Healing',
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: textMain,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 14),
         const PostpartumAdjustingSection(),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         const PostpartumRaisingBabySection(),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         const PostpartumRecoveringSection(),
       ],
     );
@@ -1673,6 +1688,54 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                   ),
                 ),
                 const Icon(Icons.arrow_forward_ios, size: 12, color: crimsonPrimary),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        InkWell(
+          onTap: _openCalibrationDialog,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF7F2),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.tune, size: 16, color: crimsonPrimary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Delivery Details & Timeline Settings',
+                        style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.bold, color: textMain),
+                      ),
+                      Text(
+                        _overview?.timing.isConfigured == true
+                            ? 'Day ${_overview?.timing.daysSinceBirth ?? 0} • ${_overview?.profile['deliveryType'] == 'cesarean' ? 'C-Section' : 'Vaginal Birth'} • Recalibrate date or path'
+                            : 'Set delivery date & path (vaginal or C-section) for clinical timing',
+                        style: GoogleFonts.manrope(fontSize: 10, color: textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: cardBorderColor),
+                  ),
+                  child: Text(
+                    _overview?.timing.isConfigured == true ? 'Edit' : 'Configure',
+                    style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.bold, color: crimsonPrimary),
+                  ),
+                ),
               ],
             ),
           ),
@@ -2439,18 +2502,19 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                   // Nothing came back from the server, so the sections below are
                   // the stage's general content rather than her recovery
                   // (spec §4, §31).
-                  StageStateNotice(
-                    state: _overviewState,
-                    hasData: _overview != null || _todayBrief != null,
-                    emptyMessage:
-                        'There is nothing recorded for your recovery yet, so what follows '
-                        'is general guidance rather than anything worked out from your own '
-                        'entries. Add your birth date and a check-in to see it tailored to you.',
-                    onRetry: () {
-                      setState(() => _isLoading = true);
-                      _loadPostpartumData();
-                    },
-                  ),
+                  if (_overviewState == ApiState.error && _overview == null && _todayBrief == null)
+                    StageStateNotice(
+                      state: _overviewState,
+                      hasData: _overview != null || _todayBrief != null,
+                      emptyMessage:
+                          'There is nothing recorded for your recovery yet, so what follows '
+                          'is general guidance rather than anything worked out from your own '
+                          'entries.',
+                      onRetry: () {
+                        setState(() => _isLoading = true);
+                        _loadPostpartumData();
+                      },
+                    ),
 
                   // 🚨 Context-Aware Urgent Safety Interruption if triggered
                   if (shouldInterrupt) ...[
@@ -2465,20 +2529,20 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                     _buildDailyEssentialsHub(),
                     const SizedBox(height: 18),
 
-                    // 02: AI COMPANION & PEACE OF MIND (Docsy Intelligence & Reassurance) ⭐
+                    // 02: CURATED POSTPARTUM HEALTH & ADJUSTING LIBRARY ⭐ (Placed 2nd per explicit user request)
+                    _buildPostpartumHealthLibrary(),
+                    const SizedBox(height: 18),
+
+                    // 03: AI COMPANION & PEACE OF MIND (Docsy Intelligence & Reassurance) ⭐
                     _buildDocsyAndPeaceOfMindHub(),
                     const SizedBox(height: 18),
 
-                    // 03: RECOVERY & CARE ROADMAP (Stages, "Can I?", & Doctor Prep) ⭐
+                    // 04: RECOVERY & CARE ROADMAP (Stages, "Can I?", & Doctor Prep) ⭐
                     _buildRecoveryAndCareRoadmapHub(),
                     const SizedBox(height: 18),
 
-                    // 04: SUPPORT CIRCLE, REST & SAFETY (SOS, Rest Mode & Red Flags) ⭐
+                    // 05: SUPPORT CIRCLE, REST & SAFETY (SOS, Rest Mode & Red Flags) ⭐
                     _buildSupportAndRestHub(),
-                    const SizedBox(height: 18),
-
-                    // 05: CURATED POSTPARTUM HEALTH & ADJUSTING LIBRARY
-                    _buildPostpartumHealthLibrary(),
                   ],
                   const SizedBox(height: 40),
                 ],

@@ -195,12 +195,14 @@ app.use('/api/v1/bouquets', ipRateLimiter, bouquetRoutes);
 app.use('/api/v1/recovery', ipRateLimiter, recoveryRoutes);
 app.use('/pregnancy', ipRateLimiter, pregnancyRoutes);
 app.use('/api/pregnancy', ipRateLimiter, pregnancyRoutes);
+app.use('/api/v1/pregnancy', ipRateLimiter, pregnancyRoutes);
 // Postpartum was written in full -- router, controller, four services -- and
 // then never mounted, so all ten of its routes answered 404 and every call the
 // app made for this stage failed. Mounted on the same two prefixes as
 // pregnancy, which is what ApiPostpartumService requests.
 app.use('/postpartum', ipRateLimiter, postpartumRoutes);
 app.use('/api/postpartum', ipRateLimiter, postpartumRoutes);
+app.use('/api/v1/postpartum', ipRateLimiter, postpartumRoutes);
 app.use('/perimenopause', ipRateLimiter, perimenopauseRoutes);
 app.use('/api/perimenopause', ipRateLimiter, perimenopauseRoutes);
 app.use('/api/v1/perimenopause', ipRateLimiter, perimenopauseRoutes);
