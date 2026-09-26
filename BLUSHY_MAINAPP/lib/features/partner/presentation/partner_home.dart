@@ -9,6 +9,7 @@ import 'partner_empathy_translator.dart';
 import 'partner_caregiver_dashboard.dart';
 import 'partner_peer_hub.dart';
 import 'partner_nudge_row.dart';
+import 'partner_ttc_companion.dart';
 import '../partner_stage.dart';
 import 'private_space_partner_state.dart';
 import 'cycle_harmony_card.dart';
@@ -1335,6 +1336,15 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
                 PartnerPeerHub(
                   partnerName: partnerName,
                   phase: cycleInfo?['phase']?.toString(),
+                ),
+              // Relationship-aware TTC guidance: fertility/intimacy for a
+              // conception partner, two-week-wait emotional support otherwise.
+              if (isConnected &&
+                  (permitted['lifeStage'] ?? '').toString().toLowerCase().contains('ttc'))
+                PartnerTtcCompanion(
+                  partnerName: partnerName,
+                  isRomantic: _partnerHome.data?.allowsCoupleFeatures ?? false,
+                  fertileWindowShared: permitted['fertileWindow'] != null,
                 ),
               // One-tap nudges (server-scoped by relationship). Delivers a
               // gesture straight to her app.
