@@ -21,6 +21,7 @@ import 'partner_sia.dart';
 import '../../../core/theme.dart' hide BlushyColors;
 import '../../../services/api_partner_service.dart';
 import '../../../services/api_blushy_service.dart';
+import '../../../services/companion_widget_service.dart';
 import '../../../services/api_contract_client.dart';
 import '../../../models/blushy_models.dart';
 import '../../../shared/api_state_card.dart';
@@ -62,6 +63,19 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
     final result = await PartnerApi.home(connectionId);
     if (!mounted) return;
     setState(() => _partnerHome = result);
+    _pushWidgetUpdate();
+  }
+
+  /// Best-effort push of the latest guidance to the home-screen widget.
+  void _pushWidgetUpdate() {
+    final data = _partnerHome.data;
+    if (data == null) return;
+    final cyclePhase = data.permittedContext['cyclePhase'];
+    final phase = (cyclePhase is Map) ? cyclePhase['phase']?.toString() : null;
+    final name = _activeConnection != null
+        ? partnerDisplayName(Map<String, dynamic>.from(_activeConnection!), fallback: 'She')
+        : 'She';
+    unawaited(CompanionWidgetService.update(partnerName: name, phase: phase));
   }
 
   /// Acknowledge or complete a care request. Only the partner may do this;
