@@ -2206,9 +2206,10 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // 1.2. Relationship type ("who is this to you?"). Changing
-                      // it re-shapes their whole companion experience.
-                      if (hasConnection)
+                      // 1.2. Relationship type ("who is this to you?"). Owner-only
+                      // — only the person being supported decides who someone is
+                      // to them; the companion never sets their own relationship.
+                      if (hasConnection && primaryPartner?['canManagePermissions'] == true)
                         InkWell(
                           onTap: () {
                             Navigator.pop(sheetCtx);
@@ -2270,7 +2271,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
                             ),
                           ),
                         ),
-                      if (hasConnection) const SizedBox(height: 12),
+                      if (hasConnection && primaryPartner?['canManagePermissions'] == true)
+                        const SizedBox(height: 12),
 
                       // 1.5. Active Status & Read Receipts Settings Card
                       Container(

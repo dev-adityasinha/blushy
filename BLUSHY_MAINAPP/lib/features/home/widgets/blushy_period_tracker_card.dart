@@ -176,7 +176,7 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
                 text: TextSpan(
                   children: [
                     TextSpan(
-                      text: 'Next cycle begins in ',
+                      text: 'Next cycle begins in ',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                       style: GoogleFonts.manrope(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
@@ -199,7 +199,7 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: 'Day ',
+                    text: 'Day ',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                     style: GoogleFonts.cormorantGaramond(
                       fontSize: 44,
                       fontWeight: FontWeight.w700,

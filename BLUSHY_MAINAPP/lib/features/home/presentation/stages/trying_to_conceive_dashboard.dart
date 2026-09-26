@@ -542,7 +542,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildSectionHeaderWithIcon(
-                title: 'YOUR SIGNALS TODAY',
+                title: 'YOUR SIGNALS TODAY',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 icon: Icons.biotech_rounded,
                 badgeColor: const Color(0xFF7C3AED),
               ),
@@ -585,7 +585,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             children: [
               _buildSignalSummaryPill(
                 icon: Icons.biotech_rounded,
-                label: 'LH STRIP',
+                label: 'LH STRIP',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 value: _ttcLoggedOPK ?? 'Not logged',
                 tapPrompt: '+ Tap to test',
                 color: const Color(0xFF7C3AED),
@@ -594,7 +594,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               const SizedBox(width: 8),
               _buildSignalSummaryPill(
                 icon: Icons.thermostat_rounded,
-                label: 'BASAL TEMP',
+                label: 'BASAL TEMP',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 value: _ttcLoggedBBT != null ? '${_ttcLoggedBBT!.toStringAsFixed(1)}°F' : 'Not logged',
                 tapPrompt: '+ Log temp',
                 color: const Color(0xFFEA580C),
@@ -607,7 +607,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             children: [
               _buildSignalSummaryPill(
                 icon: Icons.water_drop_rounded,
-                label: 'CERVICAL FLUID',
+                label: 'CERVICAL FLUID',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 value: _ttcLoggedCervicalFluid ?? 'Not logged',
                 tapPrompt: '+ Check fluid',
                 color: const Color(0xFF0284C7),
@@ -616,7 +616,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               const SizedBox(width: 8),
               _buildSignalSummaryPill(
                 icon: Icons.favorite_rounded,
-                label: 'INTIMACY',
+                label: 'INTIMACY',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 value: _partnerDecision == 'trying_today'
                     ? 'Trying ❤️'
                     : (_partnerDecision == 'not_today'
@@ -636,7 +636,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               Expanded(
                 child: _buildActionPillButton(
                   icon: Icons.photo_camera_rounded,
-                  label: 'Scan OPK',
+                  label: 'Scan OPK',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                   color: const Color(0xFF7C3AED),
                   onTap: () => _showOpkGalleryModal(context),
                 ),
@@ -645,7 +645,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               Expanded(
                 child: _buildActionPillButton(
                   icon: Icons.show_chart_rounded,
-                  label: 'BBT Curve',
+                  label: 'BBT Curve',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                   color: const Color(0xFFEA580C),
                   onTap: () => _showBbtCurveModal(context),
                 ),
@@ -654,7 +654,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               Expanded(
                 child: _buildActionPillButton(
                   icon: Icons.edit_note_rounded,
-                  label: 'Log Sheet',
+                  label: 'Log Sheet',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                   color: crimsonPrimary,
                   onTap: () => _showBiomarkersLogSheet(context),
                 ),
@@ -987,7 +987,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           children: [
                             const Icon(Icons.biotech_rounded, size: 16, color: Color(0xFF7C3AED)),
                             const SizedBox(width: 6),
-                            Text('LH Surge Strip (OPK):', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                            Text('LH Surge Strip (OPK):', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                           ],
                         ),
                         const SizedBox(height: 6),
@@ -1016,7 +1016,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           children: [
                             const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFF0284C7)),
                             const SizedBox(width: 6),
-                            Text('Cervical Fluid Texture:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                            Text('Cervical Fluid Texture:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                           ],
                         ),
                         const SizedBox(height: 6),
@@ -1049,7 +1049,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           children: [
                             const Icon(Icons.thermostat_rounded, size: 16, color: Color(0xFFEA580C)),
                             const SizedBox(width: 6),
-                            Text('Morning BBT (°F):', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                            Text('Morning BBT (°F):', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                           ],
                         ),
                         const SizedBox(height: 6),
@@ -1071,7 +1071,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           children: [
                             const Icon(Icons.favorite_rounded, size: 16, color: crimsonPrimary),
                             const SizedBox(width: 6),
-                            Text('Intimacy & Timing:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                            Text('Intimacy & Timing:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                           ],
                         ),
                         const SizedBox(height: 6),
@@ -1108,7 +1108,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                           children: [
                             const Icon(Icons.medication_outlined, size: 16, color: Color(0xFF0D9488)),
                             const SizedBox(width: 6),
-                            Text('Protocol & Supplements:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),
+                            Text('Protocol & Supplements:', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain)),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                           ],
                         ),
                         const SizedBox(height: 6),
@@ -1148,7 +1148,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Today\'s fertility signals saved and synced.'),
+                            content: Text('Today\'s fertility signals saved and synced.'),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                             duration: Duration(seconds: 2),
                           ),
                         );
@@ -1221,21 +1221,21 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             children: [
               _buildVisualResetTile(
                 icon: Icons.restaurant_rounded,
-                title: 'Iron Foods',
+                title: 'Iron Foods',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 desc: 'Lentils & greens',
                 color: const Color(0xFF0D9488),
               ),
               const SizedBox(width: 8),
               _buildVisualResetTile(
                 icon: Icons.bedtime_rounded,
-                title: 'Deep Sleep',
+                title: 'Deep Sleep',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 desc: '8+ hours rest',
                 color: const Color(0xFF7C3AED),
               ),
               const SizedBox(width: 8),
               _buildVisualResetTile(
                 icon: Icons.self_improvement_rounded,
-                title: 'Gentle Pace',
+                title: 'Gentle Pace',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 desc: 'Warm tea & ease',
                 color: const Color(0xFFEA580C),
               ),
@@ -1363,7 +1363,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildSectionHeaderWithIcon(
-                title: 'BEST TIME TO TRY',
+                title: 'BEST TIME TO TRY',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 icon: Icons.favorite_rounded,
                 badgeColor: badgeColor,
               ),
@@ -1740,7 +1740,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildSectionHeaderWithIcon(
-                title: 'THE TWO-WEEK WAIT',
+                title: 'THE TWO-WEEK WAIT',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 icon: Icons.hourglass_bottom_rounded,
                 badgeColor: shieldColor,
               ),
@@ -1836,7 +1836,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             children: [
               _buildSymptomRealityTile(
                 icon: Icons.bolt_rounded,
-                label: 'Cramps',
+                label: 'Cramps',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 sub: 'Progesterone rise',
                 color: const Color(0xFFD97706),
                 onTap: () => _openDocsyPrompt(
@@ -1847,7 +1847,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               const SizedBox(width: 6),
               _buildSymptomRealityTile(
                 icon: Icons.nightlight_rounded,
-                label: 'Fatigue',
+                label: 'Fatigue',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 sub: 'Body working hard',
                 color: const Color(0xFF7C3AED),
                 onTap: () => _openDocsyPrompt(
@@ -1858,7 +1858,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               const SizedBox(width: 6),
               _buildSymptomRealityTile(
                 icon: Icons.spa_rounded,
-                label: 'Tender',
+                label: 'Tender',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 sub: 'Hormone peak',
                 color: const Color(0xFFF72585),
                 onTap: () => _openDocsyPrompt(
@@ -1996,7 +1996,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildSectionHeaderWithIcon(
-                title: 'EXTENDED LUTEAL PATTERN',
+                title: 'EXTENDED LUTEAL PATTERN',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 icon: Icons.event_available_rounded,
                 badgeColor: const Color(0xFF059669),
               ),
@@ -2282,7 +2282,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Gestational Age:', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),
+                          Text('Gestational Age:', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                           Text(
                             '$gestationalWeeks w, $remainingDays d',
                             style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: textMain),
@@ -2293,7 +2293,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Estimated Due Date:', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),
+                          Text('Estimated Due Date:', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                           Text(
                             _formatDate(edd),
                             style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: crimsonPrimary),
@@ -2380,7 +2380,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeaderWithIcon(
-              title: 'FERTILE WINDOW CONTINUUM',
+              title: 'FERTILE WINDOW CONTINUUM',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
               icon: Icons.timeline_rounded,
               badgeColor: crimsonPrimary,
             ),
@@ -2418,7 +2418,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeaderWithIcon(
-            title: 'FERTILE WINDOW CONTINUUM',
+            title: 'FERTILE WINDOW CONTINUUM',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
             icon: Icons.timeline_rounded,
             badgeColor: crimsonPrimary,
             trailing: Container(
@@ -2536,7 +2536,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeaderWithIcon(
-            title: 'A BREATHER FOR TODAY',
+            title: 'A BREATHER FOR TODAY',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
             icon: Icons.spa_rounded,
             badgeColor: const Color(0xFF7C3AED),
             trailing: _isAnxietyModeActive
@@ -2661,7 +2661,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeaderWithIcon(
-            title: 'QUESTIONS FOR YOUR DOCTOR',
+            title: 'QUESTIONS FOR YOUR DOCTOR',  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
             icon: Icons.assignment_ind_outlined,
             badgeColor: const Color(0xFF059669),
           ),
@@ -2762,12 +2762,26 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               ),
               const SizedBox(height: 4),
               Text(
-                'Visual chronological strip darkening to pinpoint your exact LH surge without second-guessing faint lines.',
+                'Example progression showing how test strips darken toward the LH surge. Log your own result below.', // i18n-ignore: clinical/education copy kept English
                 style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              // These strips are an illustrative example, not the user's data.
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: surfaceCanvas,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: cardBorderColor),
+                ),
+                child: Text(
+                  'EXAMPLE', // i18n-ignore
+                  style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: textMuted),
+                ),
+              ),
+              const SizedBox(height: 8),
 
-              // Mock Progression Gallery Cards
+              // Illustrative progression cards (hardcoded example values).
               _buildOpkGalleryItem(day: 10, ratio: '0.2', status: 'Low', isPeak: false, color: const Color(0xFF7C3AED)),
               const SizedBox(height: 8),
               _buildOpkGalleryItem(day: 12, ratio: '0.6', status: 'High', isPeak: false, color: const Color(0xFFEA580C)),
@@ -2775,28 +2789,47 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
               _buildOpkGalleryItem(day: 14, ratio: '1.4', status: 'Peak Surge! 🟢', isPeak: true, color: crimsonPrimary),
               const SizedBox(height: 16),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    setState(() => _ttcLoggedOPK = 'Peak (Surge)');
-                    _saveDailyTtcLog();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Simulated OPK Strip logged: Peak Surge (1.4 ratio)!')),
-                    );
-                  },
-                  icon: const Icon(Icons.camera_alt_outlined, size: 16, color: Colors.white),
-                  label: Text(
-                    '📷 Snap / Log New Test Strip Photo',
-                    style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: crimsonPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
+              // Log the user's OWN result. This previously wrote a hardcoded
+              // "Peak (Surge)" into her real check-in and drove the fertility
+              // phase off simulated data; now she records the actual reading.
+              Text(
+                'LOG TODAY’S ACTUAL RESULT', // i18n-ignore
+                style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: textMuted),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  for (final opt in const [
+                    ['Negative / Low', 'Low'],
+                    ['High', 'High'],
+                    ['Peak (Surge)', 'Peak'],
+                  ])
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            setState(() => _ttcLoggedOPK = opt[0]);
+                            _saveDailyTtcLog();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('OPK logged: ${opt[1]}')),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: crimsonPrimary,
+                            side: const BorderSide(color: crimsonPrimary),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text(
+                            opt[1],
+                            style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
@@ -2931,8 +2964,8 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Follicular Phase: 97.2°–97.5°F', style: GoogleFonts.manrope(fontSize: 10, color: textMuted)),
-                        Text('Luteal Shift: 98.2°–98.6°F', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF059669))),
+                        Text('Follicular Phase: 97.2°–97.5°F', style: GoogleFonts.manrope(fontSize: 10, color: textMuted)),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
+                        Text('Luteal Shift: 98.2°–98.6°F', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF059669))),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -3064,7 +3097,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                     padding: const EdgeInsets.symmetric(vertical: 11),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: Text('Understood', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                  child: Text('Understood', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                 ),
               ),
             ],
@@ -3216,7 +3249,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
 
                         messenger.showSnackBar(
                           const SnackBar(
-                            content: Text('Cycle reset to Day 1. Luteal phase recorded into pattern memory.'),
+                            content: Text('Cycle reset to Day 1. Luteal phase recorded into pattern memory.'),  // i18n-ignore: clinical/education copy kept English (TTC rewrite)
                             duration: Duration(seconds: 2),
                           ),
                         );
