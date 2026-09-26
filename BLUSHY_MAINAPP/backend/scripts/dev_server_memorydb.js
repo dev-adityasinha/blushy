@@ -8,13 +8,19 @@
  *   node scripts/dev_server_memorydb.js
  */
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const mongo = await MongoMemoryServer.create();
 
 process.env.MONGODB_URI = `${mongo.getUri()}blushy_dev`;
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'local-development-secret-at-least-32-chars';
-process.env.NODE_ENV = process.env.NODE_ENV ?? 'development';
+process.env.NODE_ENV = 'development';
 process.env.PORT = process.env.PORT ?? '3000';
 process.env.CORS_ORIGIN = process.env.CORS_ORIGIN ?? '*';
 // Non-production only: lets the seeded clinical content be served without a
