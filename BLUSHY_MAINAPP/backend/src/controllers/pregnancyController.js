@@ -46,7 +46,7 @@ export async function getPregnancyBaseline(req, res, next) {
 
 export async function classifySymptom(req, res, next) {
   try {
-    const query = req.body?.query || req.query.query || '';
+    const query = req.body?.query || req.body?.symptom || req.query.query || req.query.symptom || '';
     const week = parseInt(req.body?.week || req.query.week || 20, 10);
     const data = await pregnancyService.classifySymptomWithAI({ query, week });
     return res.json({ state: 'ready', data });
@@ -57,7 +57,7 @@ export async function classifySymptom(req, res, next) {
 
 export async function checkFoodSafety(req, res, next) {
   try {
-    const query = req.body?.query || req.query.query || '';
+    const query = req.body?.query || req.body?.item || req.query.query || req.query.item || '';
     const week = parseInt(req.body?.week || req.query.week || 20, 10);
     const data = await pregnancyService.checkFoodSafetyWithAI({ query, week });
     return res.json({ state: 'ready', data });

@@ -17,6 +17,7 @@ import '../../widgets/log_symptoms_section.dart';
 import 'pregnancy_health_section.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
+import '../../../sia/open_docsy.dart';
 
 extension StringSliceSafe on String {
   String sliceSafe(int start, [int? end]) {
@@ -1865,6 +1866,7 @@ class _SymptomTriageSheet extends StatefulWidget {
 class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
   late final TextEditingController _controller = TextEditingController(text: widget.initialQuery ?? '');
   SymptomTriageResult? _result;
+  String? _activeQuery;
   bool _loading = false;
 
   final List<String> _quickSuggestions = [
@@ -1890,6 +1892,15 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
     super.dispose();
   }
 
+  void _clearSearch() {
+    setState(() {
+      _controller.clear();
+      _result = null;
+      _activeQuery = null;
+      _loading = false;
+    });
+  }
+
   SymptomTriageResult _localSymptomTriage(String query, int week) {
     final q = query.toLowerCase();
     if (q.contains('ligament') || q.contains('twinge') || q.contains('side pain') || q.contains('sharp twinge')) {
@@ -1901,6 +1912,50 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
         reasoning: 'The thick fibrous bands supporting your uterus stretch and spasm with sudden movements, coughing, or rolling over in bed.',
         guidance: 'Bend and flex your hips when turning, apply gentle warmth, move slowly from sitting to standing, and rest on your side.',
         questionsForDoctor: ['Would a maternity belly band help support my abdomen during daily walks?'],
+      );
+    }
+    if (q.contains('braxton') || q.contains('tighten') || q.contains('hardening') || q.contains('practice contraction')) {
+      return SymptomTriageResult(
+        category: 'common',
+        badgeLabel: 'Normal Practice Contractions',
+        colorHex: '#0D9488',
+        summary: 'Braxton Hicks practice contractions: irregular, painless tightening of the uterine muscle as your body prepares for birth.',
+        reasoning: 'Common from the second trimester onwards, often triggered by dehydration, a full bladder, or active movement.',
+        guidance: 'Empty your bladder, drink two tall glasses of water, and lie down on your left side. They should subside within 20-30 minutes.',
+        questionsForDoctor: ['How do I distinguish Braxton Hicks from true preterm labor contractions?'],
+      );
+    }
+    if (q.contains('pelvic girdle') || q.contains('spd') || q.contains('pubic') || q.contains('groin') || q.contains('hip pain')) {
+      return SymptomTriageResult(
+        category: 'common',
+        badgeLabel: 'Pelvic Girdle Adaptation',
+        colorHex: '#0D9488',
+        summary: 'Pelvic girdle pain (PGP) and symphysis pubis stiffness occur as relaxin loosens ligaments to allow baby to descend.',
+        reasoning: 'Uneven pelvic movement or strain when rolling over in bed, walking upstairs, or getting out of cars.',
+        guidance: 'Keep knees together when getting out of cars, place a pillow between your knees when sleeping, and avoid heavy lifting.',
+        questionsForDoctor: ['Can you refer me to a pelvic floor physical therapist for pregnancy support?'],
+      );
+    }
+    if (q.contains('heartburn') || q.contains('acid') || q.contains('reflux') || q.contains('indigestion') || q.contains('gerd')) {
+      return SymptomTriageResult(
+        category: 'common',
+        badgeLabel: 'Very Common Pregnancy Shift',
+        colorHex: '#0D9488',
+        summary: 'Pregnancy acid reflux is widespread due to progesterone relaxing the lower esophageal sphincter and uterine upward pressure.',
+        reasoning: 'Stomach acids travel up into the esophagus more easily, especially when lying down after meals.',
+        guidance: 'Eat smaller frequent meals, avoid eating within 3 hours of bed, elevate head of bed, and sip warm chamomile or ginger tea.',
+        questionsForDoctor: ['Are calcium carbonate chews (Tums) safe to take daily for bedtime heartburn?'],
+      );
+    }
+    if (q.contains('cramp') || q.contains('calf') || q.contains('leg cramp') || q.contains('charlie horse')) {
+      return SymptomTriageResult(
+        category: 'common',
+        badgeLabel: 'Common Nocturnal Cramp',
+        colorHex: '#0D9488',
+        summary: 'Sudden nighttime calf cramps are common in second and third trimesters from altered calcium/magnesium balance and vascular load.',
+        reasoning: 'Increased lower body fluid load and fatigue in leg muscle fibers.',
+        guidance: 'Flex your toes upward toward your shin immediately when a cramp hits. Stay hydrated and try gentle calf stretches before bed.',
+        questionsForDoctor: ['Would a prenatal magnesium glycinate supplement help reduce nighttime muscle cramps?'],
       );
     }
     if (q.contains('headache') || q.contains('dizz') || q.contains('lighthead')) {
@@ -1983,7 +2038,10 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
   Future<void> _runTriage(String query) async {
     final q = query.trim();
     if (q.isEmpty) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _activeQuery = q;
+    });
 
     try {
       final res = await ApiPregnancyService.classifySymptom(query: q, week: widget.week);
@@ -2226,6 +2284,7 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
                 TextField(
                   controller: _controller,
                   style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF221510)),
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     hintText: 'Describe what you are feeling...',
                     hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
@@ -2233,9 +2292,21 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
                     fillColor: const Color(0xFFFAF7F2),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     prefixIcon: const Icon(Icons.search, color: Color(0xFF7A6B72), size: 20),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
-                      onPressed: () => _runTriage(_controller.text),
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_controller.text.isNotEmpty || _result != null)
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF7A6B72)),
+                            onPressed: _clearSearch,
+                            tooltip: 'Clear',
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
+                          onPressed: () => _runTriage(_controller.text),
+                          tooltip: 'Check',
+                        ),
+                      ],
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -2280,7 +2351,7 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 if (_loading)
                   const Center(
@@ -2290,6 +2361,47 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
                     ),
                   )
                 else if (_result != null) ...[
+                  // Return / Clear action
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: _clearSearch,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.arrow_back, size: 14, color: Color(0xFFDD0D22)),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Back to symptom triage guide',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFDD0D22),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _clearSearch,
+                        child: Text(
+                          'Clear',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF7A6B72),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
                   // Badge & Result
                   Container(
                     padding: const EdgeInsets.all(18),
@@ -2379,6 +2491,61 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
                             );
                           }),
                         ],
+
+                        // Direct Docsy AI Connection
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFECEB),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFDD0D22).withValues(alpha: 0.3)),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                final queryTerm = _activeQuery ?? _controller.text;
+                                Navigator.of(context).pop();
+                                final prompt = "I had a symptom question during week ${widget.week} of pregnancy about '$queryTerm'. "
+                                    "The triage assessment was '${_result!.badgeLabel}'. "
+                                    "Summary: '${_result!.summary}'. "
+                                    "Can you explain why this happens and give me personalized clinical reassurance and care steps?";
+                                openDocsyWith(context, prompt);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    const Text('💬', style: TextStyle(fontSize: 18)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Discuss with Docsy AI',
+                                            style: GoogleFonts.manrope(
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: const Color(0xFFDD0D22),
+                                            ),
+                                          ),
+                                          Text(
+                                            'Ask follow-up questions & get real-time reassurance',
+                                            style: GoogleFonts.manrope(fontSize: 10.5, color: const Color(0xFF7A6B72)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_forward_ios, size: 13, color: Color(0xFFDD0D22)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -2415,6 +2582,7 @@ class _FoodSafetySheet extends StatefulWidget {
 class _FoodSafetySheetState extends State<_FoodSafetySheet> {
   late final TextEditingController _controller = TextEditingController(text: widget.initialQuery ?? '');
   FoodSafetyResult? _result;
+  String? _activeQuery;
   bool _loading = false;
 
   final List<String> _quickSuggestions = [
@@ -2442,6 +2610,15 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
     super.dispose();
   }
 
+  void _clearSearch() {
+    setState(() {
+      _controller.clear();
+      _result = null;
+      _activeQuery = null;
+      _loading = false;
+    });
+  }
+
   FoodSafetyResult _localFoodSafetyCheck(String query, int week) {
     final q = query.toLowerCase();
 
@@ -2455,6 +2632,96 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
         reasoning: 'Green/unripe papaya contains concentrated latex and papain enzymes that can induce uterine contractions.',
         safeAlternative: 'Choose fully ripe yellow papaya or sweet melon. Avoid raw green papaya salads (like Som Tum).',
         docQuestion: 'Are there any digestive enzyme foods you recommend for mild third-trimester constipation?',
+      );
+    }
+
+    if (q.contains('flax') || q.contains('linseed')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'caution',
+        badge: 'Moderate intake (<1-2 Tbsp)',
+        colorHex: '#D97706',
+        summary: 'Ground flaxseeds are safe in moderate culinary amounts (<1-2 Tbsp daily). Avoid raw whole seeds and concentrated flaxseed oil supplements.',
+        reasoning: 'Flaxseeds contain mild phytoestrogens (lignans). Moderate culinary intake provides beneficial omega-3 ALA and fiber, but large supplement doses can stimulate uterine activity.',
+        safeAlternative: 'Sprinkle 1 tablespoon of ground flaxseed into oatmeal or smoothies with plenty of water. Chia seeds are also an excellent gentle alternative.',
+        docQuestion: 'Is my daily flaxseed or chia intake appropriate for my pregnancy history?',
+      );
+    }
+
+    if (q.contains('chia')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'safe',
+        badge: 'Safe & Highly Recommended',
+        colorHex: '#0D9488',
+        summary: 'Chia seeds are a wonderful pregnancy superfood packed with plant-based omega-3s, soluble fiber, and calcium.',
+        reasoning: 'Chia seeds help prevent constipation and support steady blood sugar without hormone-stimulating effects.',
+        safeAlternative: 'Chia seed pudding made with pasteurized milk, or stirred into yogurt with berries. Drink adequate fluids.',
+        docQuestion: 'Can I use chia seeds daily to help manage digestive regularity?',
+      );
+    }
+
+    if (q.contains('pineapple') || q.contains('ananas')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'safe',
+        badge: 'Safe in Normal Portions',
+        colorHex: '#0D9488',
+        summary: 'Fresh pineapple in normal dietary amounts is safe, hydrating, and loaded with Vitamin C. The old myth about inducing labor requires eating dozens of whole pineapples at once.',
+        reasoning: 'Bromelain enzyme is concentrated mainly in the inedible woody core. Normal fruit servings do not cause cervical changes.',
+        safeAlternative: 'Enjoy a cup of sweet fresh sliced pineapple or blend into a chilled smoothie with Greek yogurt.',
+        docQuestion: 'Are there any acidic fruits I should moderate if I experience pregnancy acid reflux?',
+      );
+    }
+
+    if (q.contains('deli') || q.contains('cold cut') || q.contains('hot dog') || q.contains('bacon') || q.contains('prosciutto') || q.contains('salami') || q.contains('ham')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'caution',
+        badge: 'Safe Only When Steaming Hot',
+        colorHex: '#D97706',
+        summary: 'Cold deli meats and cured charcuterie carry a risk of Listeria contamination unless heated until steaming hot (165°F / 74°C).',
+        reasoning: 'Listeria can grow at refrigerator temperatures and cross the placenta. High heat completely destroys the bacteria.',
+        safeAlternative: 'Order deli sandwiches toasted until steaming hot throughout, or opt for freshly cooked chicken breast or roasted turkey.',
+        docQuestion: 'What steps should I take if I accidentally ate unheated deli meat and develop a fever?',
+      );
+    }
+
+    if (q.contains('tuna') || q.contains('canned tuna') || q.contains('mercury') || q.contains('swordfish') || q.contains('mackerel')) {
+      if (q.contains('swordfish') || q.contains('king mackerel') || q.contains('tilefish') || q.contains('shark')) {
+        return FoodSafetyResult(
+          query: query,
+          status: 'avoid',
+          badge: 'High Mercury • Strictly Avoid',
+          colorHex: '#DD0D22',
+          summary: 'Large predatory apex fish contain high levels of methylmercury that can harm developing fetal nervous systems.',
+          reasoning: 'Mercury accumulates up the oceanic food chain. ACOG strictly advises avoiding high-mercury species.',
+          safeAlternative: 'Wild Alaskan salmon, canned light skipjack tuna, shrimp, pollock, or cod.',
+          docQuestion: 'What low-mercury fish do you recommend to meet my weekly omega-3 EPA/DHA needs?',
+        );
+      }
+      return FoodSafetyResult(
+        query: query,
+        status: 'caution',
+        badge: 'Safe up to 6 oz / Week',
+        colorHex: '#D97706',
+        summary: 'Canned light tuna is safe up to 2-3 servings (8-12 oz) per week. Canned albacore / white tuna should be limited to 6 oz per week.',
+        reasoning: 'Tuna provides valuable DHA and protein, but moderate intake limits cumulative mercury exposure.',
+        safeAlternative: 'Canned skipjack "light" tuna or wild Atlantic/Pacific salmon in olive oil.',
+        docQuestion: 'Should I take an algae-based prenatal DHA supplement in addition to fish?',
+      );
+    }
+
+    if (q.contains('honey')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'safe',
+        badge: 'Safe for Expectant Mothers',
+        colorHex: '#0D9488',
+        summary: 'Commercial honey is safe for pregnant women! Honey is only dangerous for infants under 1 year old.',
+        reasoning: 'An adult woman\'s mature gut flora and digestive acids easily destroy Clostridium botulinum spores before they can produce toxins.',
+        safeAlternative: 'Stir a spoonful of clover or wildflower honey into warm lemon water for throat comfort.',
+        docQuestion: 'Is local unpasteurized raw honey safe during pregnancy, or should I stick to pasteurized honey?',
       );
     }
 
@@ -2589,7 +2856,10 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
   Future<void> _runCheck(String query) async {
     final q = query.trim();
     if (q.isEmpty) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _activeQuery = q;
+    });
 
     try {
       final res = await ApiPregnancyService.checkFoodSafety(query: q, week: widget.week);
@@ -2870,6 +3140,7 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
                 TextField(
                   controller: _controller,
                   style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF221510)),
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     hintText: 'Search food, drink, or medicine...',
                     hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
@@ -2877,9 +3148,21 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
                     fillColor: const Color(0xFFFAF7F2),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     prefixIcon: const Icon(Icons.search, color: Color(0xFF7A6B72), size: 20),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
-                      onPressed: () => _runCheck(_controller.text),
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_controller.text.isNotEmpty || _result != null)
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF7A6B72)),
+                            onPressed: _clearSearch,
+                            tooltip: 'Clear',
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
+                          onPressed: () => _runCheck(_controller.text),
+                          tooltip: 'Check',
+                        ),
+                      ],
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -2924,7 +3207,7 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 if (_loading)
                   const Center(
@@ -2934,6 +3217,47 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
                     ),
                   )
                 else if (_result != null) ...[
+                  // Return / Clear action
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: _clearSearch,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.arrow_back, size: 14, color: Color(0xFFDD0D22)),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Back to food & medicine guide',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFDD0D22),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _clearSearch,
+                        child: Text(
+                          'Clear',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF7A6B72),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
@@ -3022,6 +3346,61 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
                               },
                             ),
                           ],
+                        ),
+
+                        // Direct Docsy AI Connection
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFECEB),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFDD0D22).withValues(alpha: 0.3)),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                final queryTerm = _activeQuery ?? _controller.text;
+                                Navigator.of(context).pop();
+                                final prompt = "I checked if '$queryTerm' is safe during week ${widget.week} of pregnancy. "
+                                    "The safety verdict was '${_result!.badge}'. "
+                                    "Summary: '${_result!.summary}'. "
+                                    "Can you provide more clinical details, safe preparation guidelines, and answer any questions I have?";
+                                openDocsyWith(context, prompt);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    const Text('💬', style: TextStyle(fontSize: 18)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Discuss with Docsy AI',
+                                            style: GoogleFonts.manrope(
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: const Color(0xFFDD0D22),
+                                            ),
+                                          ),
+                                          Text(
+                                            'Get personalized clinical depth & ask follow-up questions',
+                                            style: GoogleFonts.manrope(fontSize: 10.5, color: const Color(0xFF7A6B72)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_forward_ios, size: 13, color: Color(0xFFDD0D22)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),

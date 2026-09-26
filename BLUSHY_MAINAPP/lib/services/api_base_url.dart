@@ -37,8 +37,11 @@ String _resolve() {
     if (host == 'localhost' || host == '127.0.0.1') {
       return 'http://localhost:3000';
     }
+    if (host.startsWith('192.168.') || host.startsWith('10.')) {
+      return 'http://$host:3000';
+    }
     if (host.contains('pinggy') || host.contains('trycloudflare')) {
-      return 'https://scott-reid-newspapers-sleeps.trycloudflare.com';
+      return 'https://pod-plans-jury-mls.trycloudflare.com';
     }
     return _liveBaseUrl;
   }

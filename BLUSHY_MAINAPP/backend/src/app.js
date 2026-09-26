@@ -48,7 +48,14 @@ const configuredOrigins = (env.corsOrigin ?? '*')
   .filter((value) => value.length > 0);
 
 function isLocalDevOrigin(origin) {
-  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+  if (!origin) return false;
+  return (
+    /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin) ||
+    /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/i.test(origin) ||
+    /^https?:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/i.test(origin) ||
+    /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/i.test(origin) ||
+    /^https:\/\/[a-z0-9-]+\.pinggy\.link$/i.test(origin)
+  );
 }
 
 function isAllowedOrigin(origin) {
