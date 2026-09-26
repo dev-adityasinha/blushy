@@ -55,6 +55,17 @@ export async function classifySymptom(req, res, next) {
   }
 }
 
+export async function checkFoodSafety(req, res, next) {
+  try {
+    const query = req.body?.query || req.query.query || '';
+    const week = parseInt(req.body?.week || req.query.week || 20, 10);
+    const data = pregnancyService.checkFoodAndMedicineSafety({ query, week });
+    return res.json({ state: 'ready', data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function savePregnancyMemory(req, res, next) {
   try {
     const userId = req.user.userId;

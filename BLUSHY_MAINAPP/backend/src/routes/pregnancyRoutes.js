@@ -5,6 +5,7 @@ import {
   recordPregnancyCheckIn,
   getPregnancyBaseline,
   classifySymptom,
+  checkFoodSafety,
   savePregnancyMemory,
   getPregnancyMemories,
   savePregnancyQuestion,
@@ -21,6 +22,8 @@ router.post('/check-in', requireAuth, recordPregnancyCheckIn);
 router.get('/baseline', requireAuth, getPregnancyBaseline);
 router.post('/is-this-normal', requireAuth, classifySymptom);
 router.get('/is-this-normal', requireAuth, classifySymptom);
+router.post('/safety-check', requireAuth, checkFoodSafety);
+router.get('/safety-check', requireAuth, checkFoodSafety);
 router.post('/memory', requireAuth, savePregnancyMemory);
 router.get('/memories', requireAuth, getPregnancyMemories);
 router.post('/question', requireAuth, savePregnancyQuestion);

@@ -14,10 +14,17 @@ import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
-import 'health_library_section.dart';
 import 'pregnancy_health_section.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
+
+extension StringSliceSafe on String {
+  String sliceSafe(int start, [int? end]) {
+    if (start >= length) return '';
+    final actualEnd = end != null ? end.clamp(start, length) : length;
+    return substring(start, actualEnd);
+  }
+}
 
 class PregnancyDashboard extends StatefulWidget {
   final bool isNested;
@@ -46,15 +53,11 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
   // ─── Scrolling & Global Keys ───────────────────────────────────────
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final ScrollController _internalScrollController = ScrollController();
-  ScrollController get _effectiveScrollController => widget.scrollController ?? _internalScrollController;
+  ScrollController get _effectiveScrollController =>
+      widget.scrollController ?? _internalScrollController;
 
   // ─── Real-Time Dynamic Pregnancy State ─────────────────────────────
-  // There was no loading flag at all: the dashboard rendered its empty
-  // shell immediately and the real figures appeared later, so a slow
-  // response looked like a pregnancy with no data rather than one still
-  // loading (spec sections 4 and 31).
   bool _isLoading = true;
-  /// The server's own verdict on the last load (spec §4, §31).
   ApiState _overviewState = ApiState.loading;
   PregnancyOverviewData? _overview;
   PregnancyTodayBriefData? _todayBrief;
@@ -62,22 +65,22 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
   List<Map<String, dynamic>> _memories = [];
   List<Map<String, dynamic>> _questions = [];
 
-  /// This screen is the View; the data load lives in the tested
-  /// PregnancyViewModel and is mirrored back by _onDataChanged.
   final PregnancyViewModel _vm = PregnancyViewModel();
 
-  // ─── Interactive Dashboard Controls ────────────────────────────────
+  // ─── Interactive Controls ──────────────────────────────────────────
   String? _selectedMode;
-  String _maternalViewTab = 'body'; // 'body' (Maternal-First) vs 'baby'
   final TextEditingController _docsyInputController = TextEditingController();
 
-  // ─── Daily Check-In State (Maternal Vitals & Symptoms) ──────────────
+  // ─── Daily Check-In State (Maternal Vitals) ────────────────────────
   int? _nauseaScore;
   int? _energyScore;
   int? _sleepScore;
   int? _moodScore;
   int _waterGlasses = 0;
   bool _hasLoggedToday = false;
+
+  // ─── Trimester Checklist State ─────────────────────────────────────
+  Set<String> _completedChecklist = {};
 
   @override
   void initState() {
@@ -150,27 +153,37 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
         if (savedCheckin['sleep'] != null) _sleepScore = (savedCheckin['sleep'] as num).toInt();
         if (savedCheckin['mood'] != null) _moodScore = (savedCheckin['mood'] as num).toInt();
         if (savedCheckin['waterGlasses'] != null) _waterGlasses = (savedCheckin['waterGlasses'] as num).toInt();
-        if (savedCheckin['mode'] != null && savedCheckin['mode'].toString().isNotEmpty && savedCheckin['mode'] != 'default') {
+        if (savedCheckin['mode'] != null &&
+            savedCheckin['mode'].toString().isNotEmpty &&
+            savedCheckin['mode'] != 'default') {
           _selectedMode = savedCheckin['mode'].toString();
         }
       }
 
       final savedQ = BlushyStorage.read('pregnancy_questions.json');
       if (savedQ['items'] is List) {
-        _questions = (savedQ['items'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _questions = (savedQ['items'] as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
       }
 
       final savedMem = BlushyStorage.read('pregnancy_memories.json');
       if (savedMem['items'] is List) {
-        _memories = (savedMem['items'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _memories = (savedMem['items'] as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
+      final savedCheck = BlushyStorage.read('pregnancy_checklist.json');
+      if (savedCheck['completed'] is List) {
+        _completedChecklist = (savedCheck['completed'] as List).map((e) => e.toString()).toSet();
       }
     } catch (_) {}
   }
 
   Future<void> _loadAllPregnancyData() async {
-    // `get`, not `BlushyOSProvider.of`: initState calls this and everything
-    // before the first await runs inside it, so a registering lookup would
-    // assert. Only the due date is read and it need not be reactive.
     final pc = context
         .getInheritedWidgetOfExactType<BlushyOSProvider>()
         ?.notifier
@@ -179,8 +192,6 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     await _vm.load(dueDate: dueDateStr, mode: _selectedMode);
   }
 
-  /// The View reacting to its ViewModel. Memories and questions are only
-  /// overwritten when the server returned some, so a local rehydration is kept.
   void _onDataChanged() {
     if (!mounted) return;
     setState(() {
@@ -205,16 +216,14 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
       'mode': _selectedMode ?? 'default',
     };
 
-    // Optimistic local update
     try {
       UserStateStore.write('pregnancy_last_checkin', payload);
     } catch (_) {}
 
     final messenger = ScaffoldMessenger.of(context);
     await ApiPregnancyService.submitCheckIn(payload);
-
-    // Refresh baseline through the view model; _onDataChanged mirrors it.
     await _vm.refreshBaseline();
+
     if (!mounted) return;
     setState(() => _hasLoggedToday = true);
 
@@ -243,18 +252,40 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     }
   }
 
-  // ─── Modal Openers ─────────────────────────────────────────────────
+  void _toggleChecklistItem(String itemKey) {
+    setState(() {
+      if (_completedChecklist.contains(itemKey)) {
+        _completedChecklist.remove(itemKey);
+      } else {
+        _completedChecklist.add(itemKey);
+      }
+      try {
+        BlushyStorage.write('pregnancy_checklist.json', {
+          'completed': _completedChecklist.toList(),
+        });
+      } catch (_) {}
+    });
+  }
 
-  void _openTeachMeSheet(Map<String, dynamic> topic) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _TeachMeIn30SecondsSheet(
-        topic: topic,
-        onAddToDoctorQuestions: (q) {
-          _addDoctorQuestion(q);
-        },
+  void _addDoctorQuestion(String qText) async {
+    final q = {
+      'text': qText,
+      'isForDoctor': true,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+    setState(() => _questions.insert(0, q));
+    await ApiPregnancyService.saveQuestion(q);
+
+    try {
+      BlushyStorage.write('pregnancy_questions.json', {'items': _questions});
+    } catch (_) {}
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Added to your Doctor Questions list 📋', style: GoogleFonts.manrope(fontSize: 12)),
+        backgroundColor: textMain,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -266,22 +297,18 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
       builder: (ctx) => AlertDialog(
         backgroundColor: cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(AppLocalizations.of(context).pregAddToPregnancyStory,
+        title: Text(
+          AppLocalizations.of(context).pregAddToPregnancyStory,
           style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: textMain),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: textController,
-              decoration: InputDecoration(
-                hintText: 'e.g. Felt first kick tonight! ❤️',
-                hintStyle: GoogleFonts.manrope(fontSize: 13, color: textMuted),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              maxLines: 2,
-            ),
-          ],
+        content: TextField(
+          controller: textController,
+          decoration: InputDecoration(
+            hintText: 'e.g. Felt first little flutter tonight! ❤️',
+            hintStyle: GoogleFonts.manrope(fontSize: 13, color: textMuted),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          maxLines: 2,
         ),
         actions: [
           TextButton(
@@ -305,6 +332,9 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
                   'category': 'personal',
                 };
                 setState(() => _memories.insert(0, mem));
+                try {
+                  BlushyStorage.write('pregnancy_memories.json', {'items': _memories});
+                } catch (_) {}
                 await ApiPregnancyService.saveMemory(mem);
               }
             },
@@ -315,38 +345,40 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     );
   }
 
-  void _addDoctorQuestion(String qText) async {
-    final q = {
-      'text': qText,
-      'isForDoctor': true,
-      'createdAt': DateTime.now().toIso8601String(),
-    };
-    setState(() => _questions.insert(0, q));
-    await ApiPregnancyService.saveQuestion(q);
+  // ─── Modal Sheets: Peace of Mind ───────────────────────────────────
+  void _openSymptomTriageSheet([String? initialQuery]) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _SymptomTriageSheet(
+        week: _overview?.week ?? 20,
+        initialQuery: initialQuery,
+        onAddDoctorQuestion: _addDoctorQuestion,
+      ),
+    );
+  }
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added to your Doctor Questions list 📋', style: GoogleFonts.manrope(fontSize: 12)),
-        backgroundColor: textMain,
-        duration: const Duration(seconds: 2),
+  void _openFoodSafetySheet([String? initialQuery]) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _FoodSafetySheet(
+        week: _overview?.week ?? 20,
+        initialQuery: initialQuery,
+        onAddDoctorQuestion: _addDoctorQuestion,
       ),
     );
   }
 
   // ───────────────────────────────────────────────────────────────────
-  // UI BUILDERS (11 Sections in strict hierarchy)
+  // UI BUILDERS
   // ───────────────────────────────────────────────────────────────────
 
-  // 01 — Editorial Greeting & Date
+  // 01 — Editorial Greeting
   Widget _buildEditorialGreeting(PersonalContext pc) {
-    // The user's own name, and a neutral address when it is not known.
-    //
-    // This read the stored profile under `name` and `profile.name`, keys
-    // onboarding has never written, and fell through to "mama" -- so the screen
-    // addressed everyone the same way regardless of who they were.
     final String userName = userFirstName(context);
-
     final hour = DateTime.now().hour;
     final timeGreeting = hour < 12
         ? 'Good morning,'
@@ -371,7 +403,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
             style: GoogleFonts.cormorantGaramond(
               fontSize: 28,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF221510),
+              color: textMain,
               height: 1.15,
               letterSpacing: -0.3,
             ),
@@ -393,7 +425,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
             style: GoogleFonts.manrope(
               fontSize: 12.5,
               fontWeight: FontWeight.w400,
-              color: const Color(0xFF7A6B72),
+              color: textMuted,
               height: 1.45,
             ),
           ),
@@ -402,257 +434,8 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     );
   }
 
-  // 02 — Today with Docsy (Today's Pregnancy Brief ⭐)
-  Widget _buildTodaysPregnancyBrief() {
-    final brief = _todayBrief;
-    final yourBody = brief?.yourBody ?? 'Your body is adjusting gracefully to baby’s pace.';
-    final yourBaby = brief?.yourBaby ?? 'Sensory and neuromuscular development progressing.';
-    final oneThing = brief?.oneThingToKnow ?? 'Mild stretching sensations are normal as tissues relax.';
-    final oneAction = brief?.oneThingToDo ?? 'Take 5 minutes for gentle stretches or deep breathing.';
-    final prompts = brief?.suggestedPrompts ?? [
-      'Is lower back pain normal?',
-      'Safe sleeping positions',
-      'What foods boost iron?',
-      'How to know baby is head down'
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08221510),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFECEB),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.auto_awesome, color: crimsonPrimary, size: 16),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(AppLocalizations.of(context).pregTodayWithDocsy,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.manrope(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: crimsonPrimary,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3EEE9),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  brief?.gestationalDisplay ?? 'Pregnancy Brief',
-                  style: GoogleFonts.manrope(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: textMuted,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Body highlight (Maternal-First)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF7F2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEFE8E0)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.favorite_rounded, color: Color(0xFFF72585), size: 18),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(AppLocalizations.of(context).pregYourBodyToday,
-                        style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: textMain),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        yourBody,
-                        style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Baby highlight
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF7F2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEFE8E0)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.child_care_rounded, color: Color(0xFF2563EB), size: 18),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(AppLocalizations.of(context).pregBabyThisWeek,
-                        style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: textMain),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        yourBaby,
-                        style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Micro actionable pairing
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(AppLocalizations.of(context).pregOneThingToKnow,
-                      style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(oneThing, style: GoogleFonts.manrope(fontSize: 11.5, color: textMain, height: 1.35)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(AppLocalizations.of(context).pregOneThingToDo,
-                      style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 0.8),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(oneAction, style: GoogleFonts.manrope(fontSize: 11.5, color: textMain, height: 1.35)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Search bar
-          TextField(
-            controller: _docsyInputController,
-            style: GoogleFonts.manrope(fontSize: 13, color: textMain),
-            decoration: InputDecoration(
-              hintText: 'Ask Docsy about your pregnancy...',
-              hintStyle: GoogleFonts.manrope(fontSize: 12, color: textMuted),
-              filled: true,
-              fillColor: const Color(0xFFFAF7F2),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              prefixIcon: const Icon(Icons.search, color: textMuted, size: 20),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.arrow_forward, color: crimsonPrimary, size: 18),
-                onPressed: () {
-                  final text = _docsyInputController.text.trim();
-                  if (text.isNotEmpty) {
-                    _docsyInputController.clear();
-                    openAskSiaChat(context, text);
-                  }
-                },
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: crimsonPrimary, width: 1.2),
-              ),
-            ),
-            onSubmitted: (val) {
-              if (val.trim().isNotEmpty) {
-                _docsyInputController.clear();
-                openAskSiaChat(context, val.trim());
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // Quick Prompt Pills
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: prompts.map((prompt) {
-              return InkWell(
-                onTap: () => openAskSiaChat(context, prompt),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFAF7F2),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFEFE8E0)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.chat_bubble_outline, size: 12, color: textMuted),
-                      const SizedBox(width: 6),
-                      Text(
-                        prompt,
-                        style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: textMain),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 03 — Gestational Anchor (Where am I?)
-  Widget _buildGestationalAnchor() {
+  // 02 — Gestational Anchor Hero Card
+  Widget _buildGestationalHero() {
     final pc = BlushyOSProvider.of(context).personalContext;
     final ov = _overview;
     final isConfigured = ov?.isDueDateConfigured == true && pc.dueDate != null;
@@ -671,15 +454,13 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(AppLocalizations.of(context).pregYourGestationalTimeline,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.manrope(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      color: crimsonPrimary,
-                      letterSpacing: 1.2,
-                    ),
+                Text(
+                  'YOUR PREGNANCY TIMELINE',
+                  style: GoogleFonts.manrope(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: crimsonPrimary,
+                    letterSpacing: 1.2,
                   ),
                 ),
                 Container(
@@ -688,20 +469,21 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
                     color: const Color(0xFFF3EEE9),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text(AppLocalizations.of(context).pregSetupRequired,
+                  child: Text(
+                    'Setup needed',
                     style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: textMuted),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(
               'When is your baby expected?',
               style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: textMain),
             ),
             const SizedBox(height: 6),
             Text(
-              'Add your estimated due date so Blushy can calculate your exact week, track baby\'s growth size, and guide your body day by day.',
+              'Add your estimated due date so Blushy can calculate your exact week, baby\'s size milestones, and daily body guidance.',
               style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
             ),
             const SizedBox(height: 16),
@@ -715,7 +497,10 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
               ),
               onPressed: _promptSetDueDate,
               icon: const Icon(Icons.calendar_month, size: 16),
-              label: Text(AppLocalizations.of(context).pregSetEstimatedDueDate, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700)),
+              label: Text(
+                'Set estimated due date',
+                style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),
@@ -746,18 +531,15 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(AppLocalizations.of(context).pregYourGestationalTimeline,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.manrope(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: crimsonPrimary,
-                    letterSpacing: 1.2,
-                  ),
+              Text(
+                'YOUR PREGNANCY TIMELINE',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: crimsonPrimary,
+                  letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(width: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -791,7 +573,6 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
           ),
           const SizedBox(height: 16),
 
-          // Counter + Baby Visual
           Row(
             children: [
               Expanded(
@@ -854,7 +635,6 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
           ),
           const SizedBox(height: 18),
 
-          // Linear progress
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
@@ -871,7 +651,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
             children: [
               Expanded(
                 child: Text(
-                  '${(progress * 100).toInt()}% of journey completed',
+                  '${(progress * 100).toInt()}% completed',
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w600, color: textMuted),
                 ),
@@ -888,8 +668,345 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     );
   }
 
-  // 04 — How Are You Feeling? (Maternal Emotional & Physical Check-In)
-  Widget _buildMaternalEmotionalCheckIn() {
+  // 03 — Health Library (Position 2 — per explicit user request)
+  Widget _buildHealthLibrarySecond() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'HEALTH LIBRARY',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: crimsonPrimary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Essential Guides for You & Baby',
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: textMain,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        const PregnancyHealthSection(),
+        const SizedBox(height: 16),
+        const PregnancyLifestyleSection(),
+        const SizedBox(height: 16),
+        const FetalDevelopmentSection(),
+      ],
+    );
+  }
+
+  // 04 — Today's Comfort & Reality
+  Widget _buildTodayComfort() {
+    final brief = _todayBrief;
+    final oneThing = brief?.oneThingToKnow ?? 'Mild stretching sensations are normal as your ligaments gently adapt.';
+    final oneAction = brief?.oneThingToDo ?? 'Drink a tall glass of water and rest your feet for 5 minutes.';
+
+    final modes = [
+      {'id': 'default', 'label': '✨ Balanced Day'},
+      {'id': 'nausea', 'label': '🤢 Bad Nausea'},
+      {'id': 'sleep', 'label': '🥱 Heavy Fatigue'},
+      {'id': 'back_pain', 'label': '⚡ Back Ache'},
+      {'id': 'travel', 'label': '✈️ Travel Day'},
+      {'id': 'anxious', 'label': '💭 Overwhelmed'},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: cardRadius,
+        border: Border.all(color: cardBorderColor, width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFECEB),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.spa_outlined, color: crimsonPrimary, size: 16),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                "TODAY'S COMFORT",
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: crimsonPrimary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "How's your day feeling?",
+            style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: textMain),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Tap any feeling below to adapt Docsy's daily care tip for you.",
+            style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
+          ),
+          const SizedBox(height: 14),
+
+          // Reality Chips
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: modes.map((m) {
+              final id = m['id']!;
+              final label = m['label']!;
+              final isSelected = _selectedMode == id;
+
+              return InkWell(
+                onTap: () => _onSelectPregnancyMode(id),
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isSelected ? crimsonPrimary : const Color(0xFFFAF7F2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: isSelected ? crimsonPrimary : const Color(0xFFEFE8E0)),
+                  ),
+                  child: Text(
+                    label,
+                    style: GoogleFonts.manrope(
+                      fontSize: 11.5,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected ? Colors.white : textMain,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 14),
+
+          // Dynamic Comfort Note
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF7F2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEFE8E0)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.lightbulb_outline, color: crimsonPrimary, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    brief?.modeAdvice ?? 'Take things at your own comfortable, unhurried pace today.',
+                    style: GoogleFonts.manrope(fontSize: 11.5, color: textMain, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Micro Action Pairing
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'GOOD TO KNOW',
+                      style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(oneThing, style: GoogleFonts.manrope(fontSize: 11.5, color: textMain, height: 1.35)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'GENTLE ACTION',
+                      style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(oneAction, style: GoogleFonts.manrope(fontSize: 11.5, color: textMain, height: 1.35)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 05 — Peace of Mind Hub ("Is this normal?" + "Can I eat or take this?")
+  Widget _buildPeaceOfMindHub() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'PEACE OF MIND',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: crimsonPrimary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Quick Answers for You',
+                style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: textMain),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        Row(
+          children: [
+            // Tool 1: Is this normal?
+            Expanded(
+              child: InkWell(
+                onTap: () => _openSymptomTriageSheet(),
+                borderRadius: cardRadius,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: cardRadius,
+                    border: Border.all(color: cardBorderColor, width: 1.0),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFCCFBF1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Is this normal?',
+                        style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Check twinges, aches, or sudden bodily shifts.',
+                        style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(
+                            'Check symptom',
+                            style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF0D9488)),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_forward, size: 12, color: Color(0xFF0D9488)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Tool 2: Can I eat or take this?
+            Expanded(
+              child: InkWell(
+                onTap: () => _openFoodSafetySheet(),
+                borderRadius: cardRadius,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: cardRadius,
+                    border: Border.all(color: cardBorderColor, width: 1.0),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.restaurant_outlined, color: Color(0xFFD97706), size: 20),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Can I eat or take this?',
+                        style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Check foods, teas, or everyday medicines.',
+                        style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(
+                            'Check food & meds',
+                            style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFFD97706)),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_forward, size: 12, color: Color(0xFFD97706)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 06 — Daily Maternal Check-In (Unboxed Rhythm)
+  Widget _buildDailyCheckIn() {
     final hasInteracted = _nauseaScore != null || _energyScore != null || _sleepScore != null || _moodScore != null || _waterGlasses > 0;
 
     String actionLabel;
@@ -905,6 +1022,10 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
       actionColor = textMuted;
     }
 
+    final deltasList = (_baselineData?['deltas'] as List?) ?? [];
+    final trendSynthesis = _baselineData?['trendSynthesis']?.toString() ??
+        'Your daily checks calibrate your personal baseline and detect meaningful shifts.';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -913,19 +1034,30 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(AppLocalizations.of(context).pregDailyMaternalCheckIn,
-                style: GoogleFonts.manrope(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  color: crimsonPrimary,
-                  letterSpacing: 1.2,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DAILY CHECK-IN',
+                    style: GoogleFonts.manrope(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: crimsonPrimary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Your Daily Rhythm',
+                    style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: textMain),
+                  ),
+                ],
               ),
               InkWell(
                 onTap: hasInteracted ? _submitDailyCheckIn : null,
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: Text(
                     actionLabel,
                     style: GoogleFonts.manrope(
@@ -941,7 +1073,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
         ),
         const SizedBox(height: 14),
 
-        // Unboxed Circular Badges (STAGE1_DESIGN_RULES.md)
+        // Unboxed Circular Badges
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
@@ -1003,6 +1135,73 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
             ],
           ),
         ),
+        const SizedBox(height: 16),
+
+        // Baseline Delta Insights
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: cardRadius,
+            border: Border.all(color: cardBorderColor, width: 1.0),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (deltasList.isNotEmpty) ...[
+                Row(
+                  children: deltasList.map((d) {
+                    final label = d['label']?.toString() ?? 'Metric';
+                    final indicator = d['indicator']?.toString() ?? '→ stable';
+                    final dir = d['direction']?.toString() ?? 'stable';
+                    final isHigher = dir == 'higher';
+                    final isLower = dir == 'lower';
+
+                    return Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFAF7F2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFEFE8E0)),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              label,
+                              style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: textMuted),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              indicator,
+                              style: GoogleFonts.manrope(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: isHigher
+                                    ? const Color(0xFFD97706)
+                                    : (isLower ? const Color(0xFF2563EB) : const Color(0xFF0D9488)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
+              ],
+              Text(
+                trendSynthesis,
+                style: GoogleFonts.manrope(fontSize: 11.5, color: textMain, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Keep standard symptom logger available for deeper checks
+        const LogSymptomsSection(stageKey: 'pregnancy'),
       ],
     );
   }
@@ -1079,583 +1278,8 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     });
   }
 
-  // 05 — What Changed? & "My Normal" Baseline
-  Widget _buildWhatChangedAndBaseline() {
-    final isFirstTime = _baselineData?['isFirstTimeUser'] == true;
-    final headline = _baselineData?['headline']?.toString() ?? 'My Normal & What Changed';
-    final subtext = _baselineData?['subtext']?.toString() ?? 'Learning your unique pattern over daily check-ins.';
-    final trendSynthesis = _baselineData?['trendSynthesis']?.toString() ??
-        'Your daily checks calibrate your personal baseline and detect meaningful shifts.';
-    final deltasList = (_baselineData?['deltas'] as List?) ?? [];
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.analytics_outlined, color: crimsonPrimary, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  headline.toUpperCase(),
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.manrope(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: textMain,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3EEE9),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  isFirstTime ? 'Calibrating Baseline' : 'Yesterday ➔ Today',
-                  style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: textMuted),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(subtext, style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),
-          const SizedBox(height: 16),
-
-          // Delta pills
-          if (deltasList.isNotEmpty)
-            Row(
-              children: deltasList.map((d) {
-                final label = d['label']?.toString() ?? 'Metric';
-                final indicator = d['indicator']?.toString() ?? '→ stable';
-                final dir = d['direction']?.toString() ?? 'stable';
-                final isHigher = dir == 'higher';
-                final isLower = dir == 'lower';
-
-                return Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFAF7F2),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFEFE8E0)),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          label,
-                          style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w700, color: textMuted),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          indicator,
-                          style: GoogleFonts.manrope(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: isHigher
-                                ? const Color(0xFFD97706)
-                                : (isLower ? const Color(0xFF2563EB) : const Color(0xFF0D9488)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          const SizedBox(height: 14),
-
-          // Trend synthesis
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFECEB),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.tips_and_updates_outlined, color: crimsonPrimary, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    trendSynthesis,
-                    style: GoogleFonts.manrope(fontSize: 11.5, color: textMain, height: 1.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => openAskSiaChat(context, "Explain my recent pregnancy symptom baseline and shifts."),
-              icon: const Icon(Icons.arrow_forward, size: 14, color: crimsonPrimary),
-              label: Text(AppLocalizations.of(context).pregExploreWithDocsy,
-                style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w800, color: crimsonPrimary),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 06 — "What's Happening to ME?" (Your Body & Baby This Week)
-  Widget _buildWhatsHappeningToMe() {
-    final isConfigured = _overview?.isDueDateConfigured == true;
-    if (!isConfigured) {
-      return Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: cardRadius,
-          border: Border.all(color: cardBorderColor, width: 1.0),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(AppLocalizations.of(context).pregWhatSHappeningThisWeek,
-              style: GoogleFonts.manrope(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                color: crimsonPrimary,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Follow Your Body & Baby Week by Week',
-              style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.bold, color: textMain),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Blushy details anatomical milestones and maternal physiological shifts for each gestational week once your estimated due date is set.',
-              style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4),
-            ),
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: crimsonPrimary,
-                side: const BorderSide(color: crimsonPrimary),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              ),
-              onPressed: _promptSetDueDate,
-              icon: const Icon(Icons.calendar_today_outlined, size: 15),
-              label: Text(AppLocalizations.of(context).pregSetDueDate, style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final maternalHighlights = _overview?.maternalBodyHighlights ?? [];
-    final babyHighlights = _overview?.babyHighlights ?? [];
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Text(AppLocalizations.of(context).pregWhatSHappeningThisWeek,
-                style: GoogleFonts.manrope(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  color: crimsonPrimary,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildTabToggle(
-                    title: 'Your Body',
-                    isActive: _maternalViewTab == 'body',
-                    onTap: () => setState(() => _maternalViewTab = 'body'),
-                  ),
-                  const SizedBox(width: 6),
-                  _buildTabToggle(
-                    title: 'Baby Growth',
-                    isActive: _maternalViewTab == 'baby',
-                    onTap: () => setState(() => _maternalViewTab = 'baby'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Content List
-          Column(
-            children: (_maternalViewTab == 'body' ? maternalHighlights : babyHighlights).map((item) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      _maternalViewTab == 'body' ? Icons.spa_outlined : Icons.check_circle_outline,
-                      size: 16,
-                      color: crimsonPrimary,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        item.toString(),
-                        style: GoogleFonts.manrope(
-                          fontSize: 12.5,
-                          color: textMain,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 14),
-
-          Align(
-            alignment: Alignment.centerRight,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: crimsonPrimary,
-                side: const BorderSide(color: crimsonPrimary),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              ),
-              onPressed: () {
-                openAskSiaChat(
-                  context,
-                  _maternalViewTab == 'body'
-                      ? "Why am I experiencing these maternal body changes this week?"
-                      : "Explain baby's milestones for week ${_overview?.week ?? 1}.",
-                );
-              },
-              child: Text(
-                _maternalViewTab == 'body' ? 'Why am I feeling this? →' : 'Learn baby details →',
-                style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabToggle({required String title, required bool isActive, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: isActive ? crimsonPrimary : const Color(0xFFFAF7F2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isActive ? crimsonPrimary : const Color(0xFFEFE8E0)),
-        ),
-        child: Text(
-          title,
-          style: GoogleFonts.manrope(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w700,
-            color: isActive ? Colors.white : textMuted,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 07 — Pregnancy Modes ("I'm Having A...")
-  Widget _buildPregnancyModes() {
-    final modes = [
-      {'id': 'default', 'label': '✨ Balanced Day'},
-      {'id': 'nausea', 'label': '🤢 Bad Nausea'},
-      {'id': 'sleep', 'label': '🥱 Rough Sleep'},
-      {'id': 'back_pain', 'label': '⚡ Back Discomfort'},
-      {'id': 'travel', 'label': '✈️ Travel Day'},
-      {'id': 'anxious', 'label': '💭 Overwhelmed'},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.tune_rounded, color: crimsonPrimary, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  "I'M EXPERIENCING A...",
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.manrope(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: textMain,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "Select your day's reality to adapt Docsy's care advice and comfort tips.",
-            style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
-          ),
-          const SizedBox(height: 14),
-
-          // Mode Chips
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: modes.map((m) {
-              final id = m['id']!;
-              final label = m['label']!;
-              final isSelected = _selectedMode == id;
-
-              return InkWell(
-                onTap: () => _onSelectPregnancyMode(id),
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? crimsonPrimary : const Color(0xFFFAF7F2),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: isSelected ? crimsonPrimary : const Color(0xFFEFE8E0)),
-                  ),
-                  child: Text(
-                    label,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11.5,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                      color: isSelected ? Colors.white : textMain,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 14),
-
-          // Mode Advice Card
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF7F2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEFE8E0)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.spa_rounded, color: crimsonPrimary, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _selectedMode == null
-                        ? 'Tap a mode above whenever you are experiencing nausea, fatigue, travel, or discomfort to adapt your care plan.'
-                        : (_todayBrief?.modeAdvice ?? 'Take things at your own comfortable pace today.'),
-                    style: GoogleFonts.manrope(fontSize: 11.5, color: textMain, height: 1.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 08 — Upcoming Care & Appointment Intelligence
-  Widget _buildAppointmentIntelligence() {
-    final nextScan = _overview?.isDueDateConfigured == true
-        ? (_overview!.week != null && _overview!.week! < 22
-            ? 'Comprehensive Anatomy Scan (Level II)'
-            : 'Glucose Challenge Screening & Routine Panel')
-        : 'Initial Prenatal Intake & Consultation';
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(AppLocalizations.of(context).pregYourNextAppointment,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.manrope(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: crimsonPrimary,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.calendar_month_outlined, color: crimsonPrimary, size: 18),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          Text(
-            nextScan,
-            style: GoogleFonts.cormorantGaramond(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: textMain,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Keep your questions organized so you never leave the clinic wishing you had asked.',
-            style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
-          ),
-          const SizedBox(height: 16),
-
-          // Questions for Doctor preview
-          if (_questions.isNotEmpty) ...[
-            Text(
-              'SAVED QUESTIONS FOR DOCTOR:',
-              style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
-            ),
-            const SizedBox(height: 6),
-            ..._questions.take(3).map((q) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3.0),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_box_outline_blank, size: 14, color: crimsonPrimary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        q['text']?.toString() ?? '',
-                        style: GoogleFonts.manrope(fontSize: 11.5, color: textMain),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: 12),
-          ],
-
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: crimsonPrimary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                  ),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DoctorSummaryScreen()),
-                  ),
-                  icon: const Icon(Icons.description_outlined, size: 16),
-                  label: Text(AppLocalizations.of(context).pregBuildDoctorSummary,
-                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: crimsonPrimary,
-                  side: const BorderSide(color: crimsonPrimary),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-                ),
-                onPressed: () {
-                  final textCtrl = TextEditingController();
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: cardBg,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: Text(AppLocalizations.of(context).pregAddDoctorQuestion,
-                        style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      content: TextField(
-                        controller: textCtrl,
-                        decoration: InputDecoration(
-                          hintText: 'e.g. Is back stiffness normal?',
-                          hintStyle: GoogleFonts.manrope(fontSize: 12, color: textMuted),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: Text(AppLocalizations.of(context).pregCancel, style: GoogleFonts.manrope(color: textMuted)),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: crimsonPrimary),
-                          onPressed: () {
-                            if (textCtrl.text.trim().isNotEmpty) {
-                              _addDoctorQuestion(textCtrl.text.trim());
-                              Navigator.pop(ctx);
-                            }
-                          },
-                          child: Text(AppLocalizations.of(context).pregAdd),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                child: const Icon(Icons.add, size: 18),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 09 — Help Her This Week (Human Partner Co-Nesting)
-  Widget _buildHumanPartnerCoNesting() {
+  // 07 — Help Her This Week (Partner Support)
+  Widget _buildPartnerSupport() {
     final partner = _overview?.partnerHelp;
     final tonight = partner?['tonight']?.toString() ?? 'Prepare a comforting, light dinner with fresh fruit.';
     final thisWeek = partner?['thisWeek']?.toString() ?? 'Take care of heavy grocery lifting and household errands.';
@@ -1674,25 +1298,26 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  'HELP HER THIS WEEK (PARTNER)',
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.manrope(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: crimsonPrimary,
-                    letterSpacing: 1.2,
-                  ),
+              Text(
+                'FOR YOUR PARTNER',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: crimsonPrimary,
+                  letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(width: 8),
               const Icon(Icons.favorite, color: crimsonPrimary, size: 18),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            'Emotionally intelligent support cues tailored for your partner this week.',
+            'How they can support you this week',
+            style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: textMain),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Practical, thoughtful cues you can share with your partner in one tap.',
             style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
           ),
           const SizedBox(height: 16),
@@ -1715,14 +1340,15 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               ),
               onPressed: () {
-                final shareText = "Hey love ❤️ Here is how you can help me this week according to Blushy:\n\n"
+                final shareText = "Hey love ❤️ Here is how you can support me this week according to Blushy:\n\n"
                     "Tonight: $tonight\n"
                     "This week: $thisWeek\n"
                     "Ask me: \"$askHer\"";
                 Share.share(shareText);
               },
               icon: const Icon(Icons.share, size: 14),
-              label: Text(AppLocalizations.of(context).pregShareWithPartner,
+              label: Text(
+                'Share with partner',
                 style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800),
               ),
             ),
@@ -1766,8 +1392,14 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     );
   }
 
-  // 10 — My Pregnancy Story (Intelligent Timeline)
-  Widget _buildMyPregnancyStoryTimeline() {
+  // 08 — Doctor Visits & Keepsakes
+  Widget _buildDoctorAndMilestones() {
+    final nextScan = _overview?.isDueDateConfigured == true
+        ? (_overview!.week != null && _overview!.week! < 22
+            ? 'Comprehensive Anatomy Scan (Level II)'
+            : 'Glucose Screening & Routine Blood Panel')
+        : 'Initial Prenatal Intake & Consultation';
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -1781,141 +1413,207 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(AppLocalizations.of(context).pregMyPregnancyStory,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.manrope(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: crimsonPrimary,
-                    letterSpacing: 1.2,
-                  ),
+              Text(
+                'VISITS & KEEPSAKES',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: crimsonPrimary,
+                  letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: _openAddMemoryDialog,
-                borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  child: Text(AppLocalizations.of(context).pregAddMoment,
-                    style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w800, color: crimsonPrimary),
-                  ),
-                ),
-              ),
+              const Icon(Icons.calendar_month_outlined, color: crimsonPrimary, size: 18),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            'Your personal milestones and memories woven together.',
+            'Doctor Appointments & Moments',
+            style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: textMain),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Keep your clinic questions organized and cherish milestone moments along the way.',
             style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
           ),
           const SizedBox(height: 16),
 
-          if (_memories.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF7F2),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFEFE8E0)),
-              ),
-              child: Column(
-                children: [
-                  const Icon(Icons.bookmark_border_rounded, color: crimsonPrimary, size: 28),
-                  const SizedBox(height: 8),
-                  Text(AppLocalizations.of(context).pregNoMomentsRecordedYet,
-                    style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700, color: textMain),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Record special moments like ultrasound scans, hearing the heartbeat, first flutter, or sweet thoughts along your journey.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: crimsonPrimary,
-                      side: const BorderSide(color: crimsonPrimary),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    ),
-                    onPressed: _openAddMemoryDialog,
-                    icon: const Icon(Icons.add, size: 16),
-                    label: Text(AppLocalizations.of(context).pregAddFirstMoment, style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-            )
-          else
-            ..._memories.map((mem) {
-              final weekVal = mem['week'];
-              final weekLabel = (weekVal != null && weekVal != 0) ? 'Week $weekVal' : 'Memory';
-              return _buildStoryTimelineRow(
-                week: weekLabel,
-                title: mem['title']?.toString() ?? 'Milestone',
-                subtitle: mem['date']?.toString() ?? 'Recorded memory',
-                isClinical: false,
-              );
-            }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStoryTimelineRow({
-    required String week,
-    required String title,
-    required String subtitle,
-    required bool isClinical,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          // Next scan callout
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isClinical ? const Color(0xFFCCFBF1) : const Color(0xFFFFECEB),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFFFAF7F2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEFE8E0)),
             ),
-            child: Text(
-              week,
-              style: GoogleFonts.manrope(
-                fontSize: 9.5,
-                fontWeight: FontWeight.w800,
-                color: isClinical ? const Color(0xFF0D9488) : crimsonPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700, color: textMain),
-                ),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.manrope(fontSize: 11, color: textMuted),
+                const Icon(Icons.event_available, color: Color(0xFF0D9488), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'UPCOMING SCREENING',
+                        style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        nextScan,
+                        style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: textMain),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 14),
+
+          // Saved Questions preview
+          if (_questions.isNotEmpty) ...[
+            Text(
+              'SAVED QUESTIONS FOR DOCTOR:',
+              style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
+            ),
+            const SizedBox(height: 6),
+            ..._questions.take(3).map((q) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_box_outline_blank, size: 14, color: crimsonPrimary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        q['text']?.toString() ?? '',
+                        style: GoogleFonts.manrope(fontSize: 11.5, color: textMain),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 12),
+          ],
+
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: crimsonPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DoctorSummaryScreen()),
+                  ),
+                  icon: const Icon(Icons.description_outlined, size: 16),
+                  label: Text(
+                    'Doctor Summary',
+                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: crimsonPrimary,
+                  side: const BorderSide(color: crimsonPrimary),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                ),
+                onPressed: () {
+                  final textCtrl = TextEditingController();
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: cardBg,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: Text(
+                        'Add question for doctor',
+                        style: GoogleFonts.cormorantGaramond(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      content: TextField(
+                        controller: textCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. Is lower back stiffness normal?',
+                          hintStyle: GoogleFonts.manrope(fontSize: 12, color: textMuted),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('Cancel', style: GoogleFonts.manrope(color: textMuted)),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: crimsonPrimary),
+                          onPressed: () {
+                            if (textCtrl.text.trim().isNotEmpty) {
+                              _addDoctorQuestion(textCtrl.text.trim());
+                              Navigator.pop(ctx);
+                            }
+                          },
+                          child: const Text('Add'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add, size: 16),
+                label: Text('Question', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: textMain,
+                  side: const BorderSide(color: Color(0xFFEFE8E0)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                ),
+                onPressed: _openAddMemoryDialog,
+                child: const Icon(Icons.bookmark_add_outlined, size: 18),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  // 11 — Teach Me in 30 Seconds & Discovery Feed
-  Widget _buildTeachMeIn30Seconds() {
-    final teachTopic = _overview?.teachMeTopic;
-    final title = teachTopic?['title']?.toString() ?? 'The Glucose Screening Test';
+  // 09 — Trimester Care & Hospital Bag Checklist
+  Widget _buildTrimesterChecklist() {
+    final week = _overview?.week ?? 20;
+    final int currentTrimester = week <= 12 ? 1 : (week <= 27 ? 2 : 3);
+
+    final items = currentTrimester == 1
+        ? [
+            {'key': 't1_prenatal', 'title': 'Daily prenatal vitamin with folic acid'},
+            {'key': 't1_intake', 'title': 'First prenatal blood test & clinical intake'},
+            {'key': 't1_dating', 'title': 'First trimester ultrasound & dating scan'},
+            {'key': 't1_nipt', 'title': 'Optional NIPT or genetic screening check'},
+          ]
+        : (currentTrimester == 2
+            ? [
+                {'key': 't2_anatomy', 'title': 'Level II Anatomy Ultrasound (18–22 weeks)'},
+                {'key': 't2_glucose', 'title': 'Glucose screening for gestational diabetes (24–28w)'},
+                {'key': 't2_movement', 'title': 'Notice daily flutter & movement rhythms'},
+                {'key': 't2_pillow', 'title': 'Supportive sleep pillow for hip & back comfort'},
+              ]
+            : [
+                {'key': 't3_tdap', 'title': 'Tdap booster vaccination (27–36 weeks)'},
+                {'key': 't3_gbs', 'title': 'Group B Strep (GBS) swab test (35–37 weeks)'},
+                {'key': 't3_hospital_bag', 'title': 'Pack hospital delivery bag essentials'},
+                {'key': 't3_car_seat', 'title': 'Install & inspect infant car seat in car'},
+              ]);
+
+    final trimesterTitle = currentTrimester == 1
+        ? 'First Trimester Roadmap'
+        : (currentTrimester == 2 ? 'Second Trimester Roadmap' : 'Third Trimester & Nesting');
 
     return Container(
       padding: const EdgeInsets.all(22),
@@ -1930,61 +1628,64 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  'TEACH ME IN 30 SECONDS',
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.manrope(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: crimsonPrimary,
-                    letterSpacing: 1.2,
-                  ),
+              Text(
+                'TRIMESTER CHECKLIST',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: crimsonPrimary,
+                  letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.timer_outlined, color: crimsonPrimary, size: 16),
+              const Icon(Icons.checklist_rounded, color: crimsonPrimary, size: 18),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // 30s Explainer Card
-          InkWell(
-            onTap: () {
-              if (teachTopic != null) _openTeachMeSheet(teachTopic);
-            },
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF7F2),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFEFE8E0)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Rapid, evidence-based explainer: what it is, what happens, and what to ask your doctor.',
-                          style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.35),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.arrow_forward_ios, size: 14, color: crimsonPrimary),
-                ],
-              ),
-            ),
+          const SizedBox(height: 6),
+          Text(
+            trimesterTitle,
+            style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: textMain),
           ),
+          const SizedBox(height: 4),
+          Text(
+            'Key clinical checkpoints and preparations—check them off at your own pace.',
+            style: GoogleFonts.manrope(fontSize: 12, color: textMuted),
+          ),
+          const SizedBox(height: 14),
+
+          ...items.map((item) {
+            final key = item['key']!;
+            final title = item['title']!;
+            final isDone = _completedChecklist.contains(key);
+
+            return InkWell(
+              onTap: () => _toggleChecklistItem(key),
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+                      color: isDone ? const Color(0xFF0D9488) : const Color(0xFFB0A2AA),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: GoogleFonts.manrope(
+                          fontSize: 12.5,
+                          fontWeight: isDone ? FontWeight.w500 : FontWeight.w600,
+                          color: isDone ? textMuted : textMain,
+                          decoration: isDone ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -2009,8 +1710,6 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
       );
     }
 
-    // Nothing came back from the server, so the sections below are the stage's
-    // general content rather than anything worked out from her pregnancy.
     final bool hasServerData = _overview != null || _todayBrief != null;
 
     return wrapStageDashboardLayout(
@@ -2025,70 +1724,52 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
             children: [
-              // 01: Editorial Greeting
+              // 01: Greeting
               _buildEditorialGreeting(pc),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               StageStateNotice(
                 state: _overviewState,
                 hasData: hasServerData,
                 emptyMessage:
                     'There is nothing recorded for your pregnancy yet, so what follows is '
                     'general guidance rather than anything based on your own entries. Add '
-                    'your due date and a check-in to see it worked out for you.',
+                    'your due date and a check-in to see it calibrated for you.',
                 onRetry: () {
                   setState(() => _isLoading = true);
                   _loadAllPregnancyData();
                 },
               ),
 
-              // 02: Today with Docsy (Today's Pregnancy Brief ⭐)
-              _buildTodaysPregnancyBrief(),
-              const SizedBox(height: 20),
-
-              // 03: Gestational Anchor (Where am I?)
-              _buildGestationalAnchor(),
-              const SizedBox(height: 20),
-
-              // 04: How Are You Feeling? (Maternal Emotional & Physical Check-In)
-              _buildMaternalEmotionalCheckIn(),
+              // 01: Hero Gestational Anchor
+              _buildGestationalHero(),
               const SizedBox(height: 22),
-              const LogSymptomsSection(stageKey: 'pregnancy'),
-              const SizedBox(height: 18),
-              const HealthLibrarySection(stageKey: 'pregnancy'),
-              const SizedBox(height: 18),
-              const PregnancyHealthSection(),
-              const SizedBox(height: 20),
-              const PregnancyLifestyleSection(),
-              const SizedBox(height: 20),
-              const FetalDevelopmentSection(),
-              const SizedBox(height: 24),
 
-              // 05: What Changed? & "My Normal" Baseline
-              _buildWhatChangedAndBaseline(),
-              const SizedBox(height: 20),
+              // 02: Health Library (Placed 2nd per explicit user request)
+              _buildHealthLibrarySecond(),
+              const SizedBox(height: 22),
 
-              // 06: "What's Happening to ME?" (Your Body & Baby This Week)
-              _buildWhatsHappeningToMe(),
-              const SizedBox(height: 20),
+              // 03: Today's Comfort & Reality
+              _buildTodayComfort(),
+              const SizedBox(height: 22),
 
-              // 07: Pregnancy Modes ("I'm Having A...")
-              _buildPregnancyModes(),
-              const SizedBox(height: 20),
+              // 04: Peace of Mind Hub ("Is this normal?" + "Can I eat or take this?")
+              _buildPeaceOfMindHub(),
+              const SizedBox(height: 22),
 
-              // 08: Upcoming Care & Appointment Intelligence
-              _buildAppointmentIntelligence(),
-              const SizedBox(height: 20),
+              // 05: Daily Check-In & Baseline Trends
+              _buildDailyCheckIn(),
+              const SizedBox(height: 22),
 
-              // 09: Help Her This Week (Human Partner Co-Nesting)
-              _buildHumanPartnerCoNesting(),
-              const SizedBox(height: 20),
+              // 06: Help For Your Partner (Co-Nesting)
+              _buildPartnerSupport(),
+              const SizedBox(height: 22),
 
-              // 10: My Pregnancy Story (Intelligent Timeline)
-              _buildMyPregnancyStoryTimeline(),
-              const SizedBox(height: 20),
+              // 07: Doctor Visits & Keepsake Notes
+              _buildDoctorAndMilestones(),
+              const SizedBox(height: 22),
 
-              // 11: Teach Me in 30 Seconds & Discovery Feed
-              _buildTeachMeIn30Seconds(),
+              // 08: Trimester Checklist Roadmap
+              _buildTrimesterChecklist(),
               const SizedBox(height: 36),
             ],
           ),
@@ -2099,35 +1780,85 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// MODAL: "Teach Me in 30 Seconds" Explainer Sheet
+// MODAL SHEET: "Is this normal?" Symptom Triage
 // ─────────────────────────────────────────────────────────────────────
-class _TeachMeIn30SecondsSheet extends StatelessWidget {
-  final Map<String, dynamic> topic;
-  final ValueChanged<String> onAddToDoctorQuestions;
+class _SymptomTriageSheet extends StatefulWidget {
+  final int week;
+  final String? initialQuery;
+  final ValueChanged<String> onAddDoctorQuestion;
 
-  const _TeachMeIn30SecondsSheet({
-    required this.topic,
-    required this.onAddToDoctorQuestions,
+  const _SymptomTriageSheet({
+    required this.week,
+    this.initialQuery,
+    required this.onAddDoctorQuestion,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final title = topic['title']?.toString() ?? 'Clinical Explainer';
-    final whatItIs = topic['whatItIs']?.toString() ?? 'Evidence-based prenatal topic.';
-    final whyDone = topic['whyItIsDone']?.toString() ?? 'Standard maternal healthcare assessment.';
-    final whatToExpect = topic['whatToExpect']?.toString() ?? 'A safe, routine clinical evaluation.';
-    final questions = (topic['questionsToAsk'] as List?)?.map((e) => e.toString()).toList() ?? [];
+  State<_SymptomTriageSheet> createState() => _SymptomTriageSheetState();
+}
 
+class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
+  late final TextEditingController _controller = TextEditingController(text: widget.initialQuery ?? '');
+  SymptomTriageResult? _result;
+  bool _loading = false;
+
+  final List<String> _quickSuggestions = [
+    'Round ligament twinges',
+    'Headache & dizziness',
+    'Lower back stiffness',
+    'Mild spotting',
+    'Swollen ankles',
+    'Urine burning or UTI',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _runTriage(widget.initialQuery!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _runTriage(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return;
+    setState(() => _loading = true);
+
+    final res = await ApiPregnancyService.classifySymptom(query: q, week: widget.week);
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _result = res.data;
+    });
+  }
+
+  Color _parseColor(String hex) {
+    try {
+      final clean = hex.replaceAll('#', '');
+      return Color(int.parse('FF$clean', radix: 16));
+    } catch (_) {
+      return const Color(0xFF0D9488);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      maxChildSize: 0.9,
-      minChildSize: 0.4,
+      initialChildSize: 0.8,
+      maxChildSize: 0.95,
+      minChildSize: 0.45,
       builder: (ctx, scrollCtrl) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
         child: ListView(
           controller: scrollCtrl,
           children: [
@@ -2142,104 +1873,504 @@ class _TeachMeIn30SecondsSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(AppLocalizations.of(context).preg30SecondExplainer,
-              style: GoogleFonts.manrope(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFFDD0D22),
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: GoogleFonts.cormorantGaramond(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF221510),
-              ),
-            ),
-            const SizedBox(height: 18),
 
-            _buildBullet('What it is', whatItIs),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCCFBF1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SYMPTOM REASSURANCE',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0D9488),
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      Text(
+                        'Is this normal?',
+                        style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
-            _buildBullet('Why it is done', whyDone),
-            const SizedBox(height: 14),
-            _buildBullet('What to expect', whatToExpect),
-            const SizedBox(height: 18),
 
-            if (questions.isNotEmpty) ...[
-              Text(
-                'QUESTIONS TO ASK YOUR PROVIDER:',
-                style: GoogleFonts.manrope(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF7A6B72),
-                  letterSpacing: 0.8,
+            TextField(
+              controller: _controller,
+              style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF221510)),
+              decoration: InputDecoration(
+                hintText: 'Describe what you are feeling...',
+                hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
+                filled: true,
+                fillColor: const Color(0xFFFAF7F2),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF7A6B72), size: 20),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
+                  onPressed: () => _runTriage(_controller.text),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFDD0D22), width: 1.2),
                 ),
               ),
-              const SizedBox(height: 6),
-              ...questions.map((q) {
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.help_outline, color: Color(0xFFDD0D22), size: 18),
-                  title: Text(q, style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF221510))),
-                  trailing: TextButton(
-                    onPressed: () {
-                      onAddToDoctorQuestions(q);
-                      Navigator.pop(ctx);
-                    },
-                    child: Text(AppLocalizations.of(context).pregAdd2,
-                      style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFFDD0D22)),
+              onSubmitted: _runTriage,
+            ),
+            const SizedBox(height: 10),
+
+            // Quick Suggestions
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: _quickSuggestions.map((s) {
+                return InkWell(
+                  onTap: () {
+                    _controller.text = s;
+                    _runTriage(s);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF7F2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFEFE8E0)),
+                    ),
+                    child: Text(
+                      s,
+                      style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF221510)),
                     ),
                   ),
                 );
-              }),
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+
+            if (_loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: CircularProgressIndicator(color: Color(0xFFDD0D22)),
+                ),
+              )
+            else if (_result != null) ...[
+              // Badge & Result
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAF7F2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _parseColor(_result!.colorHex).withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _parseColor(_result!.colorHex).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        _result!.badgeLabel.toUpperCase(),
+                        style: GoogleFonts.manrope(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: _parseColor(_result!.colorHex),
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _result!.summary,
+                      style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.w700, color: const Color(0xFF221510), height: 1.35),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _result!.reasoning,
+                      style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF7A6B72), height: 1.4),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFEFE8E0)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.tips_and_updates_outlined, color: Color(0xFFDD0D22), size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _result!.guidance,
+                              style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510), height: 1.35),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    if (_result!.questionsForDoctor.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        'QUESTIONS TO ASK YOUR DOCTOR:',
+                        style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: const Color(0xFF7A6B72), letterSpacing: 0.8),
+                      ),
+                      const SizedBox(height: 6),
+                      ..._result!.questionsForDoctor.map((q) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFFDD0D22)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(q, style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510))),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFFDD0D22)),
+                                onPressed: () {
+                                  widget.onAddDoctorQuestion(q);
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ],
+                ),
+              ),
             ],
           ],
         ),
       ),
     );
   }
-
-  Widget _buildBullet(String header, String content) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF7F2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEFE8E0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            header.toUpperCase(),
-            style: GoogleFonts.manrope(
-              fontSize: 9.5,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFFDD0D22),
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            content,
-            style: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF221510), height: 1.4),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Safe substring extension
+// MODAL SHEET: "Can I eat or take this?" Food & Medicine Safety
 // ─────────────────────────────────────────────────────────────────────
-extension StringSliceSafe on String {
-  String sliceSafe(int start, int end) {
-    if (length <= start) return '';
-    if (length <= end) return substring(start);
-    return substring(start, end);
+class _FoodSafetySheet extends StatefulWidget {
+  final int week;
+  final String? initialQuery;
+  final ValueChanged<String> onAddDoctorQuestion;
+
+  const _FoodSafetySheet({
+    required this.week,
+    this.initialQuery,
+    required this.onAddDoctorQuestion,
+  });
+
+  @override
+  State<_FoodSafetySheet> createState() => _FoodSafetySheetState();
+}
+
+class _FoodSafetySheetState extends State<_FoodSafetySheet> {
+  late final TextEditingController _controller = TextEditingController(text: widget.initialQuery ?? '');
+  FoodSafetyResult? _result;
+  bool _loading = false;
+
+  final List<String> _quickSuggestions = [
+    'Papaya',
+    'Paracetamol',
+    'Coffee',
+    'Herbal tea',
+    'Sushi',
+    'Soft cheese',
+    'Eggs',
+    'Ibuprofen',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _runCheck(widget.initialQuery!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _runCheck(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return;
+    setState(() => _loading = true);
+
+    final res = await ApiPregnancyService.checkFoodSafety(query: q, week: widget.week);
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _result = res.data;
+    });
+  }
+
+  Color _parseColor(String hex) {
+    try {
+      final clean = hex.replaceAll('#', '');
+      return Color(int.parse('FF$clean', radix: 16));
+    } catch (_) {
+      return const Color(0xFF0D9488);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.8,
+      maxChildSize: 0.95,
+      minChildSize: 0.45,
+      builder: (ctx, scrollCtrl) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+        child: ListView(
+          controller: scrollCtrl,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFE8E0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.restaurant_outlined, color: Color(0xFFD97706), size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'FOOD & MEDICINE SAFETY',
+                        style: GoogleFonts.manrope(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFD97706),
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      Text(
+                        'Can I eat or take this?',
+                        style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            TextField(
+              controller: _controller,
+              style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF221510)),
+              decoration: InputDecoration(
+                hintText: 'Search food, drink, or medicine...',
+                hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
+                filled: true,
+                fillColor: const Color(0xFFFAF7F2),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF7A6B72), size: 20),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
+                  onPressed: () => _runCheck(_controller.text),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFDD0D22), width: 1.2),
+                ),
+              ),
+              onSubmitted: _runCheck,
+            ),
+            const SizedBox(height: 10),
+
+            // Quick suggestions
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: _quickSuggestions.map((s) {
+                return InkWell(
+                  onTap: () {
+                    _controller.text = s;
+                    _runCheck(s);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF7F2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFEFE8E0)),
+                    ),
+                    child: Text(
+                      s,
+                      style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF221510)),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+
+            if (_loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: CircularProgressIndicator(color: Color(0xFFDD0D22)),
+                ),
+              )
+            else if (_result != null) ...[
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAF7F2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _parseColor(_result!.colorHex).withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _parseColor(_result!.colorHex).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        _result!.badge.toUpperCase(),
+                        style: GoogleFonts.manrope(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: _parseColor(_result!.colorHex),
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _result!.summary,
+                      style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.w700, color: const Color(0xFF221510), height: 1.35),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _result!.reasoning,
+                      style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF7A6B72), height: 1.4),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFEFE8E0)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.check_circle_outline, color: Color(0xFF0D9488), size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'SAFE ALTERNATIVE / TIP',
+                                  style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w800, color: const Color(0xFF7A6B72), letterSpacing: 0.8),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _result!.safeAlternative,
+                                  style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510), height: 1.35),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Row(
+                      children: [
+                        const Icon(Icons.help_outline, size: 14, color: Color(0xFFDD0D22)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _result!.docQuestion,
+                            style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510)),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFFDD0D22)),
+                          onPressed: () {
+                            widget.onAddDoctorQuestion(_result!.docQuestion);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

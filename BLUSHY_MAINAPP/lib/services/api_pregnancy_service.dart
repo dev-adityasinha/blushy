@@ -156,6 +156,41 @@ class SymptomTriageResult {
   }
 }
 
+class FoodSafetyResult {
+  final String query;
+  final String status;
+  final String badge;
+  final String colorHex;
+  final String summary;
+  final String reasoning;
+  final String safeAlternative;
+  final String docQuestion;
+
+  FoodSafetyResult({
+    required this.query,
+    required this.status,
+    required this.badge,
+    required this.colorHex,
+    required this.summary,
+    required this.reasoning,
+    required this.safeAlternative,
+    required this.docQuestion,
+  });
+
+  factory FoodSafetyResult.fromJson(Map<String, dynamic> json) {
+    return FoodSafetyResult(
+      query: json['query']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'safe',
+      badge: json['badge']?.toString() ?? 'Safe with Care',
+      colorHex: json['colorHex']?.toString() ?? '#0D9488',
+      summary: json['summary']?.toString() ?? 'Safe and acceptable during pregnancy.',
+      reasoning: json['reasoning']?.toString() ?? 'Good food hygiene and moderation.',
+      safeAlternative: json['safeAlternative']?.toString() ?? 'Enjoy fresh, cooked ingredients.',
+      docQuestion: json['docQuestion']?.toString() ?? 'Is this food safe for my trimester?',
+    );
+  }
+}
+
 class ApiPregnancyService {
   const ApiPregnancyService._();
 
@@ -248,6 +283,14 @@ class ApiPregnancyService {
       '/pregnancy/is-this-normal',
       query: {'query': query, 'week': week.toString()},
       parse: (data) => SymptomTriageResult.fromJson(Map<String, dynamic>.from(data as Map)),
+    );
+  }
+
+  static Future<ApiResult<FoodSafetyResult>> checkFoodSafety({required String query, int week = 20}) async {
+    return ApiContractClient.get(
+      '/pregnancy/safety-check',
+      query: {'query': query, 'week': week.toString()},
+      parse: (data) => FoodSafetyResult.fromJson(Map<String, dynamic>.from(data as Map)),
     );
   }
 
