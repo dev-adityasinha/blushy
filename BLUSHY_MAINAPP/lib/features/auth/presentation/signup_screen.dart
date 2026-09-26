@@ -2,7 +2,6 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../core/state.dart';
@@ -13,7 +12,6 @@ import '../../../services/auth_storage.dart';
 import '../../legal/legal_documents_screen.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../theme/colors.dart';
-import '../../../theme/scale.dart';
 
 enum AuthFormMode { login, signup }
 
@@ -46,7 +44,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
   /// Whether to ask the phone's password manager to remember these details.
@@ -86,7 +83,6 @@ class _SignupScreenState extends State<SignupScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -117,14 +113,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       if (_mode == AuthFormMode.signup) {
-        final rawPhone = _phoneController.text.trim();
-        final formattedPhone = rawPhone.isNotEmpty ? (rawPhone.startsWith('+91') ? rawPhone : '+91$rawPhone') : '';
         await _apiAuthService.signUpWithEmail(
           _emailController.text.trim(),
           _passwordController.text,
           role: _selectedRole.value,
           displayName: _nameController.text.trim(),
-          phoneNumber: formattedPhone,
           termsAccepted: _isTermsAccepted,
         );
 
@@ -746,14 +739,11 @@ class _SignupScreenState extends State<SignupScreen> {
                                             dialogError = null;
                                           });
                                           try {
-                                            final rawPhone = _phoneController.text.trim();
-                                            final formattedPhone = rawPhone.isNotEmpty ? (rawPhone.startsWith('+91') ? rawPhone : '+91$rawPhone') : '';
                                             await _apiAuthService.signUpWithEmail(
                                               email,
                                               _passwordController.text,
                                               role: _selectedRole.value,
                                               displayName: _nameController.text.trim(),
-                                              phoneNumber: formattedPhone,
                                               termsAccepted: _isTermsAccepted,
                                             );
                                             // Resending sends a new code to
@@ -1178,66 +1168,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Phone Number Field (Signup mode only)
-                    if (_mode == AuthFormMode.signup) ...[
-                      _buildFieldLabel('Phone number'),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(10),
-                        ],
-                        style: const TextStyle(
-                          fontFamily: 'Manrope',
-                          fontSize: 13.5,
-                          color: textDark,
-                          letterSpacing: 0.2,
-                        ),
-                        decoration: _buildInputDecoration('10-digit mobile number', Icons.phone_outlined).copyWith(
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.only(left: 14, right: 8),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.phone_outlined, size: 18, color: Color(0xFFA5959C)),
-                                const SizedBox(width: 6),
-                                const Text(
-                                  '+91',
-                                  style: TextStyle(
-                                    fontFamily: 'Manrope',
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: textDark,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                                Container(
-                                  height: 16,
-                                  width: 1,
-                                  color: const Color(0xFFF5D6DE),
-                                  margin: const EdgeInsets.only(left: 8, right: 4),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        validator: (val) {
-                          if (_mode == AuthFormMode.signup) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Please enter your phone number';
-                            }
-                            if (val.trim().length != 10) {
-                              return 'Phone number must be exactly 10 digits';
-                            }
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
                     // Password Field Header (with Forgot password? link in Login mode)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1452,28 +1382,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Helper Info Box (Signup mode only)
-                    if (_mode == AuthFormMode.signup) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFDF2F2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          "Signup requires email verification. Check your inbox. If you haven't received the email, you can verify it below.",
-                          style: TextStyle(
-                            fontFamily: 'Manrope',
-                            fontSize: 11,
-                            color: textMuted,
-                            height: 1.4,
-                            letterSpacing: 0.15,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
 
                     // OR Divider
                     const Row(
