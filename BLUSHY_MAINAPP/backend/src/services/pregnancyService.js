@@ -1,6 +1,9 @@
 import { db } from '../utils/db.js';
 import { getGestationalDataForWeek } from './pregnancyData.js';
 import { todayIso } from '../utils/appCalendar.js';
+import { env } from '../utils/env.js';
+import { aiFetch } from '../utils/aiRequest.js';
+import { logger } from '../utils/logger.js';
 
 // In-memory fallback cache for preview/offline environments
 const memoryStore = {
@@ -578,6 +581,133 @@ export class PregnancyService {
       safeAlternative: 'Stick to fresh, well-cooked meals and verify "Pasteurized" on dairy labels.',
       docQuestion: `Can you confirm if ${query} is safe for my personal health profile?`
     };
+  }
+
+  async classifySymptomWithAI({ query, week = 20 }) {
+    const ruleMatch = this.classifySymptomIsThisNormal({ query, week });
+    // If it's a specific recognized rule match (not generic common), return directly
+    if (ruleMatch && ruleMatch.category !== 'common') {
+      return ruleMatch;
+    }
+
+    if (env.aiChatApiKey) {
+      try {
+        const prompt = `You are a certified OB/GYN maternal-fetal medicine specialist.
+A pregnant woman in week ${week} asks about this symptom/sensation: "${query}".
+Evaluate whether this is normal, requires observation, or requires urgent doctor contact.
+Respond strictly in valid JSON matching this schema:
+{
+  "category": "common" | "monitor" | "call_doctor",
+  "badgeLabel": "3-5 word concise status label",
+  "colorHex": "#0D9488" (for common/safe) or "#D97706" (for monitor) or "#DD0D22" (for call_doctor),
+  "summary": "1-2 calm, reassuring, empathetic sentences explaining the sensation",
+  "reasoning": "Clear physiological explanation of what is happening in week ${week}",
+  "guidance": "1-2 practical at-home comfort measures (positioning, hydration, heat/cold)",
+  "questionsForDoctor": ["1-2 specific questions she can ask at her next visit"]
+}`;
+        const response = await aiFetch(env.aiChatApiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.aiChatApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: env.aiChatModel || 'x-ai/grok-4.3',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 400,
+          }),
+        });
+
+        if (response.ok) {
+          const json = await response.json();
+          const content = json.choices?.[0]?.message?.content?.trim();
+          if (content) {
+            const clean = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(clean);
+            if (parsed.summary && parsed.badgeLabel) {
+              return {
+                category: parsed.category || 'common',
+                badgeLabel: parsed.badgeLabel,
+                colorHex: parsed.colorHex || '#0D9488',
+                summary: parsed.summary,
+                reasoning: parsed.reasoning || '',
+                guidance: parsed.guidance || 'Rest, hydrate, and mention to your provider.',
+                questionsForDoctor: Array.isArray(parsed.questionsForDoctor) ? parsed.questionsForDoctor : [],
+              };
+            }
+          }
+        }
+      } catch (err) {
+        logger.warn('AI symptom classification fallback triggered', { message: err?.message });
+      }
+    }
+
+    return ruleMatch;
+  }
+
+  async checkFoodSafetyWithAI({ query, week = 20 }) {
+    const ruleMatch = this.checkFoodAndMedicineSafety({ query, week });
+    if (ruleMatch && ruleMatch.status !== 'safe_with_guidance') {
+      return ruleMatch;
+    }
+
+    if (env.aiChatApiKey) {
+      try {
+        const prompt = `You are a certified OB/GYN maternal nutrition specialist.
+A pregnant woman in week ${week} asks: "Can I eat, drink, or take: ${query}?"
+Evaluate safety, precautions, and doctor guidance.
+Respond strictly in valid JSON matching this schema:
+{
+  "query": "${query}",
+  "status": "safe" | "caution" | "avoid",
+  "badge": "3-5 word concise safety badge",
+  "colorHex": "#0D9488" (for safe) or "#D97706" (for caution) or "#DD0D22" (for avoid),
+  "summary": "1-2 calm, reassuring, direct sentences",
+  "reasoning": "Clear clinical reasoning (Listeria, Toxoplasma, uterine stimulation, mercury, etc.)",
+  "safeAlternative": "Wholesome safe alternative or preparation/cooking advice",
+  "docQuestion": "One practical question to ask her prenatal care provider"
+}`;
+        const response = await aiFetch(env.aiChatApiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.aiChatApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: env.aiChatModel || 'x-ai/grok-4.3',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 400,
+          }),
+        });
+
+        if (response.ok) {
+          const json = await response.json();
+          const content = json.choices?.[0]?.message?.content?.trim();
+          if (content) {
+            const clean = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(clean);
+            if (parsed.status && parsed.summary) {
+              return {
+                query,
+                status: parsed.status,
+                badge: parsed.badge || 'Guidance',
+                colorHex: parsed.colorHex || '#0D9488',
+                summary: parsed.summary,
+                reasoning: parsed.reasoning || '',
+                safeAlternative: parsed.safeAlternative || 'Stick to freshly cooked, pasteurized foods.',
+                docQuestion: parsed.docQuestion || `Is ${query} safe for my health profile?`,
+              };
+            }
+          }
+        }
+      } catch (err) {
+        logger.warn('AI food safety check fallback triggered', { message: err?.message });
+      }
+    }
+
+    return ruleMatch;
   }
 
   async saveMemory({ userId = 'preview_user', memory }) {

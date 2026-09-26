@@ -78,6 +78,8 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
   int? _moodScore;
   int _waterGlasses = 0;
   bool _hasLoggedToday = false;
+  bool _hasUnsavedEdits = false;
+  String _lastCheckedDate = '';
 
   // ─── Trimester Checklist State ─────────────────────────────────────
   Set<String> _completedChecklist = {};
@@ -85,6 +87,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _vm.addListener(_onDataChanged);
     _rehydrateLocalState();
     _loadAllPregnancyData();
@@ -92,10 +95,26 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
   }
 
   @override
-  Future<void> refreshNow() => _loadAllPregnancyData();
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final todayStr = DateTime.now().toIso8601String().sliceSafe(0, 10);
+      if (_lastCheckedDate != todayStr) {
+        _rehydrateLocalState();
+        _loadAllPregnancyData();
+        if (mounted) setState(() {});
+      }
+    }
+  }
+
+  @override
+  Future<void> refreshNow() async {
+    _rehydrateLocalState();
+    await _loadAllPregnancyData();
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     stopLiveRefresh();
     _vm.removeListener(_onDataChanged);
     _vm.dispose();
@@ -145,6 +164,8 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
   void _rehydrateLocalState() {
     try {
       final todayStr = DateTime.now().toIso8601String().sliceSafe(0, 10);
+      _lastCheckedDate = todayStr;
+      _hasUnsavedEdits = false;
       final savedCheckin = UserStateStore.read('pregnancy_last_checkin');
       if (savedCheckin.isNotEmpty && savedCheckin['date'] == todayStr) {
         _hasLoggedToday = true;
@@ -158,6 +179,13 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
             savedCheckin['mode'] != 'default') {
           _selectedMode = savedCheckin['mode'].toString();
         }
+      } else {
+        _hasLoggedToday = false;
+        _nauseaScore = null;
+        _energyScore = null;
+        _sleepScore = null;
+        _moodScore = null;
+        _waterGlasses = 0;
       }
 
       final savedQ = BlushyStorage.read('pregnancy_questions.json');
@@ -206,6 +234,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
   }
 
   Future<void> _submitDailyCheckIn() async {
+    final isUpdate = _hasLoggedToday;
     final payload = {
       'date': DateTime.now().toIso8601String().sliceSafe(0, 10),
       'nausea': _nauseaScore ?? 2,
@@ -225,12 +254,15 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     await _vm.refreshBaseline();
 
     if (!mounted) return;
-    setState(() => _hasLoggedToday = true);
+    setState(() {
+      _hasLoggedToday = true;
+      _hasUnsavedEdits = false;
+    });
 
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          'Daily check-in saved. Baseline updated ❤️',
+          isUpdate ? 'Daily check-in updated. Baseline refreshed ❤️' : 'Daily check-in saved. Baseline updated ❤️',
           style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600),
         ),
         backgroundColor: textMain,
@@ -350,7 +382,10 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (ctx) => _SymptomTriageSheet(
         week: _overview?.week ?? 20,
         initialQuery: initialQuery,
@@ -363,7 +398,10 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (ctx) => _FoodSafetySheet(
         week: _overview?.week ?? 20,
         initialQuery: initialQuery,
@@ -891,115 +929,120 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
         ),
         const SizedBox(height: 12),
 
-        Row(
-          children: [
-            // Tool 1: Is this normal?
-            Expanded(
-              child: InkWell(
-                onTap: () => _openSymptomTriageSheet(),
-                borderRadius: cardRadius,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: cardRadius,
-                    border: Border.all(color: cardBorderColor, width: 1.0),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFCCFBF1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Is this normal?',
-                        style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Check twinges, aches, or sudden bodily shifts.',
-                        style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Text(
-                            'Check symptom',
-                            style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF0D9488)),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Tool 1: Is this normal?
+              Expanded(
+                child: InkWell(
+                  onTap: () => _openSymptomTriageSheet(),
+                  borderRadius: cardRadius,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: cardRadius,
+                      border: Border.all(color: cardBorderColor, width: 1.0),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFCCFBF1),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.arrow_forward, size: 12, color: Color(0xFF0D9488)),
-                        ],
-                      ),
-                    ],
+                          child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Is this normal?',
+                          style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Check twinges, aches, or sudden bodily shifts.',
+                          style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
+                        ),
+                        const Spacer(),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Text(
+                              'Check symptom',
+                              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF0D9488)),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward, size: 12, color: Color(0xFF0D9488)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-            // Tool 2: Can I eat or take this?
-            Expanded(
-              child: InkWell(
-                onTap: () => _openFoodSafetySheet(),
-                borderRadius: cardRadius,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: cardRadius,
-                    border: Border.all(color: cardBorderColor, width: 1.0),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.restaurant_outlined, color: Color(0xFFD97706), size: 20),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Can I eat or take this?',
-                        style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Check foods, teas, or everyday medicines.',
-                        style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Text(
-                            'Check food & meds',
-                            style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFFD97706)),
+              // Tool 2: Can I eat or take this?
+              Expanded(
+                child: InkWell(
+                  onTap: () => _openFoodSafetySheet(),
+                  borderRadius: cardRadius,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: cardRadius,
+                      border: Border.all(color: cardBorderColor, width: 1.0),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.arrow_forward, size: 12, color: Color(0xFFD97706)),
-                        ],
-                      ),
-                    ],
+                          child: const Icon(Icons.restaurant_outlined, color: Color(0xFFD97706), size: 20),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Can I eat or take this?',
+                          style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Check foods, teas, or everyday medicines.',
+                          style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
+                        ),
+                        const Spacer(),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Text(
+                              'Check food & meds',
+                              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFFD97706)),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward, size: 12, color: Color(0xFFD97706)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -1011,9 +1054,12 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
 
     String actionLabel;
     Color actionColor;
-    if (_hasLoggedToday) {
+    if (_hasLoggedToday && !_hasUnsavedEdits) {
       actionLabel = 'Logged Today ✓';
       actionColor = const Color(0xFF0D9488);
+    } else if (_hasLoggedToday && _hasUnsavedEdits) {
+      actionLabel = 'Update Log';
+      actionColor = crimsonPrimary;
     } else if (hasInteracted) {
       actionLabel = 'Save Log';
       actionColor = crimsonPrimary;
@@ -1050,6 +1096,13 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
                   Text(
                     'Your Daily Rhythm',
                     style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: textMain),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _hasLoggedToday
+                        ? 'Saved for today • Resets automatically at midnight'
+                        : 'Resets daily at midnight • Tap circles anytime to log',
+                    style: GoogleFonts.manrope(fontSize: 11, color: textMuted),
                   ),
                 ],
               ),
@@ -1128,6 +1181,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
                 isSelected: _waterGlasses > 0,
                 onTap: () {
                   setState(() {
+                    _hasUnsavedEdits = true;
                     _waterGlasses = (_waterGlasses >= 12) ? 0 : _waterGlasses + 1;
                   });
                 },
@@ -1271,6 +1325,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
 
   void _cycleScore(String metric) {
     setState(() {
+      _hasUnsavedEdits = true;
       if (metric == 'nausea') _nauseaScore = (_nauseaScore == null) ? 2 : ((_nauseaScore! % 4) + 1);
       if (metric == 'energy') _energyScore = (_energyScore == null) ? 3 : ((_energyScore! % 4) + 1);
       if (metric == 'sleep') _sleepScore = (_sleepScore == null) ? 3 : ((_sleepScore! % 4) + 1);
@@ -1696,6 +1751,16 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
   // ───────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final todayStr = DateTime.now().toIso8601String().sliceSafe(0, 10);
+    if (_lastCheckedDate.isNotEmpty && _lastCheckedDate != todayStr) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _rehydrateLocalState();
+          setState(() {});
+        }
+      });
+    }
+
     final osState = BlushyOSProvider.of(context);
     final pc = osState.personalContext;
 
@@ -1825,17 +1890,115 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
     super.dispose();
   }
 
+  SymptomTriageResult _localSymptomTriage(String query, int week) {
+    final q = query.toLowerCase();
+    if (q.contains('ligament') || q.contains('twinge') || q.contains('side pain') || q.contains('sharp twinge')) {
+      return SymptomTriageResult(
+        category: 'common',
+        badgeLabel: 'Completely Normal & Common',
+        colorHex: '#0D9488',
+        summary: 'Round ligament pain: very common in week $week as the growing uterus stretches supporting abdominal ligaments.',
+        reasoning: 'The thick fibrous bands supporting your uterus stretch and spasm with sudden movements, coughing, or rolling over in bed.',
+        guidance: 'Bend and flex your hips when turning, apply gentle warmth, move slowly from sitting to standing, and rest on your side.',
+        questionsForDoctor: ['Would a maternity belly band help support my abdomen during daily walks?'],
+      );
+    }
+    if (q.contains('headache') || q.contains('dizz') || q.contains('lighthead')) {
+      return SymptomTriageResult(
+        category: 'monitor',
+        badgeLabel: 'Monitor & Rest',
+        colorHex: '#D97706',
+        summary: 'Mild tension headaches and lightheadedness are frequent as maternal blood volume surges.',
+        reasoning: 'Expanding blood vessels and hormonal shifts can cause temporary pressure drops. Blood sugar dips also contribute.',
+        guidance: 'Sip electrolyte water, eat a protein-rich snack, rest in a dim quiet room, and rise slowly. Avoid sudden position changes.',
+        questionsForDoctor: ['Is 500mg acetaminophen safe if a headache persists?'],
+      );
+    }
+    if (q.contains('lower back') || q.contains('back') || q.contains('pelvic') || q.contains('stiff')) {
+      return SymptomTriageResult(
+        category: 'common',
+        badgeLabel: 'Normal Musculoskeletal Shift',
+        colorHex: '#0D9488',
+        summary: 'Lower back stiffness is very common as relaxin loosens pelvic joints and your center of gravity shifts forward.',
+        reasoning: 'Your posture shifts to counterbalance baby\'s weight, placing extra strain on lumbar muscle groups.',
+        guidance: 'Sleep with a pillow between your knees, practice gentle cat-cow stretches, wear supportive flats, and take warm baths.',
+        questionsForDoctor: ['Would prenatal yoga or physical therapy help relieve my lower back tension?'],
+      );
+    }
+    if (q.contains('spotting') || q.contains('pink') || q.contains('brown discharge')) {
+      return SymptomTriageResult(
+        category: 'monitor',
+        badgeLabel: 'Monitor & Call If Persistent',
+        colorHex: '#D97706',
+        summary: 'Light pink or brown spotting can happen after intercourse, cervical irritation, or vaginal exams.',
+        reasoning: 'The cervix is extremely vascular in pregnancy. While light brown spotting is often benign, any bright red flow must be reported.',
+        guidance: 'Wear a white panty liner to track color and volume. Rest with feet elevated. Call provider if accompanied by cramping.',
+        questionsForDoctor: ['Should I come in for a quick cervical check or ultrasound to be sure?'],
+      );
+    }
+    if (q.contains('swollen') || q.contains('ankle') || q.contains('feet') || q.contains('edema')) {
+      return SymptomTriageResult(
+        category: 'common',
+        badgeLabel: 'Normal Physiological Edema',
+        colorHex: '#0D9488',
+        summary: 'Mild ankle and foot puffiness at the end of the day is a normal result of gravity and fluid retention.',
+        reasoning: 'Uterine pressure on pelvic veins slows blood return from the lower limbs. Worse after long periods on your feet.',
+        guidance: 'Elevate your feet above heart level when resting, wear graduated compression socks, stay well hydrated, and avoid tight shoes.',
+        questionsForDoctor: ['What signs would distinguish normal evening swelling from preeclampsia?'],
+      );
+    }
+    if (q.contains('burn') || q.contains('uti') || q.contains('urine') || q.contains('pee')) {
+      return SymptomTriageResult(
+        category: 'monitor',
+        badgeLabel: 'Contact Provider For Urine Screen',
+        colorHex: '#D97706',
+        summary: 'Burning or increased pain during urination suggests a urinary tract infection (UTI), which is common and easily treated.',
+        reasoning: 'Progesterone relaxes ureters and bladder muscles, making it easier for bacteria to linger. UTIs should be promptly treated with safe antibiotics.',
+        guidance: 'Drink plenty of water and call your clinic for a quick dipstick test. Never wait out UTI symptoms in pregnancy.',
+        questionsForDoctor: ['Can you order a routine urine culture to rule out asymptomatic bacteriuria?'],
+      );
+    }
+    if (q.contains('bleed') || q.contains('heavy bleeding') || q.contains('fluid leak') || q.contains('gush') || q.contains('aura') || q.contains('seizure')) {
+      return SymptomTriageResult(
+        category: 'call_doctor',
+        badgeLabel: 'Call Doctor / Triage Promptly',
+        colorHex: '#DD0D22',
+        summary: 'Any heavy bleeding, bright red flow, sudden fluid leak, or severe abdominal pain warrants immediate medical evaluation.',
+        reasoning: 'These require in-person clinical assessment to ensure placenta, cervix, and amniotic sac remain safe and intact.',
+        guidance: 'Do not use tampons. Call your labor & delivery triage line immediately or head to the nearest emergency room.',
+        questionsForDoctor: ['What is the direct 24/7 on-call triage phone number for my delivery hospital?'],
+      );
+    }
+    return SymptomTriageResult(
+      category: 'common',
+      badgeLabel: 'Common & Reassuring',
+      colorHex: '#0D9488',
+      summary: 'Most twinges and bodily shifts around week $week reflect normal hormonal adaptations and maternal expansion.',
+      reasoning: 'Your body is adjusting rapidly. Gentle sensations that come and go with rest and hydration are typically benign.',
+      guidance: 'Drink a tall glass of water, rest on your left side for 20 minutes, and note when the sensation began.',
+      questionsForDoctor: ['Is this sensation typical for my current stage of pregnancy?'],
+    );
+  }
+
   Future<void> _runTriage(String query) async {
     final q = query.trim();
     if (q.isEmpty) return;
     setState(() => _loading = true);
 
-    final res = await ApiPregnancyService.classifySymptom(query: q, week: widget.week);
-    if (!mounted) return;
-    setState(() {
-      _loading = false;
-      _result = res.data;
-    });
+    try {
+      final res = await ApiPregnancyService.classifySymptom(query: q, week: widget.week);
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _result = res.data ?? _localSymptomTriage(q, widget.week);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _result = _localSymptomTriage(q, widget.week);
+      });
+    }
   }
 
   Color _parseColor(String hex) {
@@ -1847,229 +2010,384 @@ class _SymptomTriageSheetState extends State<_SymptomTriageSheet> {
     }
   }
 
+  Widget _buildPreSearchGuide() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.auto_awesome, color: Color(0xFF0D9488), size: 16),
+            const SizedBox(width: 6),
+            Text(
+              'COMMON SENSATIONS AROUND WEEK ${widget.week}',
+              style: GoogleFonts.manrope(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0D9488),
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        _buildPreSearchCard(
+          icon: '🌸',
+          title: 'Round Ligament Stretching',
+          desc: 'Sharp twinges on the lower right or left side when rolling over, coughing, or standing. Normal uterine growth.',
+          onTap: () {
+            _controller.text = 'Round ligament twinges';
+            _runTriage('Round ligament twinges');
+          },
+        ),
+        const SizedBox(height: 8),
+
+        _buildPreSearchCard(
+          icon: '🥱',
+          title: 'Headaches & Sudden Lightheadedness',
+          desc: 'Surging blood volume and blood sugar shifts. Drink water with electrolytes, rest in dim room, rise slowly.',
+          onTap: () {
+            _controller.text = 'Headache & dizziness';
+            _runTriage('Headache & dizziness');
+          },
+        ),
+        const SizedBox(height: 8),
+
+        _buildPreSearchCard(
+          icon: '🦵',
+          title: 'Lower Back & Pelvic Stiffness',
+          desc: 'Relaxin hormone gently loosens pelvic ligaments. Use a maternity pillow between knees when sleeping.',
+          onTap: () {
+            _controller.text = 'Lower back stiffness';
+            _runTriage('Lower back stiffness');
+          },
+        ),
+        const SizedBox(height: 14),
+
+        // Urgent Care Peace of Mind Notice
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFECEB),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFDD0D22).withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.notifications_active_outlined, color: Color(0xFFDD0D22), size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'When to Call Your Care Team Immediately',
+                      style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFFDD0D22)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Bright red bleeding, fluid leakage/gushing, persistent severe headache with visual aura, or sudden intense swelling of face/hands require prompt clinical triage.',
+                      style: GoogleFonts.manrope(fontSize: 11, color: const Color(0xFF221510), height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+      ],
+    );
+  }
+
+  Widget _buildPreSearchCard({
+    required String icon,
+    required String title,
+    required String desc,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAF7F2),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFEFE8E0)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700, color: const Color(0xFF221510)),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    desc,
+                    style: GoogleFonts.manrope(fontSize: 11, color: const Color(0xFF7A6B72), height: 1.3),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF7A6B72)),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.8,
       maxChildSize: 0.95,
       minChildSize: 0.45,
-      builder: (ctx, scrollCtrl) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-        child: ListView(
-          controller: scrollCtrl,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFE8E0),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+      builder: (ctx, scrollCtrl) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const SizedBox(height: 16),
-
-            Row(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+            child: ListView(
+              controller: scrollCtrl,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCCFBF1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'SYMPTOM REASSURANCE',
-                        style: GoogleFonts.manrope(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0D9488),
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      Text(
-                        'Is this normal?',
-                        style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            TextField(
-              controller: _controller,
-              style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF221510)),
-              decoration: InputDecoration(
-                hintText: 'Describe what you are feeling...',
-                hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
-                filled: true,
-                fillColor: const Color(0xFFFAF7F2),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF7A6B72), size: 20),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
-                  onPressed: () => _runTriage(_controller.text),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFDD0D22), width: 1.2),
-                ),
-              ),
-              onSubmitted: _runTriage,
-            ),
-            const SizedBox(height: 10),
-
-            // Quick Suggestions
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: _quickSuggestions.map((s) {
-                return InkWell(
-                  onTap: () {
-                    _controller.text = s;
-                    _runTriage(s);
-                  },
-                  borderRadius: BorderRadius.circular(12),
+                Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFAF7F2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFEFE8E0)),
-                    ),
-                    child: Text(
-                      s,
-                      style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF221510)),
+                      color: const Color(0xFFEFE8E0),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
+                ),
+                const SizedBox(height: 16),
 
-            if (_loading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: CircularProgressIndicator(color: Color(0xFFDD0D22)),
-                ),
-              )
-            else if (_result != null) ...[
-              // Badge & Result
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFAF7F2),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _parseColor(_result!.colorHex).withValues(alpha: 0.4)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _parseColor(_result!.colorHex).withValues(alpha: 0.15),
+                        color: const Color(0xFFCCFBF1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(
-                        _result!.badgeLabel.toUpperCase(),
-                        style: GoogleFonts.manrope(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: _parseColor(_result!.colorHex),
-                          letterSpacing: 0.8,
-                        ),
-                      ),
+                      child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _result!.summary,
-                      style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.w700, color: const Color(0xFF221510), height: 1.35),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _result!.reasoning,
-                      style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF7A6B72), height: 1.4),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFEFE8E0)),
-                      ),
-                      child: Row(
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.tips_and_updates_outlined, color: Color(0xFFDD0D22), size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _result!.guidance,
-                              style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510), height: 1.35),
+                          Text(
+                            'SYMPTOM REASSURANCE',
+                            style: GoogleFonts.manrope(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0D9488),
+                              letterSpacing: 1.2,
                             ),
+                          ),
+                          Text(
+                            'Is this normal?',
+                            style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
                           ),
                         ],
                       ),
                     ),
-
-                    if (_result!.questionsForDoctor.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      Text(
-                        'QUESTIONS TO ASK YOUR DOCTOR:',
-                        style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: const Color(0xFF7A6B72), letterSpacing: 0.8),
+                    IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFAF7F2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF221510)),
                       ),
-                      const SizedBox(height: 6),
-                      ..._result!.questionsForDoctor.map((q) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Close',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                TextField(
+                  controller: _controller,
+                  style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF221510)),
+                  decoration: InputDecoration(
+                    hintText: 'Describe what you are feeling...',
+                    hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
+                    filled: true,
+                    fillColor: const Color(0xFFFAF7F2),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF7A6B72), size: 20),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
+                      onPressed: () => _runTriage(_controller.text),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFDD0D22), width: 1.2),
+                    ),
+                  ),
+                  onSubmitted: _runTriage,
+                ),
+                const SizedBox(height: 10),
+
+                // Quick Suggestions
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: _quickSuggestions.map((s) {
+                    return InkWell(
+                      onTap: () {
+                        _controller.text = s;
+                        _runTriage(s);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFAF7F2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEFE8E0)),
+                        ),
+                        child: Text(
+                          s,
+                          style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF221510)),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+
+                if (_loading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: CircularProgressIndicator(color: Color(0xFFDD0D22)),
+                    ),
+                  )
+                else if (_result != null) ...[
+                  // Badge & Result
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF7F2),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _parseColor(_result!.colorHex).withValues(alpha: 0.4)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _parseColor(_result!.colorHex).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _result!.badgeLabel.toUpperCase(),
+                            style: GoogleFonts.manrope(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: _parseColor(_result!.colorHex),
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _result!.summary,
+                          style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.w700, color: const Color(0xFF221510), height: 1.35),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _result!.reasoning,
+                          style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF7A6B72), height: 1.4),
+                        ),
+                        const SizedBox(height: 12),
+
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFEFE8E0)),
+                          ),
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFFDD0D22)),
+                              const Icon(Icons.tips_and_updates_outlined, color: Color(0xFFDD0D22), size: 16),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text(q, style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510))),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFFDD0D22)),
-                                onPressed: () {
-                                  widget.onAddDoctorQuestion(q);
-                                },
+                                child: Text(
+                                  _result!.guidance,
+                                  style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510), height: 1.35),
+                                ),
                               ),
                             ],
                           ),
-                        );
-                      }),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ],
+                        ),
+
+                        if (_result!.questionsForDoctor.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            'QUESTIONS TO ASK YOUR DOCTOR:',
+                            style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w800, color: const Color(0xFF7A6B72), letterSpacing: 0.8),
+                          ),
+                          const SizedBox(height: 6),
+                          ..._result!.questionsForDoctor.map((q) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_circle_outline, size: 14, color: Color(0xFFDD0D22)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(q, style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510))),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFFDD0D22)),
+                                    onPressed: () {
+                                      widget.onAddDoctorQuestion(q);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  _buildPreSearchGuide(),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -2124,17 +2442,169 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
     super.dispose();
   }
 
+  FoodSafetyResult _localFoodSafetyCheck(String query, int week) {
+    final q = query.toLowerCase();
+
+    if (q.contains('papaya') || q.contains('pawpaw')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'caution',
+        badge: 'Unripe: Avoid • Ripe: Safe',
+        colorHex: '#D97706',
+        summary: 'Fully ripe papaya (bright yellow skin, soft flesh) is safe and rich in vitamins. Avoid unripe or semi-ripe green papaya.',
+        reasoning: 'Green/unripe papaya contains concentrated latex and papain enzymes that can induce uterine contractions.',
+        safeAlternative: 'Choose fully ripe yellow papaya or sweet melon. Avoid raw green papaya salads (like Som Tum).',
+        docQuestion: 'Are there any digestive enzyme foods you recommend for mild third-trimester constipation?',
+      );
+    }
+
+    if (q.contains('paracetamol') || q.contains('acetaminophen') || q.contains('tylenol')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'safe',
+        badge: 'Safe & Doctor Approved',
+        colorHex: '#0D9488',
+        summary: 'Paracetamol (acetaminophen) is the first-line doctor-approved pain and fever reliever throughout all stages of pregnancy.',
+        reasoning: 'Extensive clinical data confirm safety when used within therapeutic limits (max 500mg-1000mg per dose, up to 3g daily).',
+        safeAlternative: 'Standard paracetamol 500mg with a tall glass of water. Avoid combo cold medications with pseudoephedrine.',
+        docQuestion: 'What maximum daily paracetamol dose do you advise for my pregnancy week?',
+      );
+    }
+
+    if (q.contains('ibuprofen') || q.contains('advil') || q.contains('motrin') || q.contains('aspirin') || q.contains('nsaid') || q.contains('aleve')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'avoid',
+        badge: 'Strictly Avoid NSAIDs',
+        colorHex: '#DD0D22',
+        summary: 'Ibuprofen and other NSAIDs should be avoided during pregnancy unless specifically prescribed by your obstetrician.',
+        reasoning: 'NSAIDs can cause premature closure of the fetal ductus arteriosus and reduce amniotic fluid (oligohydramnios).',
+        safeAlternative: 'Switch to plain paracetamol (acetaminophen), warm compresses, gentle stretches, or prenatal massage.',
+        docQuestion: 'What safe alternatives can I take if paracetamol does not relieve my headache or back pain?',
+      );
+    }
+
+    if (q.contains('coffee') || q.contains('caffeine') || q.contains('espresso') || q.contains('latte') || q.contains('matcha')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'caution',
+        badge: 'Safe in Moderation (<200mg)',
+        colorHex: '#D97706',
+        summary: 'Moderate caffeine (up to 200 mg per day) is considered safe during pregnancy by ACOG and NHS.',
+        reasoning: '200 mg equals roughly one 12 oz brewed coffee or two cups of black tea. Higher amounts can slow fetal metabolism.',
+        safeAlternative: 'Decaf single-origin coffee, chicory herbal brew, iced rooibos tea, or golden turmeric oat milk.',
+        docQuestion: 'Do you recommend counting chocolate and soda toward my 200mg daily caffeine budget?',
+      );
+    }
+
+    if (q.contains('tea') || q.contains('herbal') || q.contains('chamomile') || q.contains('hibiscus') || q.contains('peppermint') || q.contains('ginger')) {
+      if (q.contains('hibiscus')) {
+        return FoodSafetyResult(
+          query: query,
+          status: 'avoid',
+          badge: 'Avoid Hibiscus Tea',
+          colorHex: '#DD0D22',
+          summary: 'Hibiscus tea should be avoided during pregnancy as it may stimulate uterine blood flow and contractions.',
+          reasoning: 'Contains emmenagogue properties that can trigger uterine cramping.',
+          safeAlternative: 'Warm water with freshly squeezed lemon & honey, or pure organic peppermint leaf tea.',
+          docQuestion: 'Which herbal infusions do you consider safe for hydration during my current trimester?',
+        );
+      }
+      return FoodSafetyResult(
+        query: query,
+        status: 'safe',
+        badge: 'Ginger & Mint Safe',
+        colorHex: '#0D9488',
+        summary: 'Ginger and pure peppermint teas are safe, soothing, and excellent for morning sickness and indigestion.',
+        reasoning: 'Gentle on the stomach and non-stimulating when steeped in moderate amounts.',
+        safeAlternative: 'Fresh sliced ginger root steeped in hot water with a dash of honey and lemon.',
+        docQuestion: 'Can I drink ginger tea daily for persistent nausea?',
+      );
+    }
+
+    if (q.contains('sushi') || q.contains('raw fish') || q.contains('sashimi') || q.contains('oyster') || q.contains('tartare')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'avoid',
+        badge: 'Avoid Raw • Cooked Rolls Safe',
+        colorHex: '#DD0D22',
+        summary: 'Avoid raw seafood due to risks of Listeria, Salmonella, and parasitic infections. Cooked sushi is safe!',
+        reasoning: 'Immune defenses are naturally modulated during pregnancy, making expectant mothers more vulnerable to foodborne pathogens.',
+        safeAlternative: 'California roll, cooked tempura shrimp roll, fully baked salmon roll, or avocado cucumber rolls.',
+        docQuestion: 'Which local restaurants follow pregnancy-safe food prep standards for cooked sushi?',
+      );
+    }
+
+    if (q.contains('cheese') || q.contains('brie') || q.contains('feta') || q.contains('camembert') || q.contains('blue') || q.contains('paneer')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'safe',
+        badge: 'Safe if Pasteurized',
+        colorHex: '#0D9488',
+        summary: 'Soft cheeses made from pasteurized milk are completely safe! Only avoid unpasteurized raw-milk varieties.',
+        reasoning: 'Pasteurization neutralizes Listeria monocytogenes. Most store-bought supermarket cheeses are pasteurized.',
+        safeAlternative: 'Check packaging for "pasteurized milk". Hard cheeses (Cheddar, Parmesan, Swiss) are always safe.',
+        docQuestion: 'What should I do if I accidentally consume unpasteurized artisanal cheese?',
+      );
+    }
+
+    if (q.contains('egg') || q.contains('mayo') || q.contains('mayonnaise')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'safe',
+        badge: 'Safe Cooked • Commercial Mayo Safe',
+        colorHex: '#0D9488',
+        summary: 'Thoroughly cooked eggs are a maternal superfood providing choline and protein. Commercial mayonnaise is pasteurized and safe.',
+        reasoning: 'Eggs must have firm yolks and whites to prevent Salmonella. Store-bought jars of mayonnaise use pasteurized eggs.',
+        safeAlternative: 'Hard-boiled, fully scrambled, or frittata-style eggs. Avoid homemade raw egg dressings or cake batters.',
+        docQuestion: 'How many eggs per week do you recommend to hit optimal prenatal choline levels?',
+      );
+    }
+
+    if (q.contains('alcohol') || q.contains('wine') || q.contains('beer') || q.contains('cocktail') || q.contains('champagne')) {
+      return FoodSafetyResult(
+        query: query,
+        status: 'avoid',
+        badge: 'Strictly Avoid Alcohol',
+        colorHex: '#DD0D22',
+        summary: 'There is no known safe amount or safe trimester for alcohol consumption during pregnancy.',
+        reasoning: 'Alcohol easily crosses the placenta and can impact fetal brain and organ development (FASD).',
+        safeAlternative: 'Chilled sparkling water with crushed blackberries and mint, or high-quality zero-proof botanicals.',
+        docQuestion: 'Can you recommend any maternal mocktail blends that also provide hydration electrolytes?',
+      );
+    }
+
+    return FoodSafetyResult(
+      query: query,
+      status: 'safe',
+      badge: 'Safe With Normal Care',
+      colorHex: '#0D9488',
+      summary: 'Most wholesome foods, thoroughly washed produce, and well-cooked proteins are nourishing and safe.',
+      reasoning: 'Prioritize freshly prepared meals, wash fruits/vegetables thoroughly, and ensure meats and eggs are fully cooked.',
+      safeAlternative: 'Wash thoroughly under running water, cook proteins to 165°F (74°C), and store leftovers chilled below 40°F.',
+      docQuestion: 'Are there specific dietary restrictions unique to my prenatal lab results?',
+    );
+  }
+
   Future<void> _runCheck(String query) async {
     final q = query.trim();
     if (q.isEmpty) return;
     setState(() => _loading = true);
 
-    final res = await ApiPregnancyService.checkFoodSafety(query: q, week: widget.week);
-    if (!mounted) return;
-    setState(() {
-      _loading = false;
-      _result = res.data;
-    });
+    try {
+      final res = await ApiPregnancyService.checkFoodSafety(query: q, week: widget.week);
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _result = res.data ?? _localFoodSafetyCheck(q, widget.week);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _result = _localFoodSafetyCheck(q, widget.week);
+      });
+    }
   }
 
   Color _parseColor(String hex) {
@@ -2146,229 +2616,422 @@ class _FoodSafetySheetState extends State<_FoodSafetySheet> {
     }
   }
 
+  Widget _buildPreSearchGuide() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.auto_awesome, color: Color(0xFFD97706), size: 16),
+            const SizedBox(width: 6),
+            Text(
+              'QUICK SAFETY GUIDE & PREGNANCY ESSENTIALS',
+              style: GoogleFonts.manrope(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFFD97706),
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        _buildPreSearchCard(
+          icon: '🥑',
+          title: 'Pregnancy Superfoods & Essentials',
+          desc: 'Cooked eggs (choline), avocados (healthy fats), pasteurized dairy (calcium), and leafy greens. Always wash raw produce.',
+          badge: 'ALWAYS SAFE',
+          badgeColor: const Color(0xFF0D9488),
+          onTap: () {
+            _controller.text = 'Eggs';
+            _runCheck('Eggs');
+          },
+        ),
+        const SizedBox(height: 8),
+
+        _buildPreSearchCard(
+          icon: '💊',
+          title: 'Headache & Aches Relief',
+          desc: 'Paracetamol (acetaminophen) is doctor-approved for pain/fever. Avoid ibuprofen, aspirin, and other NSAIDs.',
+          badge: 'DOCTOR APPROVED',
+          badgeColor: const Color(0xFF0D9488),
+          onTap: () {
+            _controller.text = 'Paracetamol';
+            _runCheck('Paracetamol');
+          },
+        ),
+        const SizedBox(height: 8),
+
+        _buildPreSearchCard(
+          icon: '☕',
+          title: 'Coffee, Teas & Caffeine Budget',
+          desc: 'Up to 200mg caffeine daily (~1 brewed coffee). Ginger and pure peppermint teas soothe nausea and digestion.',
+          badge: 'MODERATION (<200MG)',
+          badgeColor: const Color(0xFFD97706),
+          onTap: () {
+            _controller.text = 'Coffee';
+            _runCheck('Coffee');
+          },
+        ),
+        const SizedBox(height: 8),
+
+        _buildPreSearchCard(
+          icon: '🍣',
+          title: 'Sushi, Deli Meats & Raw Seafood',
+          desc: 'Avoid raw fish, oysters, and unheated deli meats (Listeria risk). Cooked sushi, California rolls, and baked salmon are safe!',
+          badge: 'COOKED ONLY',
+          badgeColor: const Color(0xFFD97706),
+          onTap: () {
+            _controller.text = 'Sushi';
+            _runCheck('Sushi');
+          },
+        ),
+        const SizedBox(height: 14),
+
+        // Universal Pregnancy Safety Golden Rules
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFECEB),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFDD0D22).withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.shield_outlined, color: Color(0xFFDD0D22), size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Universal Pregnancy Safety Golden Rules',
+                      style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFFDD0D22)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '1. Completely avoid alcohol and tobacco.\n2. Avoid unpasteurized soft cheeses & raw meats.\n3. Wash all fruits & vegetables thoroughly before eating.',
+                      style: GoogleFonts.manrope(fontSize: 11, color: const Color(0xFF221510), height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+      ],
+    );
+  }
+
+  Widget _buildPreSearchCard({
+    required String icon,
+    required String title,
+    required String desc,
+    required String badge,
+    required Color badgeColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAF7F2),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFEFE8E0)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w700, color: const Color(0xFF221510)),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badge,
+                          style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w800, color: badgeColor),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    desc,
+                    style: GoogleFonts.manrope(fontSize: 11, color: const Color(0xFF7A6B72), height: 1.3),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF7A6B72)),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.8,
       maxChildSize: 0.95,
       minChildSize: 0.45,
-      builder: (ctx, scrollCtrl) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-        child: ListView(
-          controller: scrollCtrl,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFE8E0),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+      builder: (ctx, scrollCtrl) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const SizedBox(height: 16),
-
-            Row(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+            child: ListView(
+              controller: scrollCtrl,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.restaurant_outlined, color: Color(0xFFD97706), size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'FOOD & MEDICINE SAFETY',
-                        style: GoogleFonts.manrope(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFFD97706),
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      Text(
-                        'Can I eat or take this?',
-                        style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            TextField(
-              controller: _controller,
-              style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF221510)),
-              decoration: InputDecoration(
-                hintText: 'Search food, drink, or medicine...',
-                hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
-                filled: true,
-                fillColor: const Color(0xFFFAF7F2),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF7A6B72), size: 20),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
-                  onPressed: () => _runCheck(_controller.text),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFDD0D22), width: 1.2),
-                ),
-              ),
-              onSubmitted: _runCheck,
-            ),
-            const SizedBox(height: 10),
-
-            // Quick suggestions
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: _quickSuggestions.map((s) {
-                return InkWell(
-                  onTap: () {
-                    _controller.text = s;
-                    _runCheck(s);
-                  },
-                  borderRadius: BorderRadius.circular(12),
+                Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFAF7F2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFEFE8E0)),
-                    ),
-                    child: Text(
-                      s,
-                      style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF221510)),
+                      color: const Color(0xFFEFE8E0),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
+                ),
+                const SizedBox(height: 16),
 
-            if (_loading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: CircularProgressIndicator(color: Color(0xFFDD0D22)),
-                ),
-              )
-            else if (_result != null) ...[
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFAF7F2),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _parseColor(_result!.colorHex).withValues(alpha: 0.4)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _parseColor(_result!.colorHex).withValues(alpha: 0.15),
+                        color: const Color(0xFFFEF3C7),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(
-                        _result!.badge.toUpperCase(),
-                        style: GoogleFonts.manrope(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: _parseColor(_result!.colorHex),
-                          letterSpacing: 0.8,
-                        ),
-                      ),
+                      child: const Icon(Icons.restaurant_outlined, color: Color(0xFFD97706), size: 20),
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _result!.summary,
-                      style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.w700, color: const Color(0xFF221510), height: 1.35),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _result!.reasoning,
-                      style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF7A6B72), height: 1.4),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFEFE8E0)),
-                      ),
-                      child: Row(
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.check_circle_outline, color: Color(0xFF0D9488), size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'SAFE ALTERNATIVE / TIP',
-                                  style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w800, color: const Color(0xFF7A6B72), letterSpacing: 0.8),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _result!.safeAlternative,
-                                  style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510), height: 1.35),
-                                ),
-                              ],
+                          Text(
+                            'FOOD & MEDICINE SAFETY',
+                            style: GoogleFonts.manrope(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFFD97706),
+                              letterSpacing: 1.2,
                             ),
+                          ),
+                          Text(
+                            'Can I eat or take this?',
+                            style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        const Icon(Icons.help_outline, size: 14, color: Color(0xFFDD0D22)),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _result!.docQuestion,
-                            style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510)),
-                          ),
+                    IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFAF7F2),
+                          shape: BoxShape.circle,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFFDD0D22)),
-                          onPressed: () {
-                            widget.onAddDoctorQuestion(_result!.docQuestion);
-                          },
-                        ),
-                      ],
+                        child: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF221510)),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Close',
                     ),
                   ],
                 ),
-              ),
-            ],
-          ],
+                const SizedBox(height: 14),
+
+                TextField(
+                  controller: _controller,
+                  style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF221510)),
+                  decoration: InputDecoration(
+                    hintText: 'Search food, drink, or medicine...',
+                    hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
+                    filled: true,
+                    fillColor: const Color(0xFFFAF7F2),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF7A6B72), size: 20),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.arrow_forward, color: Color(0xFFDD0D22), size: 18),
+                      onPressed: () => _runCheck(_controller.text),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFEFE8E0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFDD0D22), width: 1.2),
+                    ),
+                  ),
+                  onSubmitted: _runCheck,
+                ),
+                const SizedBox(height: 10),
+
+                // Quick suggestions
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: _quickSuggestions.map((s) {
+                    return InkWell(
+                      onTap: () {
+                        _controller.text = s;
+                        _runCheck(s);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFAF7F2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEFE8E0)),
+                        ),
+                        child: Text(
+                          s,
+                          style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF221510)),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+
+                if (_loading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: CircularProgressIndicator(color: Color(0xFFDD0D22)),
+                    ),
+                  )
+                else if (_result != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF7F2),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _parseColor(_result!.colorHex).withValues(alpha: 0.4)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _parseColor(_result!.colorHex).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _result!.badge.toUpperCase(),
+                            style: GoogleFonts.manrope(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: _parseColor(_result!.colorHex),
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _result!.summary,
+                          style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.w700, color: const Color(0xFF221510), height: 1.35),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _result!.reasoning,
+                          style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF7A6B72), height: 1.4),
+                        ),
+                        const SizedBox(height: 12),
+
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFEFE8E0)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.check_circle_outline, color: Color(0xFF0D9488), size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'SAFE ALTERNATIVE / TIP',
+                                      style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w800, color: const Color(0xFF7A6B72), letterSpacing: 0.8),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _result!.safeAlternative,
+                                      style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510), height: 1.35),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        Row(
+                          children: [
+                            const Icon(Icons.help_outline, size: 14, color: Color(0xFFDD0D22)),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _result!.docQuestion,
+                                style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510)),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFFDD0D22)),
+                              onPressed: () {
+                                widget.onAddDoctorQuestion(_result!.docQuestion);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  _buildPreSearchGuide(),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
