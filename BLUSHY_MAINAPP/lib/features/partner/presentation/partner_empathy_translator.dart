@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../theme/colors.dart';
+import '../companion_guidance.dart';
 
 /// The Empathy Translator.
 ///
@@ -32,22 +33,37 @@ class PartnerEmpathyTranslator extends StatelessWidget {
     this.isRomantic = false,
   });
 
-  _PhaseGuidance? get _guidance {
-    final p = (phase ?? '').toLowerCase();
-    if (p.isEmpty) return null;
-    if (p.contains('menstru') || p.contains('period')) return _menstrual;
-    if (p.contains('follicular') || p.contains('fresh')) return _follicular;
-    if (p.contains('ovulat') || p.contains('mid')) return _ovulation;
-    if (p.contains('luteal') || p.contains('pms') || p.contains('pre')) return _luteal;
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final g = _guidance;
+    final g = guidanceForPhase(phase);
     if (g == null) return const SizedBox.shrink();
 
     final name = partnerName.isNotEmpty ? partnerName : 'She';
+
+    // Phase accent (UI only; the shared guidance module stays presentation-free).
+    Color accent;
+    Color tint;
+    switch (g.phaseKey) {
+      case 'menstrual':
+        accent = const Color(0xFFEF4444);
+        tint = const Color(0xFFFFE4E4);
+        break;
+      case 'follicular':
+        accent = const Color(0xFFF97316);
+        tint = const Color(0xFFFFEDD5);
+        break;
+      case 'ovulation':
+        accent = const Color(0xFFFACC15);
+        tint = const Color(0xFFFEF9C3);
+        break;
+      case 'luteal':
+        accent = const Color(0xFF7C3AED);
+        tint = const Color(0xFFEDE9FE);
+        break;
+      default:
+        accent = BlushyColors.primary;
+        tint = const Color(0xFFFCE7F3);
+    }
 
     return Container(
       width: double.infinity,
@@ -73,10 +89,10 @@ class PartnerEmpathyTranslator extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: g.tint,
+                  color: tint,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.volunteer_activism_rounded, size: 14, color: g.color),
+                child: Icon(Icons.volunteer_activism_rounded, size: 14, color: accent),
               ),
               const SizedBox(width: 8),
               Text(
@@ -192,87 +208,3 @@ class PartnerEmpathyTranslator extends StatelessWidget {
     );
   }
 }
-
-class _PhaseGuidance {
-  final String label;
-  final String summary;
-  final List<String> dos;
-  final List<String> donts;
-  final String? affection;
-  final Color color;
-  final Color tint;
-  const _PhaseGuidance({
-    required this.label,
-    required this.summary,
-    required this.dos,
-    required this.donts,
-    required this.color,
-    required this.tint,
-    this.affection,
-  });
-}
-
-const _menstrual = _PhaseGuidance(
-  label: 'menstrual phase', // i18n-ignore: companion mode is English-first pending a localization pass
-  summary: 'Energy is often at its lowest. Small comforts land far more than big gestures.',
-  dos: [
-    'Offer warmth and rest — a hot water bottle, her favourite food, an easy evening.',
-    'Quietly take something off her plate today.',
-    'Check in gently, then give her space if she wants it.',
-  ],
-  donts: [
-    'Don\'t plan anything high-energy without asking first.',
-    'Don\'t brush off cramps or tiredness as "just your period".',
-  ],
-  affection: 'Physical closeness may be comforting or unwanted right now — follow her lead, no pressure.',
-  color: Color(0xFFEF4444),
-  tint: Color(0xFFFFE4E4),
-);
-
-const _follicular = _PhaseGuidance(
-  label: 'follicular phase', // i18n-ignore: companion mode is English-first pending a localization pass
-  summary: 'Energy and openness are rising — a good stretch for plans and new things.',
-  dos: [
-    'Suggest plans or try something new together — she is more up for it now.',
-    'Match her momentum; be game for spontaneity.',
-  ],
-  donts: [
-    'Don\'t overload the calendar all at once — ramp up gradually.',
-  ],
-  affection: 'A warm, playful time to reconnect and make plans together.',
-  color: Color(0xFFF97316),
-  tint: Color(0xFFFFEDD5),
-);
-
-const _ovulation = _PhaseGuidance(
-  label: 'ovulatory phase', // i18n-ignore: companion mode is English-first pending a localization pass
-  summary: 'Social energy and confidence tend to peak. She may be more direct — that is the phase, not the mood.',
-  dos: [
-    'Great time for shared plans, people, and big conversations.',
-    'Meet her higher energy with your own.',
-  ],
-  donts: [
-    'Don\'t take heightened directness personally.',
-  ],
-  affection: 'Connection often feels easiest now — a good moment for quality time together.',
-  color: Color(0xFFFACC15),
-  tint: Color(0xFFFEF9C3),
-);
-
-const _luteal = _PhaseGuidance(
-  label: 'pre-period (luteal) phase', // i18n-ignore: companion mode is English-first pending a localization pass
-  summary: 'The wind-down before her period. Patience and reassurance matter most here.',
-  dos: [
-    'Lead with patience — handle chores proactively without being asked.',
-    'Validate how she feels before trying to fix anything.',
-    'Keep social plans lighter and give her easy outs.',
-  ],
-  donts: [
-    'Never ask "are you PMSing?" — it dismisses real feelings.',
-    'Don\'t start conflicts over small things.',
-    'Don\'t pack the schedule with high-stimulation plans.',
-  ],
-  affection: 'Offer comfort without pressure; closeness on her terms means more than grand gestures.',
-  color: Color(0xFF7C3AED),
-  tint: Color(0xFFEDE9FE),
-);
