@@ -14,10 +14,16 @@ import '../doctor_summary_screen.dart';
 import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
-import '../../widgets/log_symptoms_section.dart';
-import 'health_library_section.dart';
 import 'postpartum_sections.dart';
 import '../../../../l10n/app_localizations.dart';
+
+extension StringSliceSafe on String {
+  String sliceSafe(int start, [int? end]) {
+    if (start >= length) return '';
+    final actualEnd = end != null ? end.clamp(start, length) : length;
+    return substring(start, actualEnd);
+  }
+}
 
 class PostpartumDashboard extends StatefulWidget {
   final bool isNested;
@@ -83,6 +89,7 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
 
   // ─── AI Transparency State ──────────────────────────────────────────
   bool _showTransparency = false;
+  String _lastCheckedDate = '';
 
   final TextEditingController _docsyInputController = TextEditingController();
 
@@ -132,6 +139,9 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
         _painScore = (chk['painScore'] as num?)?.toInt() ?? 2;
         _bleedingLevel = chk['bleedingLevel']?.toString() ?? 'moderate';
         _sleepHours = (chk['sleepHours'] as num?)?.toDouble() ?? 5.0;
+        _checkinSaved = true;
+      } else {
+        _checkinSaved = false;
       }
     });
   }
@@ -491,6 +501,206 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  // 04: PEACE OF MIND HUB ("Is this normal?" + "Can I take or eat this while nursing?")
+  Widget _buildPeaceOfMindHub() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'PEACE OF MIND',
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: crimsonPrimary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Quick Reassurance & Safety',
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: textMain,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Tool 1: Is this normal?
+              Expanded(
+                child: InkWell(
+                  onTap: () => _openSymptomReassuranceSheet(),
+                  borderRadius: cardRadius,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: cardRadius,
+                      border: Border.all(color: cardBorderColor, width: 1.0),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFCCFBF1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Is this normal?',
+                          style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Check lochia colors, afterpains, night sweats, or recovery shifts.',
+                          style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
+                        ),
+                        const Spacer(),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Text(
+                              'Check symptom',
+                              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF0D9488)),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF0D9488)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Tool 2: Can I take or eat this?
+              Expanded(
+                child: InkWell(
+                  onTap: () => _openLactationSafetySheet(),
+                  borderRadius: cardRadius,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: cardRadius,
+                      border: Border.all(color: cardBorderColor, width: 1.0),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFEBE0),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.medication_liquid_outlined, color: Color(0xFFFF4A00), size: 20),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Can I take or eat this?',
+                          style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Lactation & nursing safety checker for meds, foods, & herbs.',
+                          style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
+                        ),
+                        const Spacer(),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Text(
+                              'Check nursing safety',
+                              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFFF4A00)),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFFFF4A00)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openSymptomReassuranceSheet([String? initialQuery]) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (ctx) => _PostpartumSymptomReassuranceSheet(
+        daysSinceBirth: _overview?.timing.daysSinceBirth ?? 14,
+        initialQuery: initialQuery,
+      ),
+    );
+  }
+
+  void _openLactationSafetySheet([String? initialQuery]) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (ctx) => _PostpartumLactationSafetySheet(
+        daysSinceBirth: _overview?.timing.daysSinceBirth ?? 14,
+        feedingMethod: _overview?.profile['feedingMethod']?.toString() ?? 'breastfeeding',
+        initialQuery: initialQuery,
+      ),
+    );
+  }
+
+  Widget _buildPostpartumHealthLibrary() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        buildSectionTitleWithFilledIcon(
+          icon: Icons.menu_book_rounded,
+          title: 'Postpartum Health Library',
+        ),
+        const SizedBox(height: 14),
+        const PostpartumAdjustingSection(),
+        const SizedBox(height: 18),
+        const PostpartumRaisingBabySection(),
+        const SizedBox(height: 18),
+        const PostpartumRecoveringSection(),
       ],
     );
   }
@@ -2188,6 +2398,18 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
   // ───────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final todayStr = DateTime.now().toIso8601String().sliceSafe(0, 10);
+    if (_lastCheckedDate.isNotEmpty && _lastCheckedDate != todayStr) {
+      _lastCheckedDate = todayStr;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadPostpartumData();
+        }
+      });
+    } else if (_lastCheckedDate.isEmpty) {
+      _lastCheckedDate = todayStr;
+    }
+
     final osState = BlushyOSProvider.of(context);
     final pc = osState.personalContext;
     final shouldInterrupt = _overview?.safetyStatus['shouldInterrupt'] == true;
@@ -2238,46 +2460,44 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                     // 03: TODAY WITH DOCSY (AI Daily Companion Reflection) ⭐
                     _buildTodayWithDocsyCard(),
                     const SizedBox(height: 22),
-                    const LogSymptomsSection(stageKey: 'postpartum'),
-                    const SizedBox(height: 18),
-                    const HealthLibrarySection(stageKey: 'postpartum'),
-                    const SizedBox(height: 20),
-                    const PostpartumAdjustingSection(),
-                    const SizedBox(height: 20),
-                    const PostpartumRaisingBabySection(),
-                    const SizedBox(height: 20),
-                    const PostpartumRecoveringSection(),
-                    const SizedBox(height: 20),
 
-                    // 04: WHAT MATTERS TODAY? (Dynamic Priorities)
+                    // 04: PEACE OF MIND HUB ("Is This Normal?" + "Can I Take / Eat This While Nursing?") ⭐
+                    _buildPeaceOfMindHub(),
+                    const SizedBox(height: 22),
+
+                    // 05: WHAT MATTERS TODAY? (Dynamic Priorities)
                     _buildWhatMattersToday(),
                     const SizedBox(height: 20),
 
-                    // 05: WHAT CHANGED? & WHAT'S BEEN STEADY (Longitudinal Intelligence)
+                    // 06: WHAT CHANGED? & WHAT'S BEEN STEADY (Longitudinal Intelligence)
                     _buildWhatChangedAndSteady(),
                     const SizedBox(height: 20),
 
-                    // 06: WHAT DO I NEED? ("I Need Help" SOS & Tonight Wind-down)
+                    // 07: WHAT DO I NEED? ("I Need Help" SOS & Tonight Wind-down)
                     _buildWhatDoINeed(),
                     const SizedBox(height: 20),
 
-                    // 07: HOW IS BABY? (Supportive Maternal Tracking)
+                    // 08: HOW IS BABY? (Supportive Maternal Tracking)
                     _buildHowIsBaby(),
                     const SizedBox(height: 20),
 
-                    // 08: MY RECOVERY (Recovery Map, Lochia Staging & Daily Timeline)
+                    // 09: MY RECOVERY (Recovery Map, Lochia Staging & Daily Timeline)
                     _buildMyRecoveryMap(),
                     const SizedBox(height: 20),
 
-                    // 09: MY CARE JOURNEY (Doctor Summary & 6-Wk Postnatal Review)
+                    // 10: MY CARE JOURNEY (Doctor Summary & 6-Wk Postnatal Review)
                     _buildMyCareJourney(),
                     const SizedBox(height: 20),
 
-                    // 10: LEARN WHEN RELEVANT ("Can I do this yet?" Evidence Guidance)
+                    // 11: LEARN WHEN RELEVANT ("Can I do this yet?" Evidence Guidance)
                     _buildLearnWhenRelevant(),
                     const SizedBox(height: 20),
 
-                    // 11: 🚨 SOMETHING DOESN'T FEEL RIGHT? (Always Available Clinical Triage)
+                    // 12: CURATED POSTPARTUM HEALTH & ADJUSTING LIBRARY
+                    _buildPostpartumHealthLibrary(),
+                    const SizedBox(height: 20),
+
+                    // 13: 🚨 SOMETHING DOESN'T FEEL RIGHT? (Always Available Clinical Triage)
                     _buildSafetyShieldCard(),
                   ],
                   const SizedBox(height: 40),
@@ -2294,3 +2514,1068 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// PEACE OF MIND: POSTPARTUM SYMPTOM REASSURANCE
+// ─────────────────────────────────────────────────────────────────────
+class PostpartumSymptomReassuranceResult {
+  final String category; // 'normal', 'caution', 'warning'
+  final String badgeLabel;
+  final String colorHex;
+  final String summary;
+  final String reasoning;
+  final String guidance;
+  final String questionForDoctor;
+
+  const PostpartumSymptomReassuranceResult({
+    required this.category,
+    required this.badgeLabel,
+    required this.colorHex,
+    required this.summary,
+    required this.reasoning,
+    required this.guidance,
+    required this.questionForDoctor,
+  });
+}
+
+class _PostpartumSymptomReassuranceSheet extends StatefulWidget {
+  final int daysSinceBirth;
+  final String? initialQuery;
+
+  const _PostpartumSymptomReassuranceSheet({
+    required this.daysSinceBirth,
+    this.initialQuery,
+  });
+
+  @override
+  State<_PostpartumSymptomReassuranceSheet> createState() => _PostpartumSymptomReassuranceSheetState();
+}
+
+class _PostpartumSymptomReassuranceSheetState extends State<_PostpartumSymptomReassuranceSheet> {
+  late final TextEditingController _controller = TextEditingController(text: widget.initialQuery ?? '');
+  PostpartumSymptomReassuranceResult? _result;
+  String? _activeQuery;
+  bool _loading = false;
+
+  final List<String> _quickSuggestions = [
+    'Lochia color changes',
+    'Night sweats & chills',
+    'Afterpains while nursing',
+    'Perineal swelling & stitches',
+    'Baby blues vs PPD',
+    'Breast engorgement',
+    'Hair loss',
+    'Pelvic heaviness',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
+      _runTriage(widget.initialQuery!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _clearSearch() {
+    setState(() {
+      _controller.clear();
+      _result = null;
+      _activeQuery = null;
+      _loading = false;
+    });
+  }
+
+  PostpartumSymptomReassuranceResult _localSymptomTriage(String query, int daysSinceBirth) {
+    final q = query.toLowerCase();
+
+    if (q.contains('lochia') || q.contains('bleed') || q.contains('discharge') || q.contains('blood') || q.contains('pad')) {
+      return const PostpartumSymptomReassuranceResult(
+        category: 'normal',
+        badgeLabel: 'Normal Physiological Recovery',
+        colorHex: '#0D9488',
+        summary: 'Lochia transitions over 6 weeks: dark red (Rubra, days 1-4), pink/brown watery (Serosa, days 5-14), and creamy yellow/white (Alba, weeks 2-6).',
+        reasoning: 'The placental wound site undergoes natural vascular sealing and endometrial remodeling as your uterus involutes.',
+        guidance: 'If bleeding surges back to bright red after turning pink, your body is signaling that you need horizontal rest. If soaking 1+ pad per hour or passing clots larger than a golf ball, seek emergency care.',
+        questionForDoctor: 'Is my current lochia volume and color transition consistent with my healing day?',
+      );
+    }
+
+    if (q.contains('sweat') || q.contains('night sweat') || q.contains('chills') || q.contains('hot flash') || q.contains('sweating')) {
+      return const PostpartumSymptomReassuranceResult(
+        category: 'normal',
+        badgeLabel: 'Normal Fluid Elimination',
+        colorHex: '#0D9488',
+        summary: 'Waking up drenched in sweat is very common during the first 2-3 weeks as your body eliminates massive gestational fluids.',
+        reasoning: 'Abrupt estrogen and progesterone plunges trigger your kidneys and sweat glands to shed the 30-50% blood and tissue volume built up during pregnancy.',
+        guidance: 'Keep a clean towel and change of cotton clothes by your bed. Hydrate generously with electrolyte water. Note: a true temperature >100.4°F is a fever, not a sweat, and needs clinical triage.',
+        questionForDoctor: 'Are there any signs of infection that I should monitor alongside night sweats?',
+      );
+    }
+
+    if (q.contains('afterpain') || q.contains('cramp') || q.contains('cramping') || q.contains('uterine')) {
+      return const PostpartumSymptomReassuranceResult(
+        category: 'normal',
+        badgeLabel: 'Expected Uterine Contractions',
+        colorHex: '#0D9488',
+        summary: 'Afterpains are rhythmic uterine contractions that typically peak during breastfeeding/nursing sessions in the first 3-5 days.',
+        reasoning: 'Baby suckling releases natural oxytocin, which simultaneously triggers milk letdown and clamps down uterine muscle fibers to prevent hemorrhage.',
+        guidance: 'Empty your bladder before nursing, apply a gentle warm compress to your lower abdomen, and take prescribed Ibuprofen 30 minutes prior to feeds.',
+        questionForDoctor: 'Can I take scheduled Ibuprofen 30 minutes before feeding sessions for afterpains?',
+      );
+    }
+
+    if (q.contains('perine') || q.contains('stitch') || q.contains('tear') || q.contains('sore') || q.contains('episiotomy')) {
+      return const PostpartumSymptomReassuranceResult(
+        category: 'normal',
+        badgeLabel: 'Active Tissue Remodeling',
+        colorHex: '#0D9488',
+        summary: 'Perineal soreness and swelling peak during days 2-4 and gradually improve over 2-3 weeks as dissolving stitches heal.',
+        reasoning: 'Pelvic tissues endure significant stretching and micro-trauma during delivery, requiring gravity relief and clean circulation to regenerate.',
+        guidance: 'Use a warm water peri bottle every time you use the bathroom (pat gently, never wipe), apply chilled witch hazel pads, sit on a contoured cushion, and lie horizontally.',
+        questionForDoctor: 'Are my perineal stitches dissolving smoothly without signs of tension or separation?',
+      );
+    }
+
+    if (q.contains('blue') || q.contains('cry') || q.contains('tear') || q.contains('mood') || q.contains('overwhelm') || q.contains('sad')) {
+      return const PostpartumSymptomReassuranceResult(
+        category: 'caution',
+        badgeLabel: 'Hormonal Reset • Monitor Duration',
+        colorHex: '#D97706',
+        summary: 'The "Baby Blues" affect up to 80% of mothers between Days 3 and 10, bringing sudden crying spells, fragility, and emotional swings.',
+        reasoning: 'The most steep hormonal drop in human biology occurs immediately after delivery, compounded by profound sleep deprivation and newborn responsibility.',
+        guidance: 'You are not failing. Sleep is the most potent biological reset—hand off baby for a protected 4-hour sleep window. If sadness, numbness, or panic persists past 2 weeks, request an EPDS screening.',
+        questionForDoctor: 'Can we complete an Edinburgh Postnatal Depression Scale (EPDS) screen at my 2-week check?',
+      );
+    }
+
+    if (q.contains('engorg') || q.contains('hard breast') || q.contains('lump') || q.contains('clog') || q.contains('duct')) {
+      return const PostpartumSymptomReassuranceResult(
+        category: 'caution',
+        badgeLabel: 'Milk Transition • Relieve Pressure',
+        colorHex: '#D97706',
+        summary: 'Breasts often become firm, warm, and tender around Days 3-5 as transitional milk increases significantly in volume.',
+        reasoning: 'Rapid vascular dilation, lymphatic accumulation, and milk synthesis fill breast tissues as mature lactation establishes.',
+        guidance: 'Use reverse pressure softening around your areola before latching, apply cold compresses between feedings to reduce swelling, and nurse on demand. If a hard red wedge appears with chills or fever, contact your doctor for mastitis.',
+        questionForDoctor: 'Could a certified lactation consultant evaluate baby’s latch to ensure full breast drainage?',
+      );
+    }
+
+    if (q.contains('hair') || q.contains('shed') || q.contains('hair loss') || q.contains('telogen')) {
+      return const PostpartumSymptomReassuranceResult(
+        category: 'normal',
+        badgeLabel: 'Telogen Effluvium (Temporary)',
+        colorHex: '#0D9488',
+        summary: 'Postpartum hair shedding is completely normal and temporary, typically starting around months 2-4 postpartum.',
+        reasoning: 'High pregnancy estrogen kept hairs in prolonged growth phase. The postpartum hormonal normalization causes all those hairs to shed simultaneously.',
+        guidance: 'Hair density almost always recovers fully by 9-12 months. Continue prenatal/postnatal vitamins, eat protein and iron-rich foods, and avoid tight hairstyles or heat styling.',
+        questionForDoctor: 'Should we check my ferritin and thyroid levels if hair shedding feels unusually heavy?',
+      );
+    }
+
+    if (q.contains('heav') || q.contains('prolapse') || q.contains('bulge') || q.contains('pressure') || q.contains('pelvic floor')) {
+      return const PostpartumSymptomReassuranceResult(
+        category: 'caution',
+        badgeLabel: 'Pelvic Floor Strain • Rest Horizontally',
+        colorHex: '#D97706',
+        summary: 'A heavy, dragging sensation in your pelvis is common in early postpartum due to stretched pelvic floor muscles and ligament laxity.',
+        reasoning: 'Relaxin hormone remains in your tissues for months, and downward intra-abdominal pressure can cause heaviness before muscles regain tone.',
+        guidance: 'Lie flat horizontally to remove gravity from your pelvis. Avoid prolonged standing, heavy lifting, or straining. Request a pelvic floor physical therapy referral at your 6-week check.',
+        questionForDoctor: 'Can you refer me to a pelvic floor physical therapist for a postpartum evaluation?',
+      );
+    }
+
+    return PostpartumSymptomReassuranceResult(
+      category: 'normal',
+      badgeLabel: 'Postpartum Recovery Shift',
+      colorHex: '#0D9488',
+      summary: 'Your body is navigating an intense 4th trimester transformation. Most physical sensations reflect active tissue and hormonal healing.',
+      reasoning: 'Pelvic, hormonal, and muscular systems require 6 to 12 months for comprehensive physiological restoration.',
+      guidance: 'Listen to your body’s signals for horizontal rest, keep hydration high, and never hesitate to contact your maternity triage line if something feels off.',
+      questionForDoctor: 'Is this symptom expected for my delivery type and recovery stage?',
+    );
+  }
+
+  void _runTriage(String query) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    setState(() {
+      _activeQuery = trimmed;
+      _loading = true;
+      _result = null;
+    });
+
+    final res = _localSymptomTriage(trimmed, widget.daysSinceBirth);
+    setState(() {
+      _result = res;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.88,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (ctx, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5DDD5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 12, 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCCFBF1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Is this normal postpartum?',
+                          style: GoogleFonts.cormorantGaramond(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF221510),
+                          ),
+                        ),
+                        Text(
+                          'Clinical reassurance for physical & emotional shifts',
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            color: const Color(0xFF7A6B72),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Color(0xFF7A6B72)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: Color(0xFFEFE8E0)),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(20),
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF7F2),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFEFE8E0)),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        hintText: 'Search lochia, night sweats, afterpains, stitches...',
+                        hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
+                        prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFDD0D22), size: 20),
+                        suffixIcon: (_controller.text.isNotEmpty || _result != null)
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 18, color: Color(0xFF7A6B72)),
+                                onPressed: _clearSearch,
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                      onSubmitted: _runTriage,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_result == null && !_loading) ...[
+                    Text(
+                      'COMMON RECOVERY SYMPTOMS',
+                      style: GoogleFonts.manrope(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFFDD0D22),
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _quickSuggestions.map((s) => ActionChip(
+                        label: Text(s, style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w600, color: const Color(0xFF221510))),
+                        backgroundColor: const Color(0xFFFAF7F2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: const BorderSide(color: Color(0xFFEFE8E0)),
+                        ),
+                        onPressed: () {
+                          _controller.text = s;
+                          _runTriage(s);
+                        },
+                      )).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9F6F0),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFEFE8E0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.favorite_outline, color: Color(0xFFDD0D22), size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'A Reassuring Note for You',
+                                style: GoogleFonts.cormorantGaramond(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Your body carried life for nearly 10 months and underwent an immense physiological delivery. Giving yourself grace, horizontal rest, and asking questions is the healthiest thing you can do for yourself and your baby.',
+                            style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF7A6B72), height: 1.45),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (_loading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator(color: Color(0xFFDD0D22))),
+                    ),
+                  if (_result != null && !_loading) ...[
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFEFE8E0)),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Color(int.parse(_result!.colorHex.replaceFirst('#', '0xFF'))).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _result!.badgeLabel.toUpperCase(),
+                              style: GoogleFonts.manrope(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Color(int.parse(_result!.colorHex.replaceFirst('#', '0xFF'))),
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _activeQuery ?? 'Recovery Check',
+                            style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _result!.summary,
+                            style: GoogleFonts.manrope(fontSize: 13, height: 1.45, fontWeight: FontWeight.w600, color: const Color(0xFF221510)),
+                          ),
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFAF7F2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.psychology_outlined, size: 16, color: Color(0xFFDD0D22)),
+                                    const SizedBox(width: 6),
+                                    Text('Why This Happens', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF221510))),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(_result!.reasoning, style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF7A6B72), height: 1.4)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFCCFBF1).withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.spa_outlined, size: 16, color: Color(0xFF0D9488)),
+                                    const SizedBox(width: 6),
+                                    Text('Gentle Actions You Can Take', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF0D9488))),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(_result!.guidance, style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510), height: 1.4)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Color(0xFFEFE8E0)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  onPressed: _clearSearch,
+                                  child: Text('← Back to guide', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF7A6B72))),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFDD0D22),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  onPressed: () {
+                                    final q = _activeQuery ?? 'postpartum recovery';
+                                    Navigator.pop(context);
+                                    openDocsyWith(context, 'I want to ask about postpartum symptoms regarding $q: ${_result!.summary}');
+                                  },
+                                  child: Text('💬 Discuss with Docsy →', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// PEACE OF MIND: LACTATION & MEDICATION SAFETY CHECKER
+// ─────────────────────────────────────────────────────────────────────
+class PostpartumLactationSafetyResult {
+  final String query;
+  final String status; // 'safe', 'caution', 'avoid'
+  final String badge;
+  final String colorHex;
+  final String summary;
+  final String reasoning;
+  final String safeAlternative;
+  final String docQuestion;
+
+  const PostpartumLactationSafetyResult({
+    required this.query,
+    required this.status,
+    required this.badge,
+    required this.colorHex,
+    required this.summary,
+    required this.reasoning,
+    required this.safeAlternative,
+    required this.docQuestion,
+  });
+}
+
+class _PostpartumLactationSafetySheet extends StatefulWidget {
+  final int daysSinceBirth;
+  final String feedingMethod;
+  final String? initialQuery;
+
+  const _PostpartumLactationSafetySheet({
+    required this.daysSinceBirth,
+    required this.feedingMethod,
+    this.initialQuery,
+  });
+
+  @override
+  State<_PostpartumLactationSafetySheet> createState() => _PostpartumLactationSafetySheetState();
+}
+
+class _PostpartumLactationSafetySheetState extends State<_PostpartumLactationSafetySheet> {
+  late final TextEditingController _controller = TextEditingController(text: widget.initialQuery ?? '');
+  PostpartumLactationSafetyResult? _result;
+  bool _loading = false;
+
+  final List<String> _quickSuggestions = [
+    'Ibuprofen',
+    'Paracetamol / Tylenol',
+    'Sudafed / Cold meds',
+    'Coffee / Caffeine',
+    'Fenugreek',
+    'Peppermint tea',
+    'Antibiotics (Amoxicillin)',
+    'Wine / Alcohol',
+    'Sushi & Fish',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
+      _runCheck(widget.initialQuery!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _clearSearch() {
+    setState(() {
+      _controller.clear();
+      _result = null;
+      _loading = false;
+    });
+  }
+
+  PostpartumLactationSafetyResult _localLactationCheck(String query) {
+    final q = query.toLowerCase();
+
+    if (q.contains('ibuprofen') || q.contains('advil') || q.contains('motrin') || q.contains('brufen')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Ibuprofen',
+        status: 'safe',
+        badge: 'Safe While Nursing',
+        colorHex: '#0D9488',
+        summary: 'Ibuprofen is the preferred first-line analgesic and anti-inflammatory relief during lactation.',
+        reasoning: 'Extremely low excretion into breast milk (less than 1% of maternal dose). Safe for both perineal and C-section healing.',
+        safeAlternative: 'Take with food or water. Paracetamol is also a compatible alternative.',
+        docQuestion: 'What is the recommended dosing interval for my postpartum recovery pain?',
+      );
+    }
+
+    if (q.contains('paracetamol') || q.contains('acetaminophen') || q.contains('tylenol') || q.contains('crocin') || q.contains('panadol')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Paracetamol / Acetaminophen',
+        status: 'safe',
+        badge: 'Safe While Nursing',
+        colorHex: '#0D9488',
+        summary: 'Paracetamol is safe and fully compatible with breastfeeding at standard therapeutic doses.',
+        reasoning: 'Only minute amounts pass into breast milk, far below therapeutic doses prescribed directly to infants.',
+        safeAlternative: 'Can be alternated with Ibuprofen under medical guidance for multi-modal analgesia.',
+        docQuestion: 'Can I alternate Paracetamol with Ibuprofen for post-delivery discomfort?',
+      );
+    }
+
+    if (q.contains('aspirin') || q.contains('disprin') || q.contains('ecotrin')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Aspirin',
+        status: 'avoid',
+        badge: 'Avoid While Nursing',
+        colorHex: '#DD0D22',
+        summary: 'Standard or high-dose aspirin should be avoided while breastfeeding.',
+        reasoning: 'Salicylates pass into milk and carry theoretical risks of metabolic acidosis and Reye’s syndrome in nursing infants.',
+        safeAlternative: 'Use Ibuprofen or Paracetamol for postpartum aches, fever, or pain instead.',
+        docQuestion: 'Is a safer alternative available for my indication while nursing?',
+      );
+    }
+
+    if (q.contains('sudafed') || q.contains('pseudoephedrine') || q.contains('decongestant') || q.contains('cold')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Sudafed / Pseudoephedrine',
+        status: 'avoid',
+        badge: 'Avoid / Reduces Supply',
+        colorHex: '#DD0D22',
+        summary: 'Avoid oral pseudoephedrine if you wish to protect and maintain your breast milk supply.',
+        reasoning: 'Pseudoephedrine suppresses prolactin release and has been shown to reduce milk supply by up to 24% after even a single dose.',
+        safeAlternative: 'Use saline nasal sprays, facial steam inhalation, honey with lemon, or topical nasal sprays.',
+        docQuestion: 'What non-decongestant cold remedy will not lower my milk supply?',
+      );
+    }
+
+    if (q.contains('fenugreek') || q.contains('methi') || q.contains('milk tea')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Fenugreek',
+        status: 'caution',
+        badge: 'Use Caution / Monitor',
+        colorHex: '#D97706',
+        summary: 'Use caution with Fenugreek supplements. It can cause infant and maternal digestive upset.',
+        reasoning: 'Clinical evidence is mixed; it frequently causes gas, loose stools, and cramps in infants, and can interact with thyroid medications.',
+        safeAlternative: 'Prioritize frequent milk removal (skin-to-skin, demand feeds, power pumping), hydration, oats, and moringa instead.',
+        docQuestion: 'Would an evaluation by an IBCLC help my milk supply before taking herbal supplements?',
+      );
+    }
+
+    if (q.contains('coffee') || q.contains('caffeine') || q.contains('espresso') || q.contains('tea')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Coffee / Caffeine',
+        status: 'caution',
+        badge: 'Moderate (1-2 Cups)',
+        colorHex: '#D97706',
+        summary: 'Moderate caffeine (up to 200–300 mg / about 2 standard cups) is considered safe while nursing.',
+        reasoning: 'Less than 1% of caffeine reaches milk, but young newborns metabolize it slowly. High intake can cause infant fussiness and wakefulness.',
+        safeAlternative: 'Drink your coffee immediately after a nursing session so maternal peak blood levels drop before the next feed.',
+        docQuestion: 'Does my baby show any signs of caffeine sensitivity, especially during the newborn weeks?',
+      );
+    }
+
+    if (q.contains('alcohol') || q.contains('wine') || q.contains('beer') || q.contains('cocktail')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Alcohol / Wine / Beer',
+        status: 'caution',
+        badge: 'Timing Essential',
+        colorHex: '#D97706',
+        summary: 'Alcohol passes into milk at blood levels. Wait at least 2 hours per standard drink before nursing.',
+        reasoning: 'Alcohol impairs the milk letdown reflex and alters infant sleep. Pumping and dumping does not speed elimination—only time clears alcohol.',
+        safeAlternative: 'Nurse immediately before having a single standard drink, or offer previously expressed milk.',
+        docQuestion: 'What is the safest guidance on social alcohol timing for my feeding routine?',
+      );
+    }
+
+    if (q.contains('peppermint') || q.contains('sage') || q.contains('spearmint')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Peppermint & Sage',
+        status: 'caution',
+        badge: 'May Lower Supply',
+        colorHex: '#D97706',
+        summary: 'High culinary or concentrated herbal amounts of peppermint and sage can decrease breast milk production.',
+        reasoning: 'Menthol and thujone compounds can inhibit lactation and are clinically used intentionally when mothers want to wean.',
+        safeAlternative: 'Chamomile, ginger, rooibos, or fruit teas are gentle and supply-friendly.',
+        docQuestion: 'Could my consumption of herbal teas be affecting my daily pumping output?',
+      );
+    }
+
+    if (q.contains('amoxicillin') || q.contains('augmentin') || q.contains('antibiotic') || q.contains('keflex')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Amoxicillin / Postpartum Antibiotics',
+        status: 'safe',
+        badge: 'Safe With Guidance',
+        colorHex: '#0D9488',
+        summary: 'Standard penicillins and cephalosporins are safe and first-line for postpartum infections and mastitis.',
+        reasoning: 'Negligible milk transfer. Very safe for the infant, though baby may occasionally have looser stools or temporary mild diaper rash.',
+        safeAlternative: 'Take prescribed infant probiotics or maternal probiotics if your baby experiences digestive sensitivity.',
+        docQuestion: 'Should I give infant probiotics while completing my prescribed antibiotic course?',
+      );
+    }
+
+    if (q.contains('sushi') || q.contains('fish') || q.contains('salmon') || q.contains('tuna')) {
+      return const PostpartumLactationSafetyResult(
+        query: 'Sushi & Fish While Nursing',
+        status: 'safe',
+        badge: 'Safe (Watch Mercury)',
+        colorHex: '#0D9488',
+        summary: 'Fresh sushi is safe while breastfeeding! Food poisoning bacteria do not pass into breast milk.',
+        reasoning: 'Unlike pregnancy, Listeria does not cross into milk. Simply avoid high-mercury apex predators (swordfish, shark, bigeye tuna). Cooked or raw salmon is rich in DHA which enriches breast milk.',
+        safeAlternative: 'Salmon, shrimp, pollack, and canned light tuna are excellent low-mercury, high-DHA choices.',
+        docQuestion: 'What are the best DHA-rich fish options for enriching breast milk?',
+      );
+    }
+
+    return PostpartumLactationSafetyResult(
+      query: query,
+      status: 'caution',
+      badge: 'Consult Lactation Guidance',
+      colorHex: '#D97706',
+      summary: 'Most medications have safe nursing-friendly alternatives. Check LactMed or ask your pediatrician before taking.',
+      reasoning: 'Infant age, health status, and maternal dosage determine milk transfer and safety.',
+      safeAlternative: 'Paracetamol or Ibuprofen are standard first-line medications compatible with breastfeeding.',
+      docQuestion: 'Is this substance compatible with breastfeeding for my baby?',
+    );
+  }
+
+  Future<void> _runCheck(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    setState(() {
+      _loading = true;
+      _result = null;
+    });
+
+    final local = _localLactationCheck(trimmed);
+    try {
+      final res = await ApiPostpartumService.checkSafety(
+        trimmed,
+        daysSinceBirth: widget.daysSinceBirth,
+        feedingMethod: widget.feedingMethod,
+      );
+      if (!mounted) return;
+      if (res != null && res['data'] != null) {
+        final d = Map<String, dynamic>.from(res['data'] as Map);
+        setState(() {
+          _result = PostpartumLactationSafetyResult(
+            query: d['query']?.toString() ?? trimmed,
+            status: d['status']?.toString() ?? 'caution',
+            badge: d['badge']?.toString() ?? 'Lactation Guidance',
+            colorHex: d['colorHex']?.toString() ?? '#D97706',
+            summary: d['summary']?.toString() ?? '',
+            reasoning: d['reasoning']?.toString() ?? '',
+            safeAlternative: d['safeAlternative']?.toString() ?? '',
+            docQuestion: d['docQuestion']?.toString() ?? '',
+          );
+          _loading = false;
+        });
+        return;
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+    setState(() {
+      _result = local;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.88,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (ctx, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5DDD5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 12, 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBE0),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.medication_liquid_outlined, color: Color(0xFFFF4A00), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Can I take or eat this while nursing?',
+                          style: GoogleFonts.cormorantGaramond(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF221510),
+                          ),
+                        ),
+                        Text(
+                          'Lactation pharmacology & safety guide for mothers',
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            color: const Color(0xFF7A6B72),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Color(0xFF7A6B72)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: Color(0xFFEFE8E0)),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(20),
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF7F2),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFEFE8E0)),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        hintText: 'Check medication, supplement, food, or herb...',
+                        hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: const Color(0xFF7A6B72)),
+                        prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFFF4A00), size: 20),
+                        suffixIcon: (_controller.text.isNotEmpty || _result != null)
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 18, color: Color(0xFF7A6B72)),
+                                onPressed: _clearSearch,
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                      onSubmitted: _runCheck,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_result == null && !_loading) ...[
+                    Text(
+                      'QUICK SAFETY LOOKUPS',
+                      style: GoogleFonts.manrope(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFFDD0D22),
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _quickSuggestions.map((s) => ActionChip(
+                        label: Text(s, style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w600, color: const Color(0xFF221510))),
+                        backgroundColor: const Color(0xFFFAF7F2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: const BorderSide(color: Color(0xFFEFE8E0)),
+                        ),
+                        onPressed: () {
+                          _controller.text = s;
+                          _runCheck(s);
+                        },
+                      )).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9F6F0),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFEFE8E0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.info_outline, color: Color(0xFFFF4A00), size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Core Lactation Principle',
+                                style: GoogleFonts.cormorantGaramond(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Most medications transfer into breast milk in amounts far below therapeutic infant levels (relative infant dose < 10%). However, always take medicines right after nursing, and avoid oral decongestants (Sudafed) that suppress prolactin and milk supply.',
+                            style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFF7A6B72), height: 1.45),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (_loading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator(color: Color(0xFFDD0D22))),
+                    ),
+                  if (_result != null && !_loading) ...[
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFEFE8E0)),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Color(int.parse(_result!.colorHex.replaceFirst('#', '0xFF'))).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _result!.badge.toUpperCase(),
+                              style: GoogleFonts.manrope(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Color(int.parse(_result!.colorHex.replaceFirst('#', '0xFF'))),
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _result!.query,
+                            style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF221510)),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _result!.summary,
+                            style: GoogleFonts.manrope(fontSize: 13, height: 1.45, fontWeight: FontWeight.w600, color: const Color(0xFF221510)),
+                          ),
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFAF7F2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.science_outlined, size: 16, color: Color(0xFFFF4A00)),
+                                    const SizedBox(width: 6),
+                                    Text('Clinical Reasoning & Milk Transfer', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF221510))),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(_result!.reasoning, style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF7A6B72), height: 1.4)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFCCFBF1).withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF0D9488)),
+                                    const SizedBox(width: 6),
+                                    Text('Safe Alternative or Timing Guidance', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF0D9488))),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(_result!.safeAlternative, style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510), height: 1.4)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFAF7F2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.help_outline, size: 16, color: Color(0xFF7209B7)),
+                                    const SizedBox(width: 6),
+                                    Text('Question for Pediatrician / IBCLC', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF7209B7))),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(_result!.docQuestion, style: GoogleFonts.manrope(fontSize: 11.5, color: const Color(0xFF221510), height: 1.4)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Color(0xFFEFE8E0)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  onPressed: _clearSearch,
+                                  child: Text('← Back to guide', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF7A6B72))),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFDD0D22),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  onPressed: () {
+                                    final q = _result!.query;
+                                    Navigator.pop(context);
+                                    openDocsyWith(context, 'I have questions about breastfeeding/lactation safety for $q: ${_result!.summary}. Can you advise?');
+                                  },
+                                  child: Text('💬 Discuss with Docsy →', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

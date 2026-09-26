@@ -8,7 +8,7 @@ import { PostpartumSafetyService } from '../services/postpartumSafetyService.js'
 
 export async function getPostpartumOverview(req, res, next) {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || 'preview_user';
     const overview = await PostpartumService.getOverview(userId);
     return res.json({ ok: true, data: overview });
   } catch (err) {
@@ -18,9 +18,21 @@ export async function getPostpartumOverview(req, res, next) {
 
 export async function getPostpartumTodayBrief(req, res, next) {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || 'preview_user';
     const brief = await PostpartumService.getTodayBrief(userId);
     return res.json({ ok: true, data: brief });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export async function checkPostpartumSafety(req, res, next) {
+  try {
+    const query = req.body?.query || req.body?.item || req.query.query || req.query.item || '';
+    const daysSinceBirth = parseInt(req.body?.daysSinceBirth || req.query.daysSinceBirth || 14, 10);
+    const feedingMethod = req.body?.feedingMethod || req.query.feedingMethod || 'breastfeeding';
+    const data = await PostpartumService.checkLactationSafety({ query, daysSinceBirth, feedingMethod });
+    return res.json({ ok: true, state: 'ready', data });
   } catch (err) {
     return next(err);
   }

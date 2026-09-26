@@ -28,6 +28,7 @@ export class DocsyPostpartumService {
       const physicalComfort = todayCheckin?.physicalComfort ?? null;
       const energy = todayCheckin?.energy ?? null;
       const needRightNow = todayCheckin?.needRightNow ?? null;
+      const todayFeels = todayCheckin?.todayFeels ?? null;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
