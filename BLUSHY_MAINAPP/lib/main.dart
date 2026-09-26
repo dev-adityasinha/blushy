@@ -154,6 +154,20 @@ class BlushyApp extends StatelessWidget {
           // consistent, then the roles the palette actually names are pinned
           // to it rather than left to the generated approximations.
           colorScheme: blushyColorScheme,
+          // Smooth, consistent page transitions on every navigated route
+          // across every platform. FadeUpwards is a gentle fade + slight
+          // upward slide -- purely visual, adds no gestures or behaviour, so
+          // it can't affect existing screen logic.
+          pageTransitionsTheme: const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+              TargetPlatform.iOS: FadeUpwardsPageTransitionsBuilder(),
+              TargetPlatform.macOS: FadeUpwardsPageTransitionsBuilder(),
+              TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+              TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+              TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
+            },
+          ),
           // Belt and braces over the scheme above: these three read their
           // background from surface roles, and pinning them means a future
           // change to those roles cannot quietly repaint every dialog. The
