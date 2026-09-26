@@ -265,23 +265,6 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 12),
-          // Orientation Badges Row (Clean, subtle status pills - no calibrate button in greeting)
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (isCalibrated) ...[
-                _buildStatusPill('Day $days', const Color(0xFF2563EB), const Color(0xFFDBEAFE)),
-                _buildStatusPill(phaseName, const Color(0xFF0D9488), const Color(0xFFCCFBF1)),
-                _buildStatusPill(deliveryType, const Color(0xFF7209B7), const Color(0xFFF3E8FF)),
-              ] else ...[
-                _buildStatusPill('4th Trimester', const Color(0xFF2563EB), const Color(0xFFDBEAFE)),
-                _buildStatusPill('Early Recovery', const Color(0xFF0D9488), const Color(0xFFCCFBF1)),
-                _buildStatusPill('Gentle Healing', const Color(0xFF7209B7), const Color(0xFFF3E8FF)),
-              ],
-            ],
-          ),
         ],
       ),
     );
@@ -299,20 +282,26 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
+    EdgeInsetsGeometry? padding,
+    String? tooltip,
   }) {
-    return InkWell(
+    final bool isSingleEmoji = label.runes.length == 1 || (label.length <= 2 && !label.contains(' '));
+    final pill = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: padding ??
+            (isSingleEmoji
+                ? const EdgeInsets.symmetric(horizontal: 12, vertical: 6)
+                : const EdgeInsets.symmetric(horizontal: 14, vertical: 6)),
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                   ),
@@ -320,17 +309,27 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
               : null,
         ),
         child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontSize: 11.5,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? crimsonPrimary : textMuted,
+          child: Opacity(
+            opacity: isSelected ? 1.0 : (isSingleEmoji ? 0.6 : 1.0),
+            child: Text(
+              label,
+              style: isSingleEmoji
+                  ? const TextStyle(fontSize: 16)
+                  : GoogleFonts.manrope(
+                      fontSize: 11.5,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? crimsonPrimary : textMuted,
+                    ),
             ),
           ),
         ),
       ),
     );
+
+    if (tooltip != null) {
+      return Tooltip(message: tooltip, child: pill);
+    }
+    return pill;
   }
 
   // ───────────────────────────────────────────────────────────────────
@@ -350,29 +349,34 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'TODAY\'S ESSENTIALS',
-                    style: GoogleFonts.manrope(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      color: crimsonPrimary,
-                      letterSpacing: 1.1,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TODAY\'S ESSENTIALS',
+                      style: GoogleFonts.manrope(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: crimsonPrimary,
+                        letterSpacing: 1.1,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _essentialsTab == 0 ? 'How Are You Healing?' : 'Baby Feeding & Diapers',
-                    style: GoogleFonts.cormorantGaramond(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: textMain,
+                    const SizedBox(height: 2),
+                    Text(
+                      _essentialsTab == 0 ? 'How Are You Healing?' : 'Baby Feeding & Diapers',
+                      style: GoogleFonts.cormorantGaramond(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: textMain,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
@@ -383,12 +387,15 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildTabPill(
-                      label: '👩 Mom',
+                      label: '👩',
+                      tooltip: 'Mom',
                       isSelected: _essentialsTab == 0,
                       onTap: () => setState(() => _essentialsTab = 0),
                     ),
+                    const SizedBox(width: 2),
                     _buildTabPill(
-                      label: '👶 Baby',
+                      label: '👶',
+                      tooltip: 'Baby',
                       isSelected: _essentialsTab == 1,
                       onTap: () => setState(() => _essentialsTab = 1),
                     ),
