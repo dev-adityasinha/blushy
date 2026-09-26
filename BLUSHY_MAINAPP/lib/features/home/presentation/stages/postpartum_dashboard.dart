@@ -91,6 +91,10 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
   bool _showTransparency = false;
   String _lastCheckedDate = '';
 
+  // ─── Merged Hub Tab State ─────────────────────────────────────────
+  int _essentialsTab = 0; // 0 = Mom's Check-in, 1 = Baby Care & Nursing
+  int _roadmapTab = 0;    // 0 = Lochia & Stages, 1 = Can I Do This Yet?, 2 = 6-Wk Doctor Prep
+
   final TextEditingController _docsyInputController = TextEditingController();
 
   @override
@@ -298,8 +302,273 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
     );
   }
 
-  // 02: TODAY WITH DOCSY ⭐ (Dynamic Real-Time AI Intelligence)
-  Widget _buildTodayWithDocsyCard() {
+  Widget _buildTabPill({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 11.5,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? crimsonPrimary : textMuted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // HUB 1: TODAY'S ESSENTIALS (Mom & Baby Unified Care Hub) ⭐
+  // ───────────────────────────────────────────────────────────────────
+  Widget _buildDailyEssentialsHub() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: cardRadius,
+        border: Border.all(color: cardBorderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'TODAY\'S ESSENTIALS',
+                    style: GoogleFonts.manrope(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: crimsonPrimary,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _essentialsTab == 0 ? 'How Are You Healing?' : 'Baby Feeding & Diapers',
+                    style: GoogleFonts.cormorantGaramond(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: textMain,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3EEE9),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTabPill(
+                      label: '👩 Mom',
+                      isSelected: _essentialsTab == 0,
+                      onTap: () => setState(() => _essentialsTab = 0),
+                    ),
+                    _buildTabPill(
+                      label: '👶 Baby',
+                      isSelected: _essentialsTab == 1,
+                      onTap: () => setState(() => _essentialsTab = 1),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _essentialsTab == 0 ? _buildMomCheckinView() : _buildBabyCareView(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMomCheckinView() {
+    if (_checkinSaved) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFCCFBF1).withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF99F6E4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.check_circle, color: Color(0xFF0D9488), size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Today\'s recovery check-in recorded',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F766E),
+                  ),
+                ),
+                const Spacer(),
+                InkWell(
+                  onTap: () => setState(() => _checkinSaved = false),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Text(
+                      'Edit ✎',
+                      style: GoogleFonts.manrope(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: crimsonPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _buildStatusPill('Mood: ${_mood ?? "Okay"}', const Color(0xFFD97706), const Color(0xFFFEF3C7)),
+                _buildStatusPill('Lochia: $_bleedingLevel', crimsonPrimary, const Color(0xFFFFECEB)),
+                _buildStatusPill('Pain: $_painScore/10', const Color(0xFF7209B7), const Color(0xFFF3E8FF)),
+                _buildStatusPill('Sleep: ${_sleepHours.toStringAsFixed(1)} hrs', const Color(0xFF2563EB), const Color(0xFFDBEAFE)),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    return _buildHowAreYouCheckIn();
+  }
+
+  Widget _buildBabyCareView() {
+    final babyEvents = _overview?.todayBabyEvents ?? [];
+    final wetCount = babyEvents.where((e) => e['type'] == 'diaper' && e['details']?['kind'] == 'wet').length;
+    final dirtyCount = babyEvents.where((e) => e['type'] == 'diaper' && e['details']?['kind'] == 'dirty').length;
+    final feedCount = babyEvents.where((e) => e['type'] == 'feed').length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('ACTIVE NURSING STOPWATCH', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 1.0)),
+            if (_activeNursingSide != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: const Color(0xFFFFECEB), borderRadius: BorderRadius.circular(8)),
+                child: Text(_formatTimerSeconds(_nursingSeconds), style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: crimsonPrimary)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(child: _buildSideStopwatchButton('Left')),
+            const SizedBox(width: 10),
+            Expanded(child: _buildSideStopwatchButton('Right')),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Text('DIAPER LOGGING & 24H TRACKING', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 1.0)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuickIncrementCard('Wet Diaper', '💧', () async {
+                await ApiPostpartumService.recordBabyEvent(type: 'diaper', details: {'kind': 'wet'});
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).ppLoggedWetDiaper), duration: const Duration(seconds: 1)));
+                _loadPostpartumData();
+              }),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildQuickIncrementCard('Soiled Diaper', '💩', () async {
+                await ApiPostpartumService.recordBabyEvent(type: 'diaper', details: {'kind': 'dirty'});
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).ppLoggedSoiledDiaper), duration: const Duration(seconds: 1)));
+                _loadPostpartumData();
+              }),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAF7F2),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: cardBorderColor),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildEventCounterPill('$feedCount Feeds', crimsonPrimary, const Color(0xFFFFECEB)),
+              _buildEventCounterPill('$wetCount Wet', const Color(0xFF2563EB), const Color(0xFFDBEAFE)),
+              _buildEventCounterPill('$dirtyCount Soiled', const Color(0xFFD97706), const Color(0xFFFEF3C7)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSideStopwatchButton(String side) {
+    final isActive = _activeNursingSide == side;
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isActive ? crimsonPrimary : Colors.white,
+        foregroundColor: isActive ? Colors.white : textMain,
+        elevation: 0,
+        side: BorderSide(color: isActive ? crimsonPrimary : cardBorderColor),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      ),
+      onPressed: () => _toggleNursingTimer(side),
+      icon: Icon(Icons.timer_outlined, size: 16, color: isActive ? Colors.white : crimsonPrimary),
+      label: Text(
+        isActive ? 'Pause $side' : '$side Breast',
+        style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // HUB 2: AI COMPANION & PEACE OF MIND (Docsy Intelligence & Reassurance) ⭐
+  // ───────────────────────────────────────────────────────────────────
+  Widget _buildDocsyAndPeaceOfMindHub() {
     final brief = _todayBrief;
     final greeting = brief?.openingGreeting ?? 'Good morning. Your body has been through an extraordinary transformation.';
     final recovery = brief?.recoveryPoint ?? 'Rest and horizontal healing take priority today.';
@@ -312,8 +581,11 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
       'Can I exercise yet?',
     ];
 
+    final priorities = _overview?.priorities ?? [];
+    final topPriority = priorities.isNotEmpty ? priorities.first : null;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: cardRadius,
@@ -332,14 +604,14 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
           Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 decoration: const BoxDecoration(
                   color: Color(0xFFFFECEB),
                   shape: BoxShape.circle,
                 ),
                 child: const Center(
-                  child: Icon(Icons.auto_awesome, color: crimsonPrimary, size: 24),
+                  child: Icon(Icons.auto_awesome, color: crimsonPrimary, size: 22),
                 ),
               ),
               const SizedBox(width: 12),
@@ -347,7 +619,8 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(AppLocalizations.of(context).ppTodayWithDocsy,
+                    Text(
+                      'AI COMPANION & REASSURANCE',
                       style: GoogleFonts.manrope(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
@@ -355,9 +628,10 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                         letterSpacing: 1.1,
                       ),
                     ),
-                    Text(AppLocalizations.of(context).ppYour4thTrimesterCompanion,
+                    Text(
+                      'Today with Docsy',
                       style: GoogleFonts.cormorantGaramond(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: textMain,
                       ),
@@ -376,17 +650,17 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(
             greeting,
             style: GoogleFonts.manrope(
-              fontSize: 13.5,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: textMain,
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           // AI Transparency Expandable
           if (_showTransparency && brief?.transparency != null) ...[
             Container(
@@ -416,20 +690,135 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
           ],
           _buildBriefRow(Icons.spa_outlined, const Color(0xFF0D9488), 'Your Recovery', recovery),
           const SizedBox(height: 8),
           _buildBriefRow(Icons.child_care, const Color(0xFFF72585), 'Your Baby', baby),
           const SizedBox(height: 8),
           _buildBriefRow(Icons.visibility_outlined, const Color(0xFF2563EB), 'Something to Notice', notice),
-          const SizedBox(height: 16),
-          // Quick Ask Input
+
+          // Embedded Clinical Priority Banner (Merged from "What Matters Today")
+          const SizedBox(height: 14),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFFAF7F2),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCCFBF1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.star_rounded, color: Color(0xFF0D9488), size: 16),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        topPriority != null ? 'TODAY\'S PRIORITY: ${topPriority.headline}' : 'TODAY\'S PRIORITY: Rest & Hydration',
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F766E),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        topPriority != null ? topPriority.reason : 'Lying flat removes gravity pressure from pelvic floor. Keep water (2.5L+) and protein high.',
+                        style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.35),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Side-by-Side Peace of Mind Reassurance Cards
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => _openSymptomReassuranceSheet(),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCCFBF1).withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF99F6E4)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Is this normal?',
+                          style: GoogleFonts.cormorantGaramond(fontSize: 16, fontWeight: FontWeight.bold, color: textMain),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Lochia, cramps, sweats',
+                          style: GoogleFonts.manrope(fontSize: 10.5, color: textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: InkWell(
+                  onTap: () => _openLactationSafetySheet(),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBE0).withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFFCCBC)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.medication_liquid_outlined, color: Color(0xFFFF4A00), size: 20),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Can I take/eat this?',
+                          style: GoogleFonts.cormorantGaramond(fontSize: 16, fontWeight: FontWeight.bold, color: textMain),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Meds & nursing safety',
+                          style: GoogleFonts.manrope(fontSize: 10.5, color: textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Quick Ask Input
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF7F2),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: cardBorderColor),
             ),
             child: Row(
@@ -438,8 +827,8 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                   child: TextField(
                     controller: _docsyInputController,
                     decoration: InputDecoration(
-                      hintText: 'Ask Docsy about your recovery or baby...',
-                      hintStyle: GoogleFonts.manrope(fontSize: 12.5, color: textMuted),
+                      hintText: 'Ask Docsy about recovery or baby...',
+                      hintStyle: GoogleFonts.manrope(fontSize: 12, color: textMuted),
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -453,7 +842,7 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.arrow_forward_rounded, color: crimsonPrimary, size: 20),
+                  icon: const Icon(Icons.arrow_forward_rounded, color: crimsonPrimary, size: 18),
                   onPressed: () {
                     final text = _docsyInputController.text.trim();
                     if (text.isNotEmpty) {
@@ -465,16 +854,17 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           // Dynamic Prompt Pills
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: pills.map((p) => ActionChip(
-              label: Text(p, style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w600, color: textMain)),
+              label: Text(p, style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: textMain)),
               backgroundColor: const Color(0xFFFAF7F2),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 side: const BorderSide(color: Color(0xFFE5DDD5)),
               ),
               onPressed: () => openDocsyWith(context, p),
@@ -499,157 +889,6 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                 TextSpan(text: body, style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4)),
               ],
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 04: PEACE OF MIND HUB ("Is this normal?" + "Can I take or eat this while nursing?")
-  Widget _buildPeaceOfMindHub() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'PEACE OF MIND',
-                style: GoogleFonts.manrope(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  color: crimsonPrimary,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Quick Reassurance & Safety',
-                style: GoogleFonts.cormorantGaramond(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: textMain,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Tool 1: Is this normal?
-              Expanded(
-                child: InkWell(
-                  onTap: () => _openSymptomReassuranceSheet(),
-                  borderRadius: cardRadius,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: cardRadius,
-                      border: Border.all(color: cardBorderColor, width: 1.0),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFCCFBF1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.health_and_safety_outlined, color: Color(0xFF0D9488), size: 20),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Is this normal?',
-                          style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Check lochia colors, afterpains, night sweats, or recovery shifts.',
-                          style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
-                        ),
-                        const Spacer(),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Text(
-                              'Check symptom',
-                              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF0D9488)),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF0D9488)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Tool 2: Can I take or eat this?
-              Expanded(
-                child: InkWell(
-                  onTap: () => _openLactationSafetySheet(),
-                  borderRadius: cardRadius,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: cardRadius,
-                      border: Border.all(color: cardBorderColor, width: 1.0),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x06221510), blurRadius: 10, offset: Offset(0, 4)),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFEBE0),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.medication_liquid_outlined, color: Color(0xFFFF4A00), size: 20),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Can I take or eat this?',
-                          style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Lactation & nursing safety checker for meds, foods, & herbs.',
-                          style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.3),
-                        ),
-                        const Spacer(),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Text(
-                              'Check nursing safety',
-                              style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFFF4A00)),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFFFF4A00)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ],
@@ -1086,134 +1325,15 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
     });
   }
 
-  // 04: WHAT MATTERS TODAY? (Dynamic Priorities Layer)
-  Widget _buildWhatMattersToday() {
-    final priorities = _overview?.priorities ?? [];
-    final effectivePriorities = priorities.isNotEmpty ? priorities : [
-      PostpartumPriority(
-        id: 'p_rest',
-        category: 'Horizontal Rest',
-        icon: 'bed',
-        headline: 'Prioritize Horizontal Healing',
-        reason: 'Lying flat removes gravity pressure from pelvic floor and stitches. Take 15-minute horizontal breathers.',
-        actionTag: 'Ask Docsy about rest pacing',
-      ),
-      PostpartumPriority(
-        id: 'p_tissue',
-        category: 'Tissue Healing',
-        icon: 'spa',
-        headline: 'Tissue Recovery & Hydration',
-        reason: 'Hydrate generously (2.5L+) and keep protein intake high to support tissue synthesis and lactation.',
-        actionTag: 'Explore hydration & meals',
-      ),
-    ];
-
-    Color getPriorityColor(String id) {
-      if (id.contains('rest')) return const Color(0xFF0D9488); // Emerald Teal
-      if (id.contains('hydration') || id.contains('fluid')) return const Color(0xFF2563EB); // Cobalt Blue
-      if (id.contains('blues') || id.contains('mood')) return const Color(0xFFD97706); // Warm Amber
-      if (id.contains('tissue') || id.contains('incision')) return const Color(0xFF7209B7); // Royal Purple
-      if (id.contains('feeding') || id.contains('nursing')) return const Color(0xFFF72585); // Vivid Magenta
-      return crimsonPrimary;
-    }
-
-    Color getPriorityBg(String id) {
-      if (id.contains('rest')) return const Color(0xFFCCFBF1);
-      if (id.contains('hydration') || id.contains('fluid')) return const Color(0xFFDBEAFE);
-      if (id.contains('blues') || id.contains('mood')) return const Color(0xFFFEF3C7);
-      if (id.contains('tissue') || id.contains('incision')) return const Color(0xFFF3E8FF);
-      if (id.contains('feeding') || id.contains('nursing')) return const Color(0xFFFFE5F0);
-      return const Color(0xFFFFECEB);
-    }
-
-    IconData getPriorityIcon(String id) {
-      if (id.contains('rest')) return Icons.bedtime_outlined;
-      if (id.contains('hydration') || id.contains('fluid')) return Icons.water_drop_outlined;
-      if (id.contains('blues') || id.contains('mood')) return Icons.self_improvement;
-      if (id.contains('tissue') || id.contains('incision')) return Icons.spa_outlined;
-      if (id.contains('feeding') || id.contains('nursing')) return Icons.child_care_outlined;
-      return Icons.favorite_border;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(AppLocalizations.of(context).ppTodayIDPrioritize, style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 1.1)),
-        ),
-        const SizedBox(height: 10),
-        ...effectivePriorities.map((p) => Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: cardBorderColor),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: getPriorityBg(p.id),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Icon(
-                    getPriorityIcon(p.id),
-                    color: getPriorityColor(p.id),
-                    size: 24,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(child: Text(p.headline, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: textMain))),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(color: const Color(0xFFF5EFEB), borderRadius: BorderRadius.circular(6)),
-                          child: Text(p.category, style: GoogleFonts.manrope(fontSize: 9.5, fontWeight: FontWeight.w700, color: textMuted)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(p.reason, style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4)),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: () => openDocsyWith(context, 'Tell me more about why I should prioritize ${p.category} today.'),
-                      child: Text(
-                        '${p.actionTag} →',
-                        style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.bold, color: crimsonPrimary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        )),
-      ],
-    );
-  }
-
-  // 05: WHAT CHANGED? & WHAT'S BEEN STEADY
-  Widget _buildWhatChangedAndSteady() {
-    final deltas = _overview?.deltas;
-    final baseline = _overview?.baselineMaturity;
-    final changes = deltas?.changes ?? [];
-    final steady = deltas?.steady ?? [];
+  // ───────────────────────────────────────────────────────────────────
+  // HUB 3: RECOVERY & CARE ROADMAP (Stages, "Can I?", & Doctor Prep) ⭐
+  // ───────────────────────────────────────────────────────────────────
+  Widget _buildRecoveryAndCareRoadmapHub() {
+    final timing = _overview?.timing;
+    final day = timing?.daysSinceBirth ?? 0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: cardRadius,
@@ -1225,162 +1345,144 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('WHAT CHANGED & WHAT\'S STEADY', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 1.1)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(8)),
-                child: Text(baseline?['label']?.toString() ?? 'Building Baseline', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32))),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'RECOVERY & CARE ROADMAP',
+                    style: GoogleFonts.manrope(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: crimsonPrimary,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _roadmapTab == 0
+                        ? 'Stages & Lochia Progression'
+                        : (_roadmapTab == 1 ? 'Activity & "Can I?" Guidance' : 'Doctor & Baseline Prep'),
+                    style: GoogleFonts.cormorantGaramond(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: textMain,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          if (changes.isNotEmpty) ...[
-            Text(AppLocalizations.of(context).ppNoticedShifts, style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: textMain)),
-            const SizedBox(height: 6),
-            ...changes.map((c) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF7ED),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFED7AA)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.change_circle_outlined, color: Color(0xFFD97706), size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(c['detail']?.toString() ?? '', style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w600, color: textMain)),
-                        const SizedBox(height: 2),
-                        Text(c['context']?.toString() ?? '', style: GoogleFonts.manrope(fontSize: 10.5, color: textMuted)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            )),
-          ],
-          if (steady.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(AppLocalizations.of(context).ppWhatSBeenSteady, style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: textMain)),
-            const SizedBox(height: 6),
-            ...steady.map((s) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.check_circle_outline, color: Color(0xFF0D9488), size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(s, style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted))),
-                ],
-              ),
-            )),
-          ],
-          if (changes.isEmpty && steady.isEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF7F2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cardBorderColor),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.timeline_outlined, color: Color(0xFF0D9488), size: 22),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(AppLocalizations.of(context).ppObservingInitialBaseline,
-                          style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: textMain),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'You are in the initial recovery window. As you log check-ins, Docsy will surface your physical shifts alongside stabilizing factors here.',
-                          style: GoogleFonts.manrope(fontSize: 11, color: textMuted, height: 1.4),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           const SizedBox(height: 14),
-          InkWell(
-            onTap: _openSomethingChangedAfterDialog,
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF7F2),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: cardBorderColor),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.insights, size: 18, color: crimsonPrimary),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Log a pattern: "Something changed after..."',
-                      style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: crimsonPrimary),
-                    ),
+          // 3-Way Tab Selector
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3EEE9),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildTabPill(
+                    label: '🩸 Stages',
+                    isSelected: _roadmapTab == 0,
+                    onTap: () => setState(() => _roadmapTab = 0),
                   ),
-                  const Icon(Icons.arrow_forward_ios, size: 12, color: crimsonPrimary),
-                ],
-              ),
+                ),
+                Expanded(
+                  child: _buildTabPill(
+                    label: '💡 Can I?',
+                    isSelected: _roadmapTab == 1,
+                    onTap: () => setState(() => _roadmapTab = 1),
+                  ),
+                ),
+                Expanded(
+                  child: _buildTabPill(
+                    label: '🩺 Doctor Prep',
+                    isSelected: _roadmapTab == 2,
+                    onTap: () => setState(() => _roadmapTab = 2),
+                  ),
+                ),
+              ],
             ),
           ),
+          const SizedBox(height: 16),
+          if (_roadmapTab == 0) _buildRoadmapStagesView(day),
+          if (_roadmapTab == 1) _buildRoadmapCanIView(),
+          if (_roadmapTab == 2) _buildRoadmapDoctorPrepView(),
         ],
       ),
     );
   }
 
-  // 06: WHAT DO I NEED? ("I Need Help" SOS & Low-Energy Mode)
-  Widget _buildWhatDoINeed() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('WHAT DO YOU NEED TODAY?', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 1.1)),
-              const Icon(Icons.handshake_outlined, color: crimsonPrimary, size: 20),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // I Need Help SOS Button
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: crimsonPrimary, width: 1.2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              minimumSize: const Size(double.infinity, 48),
-            ),
-            icon: const Icon(Icons.send_rounded, color: crimsonPrimary, size: 18),
-            label: Text('I NEED HELP TODAY (Generate Request)', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 13, color: crimsonPrimary)),
-            onPressed: _openHelpSosDialog,
-          ),
-          const SizedBox(height: 12),
-          // Give me a break toggle
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+  Widget _buildRoadmapStagesView(int day) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Visual Map Steps
+        Row(
+          children: [
+            _buildRecoveryStep('First Days\n(D1-7)', day <= 7),
+            _buildRecoveryDivider(day > 7),
+            _buildRecoveryStep('Early Healing\n(D8-42)', day > 7 && day <= 42),
+            _buildRecoveryDivider(day > 42),
+            _buildRecoveryStep('6-Wk Review\n(Day 42)', day == 42),
+            _buildRecoveryDivider(day > 42),
+            _buildRecoveryStep('Extended\n(M2-12)', day > 42),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Lochia stages explanation (Interactive modal trigger)
+        InkWell(
+          onTap: () => _openLochiaGuideModal(context, day),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFFAF7F2),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.water_drop_outlined, color: crimsonPrimary, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            day <= 4
+                                ? 'Stage: Lochia Rubra (Dark Red)'
+                                : (day <= 14 ? 'Stage: Lochia Serosa (Pink/Brown)' : 'Stage: Lochia Alba (Yellow/White)'),
+                            style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: textMain),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.arrow_forward_ios, size: 12, color: crimsonPrimary),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text('Tap to view color timeline, volume expectations, and red flags.', style: GoogleFonts.manrope(fontSize: 11, color: textMuted)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text('RECENT LOGGED TRENDS', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 1.0)),
+        const SizedBox(height: 8),
+        if ((_overview?.recentCheckins ?? []).isNotEmpty) ...[
+          ...(_overview!.recentCheckins).take(3).map((c) => Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF7F2),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: cardBorderColor),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1388,8 +1490,269 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(AppLocalizations.of(context).ppIMDoneForToday, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: textMain)),
-                    Text('Pause tracking, charts, and recommendations', style: GoogleFonts.manrope(fontSize: 10.5, color: textMuted)),
+                    Text(c['date']?.toString() ?? 'Recent Day', style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.bold, color: textMain)),
+                    const SizedBox(height: 2),
+                    Text('Bleeding: ${c['bleedingLevel'] ?? 'Moderate'} • Pain: ${c['painScore'] ?? 2}/10', style: GoogleFonts.manrope(fontSize: 10.5, color: textMuted)),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(6)),
+                  child: Text(c['mood']?.toString() ?? 'Okay', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32))),
+                ),
+              ],
+            ),
+          )),
+        ] else ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF7F2),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Text(
+              'Complete your daily check-in in Hub 1 above to track lochia, pain score, and emotional energy progression.',
+              style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRoadmapCanIView() {
+    final guides = _overview?.canIDoThisYet ?? [
+      {
+        'activity': 'drive',
+        'timeline': 'Typically 2-3 weeks (vaginal) or 3-4 weeks (C-section)',
+        'recommendation': 'Wait until you can slam on brakes without pain and are no longer taking prescription narcotics.',
+      },
+      {
+        'activity': 'take a bath',
+        'timeline': 'Typically 4-6 weeks postpartum',
+        'recommendation': 'Wait until bleeding has subsided and perineal tear or C-section incision has fully closed to prevent uterine infection.',
+      },
+      {
+        'activity': 'gentle exercise',
+        'timeline': 'Gentle walking now; core and lifting after 6-week review',
+        'recommendation': 'Gentle stroller walks and diaphragmatic breathing are safe anytime. Avoid high-impact or heavy abdominal exercises early on.',
+      },
+      {
+        'activity': 'resume intimacy',
+        'timeline': 'Typically after 6-week postnatal checkup',
+        'recommendation': 'Wait until lochia has ceased, tissues have healed, and your OB/midwife gives medical clearance. Ovulation can happen before your first period!',
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'EVIDENCE-BASED ACTIVITY MILESTONES',
+          style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 1.0),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: guides.map((g) => ActionChip(
+            avatar: const Icon(Icons.check_circle_outline, size: 16, color: crimsonPrimary),
+            label: Text('Can I ${g['activity']}?', style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w600)),
+            backgroundColor: const Color(0xFFFAF7F2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: cardBorderColor)),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text('Can I ${g['activity']}?', style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold)),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(AppLocalizations.of(context).ppTimelineGuideline, style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.bold, color: crimsonPrimary)),
+                      const SizedBox(height: 4),
+                      Text(g['timeline']?.toString() ?? '', style: GoogleFonts.manrope(fontSize: 12.5, color: textMain)),
+                      const SizedBox(height: 12),
+                      Text(AppLocalizations.of(context).ppRecommendation, style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.bold, color: crimsonPrimary)),
+                      const SizedBox(height: 4),
+                      Text(g['recommendation']?.toString() ?? '', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        openDocsyWith(context, 'Tell me more about when I can ${g['activity']} based on my recovery.');
+                      },
+                      child: Text(AppLocalizations.of(context).ppAskDocsyMore, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: crimsonPrimary)),
+                    ),
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context).ppClose)),
+                  ],
+                ),
+              );
+            },
+          )).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoadmapDoctorPrepView() {
+    final deltas = _overview?.deltas;
+    final changes = deltas?.changes ?? [];
+    final steady = deltas?.steady ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('6-WEEK POSTNATAL REVIEW PREP', style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain)),
+        const SizedBox(height: 4),
+        Text('Blushy synthesizes your logged pain, lochia duration, sleep, and emotional recovery into a concise clinical briefing for your doctor or midwife.', style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted, height: 1.4)),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: crimsonPrimary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DoctorSummaryScreen())),
+            icon: const Icon(Icons.summarize_outlined, size: 18),
+            label: Text(AppLocalizations.of(context).ppBuildDoctorSummary, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 12.5)),
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (changes.isNotEmpty || steady.isNotEmpty) ...[
+          Text('LONGITUDINAL RECOVERY PATTERNS', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 1.0)),
+          const SizedBox(height: 6),
+          ...changes.map((c) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.change_circle_outlined, color: Color(0xFFD97706), size: 16),
+                const SizedBox(width: 8),
+                Expanded(child: Text('${c['detail']} — ${c['context']}', style: GoogleFonts.manrope(fontSize: 11, color: textMain))),
+              ],
+            ),
+          )),
+          ...steady.map((s) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.check_circle_outline, color: Color(0xFF0D9488), size: 16),
+                const SizedBox(width: 8),
+                Expanded(child: Text(s, style: GoogleFonts.manrope(fontSize: 11, color: textMuted))),
+              ],
+            ),
+          )),
+        ],
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _openSomethingChangedAfterDialog,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF7F2),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: cardBorderColor),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.insights, size: 16, color: crimsonPrimary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Log a pattern: "Something changed after..."',
+                    style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.bold, color: crimsonPrimary),
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios, size: 12, color: crimsonPrimary),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // HUB 4: SUPPORT CIRCLE, REST & SAFETY (SOS, Rest Mode & Red Flags) ⭐
+  // ───────────────────────────────────────────────────────────────────
+  Widget _buildSupportAndRestHub() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: cardRadius,
+        border: Border.all(color: cardBorderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SUPPORT CIRCLE & REST PACING',
+                    style: GoogleFonts.manrope(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: crimsonPrimary,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Rest, SOS & Safety Shield',
+                    style: GoogleFonts.cormorantGaramond(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: textMain,
+                    ),
+                  ),
+                ],
+              ),
+              const Icon(Icons.handshake_outlined, color: crimsonPrimary, size: 22),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // 1-Tap SOS Button
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: crimsonPrimary, width: 1.2),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              minimumSize: const Size(double.infinity, 44),
+            ),
+            icon: const Icon(Icons.send_rounded, color: crimsonPrimary, size: 16),
+            label: Text('I NEED HELP TODAY (Generate Partner Request)', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 12, color: crimsonPrimary)),
+            onPressed: _openHelpSosDialog,
+          ),
+          const SizedBox(height: 12),
+          // Low-energy mode switch
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF7F2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(AppLocalizations.of(context).ppIMDoneForToday, style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.bold, color: textMain)),
+                    Text('Pause tracking, charts, and recommendations', style: GoogleFonts.manrope(fontSize: 10, color: textMuted)),
                   ],
                 ),
                 Switch(
@@ -1403,14 +1766,45 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          // Evening "Tonight" checklist
+          const SizedBox(height: 14),
+          // Tonight checklist
           Text(AppLocalizations.of(context).ppTonightWindDown, style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: textMain)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           _buildChecklistItem('t1', 'Drink a large glass of water & electrolyte'),
           _buildChecklistItem('t2', 'Take prescribed vitamins / medications'),
           _buildChecklistItem('t3', 'Set up overnight feeding & diaper station'),
           _buildChecklistItem('t4', 'Hand off 1 overnight wake-up to your support circle'),
+
+          const SizedBox(height: 16),
+          // Clinical Safety Shield Banner (Integrated)
+          InkWell(
+            onTap: _openSafetyTriageDialog,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFECEB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFCDD2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: crimsonPrimary, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('SOMETHING DOESN\'T FEEL RIGHT?', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 0.8)),
+                        Text('Tap for immediate clinical triage (bleeding, headache, fever, pain).', style: GoogleFonts.manrope(fontSize: 10.5, color: textMain)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, color: crimsonPrimary, size: 14),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1441,128 +1835,6 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
     );
   }
 
-  // 07: HOW IS BABY? (Supportive Maternal Feeding & Sleep)
-  Widget _buildHowIsBaby() {
-    final babyEvents = _overview?.todayBabyEvents ?? [];
-    final wetCount = babyEvents.where((e) => e['type'] == 'diaper' && e['details']?['kind'] == 'wet').length;
-    final dirtyCount = babyEvents.where((e) => e['type'] == 'diaper' && e['details']?['kind'] == 'dirty').length;
-    final feedCount = babyEvents.where((e) => e['type'] == 'feed').length;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('BABY & YOU (NEWBORN RHYTHMS)', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 1.1)),
-              const Icon(Icons.child_care_outlined, color: Color(0xFFF72585), size: 22),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // Live Activity Summary Counters
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              _buildEventCounterPill('💧 $wetCount Wet', const Color(0xFF2563EB), const Color(0xFFDBEAFE)),
-              _buildEventCounterPill('💩 $dirtyCount Soiled', const Color(0xFF92400E), const Color(0xFFFEF3C7)),
-              _buildEventCounterPill('🍼 $feedCount Feeds', const Color(0xFF0D9488), const Color(0xFFCCFBF1)),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // Live Nursing Stopwatch
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF7F2),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: cardBorderColor),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(AppLocalizations.of(context).ppActiveNursingStopwatch, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: textMain)),
-                    if (_activeNursingSide != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: const Color(0xFFFFECEB), borderRadius: BorderRadius.circular(8)),
-                        child: Text(_formatTimerSeconds(_nursingSeconds), style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: crimsonPrimary)),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _activeNursingSide == 'Left' ? crimsonPrimary : Colors.white,
-                          foregroundColor: _activeNursingSide == 'Left' ? Colors.white : textMain,
-                          elevation: 0,
-                          side: const BorderSide(color: cardBorderColor),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: () => _toggleNursingTimer('Left'),
-                        icon: Icon(Icons.timer_outlined, size: 16, color: _activeNursingSide == 'Left' ? Colors.white : crimsonPrimary),
-                        label: Text(_activeNursingSide == 'Left' ? 'Pause Left' : 'Left Breast', style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _activeNursingSide == 'Right' ? crimsonPrimary : Colors.white,
-                          foregroundColor: _activeNursingSide == 'Right' ? Colors.white : textMain,
-                          elevation: 0,
-                          side: const BorderSide(color: cardBorderColor),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: () => _toggleNursingTimer('Right'),
-                        icon: Icon(Icons.timer_outlined, size: 16, color: _activeNursingSide == 'Right' ? Colors.white : crimsonPrimary),
-                        label: Text(_activeNursingSide == 'Right' ? 'Pause Right' : 'Right Breast', style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Diaper Count & Quick Log
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickIncrementCard('Wet Diaper', '💧', () async {
-                  await ApiPostpartumService.recordBabyEvent(type: 'diaper', details: {'kind': 'wet'});
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).ppLoggedWetDiaper), duration: const Duration(seconds: 1)));
-                  _loadPostpartumData();
-                }),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildQuickIncrementCard('Soiled Diaper', '💩', () async {
-                  await ApiPostpartumService.recordBabyEvent(type: 'diaper', details: {'kind': 'dirty'});
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).ppLoggedSoiledDiaper), duration: const Duration(seconds: 1)));
-                  _loadPostpartumData();
-                }),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildEventCounterPill(String label, Color color, Color bg) {
     return Container(
@@ -1597,129 +1869,7 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
     );
   }
 
-  // 08: MY RECOVERY (Recovery Map & Lochia Staging)
-  Widget _buildMyRecoveryMap() {
-    final timing = _overview?.timing;
-    final day = timing?.daysSinceBirth ?? 0;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('WHERE AM I IN RECOVERY?', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 1.1)),
-              const Icon(Icons.map_outlined, color: Color(0xFF0D9488), size: 20),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // Visual Map Steps
-          Row(
-            children: [
-              _buildRecoveryStep('First Days\n(D1-7)', day <= 7),
-              _buildRecoveryDivider(day > 7),
-              _buildRecoveryStep('Early Healing\n(D8-42)', day > 7 && day <= 42),
-              _buildRecoveryDivider(day > 42),
-              _buildRecoveryStep('6-Wk Review\n(Day 42)', day == 42),
-              _buildRecoveryDivider(day > 42),
-              _buildRecoveryStep('Extended\n(M2-12)', day > 42),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Lochia stages explanation (Interactive!)
-          InkWell(
-            onTap: () => _openLochiaGuideModal(context, day),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF7F2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cardBorderColor),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.water_drop_outlined, color: crimsonPrimary, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              day <= 4 ? 'Stage: Lochia Rubra (Dark Red)' : (day <= 14 ? 'Stage: Lochia Serosa (Pink/Brown)' : 'Stage: Lochia Alba (Yellow/White)'),
-                              style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: textMain),
-                            ),
-                            const Spacer(),
-                            const Icon(Icons.arrow_forward_ios, size: 12, color: crimsonPrimary),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text('Tap to view color timeline, volume expectations, and red flags.', style: GoogleFonts.manrope(fontSize: 11, color: textMuted)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(AppLocalizations.of(context).ppDailyRecoveryProgression, style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 1.0)),
-          const SizedBox(height: 8),
-          if ((_overview?.recentCheckins ?? []).isNotEmpty) ...[
-            ...(_overview!.recentCheckins).take(4).map((c) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF7F2),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: cardBorderColor),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(c['date']?.toString() ?? 'Recent Day', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: textMain)),
-                      const SizedBox(height: 2),
-                      Text('Bleeding: ${c['bleedingLevel'] ?? 'Moderate'} • Pain: ${c['painScore'] ?? 2}/10', style: GoogleFonts.manrope(fontSize: 11, color: textMuted)),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(6)),
-                    child: Text(c['mood']?.toString() ?? 'Okay', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32))),
-                  ),
-                ],
-              ),
-            )),
-          ] else ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFAF7F2),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: cardBorderColor),
-              ),
-              child: Text(
-                'Complete your daily check-in above to track your lochia, pain score, and emotional energy progression day by day.',
-                style: GoogleFonts.manrope(fontSize: 11.5, color: textMuted),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 
   Widget _buildRecoveryStep(String title, bool isActive) {
     return Expanded(
@@ -1749,148 +1899,6 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
     );
   }
 
-  // 09: MY CARE JOURNEY (Appointment Intelligence & Support Circle)
-  Widget _buildMyCareJourney() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('APPOINTMENT & CARE INTELLIGENCE', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 1.1)),
-              const Icon(Icons.assignment_ind_outlined, color: crimsonPrimary, size: 20),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text('Prepare for your 6-Week Postnatal Review', style: GoogleFonts.cormorantGaramond(fontSize: 18, fontWeight: FontWeight.bold, color: textMain)),
-          const SizedBox(height: 4),
-          Text('Blushy synthesizes your logged pain, bleeding duration, and emotional history into a structured clinical summary for your OB/GYN or midwife.', style: GoogleFonts.manrope(fontSize: 12, color: textMuted, height: 1.4)),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: crimsonPrimary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DoctorSummaryScreen())),
-              icon: const Icon(Icons.summarize_outlined, size: 18),
-              label: Text(AppLocalizations.of(context).ppBuildDoctorSummary, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 13)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 10: LEARN WHEN RELEVANT ("Can I Do This Yet?" + Micro-Reads)
-  Widget _buildLearnWhenRelevant() {
-    final guides = _overview?.canIDoThisYet ?? [];
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: cardRadius,
-        border: Border.all(color: cardBorderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('CAN I DO THIS YET? (EVIDENCE GUIDANCE)', style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 1.1)),
-              const Icon(Icons.help_outline, color: Color(0xFF7209B7), size: 20),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: guides.map((g) => ActionChip(
-              avatar: const Icon(Icons.check_circle_outline, size: 16, color: crimsonPrimary),
-              label: Text('Can I ${g['activity']}?', style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w600)),
-              backgroundColor: const Color(0xFFFAF7F2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: cardBorderColor)),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: Text('Can I ${g['activity']}?', style: GoogleFonts.cormorantGaramond(fontSize: 22, fontWeight: FontWeight.bold)),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(AppLocalizations.of(context).ppTimelineGuideline, style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.bold, color: crimsonPrimary)),
-                        const SizedBox(height: 4),
-                        Text(g['timeline']?.toString() ?? '', style: GoogleFonts.manrope(fontSize: 12.5, color: textMain)),
-                        const SizedBox(height: 12),
-                        Text(AppLocalizations.of(context).ppRecommendation, style: GoogleFonts.manrope(fontSize: 10.5, fontWeight: FontWeight.bold, color: crimsonPrimary)),
-                        const SizedBox(height: 4),
-                        Text(g['recommendation']?.toString() ?? '', style: GoogleFonts.manrope(fontSize: 12, color: textMuted)),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          openDocsyWith(context, 'Tell me more about when I can ${g['activity']} based on my recovery.');
-                        },
-                        child: Text(AppLocalizations.of(context).ppAskDocsyMore, style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: crimsonPrimary)),
-                      ),
-                      TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context).ppClose)),
-                    ],
-                  ),
-                );
-              },
-            )).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 11: 🚨 PERMANENT SAFETY INTERRUPT / ACTION ("Something Feels Wrong")
-  Widget _buildSafetyShieldCard() {
-    return InkWell(
-      onTap: _openSafetyTriageDialog,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFECEB),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFFFCDD2)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: crimsonPrimary, size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('SOMETHING DOESN\'T FEEL RIGHT?', style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.w800, color: crimsonPrimary, letterSpacing: 0.8)),
-                  Text('Tap for immediate clinical triage (bleeding, headache, fever, pain).', style: GoogleFonts.manrope(fontSize: 11, color: textMain)),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: crimsonPrimary, size: 14),
-          ],
-        ),
-      ),
-    );
-  }
 
   // LOW-ENERGY REST VIEW ("Give Me a Break" Mode)
   Widget _buildLowEnergyRestView() {
@@ -2453,52 +2461,24 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                   if (_isLowEnergyMode) ...[
                     _buildLowEnergyRestView(),
                   ] else ...[
-                    // 02: HOW ARE YOU TODAY? (Hero Maternal Check-in) ⭐
-                    _buildHowAreYouCheckIn(),
-                    const SizedBox(height: 20),
+                    // 01: TODAY'S ESSENTIALS (Mom & Baby Unified Care Hub) ⭐
+                    _buildDailyEssentialsHub(),
+                    const SizedBox(height: 18),
 
-                    // 03: TODAY WITH DOCSY (AI Daily Companion Reflection) ⭐
-                    _buildTodayWithDocsyCard(),
-                    const SizedBox(height: 22),
+                    // 02: AI COMPANION & PEACE OF MIND (Docsy Intelligence & Reassurance) ⭐
+                    _buildDocsyAndPeaceOfMindHub(),
+                    const SizedBox(height: 18),
 
-                    // 04: PEACE OF MIND HUB ("Is This Normal?" + "Can I Take / Eat This While Nursing?") ⭐
-                    _buildPeaceOfMindHub(),
-                    const SizedBox(height: 22),
+                    // 03: RECOVERY & CARE ROADMAP (Stages, "Can I?", & Doctor Prep) ⭐
+                    _buildRecoveryAndCareRoadmapHub(),
+                    const SizedBox(height: 18),
 
-                    // 05: WHAT MATTERS TODAY? (Dynamic Priorities)
-                    _buildWhatMattersToday(),
-                    const SizedBox(height: 20),
+                    // 04: SUPPORT CIRCLE, REST & SAFETY (SOS, Rest Mode & Red Flags) ⭐
+                    _buildSupportAndRestHub(),
+                    const SizedBox(height: 18),
 
-                    // 06: WHAT CHANGED? & WHAT'S BEEN STEADY (Longitudinal Intelligence)
-                    _buildWhatChangedAndSteady(),
-                    const SizedBox(height: 20),
-
-                    // 07: WHAT DO I NEED? ("I Need Help" SOS & Tonight Wind-down)
-                    _buildWhatDoINeed(),
-                    const SizedBox(height: 20),
-
-                    // 08: HOW IS BABY? (Supportive Maternal Tracking)
-                    _buildHowIsBaby(),
-                    const SizedBox(height: 20),
-
-                    // 09: MY RECOVERY (Recovery Map, Lochia Staging & Daily Timeline)
-                    _buildMyRecoveryMap(),
-                    const SizedBox(height: 20),
-
-                    // 10: MY CARE JOURNEY (Doctor Summary & 6-Wk Postnatal Review)
-                    _buildMyCareJourney(),
-                    const SizedBox(height: 20),
-
-                    // 11: LEARN WHEN RELEVANT ("Can I do this yet?" Evidence Guidance)
-                    _buildLearnWhenRelevant(),
-                    const SizedBox(height: 20),
-
-                    // 12: CURATED POSTPARTUM HEALTH & ADJUSTING LIBRARY
+                    // 05: CURATED POSTPARTUM HEALTH & ADJUSTING LIBRARY
                     _buildPostpartumHealthLibrary(),
-                    const SizedBox(height: 20),
-
-                    // 13: 🚨 SOMETHING DOESN'T FEEL RIGHT? (Always Available Clinical Triage)
-                    _buildSafetyShieldCard(),
                   ],
                   const SizedBox(height: 40),
                 ],
