@@ -1829,6 +1829,14 @@ async function claimInviteTokenHash({ claimerUserId, tokenHash }) {
     return { error: 'USER_NOT_FOUND' };
   }
 
+  // Hard block: a companion is a support role. Someone who uses Blushy to track
+  // themselves (role 'woman') stays in their own tracker and can never open a
+  // companion view, so claiming a companion link would create an inert
+  // connection. Refuse instead. (Symmetric with the email-invite block.)
+  if (claimerUser.role === 'woman') {
+    return { error: 'CLAIMER_IS_SELF_TRACKER' };
+  }
+
   const updateResult = await db.collection('partner_invitations').updateOne(
     {
       invitation_id: invitationDoc.invitation_id,

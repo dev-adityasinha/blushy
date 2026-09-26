@@ -193,6 +193,12 @@ export async function claimPartnerInviteCode(req, res, next) {
       if (result.error === 'ALREADY_CONNECTED') {
         throw createHttpError(409, 'You are already connected with this partner.');
       }
+      if (result.error === 'CLAIMER_IS_SELF_TRACKER') {
+        throw createHttpError(
+          409,
+          'You already use Blushy for yourself, so you cannot join as a companion. Companions support someone else from a separate account.',
+        );
+      }
       throw createHttpError(400, 'Invalid or expired invitation code.');
     }
 
@@ -300,6 +306,17 @@ export async function invitePartner(req, res, next) {
       return;
     }
 
+    // Hard block: a companion is a support role. If the invitee already uses
+    // Blushy to track themselves (role 'woman'), a companion connection is inert
+    // for them -- they stay in their own tracker and can never open a companion
+    // view -- so refuse rather than create a dead connection.
+    if (receiver.role === 'woman') {
+      throw createHttpError(
+        409,
+        'This person already uses Blushy for themselves, so they cannot be added as a companion. Companions are people who join to support you.',
+      );
+    }
+
     const alreadyConnected = await partnerRepository.hasConnectionBetween(sender.user_id, receiver.userId);
     if (alreadyConnected) {
       throw createHttpError(409, 'You are already connected with this account.');
@@ -344,25 +361,12 @@ export async function invitePartner(req, res, next) {
       });
     }
 
-    // Guardrail: a companion is a support role. If the invitee already uses
-    // Blushy to track themselves (role 'woman'), they will stay in their own
-    // tracker and cannot open a companion view of this account, so the
-    // connection would be inert. Surface that clearly rather than silently
-    // creating a dead connection. (The invite still stands in case they also
-    // keep a companion account.)
-    const inviteeIsSelfTracker = receiver.role === 'woman';
-
     res.status(201).json({
-      message: inviteeIsSelfTracker
-        ? 'Heads up: this person already uses Blushy for themselves, so they may '
-          + 'not see a companion view of your account. A companion is best added '
-          + 'by someone who is here to support you.'
-        : (emailed
-            ? 'Invitation sent successfully.'
-            : 'Invitation created. We could not email them, but it is waiting in their app.'),
+      message: emailed
+        ? 'Invitation sent successfully.'
+        : 'Invitation created. We could not email them, but it is waiting in their app.',
       emailed,
       invitation,
-      selfTrackingInvitee: inviteeIsSelfTracker,
     });
   } catch (error) {
     next(error);
