@@ -131,6 +131,14 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
     ws.connect();
     _wsSubscription = ws.events.listen((event) {
       if (!mounted) return;
+      // She pinged her circle for support (Pad Squad / Pain Radar). Surface it
+      // to the companion right away with a prominent banner.
+      if (event.event == 'partner.alert') {
+        final title = (event.rawPayload['title'] ?? 'Care alert').toString();
+        final body = (event.rawPayload['body'] ?? '').toString();
+        if (body.isNotEmpty) _showCircleAlertBanner(title, body);
+        return;
+      }
       const worthRefetching = {
         'permissions-updated',
         'invitation-accepted',
@@ -142,6 +150,46 @@ class _PartnerHomeScreenState extends State<PartnerHomeScreen>
         refreshQuietly();
       }
     });
+  }
+
+  /// Shows an incoming "she needs support" alert to the companion.
+  void _showCircleAlertBanner(String title, String body) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 6),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.white,
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: BlushyColors.border),
+          ),
+          content: Row(
+            children: [
+              Container(
+                width: 34, height: 34,
+                decoration: const BoxDecoration(color: Color(0xFFFCE7F3), shape: BoxShape.circle),
+                child: const Icon(Icons.campaign_rounded, size: 18, color: BlushyColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: BlushyColors.text)),
+                    Text(body, style: const TextStyle(fontSize: 13, color: BlushyColors.text)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
   }
 
   @override

@@ -7,6 +7,7 @@ import {
   getSharingState,
   updateRelationshipType,
   sendCompanionNudge,
+  broadcastWomanAlert,
   PERMISSION_MATRIX_VERSION,
   requestPermission,
   respondToPermissionRequest,
@@ -182,6 +183,42 @@ export const postCompanionNudge = contractHandler(async (req, res) => {
   }
 
   return sendData(res, { sent: true }, { state: RESPONSE_STATES.READY, source: SOURCES.MANUAL });
+});
+
+export const postWomanAlert = contractHandler(async (req, res) => {
+  const userId = resolveUserId(req);
+  if (!userId) return sendError(res, 401, ERROR_CODES.UNAUTHENTICATED, 'Authentication required.');
+
+  const alertId = (req.body?.alertType ?? req.body?.alertId ?? '').toString();
+
+  const rateOk = await partnerRepository.checkDistributedRateLimit({
+    key: `woman_alert_${userId}`,
+    limit: 12,
+    windowSeconds: 3600,
+  });
+  if (!rateOk) {
+    return sendError(res, 429, ERROR_CODES.VALIDATION_FAILED, 'Too many alerts for now. Please try again later.');
+  }
+
+  const result = await broadcastWomanAlert(userId, alertId);
+  if (!result.ok) {
+    return sendError(res, 400, ERROR_CODES.VALIDATION_FAILED, result.message ?? 'Could not send that alert.');
+  }
+
+  // Live delivery to each companion who is online.
+  if (result.recipients.length > 0) {
+    try {
+      publishToUsers(result.recipients, 'partner.alert', {
+        title: result.title,
+        body: result.body,
+        alertId,
+      });
+    } catch (_) {
+      // Notifications already scheduled; a missed socket is not fatal.
+    }
+  }
+
+  return sendData(res, { sent: result.sent }, { state: RESPONSE_STATES.READY, source: SOURCES.MANUAL });
 });
 
 export const getPermissionHistory = contractHandler(async (req, res) => {

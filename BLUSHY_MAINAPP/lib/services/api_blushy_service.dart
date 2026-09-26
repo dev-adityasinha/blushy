@@ -629,6 +629,16 @@ class PartnerApi {
     );
   }
 
+  /// "Pad Squad" / "Pain Radar": the woman broadcasts a support alert to all her
+  /// active companions. The wording is chosen server-side from a catalogue.
+  static Future<ApiResult<Map<String, dynamic>>> sendCircleAlert(String alertId) {
+    return ApiContractClient.post(
+      '/partner/alerts',
+      body: {'alertType': alertId},
+      parse: ApiParse.map,
+    );
+  }
+
   /// A partner asks to be shown something that is currently off.
   ///
   /// Asking shares nothing. The person whose data it is stays the only one who

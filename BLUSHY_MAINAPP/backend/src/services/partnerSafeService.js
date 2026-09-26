@@ -20,6 +20,7 @@ import {
   capabilitiesForType,
 } from '../domain/partnerRelationshipTypes.js';
 import { resolveNudge, nudgesForCategory } from '../domain/partnerNudges.js';
+import { resolveWomanAlert, renderAlertMessage } from '../domain/partnerAlerts.js';
 import { calculatePregnancyState, getMilestones } from '../domain/pregnancy.js';
 import { calculatePostpartumState, getRecoveryMilestones } from '../domain/postpartum.js';
 import { getLifeStageState } from '../repositories/lifeStageRepository.js';
@@ -661,6 +662,60 @@ export async function sendCompanionNudge(connectionId, actorUserId, nudgeId) {
     recipientUserId: auth.subjectUserId,
     senderName,
     nudge: { id: nudge.id, message: nudge.message },
+  };
+}
+
+/**
+ * "Pad Squad" / "Pain Radar": the woman broadcasts a support alert to every
+ * active companion she owns the connection with. The reverse of a nudge. Carries
+ * no health data (just "she could use help"), so no per-permission gate — like
+ * care requests. Only the data owner can send (a companion's own connections
+ * fail the owner check, so they can't broadcast).
+ */
+export async function broadcastWomanAlert(actorUserId, alertId) {
+  const alert = resolveWomanAlert(alertId);
+  if (!alert) return { ok: false, errorCode: 'VALIDATION_FAILED', message: 'Unknown alert.' };
+
+  const uid = cleanUserId(actorUserId);
+  const rows = await db.collection(CONNECTIONS)
+    .find({ $or: [{ user_a_id: uid }, { user_b_id: uid }] })
+    .toArray();
+
+  const sender = await userRepository.getUserById(uid);
+  const senderName = sender?.onboardingAnswers?.preferred_name ?? sender?.displayName ?? 'Someone';
+  const body = renderAlertMessage(alert, senderName);
+
+  const targets = [];
+  for (const row of rows) {
+    if (!isConnectionActive(row.status)) continue;
+    // Only the data owner (the woman) may alert her companions.
+    const owner = row.permission_owner_user_id ?? null;
+    if (owner && owner !== uid) continue;
+    const partnerUserId = uid === row.user_a_id ? row.user_b_id : row.user_a_id;
+    if (partnerUserId) targets.push({ connectionId: row.connection_id, partnerUserId });
+  }
+
+  for (const t of targets) {
+    try {
+      await scheduleNotification(t.partnerUserId, {
+        category: 'partner_alert',
+        title: alert.title,
+        body,
+        entityType: 'partner_alert',
+        entityId: `${t.connectionId}:${alert.id}`,
+        deepLink: `blushy://partner?connectionId=${t.connectionId}`,
+      });
+    } catch (_) {
+      // Best effort per recipient; realtime still fires from the controller.
+    }
+  }
+
+  return {
+    ok: true,
+    sent: targets.length,
+    recipients: targets.map((t) => t.partnerUserId),
+    title: alert.title,
+    body,
   };
 }
 

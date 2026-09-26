@@ -6,6 +6,7 @@ import {
   patchPermissions,
   patchRelationshipType,
   postCompanionNudge,
+  postWomanAlert,
   getPermissionHistory,
   createPermissionRequest,
   listPermissionRequestsController,
@@ -38,6 +39,8 @@ router.get('/connections/:connectionId/sharing', requireAuth, getMySharingState)
 router.patch('/connections/:connectionId/sharing', requireAuth, patchPermissions);
 router.patch('/connections/:connectionId/relationship-type', requireAuth, patchRelationshipType);
 router.post('/connections/:connectionId/nudge', requireAuth, postCompanionNudge);
+// Pad Squad / Pain Radar: the woman broadcasts a support alert to her companions.
+router.post('/alerts', requireAuth, postWomanAlert);
 router.get('/connections/:connectionId/sharing/history', requireAuth, getPermissionHistory);
 
 // A partner asking to be shown something that is currently off. Asking never

@@ -144,6 +144,29 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   // Partner connections state
   List<Map<String, dynamic>> _connections = [];
 
+  /// Which companion the woman is currently viewing/managing. Null means "let
+  /// the getter fall back to the first active connection." A woman can have
+  /// several companions (mum, partner, best friend); the seat switcher sets this.
+  String? _selectedConnectionId;
+
+  /// The connection currently in focus: the explicitly selected one if it still
+  /// exists, else the first active, else the first. Every per-connection surface
+  /// (couple gating, capabilities, nudges, management) reads through this so the
+  /// screen scopes to one companion at a time instead of always the first.
+  Map<String, dynamic>? get _selectedConnection {
+    if (_connections.isEmpty) return null;
+    if (_selectedConnectionId != null) {
+      for (final c in _connections) {
+        final id = (c['connectionId'] ?? c['id'] ?? c['_id'])?.toString();
+        if (id == _selectedConnectionId) return c;
+      }
+    }
+    return _connections.firstWhere(
+      (c) => c['status'] == 'active',
+      orElse: () => _connections.first,
+    );
+  }
+
   // Whether the first connection load (cache + server) has resolved. Until it
   // has, an empty _connections means "still loading", not "no partner" -- so the
   // screen shows a spinner rather than flashing the unpaired "Invite Partner"
@@ -184,11 +207,8 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   bool _dateIdeasLoading = false;
 
   String? get _activeConnectionId {
-    if (_connections.isEmpty) return null;
-    final active = _connections.firstWhere(
-      (c) => c['status'] == 'active',
-      orElse: () => _connections.first,
-    );
+    final active = _selectedConnection;
+    if (active == null) return null;
     final id = active['connectionId'] ?? active['id'] ?? active['_id'];
     return id?.toString();
   }
@@ -203,13 +223,160 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   /// for a legacy/untyped connection (no `relationshipCategory`), so existing
   /// romantic partners are never regressed.
   bool get _coupleFeaturesAllowed {
-    if (_connections.isEmpty) return true;
-    final active = _connections.firstWhere(
-      (c) => c['status'] == 'active',
-      orElse: () => _connections.first,
-    );
+    final active = _selectedConnection;
+    if (active == null) return true;
     if (active['relationshipCategory'] == null) return true;
     return active['coupleFeatures'] == true;
+  }
+
+  /// The woman's active companions, in list order.
+  List<Map<String, dynamic>> get _activeConnections =>
+      _connections.where((c) => c['status'] == 'active').toList();
+
+  String _connectionIdOf(Map<String, dynamic> c) =>
+      (c['connectionId'] ?? c['id'] ?? c['_id'] ?? '').toString();
+
+  /// Broadcasts a "Pad Squad / Pain Radar" support alert to all her companions.
+  Future<void> _sendCircleAlert(String id) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final res = await PartnerApi.sendCircleAlert(id);
+    if (!mounted) return;
+    if (res.isReady) {
+      final sent = (res.data?['sent'] ?? 0) as num;
+      messenger.showSnackBar(SnackBar(
+        content: Text(sent > 0
+            ? 'Your circle has been notified.'
+            : 'No active companions to notify yet.'),
+      ));
+    } else {
+      messenger.showSnackBar(SnackBar(content: Text(res.errorMessage ?? 'Could not send that right now.')));
+    }
+  }
+
+  /// A discreet "ask my circle for help" card (Pad Squad + rough-day radar).
+  /// Shown whenever she has a companion; the alerts carry no health data.
+  Widget _buildCircleAlertCard() {
+    const alerts = <List<String>>[
+      ['need_pad', 'Need a pad'],
+      ['rough_day', 'Rough day'],
+      ['pain_flare', 'High pain'],
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: BlushyColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.campaign_outlined, size: 16, color: BlushyColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'ASK YOUR CIRCLE', // i18n-ignore: companion mode is English-first pending a localization pass
+                style: GoogleFonts.manrope(
+                  fontSize: 10.5, fontWeight: FontWeight.w800,
+                  letterSpacing: 1.1, color: BlushyColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'One tap lets your companions know you could use support right now.', // i18n-ignore
+            style: GoogleFonts.manrope(fontSize: 11.5, color: BlushyColors.secondaryText, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: [
+              for (final a in alerts)
+                OutlinedButton.icon(
+                  onPressed: () => _sendCircleAlert(a[0]),
+                  icon: const Icon(Icons.favorite_border_rounded, size: 14),
+                  label: Text(a[1], style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: BlushyColors.primary,
+                    side: const BorderSide(color: BlushyColors.primary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Switch which companion is in focus and reload that connection's data
+  /// (garden, shared activities, messages all key off the selected connection).
+  void _selectCompanion(String id) {
+    if (id.isEmpty || id == _activeConnectionId) return;
+    setState(() => _selectedConnectionId = id);
+    unawaited(_loadSharedActivities());
+    unawaited(_loadGarden());
+    _syncLiveMessages();
+  }
+
+  /// Horizontal pills to switch which companion is in focus. Only shown when she
+  /// has more than one active companion (mum + partner + best friend, ...).
+  Widget _buildCompanionSwitcher() {
+    final active = _activeConnections;
+    if (active.length < 2) return const SizedBox.shrink();
+    final currentId = _activeConnectionId;
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        itemCount: active.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final conn = active[i];
+          final id = _connectionIdOf(conn);
+          final selected = id == currentId;
+          final name = partnerDisplayName(Map<String, dynamic>.from(conn), fallback: 'Companion');
+          final typeLabel = conn['relationshipType'] != null
+              ? _relationshipTypeLabel(conn['relationshipType'].toString())
+              : null;
+          final label = (typeLabel != null && !typeLabel.startsWith('Not set')) ? typeLabel : name;
+          return InkWell(
+            onTap: () => _selectCompanion(id),
+            borderRadius: BorderRadius.circular(20),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: selected ? BlushyColors.primary : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected ? BlushyColors.primary : BlushyColors.border,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.person_rounded, size: 14, color: selected ? Colors.white : BlushyColors.secondaryText),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: selected ? Colors.white : BlushyColors.text,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   static const List<SharedActivity> _defaultActivities = [
@@ -355,10 +522,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     });
     _scrollToBottomMessenger();
 
-    final activeConn = _connections.firstWhere(
-      (c) => c['status'] == 'active',
-      orElse: () => <String, dynamic>{},
-    );
+    final activeConn = (_selectedConnection ?? <String, dynamic>{});
     if (activeConn.isNotEmpty && activeConn['connectionId'] != null) {
       final connId = activeConn['connectionId'].toString();
       final res = await _partnerService.sendMessage(connId, text);
@@ -856,10 +1020,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
   }
 
   Future<void> _syncLiveMessages() async {
-    final activeConn = _connections.firstWhere(
-      (c) => c['status'] == 'active',
-      orElse: () => <String, dynamic>{},
-    );
+    final activeConn = (_selectedConnection ?? <String, dynamic>{});
 
     if (activeConn.isNotEmpty && activeConn['connectionId'] != null) {
       final connId = activeConn['connectionId'].toString();
@@ -1064,10 +1225,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     });
     _scrollToBottomMessenger();
 
-    final activeConn = _connections.firstWhere(
-      (c) => c['status'] == 'active',
-      orElse: () => <String, dynamic>{},
-    );
+    final activeConn = (_selectedConnection ?? <String, dynamic>{});
     if (activeConn.isNotEmpty && activeConn['connectionId'] != null) {
       final connId = activeConn['connectionId'].toString();
       final res = await _partnerService.sendMessage(connId, text);
@@ -1305,7 +1463,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         ),
       );
     }
-    final primaryPartner = hasConnection ? _connections.first : null;
+    final primaryPartner = hasConnection ? (_selectedConnection ?? _connections.first) : null;
     final partnerName = primaryPartner != null
         ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner))
         : 'Your Partner';
@@ -1345,12 +1503,22 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
         ),
         const SizedBox(height: 20),
 
+        // Seat switcher — only when she supports more than one companion.
+        if (_activeConnections.length > 1) ...[
+          _buildCompanionSwitcher(),
+          const SizedBox(height: 16),
+        ],
+
         if (_incomingInvitations.isNotEmpty) ...[
           _buildPendingRequestsBanner(),
           const SizedBox(height: 20),
         ],
 
         if (hasConnection) ...[
+          // 01.5 — ASK YOUR CIRCLE (Pad Squad / Pain Radar)
+          _buildCircleAlertCard(),
+          const SizedBox(height: 20),
+
           // 02 — TODAY, TOGETHER (Dynamic Signal Rail)
           if (signals.isNotEmpty) ...[
             TodayTogetherSignalRail(signals: signals),
@@ -2064,7 +2232,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
   void _showManageConnectionSheet(BlushyOSState state) {
     final hasConnection = _connections.isNotEmpty;
-    final primaryPartner = hasConnection ? _connections.first : null;
+    final primaryPartner = hasConnection ? (_selectedConnection ?? _connections.first) : null;
     final partnerName = primaryPartner != null
         ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner), fallback: 'Your Partner')
         : 'Your Partner';
@@ -2594,10 +2762,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
       return;
     }
 
-    final active = _connections.firstWhere(
-      (c) => c['status'] == 'active',
-      orElse: () => <String, dynamic>{},
-    );
+    final active = (_selectedConnection ?? <String, dynamic>{});
 
     // The server decides who owns the permissions and returns 403 to the other
     // side. Reading that flag here sends each person to the screen built for
@@ -3873,7 +4038,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
     final currentUserId = AuthStorage.getUserId();
     final currentRole = AuthStorage.getRole() ?? state.selectedRole;
     final hasConnection = _connections.isNotEmpty;
-    final primaryPartner = hasConnection ? _connections.first : null;
+    final primaryPartner = hasConnection ? (_selectedConnection ?? _connections.first) : null;
     final String partnerName = primaryPartner != null
         ? partnerDisplayName(Map<String, dynamic>.from(primaryPartner))
         : (currentRole == 'partner' ? 'Her' : 'Partner');
@@ -5389,10 +5554,7 @@ class _BlushyPartnerScreenState extends State<BlushyPartnerScreen> {
 
                         // 2. Transmit through partner live chat
                         final payload = '[LETTER_JSON]:${jsonEncode(letterData)}';
-                        final activeConn = _connections.firstWhere(
-                          (c) => c['status'] == 'active',
-                          orElse: () => <String, dynamic>{},
-                        );
+                        final activeConn = (_selectedConnection ?? <String, dynamic>{});
                         final connectionId = (activeConn['connectionId'] ?? activeConn['_id'] ?? '').toString();
 
                         // Resolved before the await: `ctx` belongs to the
