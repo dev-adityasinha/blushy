@@ -49,8 +49,16 @@ const configuredOrigins = (env.corsOrigin ?? '*')
 
 function isLocalDevOrigin(origin) {
   if (!origin) return false;
+  // localhost only ever resolves on the same machine, so it is safe to allow
+  // in any environment.
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) return true;
+  // LAN IPs and public dev tunnels (Cloudflare / Pinggy) are development
+  // conveniences only. Never trust them in production -- there the configured
+  // CORS allowlist is the sole authority. Anyone can spin up a *.trycloudflare
+  // .com or *.pinggy.link host, so allowing them in prod would let arbitrary
+  // pages call the live API cross-origin.
+  if (env.nodeEnv === 'production') return false;
   return (
-    /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin) ||
     /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/i.test(origin) ||
     /^https?:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/i.test(origin) ||
     /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/i.test(origin) ||
