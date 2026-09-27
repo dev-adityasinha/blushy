@@ -184,6 +184,36 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     }
   }
 
+  /// When a dated ovulation signal (LH surge peak or peak cervical fluid) is
+  /// logged and none is recorded for this cycle yet, persist the implied
+  /// ovulation date so DPO can be counted from the real event, not an average.
+  void _maybeRecordOvulationDate() {
+    if (_storedOvulationDate != null) return;
+    final today = _dateOnly(DateTime.now());
+    DateTime? ovul;
+    String? source;
+    if (_ttcLoggedOPK == 'Peak (Surge)') {
+      ovul = today.add(const Duration(days: 1));
+      source = 'lh_surge';
+    } else if (_ttcLoggedCervicalFluid == 'Egg White (Peak)') {
+      ovul = today;
+      source = 'cervical_fluid';
+    }
+    if (ovul == null) return;
+    try {
+      BlushyStorage.write('ttc_ovulation.json', {
+        'ovulation_date': ovul.toIso8601String().substring(0, 10),
+        'source': source,
+        'recorded_at': DateTime.now().toIso8601String(),
+        'cycle_start': _lastPeriodStartDate?.toIso8601String(),
+      });
+    } catch (_) {}
+    ApiAuthService().saveOnboardingAnswers({
+      'ttc_ovulation_date': ovul.toIso8601String().substring(0, 10),
+      'ttc_ovulation_source': source,
+    }).catchError((_) => <String, dynamic>{});
+  }
+
   void _saveDailyTtcLog() {
     final checkin = Map<String, dynamic>.from(BlushyStorage.read('daily_checkin.json'));
     if (_ttcLoggedBBT != null) checkin['ttc_bbt'] = _ttcLoggedBBT;
@@ -195,6 +225,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
     checkin['ttc_supplements'] = _selectedSupplements.toList();
     checkin['date'] = DateTime.now().toIso8601String();
     BlushyStorage.write('daily_checkin.json', checkin);
+    _maybeRecordOvulationDate();
 
     final List<String> symptoms = [];
     if (_ttcLoggedOPK != null) symptoms.add('OPK: $_ttcLoggedOPK');
@@ -221,15 +252,81 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   int get _estimatedOvulationDay => (_cycleLength - 14).clamp(10, _cycleLength - 10);
 
   int? get _estimatedDpo {
+    final confirmed = _confirmedDpo;
+    if (confirmed != null) return confirmed;
     if (_currentCycleDay > _estimatedOvulationDay) {
       return _currentCycleDay - _estimatedOvulationDay;
     }
     return null;
   }
 
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  /// The ovulation date recorded for THIS cycle, if a dated signal was ever
+  /// logged. Persisted in `ttc_ovulation.json` by [_maybeRecordOvulationDate];
+  /// ignored once it predates the current period (i.e. a previous cycle).
+  DateTime? get _storedOvulationDate {
+    try {
+      final m = BlushyStorage.read('ttc_ovulation.json');
+      final iso = m['ovulation_date'];
+      if (iso == null) return null;
+      final d = DateTime.tryParse(iso.toString());
+      if (d == null) return null;
+      final start = _lastPeriodStartDate;
+      if (start != null && _dateOnly(d).isBefore(_dateOnly(start))) return null;
+      if (_dateOnly(d).isAfter(_dateOnly(DateTime.now()).add(const Duration(days: 2)))) {
+        return null;
+      }
+      return _dateOnly(d);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// The date ovulation actually occurred, derived from a real logged signal:
+  /// a stored date from earlier this cycle, or today's fresh LH surge / peak
+  /// cervical fluid. An LH surge peak precedes ovulation by ~1 day; peak fluid
+  /// marks ~the ovulation day. Null when no ovulation signal exists. A single
+  /// BBT reading is deliberately excluded -- confirming a thermal shift needs
+  /// several days of temperatures the app does not retain.
+  DateTime? get _confirmedOvulationDate {
+    final stored = _storedOvulationDate;
+    if (stored != null) return stored;
+    final today = _dateOnly(DateTime.now());
+    if (_ttcLoggedOPK == 'Peak (Surge)') return today.add(const Duration(days: 1));
+    if (_ttcLoggedCervicalFluid == 'Egg White (Peak)') return today;
+    return null;
+  }
+
+  /// Accurate days-past-ovulation counted from [_confirmedOvulationDate].
+  /// Null when ovulation isn't confirmed or hasn't happened yet.
+  int? get _confirmedDpo {
+    final ov = _confirmedOvulationDate;
+    if (ov == null) return null;
+    final days = _dateOnly(DateTime.now()).difference(ov).inDays;
+    return days >= 0 ? days : null;
+  }
+
+  /// Whether ovulation is confirmed by a real dated signal this cycle (an LH
+  /// surge peak or peak cervical fluid). When true, DPO is counted from the
+  /// actual ovulation date; when false, any DPO shown is only an estimate from
+  /// the average-cycle model and is labelled as such.
+  bool get _ovulationConfirmed => _confirmedOvulationDate != null;
+
+  /// DPO text for badges/labels: plain when ovulation is confirmed, marked as
+  /// an estimate ("~N DPO est.") when it is not.
+  String _dpoText(int dpo) => _ovulationConfirmed ? '$dpo DPO' : '~$dpo DPO est.';
+
   TtcPhase get _currentTtcPhase {
     if (!_hasLoggedPeriod) return TtcPhase.fertileApproach;
     if (_currentCycleDay <= _periodLength) return TtcPhase.menstrualReset;
+    // A confirmed ovulation signal overrides the average-based estimate.
+    final confirmedDpo = _confirmedDpo;
+    if (confirmedDpo != null) {
+      if (confirmedDpo == 0) return TtcPhase.ovulationPeak;
+      if (confirmedDpo >= 14) return TtcPhase.extendedLuteal;
+      return TtcPhase.twoWeekWait;
+    }
     if (_currentCycleDay < _estimatedOvulationDay) {
       if (_ttcLoggedOPK == 'Peak (Surge)' || _ttcLoggedCervicalFluid == 'Egg White (Peak)') {
         return TtcPhase.ovulationPeak;
@@ -257,10 +354,12 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         return 'Peak Fertile Window';
       case TtcPhase.twoWeekWait:
         final dpo = _estimatedDpo ?? 1;
-        return '$dpo DPO • Two-Week Wait';
+        return '${_dpoText(dpo)} • Two-Week Wait';
       case TtcPhase.extendedLuteal:
         final dpo = _estimatedDpo ?? 14;
-        return '$dpo DPO • Extended Luteal Pattern';
+        return _ovulationConfirmed
+            ? '$dpo DPO • Extended Luteal Pattern'
+            : 'Cycle Day $_currentCycleDay • Ovulation Unconfirmed';
     }
   }
 
@@ -377,11 +476,13 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           break;
         case TtcPhase.twoWeekWait:
           final dpo = _estimatedDpo ?? 1;
-          subGreeting = '$dpo DPO • Two-week wait. Be gentle with your body and mind; implantation is quiet, invisible work.';
+          subGreeting = '${_dpoText(dpo)} • Two-week wait. Be gentle with your body and mind; implantation is quiet, invisible work.';
           break;
         case TtcPhase.extendedLuteal:
           final dpo = _estimatedDpo ?? 14;
-          subGreeting = '$dpo DPO • Extended luteal pattern. We\'re right beside you with compassionate clinical clarity.';
+          subGreeting = _ovulationConfirmed
+              ? '$dpo DPO • Extended luteal pattern. We\'re right beside you with compassionate clinical clarity.'
+              : 'Day $_currentCycleDay • Your cycle is running long and ovulation isn\'t confirmed yet — a delayed or missed ovulation can cause this. We\'re right beside you.';
           break;
       }
     }
@@ -465,9 +566,9 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           break;
         case TtcPhase.twoWeekWait:
           final dpo = _estimatedDpo ?? 1;
-          customDayLabel = 'DPO ';
-          customDayValue = '$dpo';
-          phaseName = '$dpo DPO • Two-Week Wait';
+          customDayLabel = _ovulationConfirmed ? 'DPO ' : 'DPO est. ';
+          customDayValue = _ovulationConfirmed ? '$dpo' : '~$dpo';
+          phaseName = '${_dpoText(dpo)} • Two-Week Wait';
           if (dpo <= 7) {
             customSubtitle = 'Testing Shield Locked • Implantation has not occurred yet';
           } else if (dpo <= 10) {
@@ -475,15 +576,26 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           } else {
             customSubtitle = 'Early Detection Window • Test with first-morning urine if ready';
           }
+          if (!_ovulationConfirmed) {
+            customSubtitle = 'Estimated from your average cycle • Ovulation not yet confirmed';
+          }
           customPhaseColor = const Color(0xFF7C3AED);
           break;
         case TtcPhase.extendedLuteal:
           final dpo = _estimatedDpo ?? 14;
-          customDayLabel = 'DPO ';
-          customDayValue = '$dpo';
-          phaseName = '$dpo DPO • Extended Luteal Pattern';
-          customSubtitle = 'Expected period date passed • Progesterone holding steady';
-          customPhaseColor = const Color(0xFF059669);
+          if (_ovulationConfirmed) {
+            customDayLabel = 'DPO ';
+            customDayValue = '$dpo';
+            phaseName = '$dpo DPO • Extended Luteal Pattern';
+            customSubtitle = 'Expected period date passed • Progesterone holding steady';
+            customPhaseColor = const Color(0xFF059669);
+          } else {
+            customDayLabel = 'Day ';
+            customDayValue = '$_currentCycleDay';
+            phaseName = 'Cycle Day $_currentCycleDay • Ovulation Unconfirmed';
+            customSubtitle = 'Cycle running long • No confirmed ovulation — a delayed or missed ovulation can cause this';
+            customPhaseColor = const Color(0xFFD97706);
+          }
           break;
       }
     }
@@ -502,7 +614,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       onTapInsights: () {
         _openDocsyPrompt(
           context,
-          'Docsy, I\'m in the $phaseName phase of my cycle. What biological signs should I be mindful of today?',
+          'Docsy, my cycle status today shows "$phaseName". What biological signs should I be mindful of right now?',
         );
       },
     );
@@ -1703,7 +1815,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
 
     if (dpo <= 7) {
       shieldTitle = 'Testing Shield Locked · Implantation Inactive';
-      shieldDesc = 'At $dpo DPO, implantation has not occurred yet. Testing now yields false negatives. Progesterone causes twinges, not pregnancy clues.';
+      shieldDesc = 'At ${_dpoText(dpo)}, implantation has not occurred yet. Testing now yields false negatives. Progesterone causes twinges, not pregnancy clues.';
       shieldColor = const Color(0xFF64748B);
       shieldIcon = Icons.lock_outline_rounded;
     } else if (dpo <= 10) {
@@ -1752,7 +1864,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                   border: Border.all(color: shieldColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
-                  '$dpo DPO',
+                  _dpoText(dpo),
                   style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: shieldColor),
                 ),
               ),
@@ -1841,7 +1953,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                 color: const Color(0xFFD97706),
                 onTap: () => _openDocsyPrompt(
                   context,
-                  'Docsy, I\'m at $dpo DPO and noticed cramps. Why does normal luteal progesterone cause cramping even without pregnancy?',
+                  'Docsy, I\'m at ${_dpoText(dpo)} and noticed cramps. Why does normal luteal progesterone cause cramping even without pregnancy?',
                 ),
               ),
               const SizedBox(width: 6),
@@ -1852,7 +1964,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                 color: const Color(0xFF7C3AED),
                 onTap: () => _openDocsyPrompt(
                   context,
-                  'Docsy, I\'m at $dpo DPO feeling fatigue. Can high luteal progesterone cause deep sleepiness during the two-week wait?',
+                  'Docsy, I\'m at ${_dpoText(dpo)} feeling fatigue. Can high luteal progesterone cause deep sleepiness during the two-week wait?',
                 ),
               ),
               const SizedBox(width: 6),
@@ -1863,7 +1975,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                 color: const Color(0xFFF72585),
                 onTap: () => _openDocsyPrompt(
                   context,
-                  'Docsy, I\'m at $dpo DPO and have breast tenderness. Is this a reliable pregnancy sign or standard luteal estrogen/progesterone effect?',
+                  'Docsy, I\'m at ${_dpoText(dpo)} and have breast tenderness. Is this a reliable pregnancy sign or standard luteal estrogen/progesterone effect?',
                 ),
               ),
             ],
@@ -1971,8 +2083,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
   // ════════════════════════════════════════════════════════════════════
   Widget _buildExtendedLutealCard(BuildContext context) {
     final dpo = _estimatedDpo ?? 14;
-    final bool ovulationConfirmed =
-        _ttcLoggedOPK == 'Peak (Surge)' || (_ttcLoggedBBT != null && _ttcLoggedBBT! >= 98.0);
+    final bool ovulationConfirmed = _ovulationConfirmed;
 
     return Container(
       width: double.infinity,
@@ -2008,7 +2119,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
                   border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
                 ),
                 child: Text(
-                  '$dpo DPO',
+                  _dpoText(dpo),
                   style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF0D9488)),
                 ),
               ),
@@ -2016,7 +2127,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
           ),
           const SizedBox(height: 10),
           Text(
-            'Gentle Clarity for $dpo DPO',
+            ovulationConfirmed ? 'Gentle Clarity for $dpo DPO' : 'Gentle Clarity for a Long Cycle',
             style: GoogleFonts.cormorantGaramond(fontSize: 21, fontWeight: FontWeight.w700, color: textMain),
           ),
           const SizedBox(height: 3),
