@@ -417,4 +417,26 @@ class ApiPostpartumService {
     } catch (_) {}
     return null;
   }
+
+  /// Evaluates lactation & nursing safety for medications, herbs, foods, or beverages.
+  static Future<Map<String, dynamic>?> checkSafety(
+    String query, {
+    int daysSinceBirth = 14,
+    String feedingMethod = 'breastfeeding',
+  }) async {
+    try {
+      final res = await ApiContractClient.post(
+        '/postpartum/safety-check',
+        body: {
+          'query': query,
+          'daysSinceBirth': daysSinceBirth,
+          'feedingMethod': feedingMethod,
+        },
+        parse: ApiParse.map,
+      );
+      return res.data;
+    } catch (_) {}
+    return null;
+  }
 }
+

@@ -1,6 +1,9 @@
 import { db } from '../utils/db.js';
 import { getGestationalDataForWeek } from './pregnancyData.js';
 import { todayIso } from '../utils/appCalendar.js';
+import { env } from '../utils/env.js';
+import { aiFetch } from '../utils/aiRequest.js';
+import { logger } from '../utils/logger.js';
 
 // In-memory fallback cache for preview/offline environments
 const memoryStore = {
@@ -387,6 +390,324 @@ export class PregnancyService {
       guidance: 'Rest, hydrate, and mention it at your next routine prenatal appointment if it interferes with your daily comfort.',
       questionsForDoctor: ['Are there gentle exercises or supportive stretches you recommend for this?']
     };
+  }
+
+  checkFoodAndMedicineSafety({ query = '', week = 20 }) {
+    const q = query.trim().toLowerCase();
+
+    // 1. STRICT AVOIDANCE (Red #DD0D22)
+    if (/alcohol|wine|beer|liquor|cocktail|vodka|whiskey/i.test(q)) {
+      return {
+        query,
+        status: 'avoid',
+        badge: 'Avoid Completely',
+        colorHex: '#DD0D22',
+        summary: 'No amount of alcohol is considered safe during any trimester of pregnancy.',
+        reasoning: 'Alcohol passes directly through the placenta to the fetus, posing risks to organ and brain development.',
+        safeAlternative: 'Sparkling water with fresh lime, cranberry mocktails, or fruit-infused iced tea.',
+        docQuestion: 'What alcohol-free mocktails or electrolyte drinks do you suggest for social events?'
+      };
+    }
+
+    if (/unripe papaya|green papaya|raw papaya/i.test(q)) {
+      return {
+        query,
+        status: 'avoid',
+        badge: 'Avoid During Pregnancy',
+        colorHex: '#DD0D22',
+        summary: 'Unripe or semi-ripe green papaya contains concentrated latex and papain.',
+        reasoning: 'Latex can trigger uterine contractions and prostaglandins. However, fully ripe yellow papaya with skin removed is completely safe and nutrient-rich.',
+        safeAlternative: 'Fully ripe yellow papaya, sweet mango, or ripe melon.',
+        docQuestion: 'Can I eat fully ripe, sweet yellow papaya in moderation?'
+      };
+    }
+
+    if (/ibuprofen|advil|motrin|aleve|naproxen|aspirin|nsaid/i.test(q)) {
+      return {
+        query,
+        status: 'avoid',
+        badge: 'Avoid NSAIDs',
+        colorHex: '#DD0D22',
+        summary: 'Avoid ibuprofen and NSAIDs, especially after week 20 of pregnancy.',
+        reasoning: 'NSAIDs can affect fetal kidney function, reduce amniotic fluid, or cause premature closure of the fetal ductus arteriosus.',
+        safeAlternative: 'Acetaminophen (Paracetamol) is the first-line doctor-approved pain and fever remedy at standard doses.',
+        docQuestion: 'Is 500mg acetaminophen safe for my current headache or discomfort?'
+      };
+    }
+
+    if (/raw fish|raw sushi|sashimi|raw oyster|raw shellfish|shark|swordfish|king mackerel|tilefish/i.test(q)) {
+      return {
+        query,
+        status: 'avoid',
+        badge: 'Avoid Raw & High-Mercury',
+        colorHex: '#DD0D22',
+        summary: 'Avoid raw seafood and apex predator fish high in methylmercury.',
+        reasoning: 'Raw seafood carries risks of Listeria, Salmonella, and parasites. High mercury can affect baby’s nervous system.',
+        safeAlternative: 'Cooked salmon, canned light tuna, cooked shrimp, and veggie/avocado sushi rolls.',
+        docQuestion: 'How many servings of cooked salmon or low-mercury fish can I have per week?'
+      };
+    }
+
+    if (/unpasteurized|raw milk|brie|camembert|blue cheese|queso fresco|feta.*unpasteurized/i.test(q)) {
+      return {
+        query,
+        status: 'avoid',
+        badge: 'Avoid Unpasteurized',
+        colorHex: '#DD0D22',
+        summary: 'Avoid soft cheeses and dairy products made from unpasteurized (raw) milk.',
+        reasoning: 'Unpasteurized dairy carries a risk of Listeria monocytogenes bacteria, which can cross the placenta.',
+        safeAlternative: 'Any cheese clearly labeled "Made with Pasteurized Milk", such as cheddar, mozzarella, cottage cheese, or pasteurized paneer.',
+        docQuestion: 'Are store-bought pasteurized feta and cream cheeses safe for me?'
+      };
+    }
+
+    if (/deli meat|cold cut|hot dog|prosciutto|salami/i.test(q)) {
+      return {
+        query,
+        status: 'avoid',
+        badge: 'Avoid Cold / Heat Steaming',
+        colorHex: '#DD0D22',
+        summary: 'Avoid cold, unheated deli meats and charcuterie cuts.',
+        reasoning: 'Deli meats can harbor Listeria on surfaces even when refrigerated.',
+        safeAlternative: 'Heat deli meats until steaming hot (165°F / 74°C) before eating, or opt for freshly grilled chicken.',
+        docQuestion: 'Is it completely safe to eat deli meat if it has been thoroughly heated?'
+      };
+    }
+
+    // 2. CAUTION & MODERATION (Amber #D97706)
+    if (/caffeine|coffee|espresso|latte|cappuccino|matcha|energy drink/i.test(q)) {
+      return {
+        query,
+        status: 'caution',
+        badge: 'Safe in Moderation (Max 200mg)',
+        colorHex: '#D97706',
+        summary: 'Moderate caffeine is safe—keep total daily intake under 200mg (~1 to 2 standard cups).',
+        reasoning: 'Caffeine crosses the placenta and clears more slowly in pregnancy, but under 200mg/day has no adverse effect on pregnancy outcomes.',
+        safeAlternative: 'Decaf coffee, half-caff lattes, rooibos tea, or chicory brew.',
+        docQuestion: 'Does my prenatal vitamin or any other daily beverage contribute to caffeine levels?'
+      };
+    }
+
+    if (/herbal tea|chamomile|peppermint|hibiscus|green tea/i.test(q)) {
+      const isHibiscus = /hibiscus/i.test(q);
+      return {
+        query,
+        status: isHibiscus ? 'avoid' : 'caution',
+        badge: isHibiscus ? 'Avoid in Pregnancy' : 'Safe in Moderation (1-2 cups)',
+        colorHex: isHibiscus ? '#DD0D22' : '#D97706',
+        summary: isHibiscus
+          ? 'Avoid hibiscus tea in pregnancy as it may stimulate uterine blood flow.'
+          : 'Mild ginger, peppermint, and rooibos teas are generally soothing in moderation (1–2 cups/day).',
+        reasoning: 'High-potency medicinal herb infusions lack safety data. Stick to commercial culinary-strength tea bags.',
+        safeAlternative: 'Fresh ginger boiled in hot water with lemon and honey.',
+        docQuestion: 'Which soothing herbal teas do you approve for third-trimester rest or digestion?'
+      };
+    }
+
+    if (/tuna|canned tuna/i.test(q)) {
+      return {
+        query,
+        status: 'caution',
+        badge: 'Safe in Moderation (2-3 cans/wk)',
+        colorHex: '#D97706',
+        summary: 'Canned light or skipjack tuna is safe up to 2 to 3 servings (8–12 oz) per week.',
+        reasoning: 'Light tuna has significantly lower mercury than albacore / white tuna, while providing vital fetal brain DHA.',
+        safeAlternative: 'Wild-caught salmon, sardines, and cooked shrimp for high Omega-3s with low mercury.',
+        docQuestion: 'Should I take an algae or fish-oil DHA supplement alongside dietary fish?'
+      };
+    }
+
+    // 3. SAFE & HIGH VALUE (Emerald #0D9488)
+    if (/paracetamol|acetaminophen|tylenol|crocin|calpol/i.test(q)) {
+      return {
+        query,
+        status: 'safe',
+        badge: 'Safe & First-Line Choice',
+        colorHex: '#0D9488',
+        summary: 'Acetaminophen (Paracetamol) is the standard doctor-recommended first-line pain and fever reliever.',
+        reasoning: 'Extensively studied and established as safe across all trimesters when used at standard recommended doses (max 3,000mg/day).',
+        safeAlternative: 'Rest in a cool dark room, gentle neck stretch, and cold compress for tension headaches.',
+        docQuestion: 'What dose of acetaminophen is appropriate for my symptoms?'
+      };
+    }
+
+    if (/ginger|lemon|crackers|mint/i.test(q)) {
+      return {
+        query,
+        status: 'safe',
+        badge: 'Safe & Proven for Nausea',
+        colorHex: '#0D9488',
+        summary: 'Natural ginger is a clinically proven, safe remedy for pregnancy nausea and morning sickness.',
+        reasoning: 'Contains gingerols that gently soothe stomach motility without affecting fetal development.',
+        safeAlternative: 'Ginger biscuits, fresh ginger lemon water, or ginger lozenges.',
+        docQuestion: 'Can I combine ginger with Vitamin B6 for persistent nausea?'
+      };
+    }
+
+    if (/ripe papaya|papaya/i.test(q)) {
+      return {
+        query,
+        status: 'safe',
+        badge: 'Safe When Fully Ripe',
+        colorHex: '#0D9488',
+        summary: 'Fully ripe yellow papaya is delicious, safe, and packed with Vitamin C and folate.',
+        reasoning: 'Only raw green/unripe papaya latex poses uterine contraction risks. Sweet golden ripe papaya has no latex.',
+        safeAlternative: 'Enjoy chilled ripe papaya cubes with a squeeze of fresh lime.',
+        docQuestion: 'Are all sweet, ripe tropical fruits like mango, pineapple, and papaya safe for me?'
+      };
+    }
+
+    if (/egg|eggs/i.test(q)) {
+      return {
+        query,
+        status: 'safe',
+        badge: 'Safe & Choline-Rich (Cook Fully)',
+        colorHex: '#0D9488',
+        summary: 'Thoroughly cooked eggs are one of the most powerful superfoods during pregnancy.',
+        reasoning: 'Rich in choline, which is crucial for fetal brain development and neural tube formation. Ensure yolk is firm to avoid salmonella.',
+        safeAlternative: 'Hard-boiled eggs, scrambled eggs, or vegetable omelets.',
+        docQuestion: 'How much dietary choline should I aim for daily?'
+      };
+    }
+
+    // DEFAULT / GENERAL REASSURANCE
+    return {
+      query,
+      status: 'safe_with_guidance',
+      badge: 'Generally Safe With Good Food Hygiene',
+      colorHex: '#0D9488',
+      summary: `Most wholesome, pasteurized, and thoroughly washed foods are safe during pregnancy.`,
+      reasoning: 'Prioritize freshly prepared meals, wash raw produce thoroughly, ensure meat and dairy are pasteurized and cooked through.',
+      safeAlternative: 'Stick to fresh, well-cooked meals and verify "Pasteurized" on dairy labels.',
+      docQuestion: `Can you confirm if ${query} is safe for my personal health profile?`
+    };
+  }
+
+  async classifySymptomWithAI({ query, week = 20 }) {
+    const ruleMatch = this.classifySymptomIsThisNormal({ query, week });
+    // If it's a specific recognized rule match (not generic common), return directly
+    if (ruleMatch && ruleMatch.category !== 'common') {
+      return ruleMatch;
+    }
+
+    if (env.aiChatApiKey) {
+      try {
+        const prompt = `You are a certified OB/GYN maternal-fetal medicine specialist.
+A pregnant woman in week ${week} asks about this symptom/sensation: "${query}".
+Evaluate whether this is normal, requires observation, or requires urgent doctor contact.
+Respond strictly in valid JSON matching this schema:
+{
+  "category": "common" | "monitor" | "call_doctor",
+  "badgeLabel": "3-5 word concise status label",
+  "colorHex": "#0D9488" (for common/safe) or "#D97706" (for monitor) or "#DD0D22" (for call_doctor),
+  "summary": "1-2 calm, reassuring, empathetic sentences explaining the sensation",
+  "reasoning": "Clear physiological explanation of what is happening in week ${week}",
+  "guidance": "1-2 practical at-home comfort measures (positioning, hydration, heat/cold)",
+  "questionsForDoctor": ["1-2 specific questions she can ask at her next visit"]
+}`;
+        const response = await aiFetch(env.aiChatApiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.aiChatApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: env.aiChatModel || 'x-ai/grok-4.3',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 400,
+          }),
+        });
+
+        if (response.ok) {
+          const json = await response.json();
+          const content = json.choices?.[0]?.message?.content?.trim();
+          if (content) {
+            const clean = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(clean);
+            if (parsed.summary && parsed.badgeLabel) {
+              return {
+                category: parsed.category || 'common',
+                badgeLabel: parsed.badgeLabel,
+                colorHex: parsed.colorHex || '#0D9488',
+                summary: parsed.summary,
+                reasoning: parsed.reasoning || '',
+                guidance: parsed.guidance || 'Rest, hydrate, and mention to your provider.',
+                questionsForDoctor: Array.isArray(parsed.questionsForDoctor) ? parsed.questionsForDoctor : [],
+              };
+            }
+          }
+        }
+      } catch (err) {
+        logger.warn('AI symptom classification fallback triggered', { message: err?.message });
+      }
+    }
+
+    return ruleMatch;
+  }
+
+  async checkFoodSafetyWithAI({ query, week = 20 }) {
+    const ruleMatch = this.checkFoodAndMedicineSafety({ query, week });
+    if (ruleMatch && ruleMatch.status !== 'safe_with_guidance') {
+      return ruleMatch;
+    }
+
+    if (env.aiChatApiKey) {
+      try {
+        const prompt = `You are a certified OB/GYN maternal nutrition specialist.
+A pregnant woman in week ${week} asks: "Can I eat, drink, or take: ${query}?"
+Evaluate safety, precautions, and doctor guidance.
+Respond strictly in valid JSON matching this schema:
+{
+  "query": "${query}",
+  "status": "safe" | "caution" | "avoid",
+  "badge": "3-5 word concise safety badge",
+  "colorHex": "#0D9488" (for safe) or "#D97706" (for caution) or "#DD0D22" (for avoid),
+  "summary": "1-2 calm, reassuring, direct sentences",
+  "reasoning": "Clear clinical reasoning (Listeria, Toxoplasma, uterine stimulation, mercury, etc.)",
+  "safeAlternative": "Wholesome safe alternative or preparation/cooking advice",
+  "docQuestion": "One practical question to ask her prenatal care provider"
+}`;
+        const response = await aiFetch(env.aiChatApiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.aiChatApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: env.aiChatModel || 'x-ai/grok-4.3',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 400,
+          }),
+        });
+
+        if (response.ok) {
+          const json = await response.json();
+          const content = json.choices?.[0]?.message?.content?.trim();
+          if (content) {
+            const clean = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(clean);
+            if (parsed.status && parsed.summary) {
+              return {
+                query,
+                status: parsed.status,
+                badge: parsed.badge || 'Guidance',
+                colorHex: parsed.colorHex || '#0D9488',
+                summary: parsed.summary,
+                reasoning: parsed.reasoning || '',
+                safeAlternative: parsed.safeAlternative || 'Stick to freshly cooked, pasteurized foods.',
+                docQuestion: parsed.docQuestion || `Is ${query} safe for my health profile?`,
+              };
+            }
+          }
+        }
+      } catch (err) {
+        logger.warn('AI food safety check fallback triggered', { message: err?.message });
+      }
+    }
+
+    return ruleMatch;
   }
 
   async saveMemory({ userId = 'preview_user', memory }) {

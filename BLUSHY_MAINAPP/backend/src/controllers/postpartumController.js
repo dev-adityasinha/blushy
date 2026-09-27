@@ -8,7 +8,7 @@ import { PostpartumSafetyService } from '../services/postpartumSafetyService.js'
 
 export async function getPostpartumOverview(req, res, next) {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || 'preview_user';
     const overview = await PostpartumService.getOverview(userId);
     return res.json({ ok: true, data: overview });
   } catch (err) {
@@ -18,7 +18,7 @@ export async function getPostpartumOverview(req, res, next) {
 
 export async function getPostpartumTodayBrief(req, res, next) {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || 'preview_user';
     const brief = await PostpartumService.getTodayBrief(userId);
     return res.json({ ok: true, data: brief });
   } catch (err) {
@@ -26,9 +26,21 @@ export async function getPostpartumTodayBrief(req, res, next) {
   }
 }
 
+export async function checkPostpartumSafety(req, res, next) {
+  try {
+    const query = req.body?.query || req.body?.item || req.query.query || req.query.item || '';
+    const daysSinceBirth = parseInt(req.body?.daysSinceBirth || req.query.daysSinceBirth || 14, 10);
+    const feedingMethod = req.body?.feedingMethod || req.query.feedingMethod || 'breastfeeding';
+    const data = await PostpartumService.checkLactationSafety({ query, daysSinceBirth, feedingMethod });
+    return res.json({ ok: true, state: 'ready', data });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 export async function calibratePostpartum(req, res, next) {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || 'preview_user';
     const { deliveryDate, deliveryType, feedingMethod, lowEnergyMode } = req.body || {};
     const updated = await PostpartumService.updateCalibration(userId, {
       deliveryDate,
@@ -44,7 +56,7 @@ export async function calibratePostpartum(req, res, next) {
 
 export async function recordPostpartumCheckin(req, res, next) {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || 'preview_user';
     const result = await PostpartumService.recordCheckin(userId, req.body || {});
     return res.json({ ok: true, data: result });
   } catch (err) {
@@ -54,7 +66,7 @@ export async function recordPostpartumCheckin(req, res, next) {
 
 export async function recordBabyEvent(req, res, next) {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || 'preview_user';
     const event = await PostpartumService.recordBabyEvent(userId, req.body || {});
     return res.json({ ok: true, data: event });
   } catch (err) {
@@ -64,7 +76,7 @@ export async function recordBabyEvent(req, res, next) {
 
 export async function getBabyEvents(req, res, next) {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.userId || 'preview_user';
     const date = req.query.date;
     const events = await PostpartumService.getBabyEvents(userId, date);
     return res.json({ ok: true, data: events });

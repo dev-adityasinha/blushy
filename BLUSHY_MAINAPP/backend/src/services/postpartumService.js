@@ -13,9 +13,12 @@ import {
   CAN_I_DO_THIS_YET,
   CONTEXTUAL_READS,
   RECOVERY_MILESTONES,
+  LACTATION_SAFETY_RULES,
 } from './postpartumData.js';
 import { todayIso } from '../utils/appCalendar.js';
 import { makeUserDocStore } from '../repositories/stageStateRepository.js';
+import { env } from '../utils/env.js';
+import { logger } from '../utils/logger.js';
 
 // One document per user in Mongo, replacing the process-level Maps that were
 // lost on restart and never shared across instances.
@@ -239,4 +242,121 @@ export class PostpartumService {
       timestamp: new Date().toISOString(),
     };
   }
+
+  /**
+   * Fast synchronous rule lookup for common postpartum / nursing medications and foods.
+   */
+  static checkLactationRuleSafety({ query }) {
+    if (!query || typeof query !== 'string') return null;
+    const q = query.toLowerCase().trim();
+    for (const rule of LACTATION_SAFETY_RULES) {
+      if (rule.keywords.some((k) => q.includes(k))) {
+        return {
+          query: rule.query,
+          status: rule.status,
+          badge: rule.badge,
+          colorHex: rule.colorHex,
+          summary: rule.summary,
+          reasoning: rule.reasoning,
+          safeAlternative: rule.safeAlternative,
+          docQuestion: rule.docQuestion,
+        };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Evaluates medication, food, herb, or beverage safety while breastfeeding.
+   * Leverages immediate evidence rules and falls back to Grok/OpenRouter AI with clinical accuracy.
+   */
+  static async checkLactationSafety({ query, daysSinceBirth = 14, feedingMethod = 'breastfeeding' }) {
+    if (!query || !query.trim()) {
+      return {
+        query: '',
+        status: 'caution',
+        badge: 'Please Specify',
+        colorHex: '#D97706',
+        summary: 'Please enter a medication, supplement, food, or beverage to check nursing safety.',
+        reasoning: 'Lactation pharmacology requires identifying the specific compound or active ingredient.',
+        safeAlternative: 'Consult your IBCLC lactation consultant, OB/GYN, or pediatrician.',
+        docQuestion: 'Is this safe for my baby and milk supply at our current postpartum stage?',
+      };
+    }
+
+    const ruleMatch = this.checkLactationRuleSafety({ query });
+    if (ruleMatch) {
+      return ruleMatch;
+    }
+
+    if (env.aiChatApiKey) {
+      try {
+        const prompt = `You are an International Board Certified Lactation Consultant (IBCLC) and maternal-fetal pharmacologist.
+A postpartum mother on Postpartum Day ${daysSinceBirth} (${feedingMethod}) asks: "Can I take, eat, or drink: ${query} while breastfeeding/nursing?"
+Evaluate infant safety, transfer into breast milk (M/P ratio or relative infant dose), and effect on maternal milk supply/prolactin.
+Respond strictly in valid JSON matching this schema:
+{
+  "query": "${query}",
+  "status": "safe" | "caution" | "avoid",
+  "badge": "3-5 word concise safety badge (e.g. 'Safe While Nursing', 'May Reduce Supply', 'Avoid While Nursing')",
+  "colorHex": "#0D9488" (for safe) or "#D97706" (for caution) or "#DD0D22" (for avoid),
+  "summary": "1-2 calm, reassuring, direct sentences",
+  "reasoning": "Clear clinical reasoning on breast milk transfer, infant safety, or prolactin/milk volume impact",
+  "safeAlternative": "Nursing-friendly alternative, timing advice (e.g. nurse right before), or pump advice",
+  "docQuestion": "One practical question to ask her pediatrician or lactation consultant"
+}`;
+
+        const res = await fetch(env.aiChatApiUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${env.aiChatApiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://blushy.app',
+            'X-Title': 'Blushy Postpartum Lactation Safety',
+          },
+          body: JSON.stringify({
+            model: env.aiChatModel || 'x-ai/grok-4.3',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 400,
+          }),
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          const content = json.choices?.[0]?.message?.content?.trim();
+          if (content) {
+            const clean = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(clean);
+            if (parsed.status && parsed.summary) {
+              return {
+                query,
+                status: parsed.status,
+                badge: parsed.badge || (parsed.status === 'safe' ? 'Safe While Nursing' : parsed.status === 'avoid' ? 'Avoid While Nursing' : 'Use Caution'),
+                colorHex: parsed.colorHex || (parsed.status === 'safe' ? '#0D9488' : parsed.status === 'avoid' ? '#DD0D22' : '#D97706'),
+                summary: parsed.summary,
+                reasoning: parsed.reasoning || '',
+                safeAlternative: parsed.safeAlternative || 'Discuss with your pediatrician or lactation consultant.',
+                docQuestion: parsed.docQuestion || `Is ${query} compatible with breastfeeding for my baby?`,
+              };
+            }
+          }
+        }
+      } catch (err) {
+        logger.warn('AI lactation safety check fallback triggered', { message: err?.message });
+      }
+    }
+
+    return {
+      query,
+      status: 'caution',
+      badge: 'Consult Provider',
+      colorHex: '#D97706',
+      summary: `Limited immediate data for "${query}". Check LactMed or ask your pediatrician before taking.`,
+      reasoning: 'Infant age, health, and maternal dosage determine safety for less common substances.',
+      safeAlternative: 'Paracetamol or Ibuprofen are standard safe analgesics during lactation.',
+      docQuestion: `Is ${query} compatible with my baby's age and health?`,
+    };
+  }
 }
+

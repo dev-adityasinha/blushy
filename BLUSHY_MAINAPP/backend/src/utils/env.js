@@ -1,6 +1,10 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __envDirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config();
+dotenv.config({ path: path.resolve(__envDirname, '../../.env') });
 
 function required(name, fallback = '') {
   const value = process.env[name] ?? fallback;
