@@ -2863,11 +2863,11 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Name (e.g., Estradiol Patch, Magnesium)'),
+                    decoration: const InputDecoration(hintText: 'Name (e.g., Estradiol Patch, Magnesium)'), // i18n-ignore: example placeholder (clinical copy kept English)
                   ),
                   TextField(
                     controller: doseCtrl,
-                    decoration: const InputDecoration(labelText: 'Dose / Frequency (e.g., 0.05mg 2x/wk)'),
+                    decoration: const InputDecoration(hintText: 'Dose / Frequency (e.g., 0.05mg 2x/wk)'), // i18n-ignore: example placeholder (clinical copy kept English)
                   ),
                   const SizedBox(height: 10),
                   DropdownButton<String>(
