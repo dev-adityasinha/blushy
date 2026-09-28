@@ -3509,6 +3509,15 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
       _buildPeriodTrackerCard(context),
       const SizedBox(height: 14),
 
+      // 02b. General Daily Symptoms Log -- kept directly below the tracker,
+      // consistent with every other stage.
+      _buildEyebrow('LOG SYMPTOMS'),
+      const LogSymptomsSection(
+        stageKey: 'tryingtoconceive',
+        showHeading: false,
+      ),
+      const SizedBox(height: 16),
+
       // Load/Empty notice
       StageStateNotice(
         state: _cycleState,
@@ -3548,14 +3557,6 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         _buildTwoWeekWaitCard(context)
       else if (phase == TtcPhase.extendedLuteal)
         _buildExtendedLutealCard(context),
-      const SizedBox(height: 16),
-
-      // 06. General Daily Symptoms Log (No double heading!)
-      _buildEyebrow('LOG SYMPTOMS'),
-      const LogSymptomsSection(
-        stageKey: 'tryingtoconceive',
-        showHeading: false,
-      ),
       const SizedBox(height: 16),
 
       // 07. Mindset & De-Stress Hub ("A breather for today")

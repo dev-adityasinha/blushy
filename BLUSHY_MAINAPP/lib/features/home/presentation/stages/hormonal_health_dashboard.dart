@@ -2884,10 +2884,12 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
                 'starts working from your own cycle instead of general guidance.',
             onRetry: _loadPeriodData,
           ),
-
-          _buildTodayWithDocsyHero(context),
-          const SizedBox(height: 22),
+          const SizedBox(height: 14),
+          // Symptom log kept directly below the tracker, consistent with every
+          // other stage.
           const LogSymptomsSection(stageKey: 'hormonalhealth'),
+          const SizedBox(height: 22),
+          _buildTodayWithDocsyHero(context),
           const SizedBox(height: 18),
           const HealthLibrarySection(stageKey: 'hormonalhealth'),
           const SizedBox(height: 14),
