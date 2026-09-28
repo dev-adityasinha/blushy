@@ -97,6 +97,12 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
       final answers = await ApiAuthService().getOnboardingAnswers();
       final value = answers['period_duration_days']?.toString();
       if (!mounted || value == null || value.isEmpty) return;
+      // This load fires once on open, but the network round-trip can outlast
+      // the user opening the Cycle Configuration section and editing this
+      // field -- both share this controller. Only seed the initial value;
+      // never overwrite what she has already typed, which was snapping the
+      // field back to the stored value mid-edit.
+      if (_periodLengthController.text.trim().isNotEmpty) return;
       setState(() => _periodLengthController.text = value);
     } catch (_) {
       // Offline or signed out: leave the field blank rather than guessing.
