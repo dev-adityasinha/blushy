@@ -526,13 +526,22 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
   /// Period duration is stored with the onboarding answers, and the life-stage
   /// dates go to LifeStageApi. Both used to fire on every keystroke or tap;
   /// they are held until Save now, like everything else on the page.
-  Future<void> _flushPending(Map<String, Object?> pending) async {
+  ///
+  /// Returns true only when every queued write reached the server. A failure
+  /// used to be swallowed here, so a save that never landed (a dropped request,
+  /// a cold-start timeout) still looked successful and the field silently
+  /// reverted to the stored value on the next load -- the "period length comes
+  /// back to 3" report. The caller now keeps the editor open on false.
+  Future<bool> _flushPending(Map<String, Object?> pending) async {
+    bool ok = true;
     final days = pending['period_duration_days'];
     if (days is int) {
       try {
         await ApiAuthService()
             .saveOnboardingAnswers({'period_duration_days': days});
-      } catch (_) {}
+      } catch (_) {
+        ok = false;
+      }
     }
 
     final branch = <String, dynamic>{
@@ -540,7 +549,14 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
         if (entry.key.startsWith('branch:'))
           entry.key.substring('branch:'.length): entry.value,
     };
-    if (branch.isNotEmpty) await _saveBranchContext(branch);
+    if (branch.isNotEmpty) {
+      try {
+        await _saveBranchContext(branch);
+      } catch (_) {
+        ok = false;
+      }
+    }
+    return ok;
   }
 
   Widget _sectionPreferredName(BuildContext context, _SectionEditor e) {
@@ -1253,8 +1269,9 @@ class _AccountSectionScreen extends StatefulWidget {
   final void Function(BuildContext, PersonalContext) onSave;
 
   /// Applies the queued server-side fields. Called with the same press as
-  /// [onSave], and not at all if Cancel is pressed.
-  final Future<void> Function(Map<String, Object?>) onFlush;
+  /// [onSave], and not at all if Cancel is pressed. Returns false when a write
+  /// did not reach the server, so the caller can keep the editor open.
+  final Future<bool> Function(Map<String, Object?>) onFlush;
 
   @override
   State<_AccountSectionScreen> createState() => _AccountSectionScreenState();
@@ -1314,12 +1331,33 @@ class _AccountSectionScreenState extends State<_AccountSectionScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 final draft = _draft;
-                if (draft != null) widget.onSave(context, draft);
+                // Flush the server-side fields FIRST and wait for them, so the
+                // period write is committed before onSave triggers the profile
+                // sync -- otherwise the profile sync (which omits period) could
+                // merge over a not-yet-committed period and revert it. A failed
+                // flush keeps the editor open with the values intact so nothing
+                // is silently lost.
+                bool flushOk = true;
                 if (_pending.isNotEmpty) {
-                  widget.onFlush(Map<String, Object?>.from(_pending));
+                  flushOk = await widget.onFlush(
+                    Map<String, Object?>.from(_pending),
+                  );
                 }
+                if (!mounted) return;
+                if (!flushOk) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Couldn't save your changes. Please check your "
+                        'connection and try again.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+                if (draft != null) widget.onSave(context, draft);
                 setState(() {
                   _editing = false;
                   _draft = null;
