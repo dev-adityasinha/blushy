@@ -103,7 +103,7 @@ class BlushyPeriodTrackerCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      hasLoggedPeriod ? 'Log your period' : '+ Log your period',
+                      hasLoggedPeriod ? 'Update your period' : '+ Log your period',
                       style: GoogleFonts.manrope(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,

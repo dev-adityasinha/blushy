@@ -1011,7 +1011,7 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        _hasLoggedPeriod ? 'Log your period' : '+ Log your period',
+                        _hasLoggedPeriod ? 'Update your period' : '+ Log your period',
                         style: GoogleFonts.manrope(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,

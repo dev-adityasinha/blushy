@@ -260,7 +260,9 @@ class _Ready extends StatelessWidget {
                       const Icon(Icons.water_drop_outlined, size: 11, color: BlushyColors.primary),
                       const SizedBox(width: 4),
                       Text(
-                        'Log your period',
+                        // This card only renders once a period is logged
+                        // (_Ready state), so the action is always an update.
+                        'Update your period',
                         style: GoogleFonts.manrope(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
