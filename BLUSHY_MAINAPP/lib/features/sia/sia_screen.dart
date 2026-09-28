@@ -711,6 +711,12 @@ class _BlushySiaScreenState extends State<BlushySiaScreen>
           'text': chatResult.message,
           'at': DateTime.now().toUtc().toIso8601String(),
         };
+        // A failed request carries an honest error notice, not a real reply, so
+        // mark it and remember the prompt to offer a retry instead.
+        if (chatResult.failed) {
+          siaEntry['error'] = 'true';
+          siaEntry['retryPrompt'] = promptText;
+        }
         if (currentAttachment != null) {
           siaEntry['analyzedFile'] = currentAttachment.name;
         }
@@ -1386,6 +1392,35 @@ class _BlushySiaScreenState extends State<BlushySiaScreen>
               if (isSia && msg['rich'] != null) ...[
                 const SizedBox(height: 16),
                 _buildRichComponent(msg['rich']!),
+              ],
+              // A failed request shows a retry rather than leaving the honest
+              // error notice as the last word.
+              if (isSia &&
+                  msg['error'] == 'true' &&
+                  (msg['retryPrompt']?.isNotEmpty ?? false)) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => _sendUserMessage(msg['retryPrompt']!),
+                    icon: const Icon(Icons.refresh_rounded,
+                        size: 16, color: BlushyColors.primary),
+                    label: Text(
+                      'Retry',
+                      style: GoogleFonts.manrope(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: BlushyColors.primary,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
               ],
               // Omitted rather than invented when a message carries no stamp:
               // older history rows predate the server sending one.

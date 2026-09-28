@@ -182,10 +182,20 @@ class ApiSiaService {
       return SiaChatResult(message: 'I am here for you. How else can I support you today?');
     } on DioException catch (e) {
       debugPrint('BlushySia: Dio error sending message: ${e.message}');
-      return SiaChatResult(message: 'I am listening. If you ever feel overwhelmed, remember to take a deep, calming breath.');
+      // Surface an honest, retryable failure rather than a soothing line that
+      // reads as a real (evasive) answer. A 503 means Docsy isn't configured on
+      // the server; anything else is treated as a transient reach failure.
+      final honest = e.response?.statusCode == 503
+          ? "Docsy isn't available on the server right now, so I can't answer yet. Please try again in a little while."
+          : "I couldn't reach Docsy just now. Please check your connection and try again.";
+      return SiaChatResult(message: honest, failed: true, aiGenerated: false);
     } catch (e) {
       debugPrint('BlushySia: Error sending message: $e');
-      return SiaChatResult(message: 'I am here for you. Take your time.');
+      return SiaChatResult(
+        message: 'Something went wrong reaching Docsy. Please try again.',
+        failed: true,
+        aiGenerated: false,
+      );
     }
   }
 
@@ -664,6 +674,10 @@ class SiaChatResult {
   /// False when the reply came from the safety ruleset rather than the model.
   final bool aiGenerated;
 
+  /// True when the request to Docsy failed (network / HTTP error) and [message]
+  /// is an honest, retryable error notice rather than a generated reply.
+  final bool failed;
+
   SiaChatResult({
     required this.message,
     this.moodCapture,
@@ -671,6 +685,7 @@ class SiaChatResult {
     this.cycleCapture,
     this.safety,
     this.aiGenerated = true,
+    this.failed = false,
   });
 
   bool get hasSafety => safety?.triggered == true && (safety?.steps.isNotEmpty ?? false);
