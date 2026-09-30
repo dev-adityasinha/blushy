@@ -1,4 +1,5 @@
 import '../../../../services/api_period_service.dart';
+import '../../widgets/period_arrival_prompt.dart';
 import 'dart:async';
 // Dynamic dashboard generated for stage: everyday_wellness
 import 'package:flutter/material.dart';
@@ -1733,6 +1734,34 @@ class _EverydayWellnessDashboardState extends State<EverydayWellnessDashboard>
           BlushyStorage.write(_cycleCacheFile, result.data!.toJson());
         } catch (_) {}
       }
+    });
+    _maybePromptPeriodArrival();
+  }
+
+  /// Ask "Did your period arrive?" once the tracker reaches the expected date,
+  /// then reset the cycle and show a short Docsy insight on confirmation.
+  void _maybePromptPeriodArrival() {
+    final cycle = _lastKnownCycle;
+    final startIso = cycle?.cycleStartDate;
+    final day = cycle?.currentCycleDay;
+    final len = cycle?.cycleLengthDays;
+    if (cycle == null || startIso == null || day == null || len == null) return;
+    final start = DateTime.tryParse(startIso);
+    if (start == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      PeriodArrivalPrompt.maybeShow(
+        context,
+        hasLoggedPeriod: true,
+        currentCycleDay: day,
+        cycleLength: len,
+        lastPeriodStart: start,
+        completedCycles: 0,
+        onConfirm: (s) async {
+          await ApiPeriodService().logPeriodEntry(periodStartDate: s);
+          await _loadCycleFromServer();
+        },
+      );
     });
   }
 

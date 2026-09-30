@@ -10,6 +10,7 @@ import '../../../../core/state.dart';
 import '../../../../core/storage.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
+import '../../widgets/period_arrival_prompt.dart';
 import '../../view_models/cycle_view_model.dart';
 import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_sia_service.dart';
@@ -336,6 +337,27 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
       _periodLength = _cycleVM.periodLength;
       _currentCycleDay = _cycleVM.currentCycleDay;
       _completedCycles = _cycleVM.completedCyclesCount;
+    });
+    _maybePromptPeriodArrival();
+  }
+
+  /// Ask "Did your period arrive?" once the tracker reaches the expected date,
+  /// then reset the cycle and show a short Docsy insight on confirmation.
+  void _maybePromptPeriodArrival() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      PeriodArrivalPrompt.maybeShow(
+        context,
+        hasLoggedPeriod: _hasLoggedPeriod,
+        currentCycleDay: _currentCycleDay,
+        cycleLength: _cycleLength,
+        lastPeriodStart: _lastPeriodStartDate,
+        completedCycles: _cycleVM.completedCyclesCount,
+        onConfirm: (start) async {
+          await ApiPeriodService().logPeriodEntry(periodStartDate: start);
+          await _cycleVM.load();
+        },
+      );
     });
   }
 
