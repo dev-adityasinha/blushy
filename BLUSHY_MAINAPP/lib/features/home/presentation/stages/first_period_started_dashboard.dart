@@ -11,7 +11,7 @@ import '../../../../core/storage.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
 import '../../widgets/period_arrival_prompt.dart';
-import '../../widgets/activity_care_card.dart';
+import '../../widgets/lifestyle_section.dart';
 import '../../view_models/cycle_view_model.dart';
 import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_sia_service.dart';
@@ -2436,10 +2436,6 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                   // and shared into Docsy's context).
                   const LogSymptomsSection(stageKey: 'firstperiodstarted'),
                   const SizedBox(height: 22),
-                  ActivityCareCard(
-                    currentCycleDay: _currentCycleDay,
-                    periodLength: _periodLength,
-                  ),
                   // 3. Emergency quick rescue, elevated so it is one tap away.
                   _buildSchoolToolkitCard(context),
                   const SizedBox(height: 18),
@@ -2470,6 +2466,12 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                   const SizedBox(height: 18),
                   // 9. When to tell a trusted adult (safety).
                   _buildSafetyHelperCard(context),
+                  const SizedBox(height: 22),
+                  LifestyleSection(
+                    stage: 'firstperiod',
+                    currentCycleDay: _currentCycleDay,
+                    periodLength: _periodLength,
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -2499,10 +2501,6 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                                 const SizedBox(height: 18),
                                 const LogSymptomsSection(stageKey: 'firstperiodstarted'),
                                 const SizedBox(height: 22),
-                                ActivityCareCard(
-                                  currentCycleDay: _currentCycleDay,
-                                  periodLength: _periodLength,
-                                ),
                                 _buildSchoolToolkitCard(context),
                                 const SizedBox(height: 18),
                                 _buildNoteFromDocsy(context),
@@ -2538,6 +2536,12 @@ class _FirstPeriodStartedDashboardState extends State<FirstPeriodStartedDashboar
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 22),
+                      LifestyleSection(
+                        stage: 'firstperiod',
+                        currentCycleDay: _currentCycleDay,
+                        periodLength: _periodLength,
                       ),
                       const SizedBox(height: 32),
                     ],

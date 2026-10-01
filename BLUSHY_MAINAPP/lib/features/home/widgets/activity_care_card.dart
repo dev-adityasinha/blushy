@@ -57,6 +57,11 @@ class ActivityCareCard extends StatelessWidget {
   static const String _defaultTip =
       'Keep moving at a pace that feels good. Lighter effort on heavy-flow days is completely okay, and you can train as normal when you feel up to it.';
 
+  /// Whether this card will render for the current profile (has at least one
+  /// real activity). Used by LifestyleSection to decide the section header.
+  static bool hasActivities() => profileListAnswer('physical_activities')
+      .any((a) => a.toLowerCase() != 'not very active right now');
+
   bool get _isOnPeriod {
     final d = currentCycleDay;
     final p = periodLength;

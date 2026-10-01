@@ -40,6 +40,16 @@ class SmokingCareCard extends StatelessWidget {
     return 'occasional';
   }
 
+  /// Whether this card will render for the current profile (18+ and a smoking
+  /// status that isn't "never"). Used by LifestyleSection for the section header.
+  static bool willShow() {
+    final age = profileAgeYears();
+    if (age != null && age < 18) return false;
+    final raw = profileStringAnswer('smoking_status');
+    if (raw == null) return false;
+    return _status(raw) != 'never';
+  }
+
   // Stage-specific facts. Every line is sourced (CDC / WHO / US Surgeon
   // General, with cycle effects from NIH-indexed research) — nothing invented.
   ({String intro, List<String> facts}) _content() {

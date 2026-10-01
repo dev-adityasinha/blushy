@@ -7,7 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/state.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../view_models/postpartum_view_model.dart';
-import '../../widgets/smoking_care_card.dart';
+import '../../widgets/lifestyle_section.dart';
 import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_postpartum_service.dart';
 import '../../../sia/open_docsy.dart';
@@ -2540,7 +2540,6 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                     // 02: CURATED POSTPARTUM HEALTH & ADJUSTING LIBRARY ⭐ (Placed 2nd per explicit user request)
                     _buildPostpartumHealthLibrary(),
                     const SizedBox(height: 18),
-                    const SmokingCareCard(stage: 'postpartum'),
 
                     // 03: AI COMPANION & PEACE OF MIND (Docsy Intelligence & Reassurance) ⭐
                     _buildDocsyAndPeaceOfMindHub(),
@@ -2553,6 +2552,8 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                     // 05: SUPPORT CIRCLE, REST & SAFETY (SOS, Rest Mode & Red Flags) ⭐
                     _buildSupportAndRestHub(),
                   ],
+                  const SizedBox(height: 22),
+                  const LifestyleSection(stage: 'postpartum', includeActivity: false),
                   const SizedBox(height: 40),
                 ],
               ),

@@ -14,7 +14,7 @@ import 'stage_shared_components.dart';
 import '../../../../shared/stage_empty_notice.dart';
 import '../../../../shared/user_display_name.dart';
 import '../../widgets/log_symptoms_section.dart';
-import '../../widgets/smoking_care_card.dart';
+import '../../widgets/lifestyle_section.dart';
 import 'pregnancy_health_section.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../services/user_state_store.dart';
@@ -1258,8 +1258,6 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
 
         // Keep standard symptom logger available for deeper checks
         const LogSymptomsSection(stageKey: 'pregnancy'),
-        const SizedBox(height: 16),
-        const SmokingCareCard(stage: 'pregnancy'),
       ],
     );
   }
@@ -1839,6 +1837,8 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
 
               // 08: Trimester Checklist Roadmap
               _buildTrimesterChecklist(),
+              const SizedBox(height: 22),
+              const LifestyleSection(stage: 'pregnancy', includeActivity: false),
               const SizedBox(height: 36),
             ],
           ),

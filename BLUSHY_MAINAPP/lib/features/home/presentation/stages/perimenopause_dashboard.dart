@@ -7,8 +7,7 @@ import '../../../../core/state.dart';
 import '../../../../core/storage.dart';
 import '../../../../services/api_period_service.dart';
 import '../../widgets/period_arrival_prompt.dart';
-import '../../widgets/activity_care_card.dart';
-import '../../widgets/smoking_care_card.dart';
+import '../../widgets/lifestyle_section.dart';
 import '../../../../services/api_contract_client.dart';
 import '../../../../services/api_perimenopause_service.dart';
 import '../../view_models/perimenopause_view_model.dart';
@@ -412,11 +411,6 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
             const SizedBox(height: 20),
             const LogSymptomsSection(stageKey: 'perimenopause'),
             const SizedBox(height: 20),
-            ActivityCareCard(
-              currentCycleDay: _currentCycleDay,
-              periodLength: _periodLength,
-            ),
-            const SmokingCareCard(stage: 'perimenopause'),
             const HealthLibrarySection(stageKey: 'perimenopause'),
             const SizedBox(height: 20),
             const PerimenopauseSymptomsSection(),
@@ -429,6 +423,11 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
                 _buildSectionByName(section, userName),
                 const SizedBox(height: 20),
               ],
+            LifestyleSection(
+              stage: 'perimenopause',
+              currentCycleDay: _currentCycleDay,
+              periodLength: _periodLength,
+            ),
             const SizedBox(height: 40),
           ],
         ),
