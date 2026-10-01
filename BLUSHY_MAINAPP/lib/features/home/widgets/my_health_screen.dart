@@ -12,6 +12,8 @@ import '../../../shared/confirm_sign_out.dart';
 import '../../../services/sia_dashboard_service.dart';
 import '../../../l10n/app_localizations.dart';
 import '../settings_draft.dart';
+import 'lifestyle_editor_sheet.dart';
+import 'profile_answers.dart';
 
 class MyHealthScreen extends StatefulWidget {
   const MyHealthScreen({super.key});
@@ -259,6 +261,14 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
                       onTap: () => _openSection(t.setHealthMedicalProfile, true,
                           _sectionHealthMedicalProfile),
                     ),
+                    _settingsRow(
+                      label: 'Activities & lifestyle', // i18n-ignore: lifestyle entry (English copy)
+                      value: _lifestyleSummary(),
+                      onTap: () async {
+                        await LifestyleEditorSheet.show(context);
+                        if (mounted) setState(() {});
+                      },
+                    ),
                   ]),
 
                   // ── APP PREFERENCES & DOCSY AI ──
@@ -350,6 +360,15 @@ class _MyHealthScreenState extends State<MyHealthScreen> {
   ];
 
   String _formatDob(DateTime d) => '${_monthAbbr[d.month - 1]} ${d.day}, ${d.year}';
+
+  // Short right-aligned summary for the Activities & lifestyle row.
+  String _lifestyleSummary() {
+    final count = profileListAnswer('physical_activities')
+        .where((a) => a.toLowerCase() != 'not very active right now')
+        .length;
+    if (count > 0) return count == 1 ? '1 activity' : '$count activities';
+    return profileStringAnswer('smoking_status') != null ? 'Edit' : 'Add';
+  }
 
   // Humanises the stored life-stage key for display (read-only).
   String _stageLabel(String? s) {

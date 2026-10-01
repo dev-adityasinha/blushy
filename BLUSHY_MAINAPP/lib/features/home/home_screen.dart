@@ -6,6 +6,7 @@ import '../../core/storage.dart';
 import '../../theme/colors.dart';
 import '../../services/api_auth_service.dart';
 import '../../core/stage_conflict_engine.dart';
+import 'widgets/profile_answers.dart';
 import 'presentation/stages/first_period_not_started_dashboard.dart';
 import 'presentation/stages/first_period_started_dashboard.dart';
 import 'presentation/stages/living_with_my_cycle_dashboard.dart';
@@ -59,10 +60,16 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
     }
 
     ApiAuthService().getOnboardingAnswers().then((remoteAnswers) {
-      if (remoteAnswers.isNotEmpty && mounted) {
-        setState(() {
-          _onboardingData = {..._onboardingData, ...remoteAnswers};
-        });
+      if (remoteAnswers.isNotEmpty) {
+        // Mirror the lifestyle answers into the store the activity/smoking cards
+        // read — user_profile.json is overwritten by the dashboard sync, so the
+        // cards can't rely on it.
+        hydrateLifestyleFromAnswers(remoteAnswers);
+        if (mounted) {
+          setState(() {
+            _onboardingData = {..._onboardingData, ...remoteAnswers};
+          });
+        }
       }
     });
   }

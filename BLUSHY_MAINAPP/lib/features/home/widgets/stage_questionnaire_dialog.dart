@@ -905,6 +905,12 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
     if (_selectedActivities.isNotEmpty) {
       finalAnswers['physical_activities'] = _selectedActivities.toList();
     }
+    // Mirror lifestyle answers into the store the home cards read.
+    writeLifestyleAnswers(
+      activities:
+          _selectedActivities.isNotEmpty ? _selectedActivities.toList() : null,
+      smokingStatus: _answers['smoking_status']?.toString(),
+    );
     if (_selectedDate != null) {
       if (widget.stageKey == 'reproductiveYears') {
         finalAnswers['last_period'] = _selectedDate!.toIso8601String().split('T').first;

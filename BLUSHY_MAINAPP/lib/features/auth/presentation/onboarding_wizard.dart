@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/storage.dart';
 import '../../../core/state.dart';
+import '../../home/widgets/profile_answers.dart';
 import '../../../core/cycle_calculator.dart';
 import '../../../theme/colors.dart';
 import '../../../services/api_auth_service.dart';
@@ -735,6 +736,16 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
         'baby_birth_date': _profile.babyBirthDate!.toIso8601String().split('T').first,
       ..._profile.answers,
     };
+    // Mirror lifestyle answers into the store the home cards read, so they show
+    // immediately — before the first backend round-trip hydrates it.
+    writeLifestyleAnswers(
+      activities: (_profile.answers['physical_activities'] is List)
+          ? List<String>.from(_profile.answers['physical_activities'] as List)
+          : null,
+      smokingStatus: _profile.answers['smoking_status']?.toString(),
+      dateOfBirth: _profile.dateOfBirth?.toIso8601String().split('T').first,
+    );
+
     ApiAuthService().saveOnboardingAnswers(backendAnswers).catchError((err) {
       debugPrint('BlushyBackend: Onboarding sync exception: $err');
       return <String, dynamic>{};
