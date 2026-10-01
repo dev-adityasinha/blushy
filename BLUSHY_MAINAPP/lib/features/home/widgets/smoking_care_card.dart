@@ -15,7 +15,11 @@ import 'profile_answers.dart';
 ///   - India National Tobacco Quitline 1800-11-2356: MoHFW / WHO India.
 /// It renders nothing when she has not answered, or answered "never".
 class SmokingCareCard extends StatelessWidget {
-  const SmokingCareCard({super.key});
+  const SmokingCareCard({super.key, this.stage});
+
+  /// Stage category that selects the fact set: 'cycle', 'ttc', 'pregnancy',
+  /// 'postpartum', 'perimenopause', 'menopause'. Null falls back to 'cycle'.
+  final String? stage;
 
   static const Color _bg = Color(0xFFF3EEFB);
   static const Color _accent = Color(0xFF6C4AB6);
@@ -36,6 +40,72 @@ class SmokingCareCard extends StatelessWidget {
     return 'occasional';
   }
 
+  // Stage-specific facts. Every line is sourced (CDC / WHO / US Surgeon
+  // General, with cycle effects from NIH-indexed research) — nothing invented.
+  ({String intro, List<String> facts}) _content() {
+    switch (stage) {
+      case 'pregnancy':
+        return (
+          intro:
+              'A few things smoking does during pregnancy, so you can decide with the full picture:',
+          facts: const [
+            'It raises the risk of low birth weight, premature birth and stillbirth.',
+            'It’s linked to birth defects like cleft lip and to sudden infant death syndrome (SIDS).',
+            'There’s no safe amount in pregnancy — but quitting at any point helps your baby.',
+          ],
+        );
+      case 'postpartum':
+        return (
+          intro: 'A few things worth knowing while you have a little one:',
+          facts: const [
+            'Second-hand smoke around your baby raises the risk of SIDS, chest and ear infections, and asthma.',
+            'If you’re breastfeeding, nicotine passes into breast milk and can lower your supply.',
+            'The upside: quitting and keeping your home and car smoke-free protects your baby right away.',
+          ],
+        );
+      case 'ttc':
+        return (
+          intro:
+              'A few things worth knowing while you’re trying to conceive:',
+          facts: const [
+            'It can make it harder to conceive and is linked to delays in getting pregnant.',
+            'It raises the risk of problems in pregnancy, including ectopic pregnancy.',
+            'The upside: quitting before you conceive improves your chances and protects a future pregnancy.',
+          ],
+        );
+      case 'perimenopause':
+        return (
+          intro:
+              'A few things smoking does to a woman’s body, so you can decide with the full picture:',
+          facts: const [
+            'It’s linked to reaching menopause earlier.',
+            'It raises the risk of cervical cancer and heart disease.',
+            'The upside: quitting at any age lowers your heart-disease and cancer risk.',
+          ],
+        );
+      case 'menopause':
+        return (
+          intro:
+              'A few things smoking does to a woman’s body, so you can decide with the full picture:',
+          facts: const [
+            'It raises the risk of cervical cancer and heart disease.',
+            'The upside: quitting at any age still lowers your risk and helps your body recover.',
+          ],
+        );
+      default: // 'cycle' and any unset stage
+        return (
+          intro:
+              'A few things smoking does to a woman’s body, so you can decide with the full picture:',
+          facts: const [
+            'It’s linked to more painful periods and more irregular cycles.',
+            'It can make it harder to get pregnant and is linked to an earlier menopause.',
+            'It raises the risk of cervical cancer.',
+            'The upside: quitting lowers these risks — your body genuinely starts to recover.',
+          ],
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Age-gate: never show smoking content to under-18s, even if a status
@@ -48,6 +118,8 @@ class SmokingCareCard extends StatelessWidget {
     if (raw == null) return const SizedBox.shrink();
     final status = _status(raw);
     if (status == 'never') return const SizedBox.shrink();
+
+    final content = _content();
 
     final String encouragement = status == 'quitting'
         ? "You're already on the kindest path for your body. Every cigarette you skip lets it heal a little more."
@@ -96,7 +168,7 @@ class SmokingCareCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'A few things smoking does to a woman’s body, so you can decide with the full picture:', // i18n-ignore: smoking care card (English copy)
+            content.intro, // i18n-ignore: smoking care card (English copy)
             style: GoogleFonts.manrope(
               fontSize: 12.5,
               height: 1.45,
@@ -104,9 +176,7 @@ class SmokingCareCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _fact('It can make it harder to get pregnant and is linked to an earlier menopause.'),
-          _fact('It raises the risk of cervical cancer.'),
-          _fact('The upside: quitting lowers these risks — your body genuinely starts to recover.'),
+          ...content.facts.map(_fact),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),

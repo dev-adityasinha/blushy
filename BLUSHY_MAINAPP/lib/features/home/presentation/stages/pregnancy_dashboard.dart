@@ -1259,7 +1259,7 @@ class _PregnancyDashboardState extends State<PregnancyDashboard>
         // Keep standard symptom logger available for deeper checks
         const LogSymptomsSection(stageKey: 'pregnancy'),
         const SizedBox(height: 16),
-        const SmokingCareCard(),
+        const SmokingCareCard(stage: 'pregnancy'),
       ],
     );
   }

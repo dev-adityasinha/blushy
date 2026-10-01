@@ -416,7 +416,7 @@ class _PerimenopauseDashboardState extends State<PerimenopauseDashboard>
               currentCycleDay: _currentCycleDay,
               periodLength: _periodLength,
             ),
-            const SmokingCareCard(),
+            const SmokingCareCard(stage: 'perimenopause'),
             const HealthLibrarySection(stageKey: 'perimenopause'),
             const SizedBox(height: 20),
             const PerimenopauseSymptomsSection(),

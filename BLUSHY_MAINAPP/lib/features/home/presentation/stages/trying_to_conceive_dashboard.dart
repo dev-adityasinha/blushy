@@ -3545,7 +3545,7 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         currentCycleDay: _currentCycleDay,
         periodLength: _periodLength,
       ),
-      const SmokingCareCard(),
+      const SmokingCareCard(stage: 'ttc'),
 
       // Load/Empty notice
       StageStateNotice(

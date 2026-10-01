@@ -2540,7 +2540,7 @@ class _PostpartumDashboardState extends State<PostpartumDashboard>
                     // 02: CURATED POSTPARTUM HEALTH & ADJUSTING LIBRARY ⭐ (Placed 2nd per explicit user request)
                     _buildPostpartumHealthLibrary(),
                     const SizedBox(height: 18),
-                    const SmokingCareCard(),
+                    const SmokingCareCard(stage: 'postpartum'),
 
                     // 03: AI COMPANION & PEACE OF MIND (Docsy Intelligence & Reassurance) ⭐
                     _buildDocsyAndPeaceOfMindHub(),

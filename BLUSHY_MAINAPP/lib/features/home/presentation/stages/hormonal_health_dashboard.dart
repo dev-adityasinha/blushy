@@ -2917,7 +2917,7 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
             currentCycleDay: _currentCycleDay,
             periodLength: _periodLength,
           ),
-          const SmokingCareCard(),
+          const SmokingCareCard(stage: 'cycle'),
           _buildTodayWithDocsyHero(context),
           const SizedBox(height: 18),
           const HealthLibrarySection(stageKey: 'hormonalhealth'),

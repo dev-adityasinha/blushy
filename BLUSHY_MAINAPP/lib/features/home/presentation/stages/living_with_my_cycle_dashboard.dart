@@ -1436,7 +1436,7 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
           currentCycleDay: _currentCycleDay,
           periodLength: _periodLength,
         ),
-        const SmokingCareCard(),
+        const SmokingCareCard(stage: 'cycle'),
 
         // 2. Interactive Segmented Pillar Tab Selector
         SizedBox(

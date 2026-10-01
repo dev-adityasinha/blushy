@@ -2146,7 +2146,7 @@ class _MenopauseDashboardState extends State<MenopauseDashboard>
     // leave this stage with no way into the sheet at all.
     contentList.add(const LogSymptomsSection(stageKey: 'menopause'));
     contentList.add(const SizedBox(height: 18));
-    contentList.add(const SmokingCareCard());
+    contentList.add(const SmokingCareCard(stage: 'menopause'));
     contentList.add(const HealthLibrarySection(stageKey: 'menopause'));
     contentList.add(const SizedBox(height: 20));
     contentList.add(const MenopauseChangesSection());
