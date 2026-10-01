@@ -493,7 +493,37 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
         break;
     }
 
+    // Shared lifestyle questions (optional — Next stays enabled). The activity
+    // question is shown wherever there's a cycle (adult stages + the
+    // first-period-started stage). The smoking question is age-gated to 18+
+    // (not stage-gated), since 13–17-year-olds can also pick adult stages like
+    // reproductive-years / hormonal-health.
+    final int? age = _userAge;
+    final bool is18Plus = age != null && age >= 18;
+    if (_isAdultStage(_profile.lifeStage!)) {
+      steps.add(_buildActivitiesStep());
+      if (is18Plus) steps.add(_buildSmokingStep());
+    } else if (_profile.lifeStage == LifeStage.firstPeriodStarted) {
+      steps.add(_buildActivitiesStep());
+    }
+
     return steps;
+  }
+
+  bool _isAdultStage(LifeStage s) {
+    switch (s) {
+      case LifeStage.reproductiveYears:
+      case LifeStage.hormonalHealth:
+      case LifeStage.tryingToConceive:
+      case LifeStage.pregnancy:
+      case LifeStage.postpartum:
+      case LifeStage.perimenopause:
+      case LifeStage.menopause:
+        return true;
+      case LifeStage.firstPeriodNotStarted:
+      case LifeStage.firstPeriodStarted:
+        return false;
+    }
   }
 
   bool _isStepInputValid() {
@@ -3299,6 +3329,97 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
             onTap: () {
               setState(() {
                 _profile.answers[storageKey] = opt;
+              });
+              _saveProgress();
+            },
+          );
+        }),
+      ],
+    );
+  }
+
+  // ─── Shared adult lifestyle steps (activities + smoking) ──────────────────
+
+  Widget _buildActivitiesStep() {
+    return _buildMultiSelectAnswersStep(
+      title: 'How do you love to move?', // i18n-ignore: adult lifestyle onboarding (English copy)
+      subtitle:
+          'Pick anything you do — Blushy will add gentle tips for your period days.', // i18n-ignore: adult lifestyle onboarding (English copy)
+      storageKey: 'physical_activities',
+      options: const [
+        'Swimming',
+        'Gym & strength training',
+        'Yoga',
+        'Dance',
+        'Running',
+        'Cycling',
+        'Badminton',
+        'Throwball',
+        'Kho-Kho',
+        'Volleyball',
+        'Walking',
+        'Not very active right now',
+      ],
+    );
+  }
+
+  Widget _buildSmokingStep() {
+    return _buildSingleSelectBranchStep(
+      title: 'Do you smoke or vape?', // i18n-ignore: adult lifestyle onboarding (English copy)
+      subtitle:
+          'No judgment — it just helps Blushy look after you better.', // i18n-ignore: adult lifestyle onboarding (English copy)
+      storageKey: 'smoking_status',
+      options: const [
+        'No, never',
+        'Once in a while',
+        'Yes, regularly',
+        "I'm trying to quit",
+      ],
+    );
+  }
+
+  /// Generic multi-select that stores the chosen options as a `List<String>`
+  /// under `_profile.answers[storageKey]` (used for activities).
+  Widget _buildMultiSelectAnswersStep({
+    required String title,
+    required String subtitle,
+    required List<String> options,
+    required String storageKey,
+  }) {
+    final current = (_profile.answers[storageKey] is List)
+        ? List<String>.from(_profile.answers[storageKey] as List)
+        : <String>[];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.cormorantGaramond(
+              fontSize: 32, fontWeight: FontWeight.w600, color: BlushyColors.text),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          subtitle,
+          style: GoogleFonts.manrope(
+              fontSize: 13.5, color: BlushyColors.secondaryText),
+        ),
+        const SizedBox(height: 24),
+        ...options.map((opt) {
+          final isSelected = current.contains(opt);
+          return _buildPremiumSelectionRow(
+            title: opt,
+            isSelected: isSelected,
+            onTap: () {
+              setState(() {
+                final list = (_profile.answers[storageKey] is List)
+                    ? List<String>.from(_profile.answers[storageKey] as List)
+                    : <String>[];
+                if (list.contains(opt)) {
+                  list.remove(opt);
+                } else {
+                  list.add(opt);
+                }
+                _profile.answers[storageKey] = list;
               });
               _saveProgress();
             },

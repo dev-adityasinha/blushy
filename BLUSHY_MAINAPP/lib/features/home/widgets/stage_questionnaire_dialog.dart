@@ -7,6 +7,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../services/sia_dashboard_service.dart';
 import '../../../services/api_period_service.dart';
 import '../../../services/api_auth_service.dart';
+import 'profile_answers.dart';
 
 class StageQuestionnaireDialog extends StatefulWidget {
   final String stageKey;
@@ -54,6 +55,7 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
   final Set<String> _selectedGoals = {};
   final Set<String> _selectedSymptoms = {};
   final Set<String> _selectedConditions = {};
+  final Set<String> _selectedActivities = {};
   DateTime? _selectedDate;
 
   List<Widget Function()> _steps = [];
@@ -760,6 +762,61 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
               ),
         ];
     }
+
+    // Shared lifestyle questions (optional — Next stays enabled). The activity
+    // question shows wherever there's a cycle (adult stages + first-period-
+    // started). The smoking question is age-gated to 18+ (not stage-gated),
+    // since 13–17-year-olds can also be on adult stages.
+    final bool adultStage = _isAdultStageKey(widget.stageKey);
+    final bool teenStarted = widget.stageKey == 'firstPeriodStarted';
+    final int? age = profileAgeYears();
+    final bool is18Plus = age != null && age >= 18;
+    if (adultStage || teenStarted) {
+      _steps.add(() => _buildMultiSelectStep(
+            title: 'How do you love to move?', // i18n-ignore: lifestyle re-questionnaire (English copy)
+            subtitle:
+                'Pick anything you do — Blushy will add gentle tips for your period days.', // i18n-ignore: lifestyle re-questionnaire (English copy)
+            selectedSet: _selectedActivities,
+            options: const [
+              'Swimming',
+              'Gym & strength training',
+              'Yoga',
+              'Dance',
+              'Running',
+              'Cycling',
+              'Badminton',
+              'Throwball',
+              'Kho-Kho',
+              'Volleyball',
+              'Walking',
+              'Not very active right now',
+            ],
+          ));
+    }
+    if (adultStage && is18Plus) {
+      _steps.add(() => _buildSingleSelectStep(
+            title: 'Do you smoke or vape?', // i18n-ignore: lifestyle re-questionnaire (English copy)
+            subtitle:
+                'No judgment — it just helps Blushy look after you better.', // i18n-ignore: lifestyle re-questionnaire (English copy)
+            storageKey: 'smoking_status',
+            options: const [
+              'No, never',
+              'Once in a while',
+              'Yes, regularly',
+              "I'm trying to quit",
+            ],
+          ));
+    }
+  }
+
+  bool _isAdultStageKey(String key) {
+    return key == 'reproductiveYears' ||
+        key == 'hormonalHealth' ||
+        key == 'tryingToConceive' ||
+        key == 'pregnancy' ||
+        key == 'postpartum' ||
+        key == 'perimenopause' ||
+        key == 'menopause';
   }
 
   bool _canProceed() {
@@ -844,6 +901,9 @@ class _StageQuestionnaireDialogState extends State<StageQuestionnaireDialog> {
     if (_selectedConditions.isNotEmpty) {
       finalAnswers['conditions'] = _selectedConditions.toList();
       finalAnswers['medical_conditions'] = _selectedConditions.toList();
+    }
+    if (_selectedActivities.isNotEmpty) {
+      finalAnswers['physical_activities'] = _selectedActivities.toList();
     }
     if (_selectedDate != null) {
       if (widget.stageKey == 'reproductiveYears') {

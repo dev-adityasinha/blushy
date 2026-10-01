@@ -7,6 +7,8 @@ import '../../services/home_event_bus.dart';
 import '../../../sia/open_docsy.dart';
 import '../../../../services/api_period_service.dart';
 import '../../widgets/period_arrival_prompt.dart';
+import '../../widgets/activity_care_card.dart';
+import '../../widgets/smoking_care_card.dart';
 import '../../view_models/cycle_view_model.dart';
 import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_sia_service.dart';
@@ -1427,6 +1429,14 @@ class _LivingWithMyCycleDashboardState extends State<LivingWithMyCycleDashboard>
           _buildDocsyHormoneCueCard(context),
           const SizedBox(height: 12),
         ],
+
+        // Lifestyle care cards from onboarding — each renders nothing unless
+        // she picked activities / told us she smokes.
+        ActivityCareCard(
+          currentCycleDay: _currentCycleDay,
+          periodLength: _periodLength,
+        ),
+        const SmokingCareCard(),
 
         // 2. Interactive Segmented Pillar Tab Selector
         SizedBox(

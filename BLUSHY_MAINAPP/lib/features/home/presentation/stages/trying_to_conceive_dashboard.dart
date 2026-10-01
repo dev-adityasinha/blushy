@@ -6,6 +6,8 @@ import '../../../../core/storage.dart';
 import '../../../../services/api_auth_service.dart';
 import '../../../../services/api_period_service.dart';
 import '../../widgets/period_arrival_prompt.dart';
+import '../../widgets/activity_care_card.dart';
+import '../../widgets/smoking_care_card.dart';
 import '../../view_models/cycle_view_model.dart';
 import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_contract_client.dart';
@@ -3539,6 +3541,11 @@ class _TryingToConceiveDashboardState extends State<TryingToConceiveDashboard>
         showHeading: false,
       ),
       const SizedBox(height: 16),
+      ActivityCareCard(
+        currentCycleDay: _currentCycleDay,
+        periodLength: _periodLength,
+      ),
+      const SmokingCareCard(),
 
       // Load/Empty notice
       StageStateNotice(

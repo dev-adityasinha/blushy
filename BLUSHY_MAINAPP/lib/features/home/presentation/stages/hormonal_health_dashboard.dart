@@ -11,6 +11,8 @@ import '../../../sia/open_docsy.dart';
 import '../../../../models/blushy_models.dart';
 import '../../../../services/api_period_service.dart';
 import '../../widgets/period_arrival_prompt.dart';
+import '../../widgets/activity_care_card.dart';
+import '../../widgets/smoking_care_card.dart';
 import '../../view_models/cycle_view_model.dart';
 import '../../../../shared/live_refresh.dart';
 import '../../../../services/api_sia_service.dart';
@@ -2911,6 +2913,11 @@ class _HormonalHealthDashboardState extends State<HormonalHealthDashboard>
           // other stage.
           const LogSymptomsSection(stageKey: 'hormonalhealth'),
           const SizedBox(height: 22),
+          ActivityCareCard(
+            currentCycleDay: _currentCycleDay,
+            periodLength: _periodLength,
+          ),
+          const SmokingCareCard(),
           _buildTodayWithDocsyHero(context),
           const SizedBox(height: 18),
           const HealthLibrarySection(stageKey: 'hormonalhealth'),
