@@ -7,8 +7,9 @@ import '../../../core/storage.dart';
 ///
 /// Once the tracker reaches the expected period date (current cycle day has
 /// caught up to the cycle length) it asks, from the bottom, whether the period
-/// arrived. On "Yes" the caller logs the new period start (which resets the
-/// tracker to Day 1) and a short Docsy insight is shown with what Blushy
+/// arrived. She confirms the day it actually started — today, yesterday, or a
+/// picked date — and the caller logs that exact start (which resets the tracker
+/// to Day 1 on that day) before a short Docsy insight is shown with what Blushy
 /// calculated. On "Not yet" it waits until the next day before asking again, and
 /// once confirmed it never re-asks for that cycle.
 class PeriodArrivalPrompt {
@@ -74,22 +75,30 @@ class PeriodArrivalPrompt {
     }
 
     _isShowing = true;
-    bool? confirmed;
+    DateTime? chosenStart;
     try {
-      confirmed = await showModalBottomSheet<bool>(
+      chosenStart = await showModalBottomSheet<DateTime>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (ctx) => _ArrivalSheet(cycleDay: currentCycleDay),
+        builder: (ctx) => _ArrivalSheet(
+          cycleDay: currentCycleDay,
+          lastPeriodStart: lastPeriodStart,
+        ),
       );
     } finally {
       _isShowing = false;
     }
     if (!context.mounted) return;
 
-    if (confirmed == true) {
-      final DateTime start = DateTime.now();
-      final int justCompleted = start.difference(lastPeriodStart).inDays;
+    if (chosenStart != null) {
+      // Anchor the new cycle to the day she actually started, not the day she
+      // happened to confirm — so Day 1 and the completed cycle length are right.
+      final DateTime start =
+          DateTime(chosenStart.year, chosenStart.month, chosenStart.day);
+      final DateTime lastStartDay = DateTime(
+          lastPeriodStart.year, lastPeriodStart.month, lastPeriodStart.day);
+      final int justCompleted = start.difference(lastStartDay).inDays;
       try {
         await onConfirm(start);
       } catch (_) {}
@@ -154,9 +163,45 @@ class PeriodArrivalPrompt {
 }
 
 class _ArrivalSheet extends StatelessWidget {
-  const _ArrivalSheet({required this.cycleDay});
+  const _ArrivalSheet({
+    required this.cycleDay,
+    required this.lastPeriodStart,
+  });
 
   final int cycleDay;
+  final DateTime lastPeriodStart;
+
+  Future<void> _pickDate(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime todayDay = DateTime(now.year, now.month, now.day);
+    // A new period can only start after the previous one, and never in the
+    // future.
+    DateTime first = DateTime(
+      lastPeriodStart.year,
+      lastPeriodStart.month,
+      lastPeriodStart.day,
+    ).add(const Duration(days: 1));
+    if (first.isAfter(todayDay)) first = todayDay;
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: todayDay,
+      firstDate: first,
+      lastDate: todayDay,
+      helpText: 'When did your period start?', // i18n-ignore: period-arrival prompt (English copy)
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(
+                primary: PeriodArrivalPrompt._crimson,
+              ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null && context.mounted) {
+      Navigator.of(context)
+          .pop(DateTime(picked.year, picked.month, picked.day));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -213,9 +258,8 @@ class _ArrivalSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "You're on day $cycleDay — around when your next period is expected. "
-            'Confirm it so Blushy can start a fresh cycle and keep your rhythm '
-            'accurate.',
+            "You're on day $cycleDay — around when your next period is expected. " // i18n-ignore: period-arrival prompt (English copy)
+            'Tell Blushy the day it actually started so your cycle stays accurate.',
             style: GoogleFonts.manrope(
               fontSize: 12.5,
               height: 1.45,
@@ -227,7 +271,11 @@ class _ArrivalSheet extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () {
+                final now = DateTime.now();
+                Navigator.of(context)
+                    .pop(DateTime(now.year, now.month, now.day));
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: PeriodArrivalPrompt._crimson,
                 foregroundColor: Colors.white,
@@ -235,20 +283,75 @@ class _ArrivalSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14)),
               ),
               child: Text(
-                'Yes, it started today',
+                'It started today', // i18n-ignore: period-arrival prompt (English copy)
                 style: GoogleFonts.manrope(
                     fontSize: 13.5, fontWeight: FontWeight.w800),
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      final y =
+                          DateTime.now().subtract(const Duration(days: 1));
+                      Navigator.of(context)
+                          .pop(DateTime(y.year, y.month, y.day));
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: PeriodArrivalPrompt._crimson,
+                      side: BorderSide(
+                        color:
+                            PeriodArrivalPrompt._crimson.withValues(alpha: 0.35),
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      'Yesterday', // i18n-ignore: period-arrival prompt (English copy)
+                      style: GoogleFonts.manrope(
+                          fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: OutlinedButton(
+                    onPressed: () => _pickDate(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: PeriodArrivalPrompt._crimson,
+                      side: BorderSide(
+                        color:
+                            PeriodArrivalPrompt._crimson.withValues(alpha: 0.35),
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      'Another day', // i18n-ignore: period-arrival prompt (English copy)
+                      style: GoogleFonts.manrope(
+                          fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
-            height: 46,
+            height: 44,
             child: TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Not yet',
+                'Not yet', // i18n-ignore: period-arrival prompt (English copy)
                 style: GoogleFonts.manrope(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
