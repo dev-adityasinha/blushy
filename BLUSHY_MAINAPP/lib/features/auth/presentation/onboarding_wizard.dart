@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/storage.dart';
 import '../../../core/state.dart';
 import '../../home/widgets/profile_answers.dart';
+import '../../home/widgets/medical_disclaimer.dart';
 import '../../../core/cycle_calculator.dart';
 import '../../../theme/colors.dart';
 import '../../../services/api_auth_service.dart';
@@ -2458,6 +2459,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> with TickerProvider
           "This selection defines the clinical tracking layout for your onboarding questionnaire and home dashboard.",
           style: GoogleFonts.manrope(fontSize: 13.5, color: BlushyColors.secondaryText),
         ),
+        const SizedBox(height: 16),
+        const MedicalDisclaimer.card(),
         const SizedBox(height: 24),
         ...stages.map((stage) {
           final stageValue = stage['value'] as LifeStage;

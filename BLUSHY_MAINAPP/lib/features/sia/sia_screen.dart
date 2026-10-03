@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'sia_conversation.dart';
 import '../../shared/live_refresh.dart';
+import '../home/widgets/medical_disclaimer.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -116,7 +117,7 @@ class _BlushySiaScreenState extends State<BlushySiaScreen>
               ),
               const SizedBox(height: 6),
               Text(
-                "Docsy will read, analyze, and explain your medical reports, lab results, and health scans with doctor-level clarity.",
+                "Docsy helps you read and understand your medical reports, lab results, and health scans in clear, simple language — to help you follow them, not to replace your doctor.",
                 style: GoogleFonts.manrope(fontSize: 11.5, color: BlushyColors.secondaryText, height: 1.4),
               ),
               const SizedBox(height: 20),
@@ -946,6 +947,10 @@ class _BlushySiaScreenState extends State<BlushySiaScreen>
                 ),
               ),
             ),
+
+            // Play Health policy: Docsy is not a doctor — a persistent reminder
+            // sits right above the chat input.
+            const MedicalDisclaimer.bar(),
 
             // 7. Redesigned alive chat input panel
             _buildInputControlPanel(),

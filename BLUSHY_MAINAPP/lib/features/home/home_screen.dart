@@ -7,6 +7,7 @@ import '../../theme/colors.dart';
 import '../../services/api_auth_service.dart';
 import '../../core/stage_conflict_engine.dart';
 import 'widgets/profile_answers.dart';
+import 'widgets/medical_disclaimer.dart';
 import 'presentation/stages/first_period_not_started_dashboard.dart';
 import 'presentation/stages/first_period_started_dashboard.dart';
 import 'presentation/stages/living_with_my_cycle_dashboard.dart';
@@ -236,6 +237,9 @@ class _BlushyHomeScreenState extends State<BlushyHomeScreen> {
           // flashing this banner on every open.
           if (osState.isInitialSync && !hideSyncBanner) const _DashboardSyncBanner(),
           Expanded(child: body),
+          // Play Health policy: a persistent reminder to consult a professional,
+          // visible on every stage home.
+          const MedicalDisclaimer.bar(),
         ],
       ),
     );
